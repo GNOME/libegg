@@ -2095,15 +2095,17 @@ gtk_tree_model_filter_convert_path_to_child_path (GtkTreeModelFilter *tree_model
   for (i = 0; i < gtk_tree_path_get_depth (filtered_path); i++)
     {
       if ((level == NULL) ||
-          (level->array->len < filtered_indices[i]))
+          (level->array->len <= filtered_indices[i]))
         {
           gtk_tree_path_free (retval);
           return NULL;
         }
       if (g_array_index (level->array, FilterElt, filtered_indices[i]).children == NULL)
         gtk_tree_model_filter_build_level (tree_model_filter, level, &g_array_index (level->array, FilterElt, filtered_indices[i]));
+
       if (level == NULL)
-        
+	break;
+
       gtk_tree_path_append_index (retval, g_array_index (level->array, FilterElt, i).offset);
     }
   

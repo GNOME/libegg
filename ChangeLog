@@ -1,3 +1,9 @@
+Tue Mar 26 22:21:29 2002  Kristian Rietveld  <kris@gtk.org>
+
+	* libegg/gtktreemodelfilter.c
+	(gtk_tree_model_filter_convert_path_to_child_path): fix this function
+	(merge with gtktreemodelsort)
+
 Mon Mar 18 15:49:51 2002  Jonathan Blandford  <jrb@redhat.com>
 
 	* libegg/eggreorder.c (egg_list_store_reorder): move from N^2 to N ln(N)
