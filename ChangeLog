@@ -1,3 +1,8 @@
+Sun Mar 17 23:19:26 2002  Jonathan Blandford  <jrb@redhat.com>
+
+	* libegg/eggcellrendererkeys.c (egg_cell_renderer_keys_get_size):
+	Allow sizing of instruction message.
+
 Sun Mar 10 14:41:14 2002  Jonathan Blandford  <jrb@redhat.com>
 
 	* libegg/eggcellrendererkeys.c (egg_cell_renderer_keys_get_type):
