@@ -9,7 +9,7 @@
 #define GTK_LIST_STORE_IS_SORTED(list) (GTK_LIST_STORE (list)->sort_column_id != -2)
 
 void
-gtk_list_store_reorder (GtkListStore *list_store,
+egg_list_store_reorder (GtkListStore *list_store,
 			gint         *new_order)
 {
   gint i;
@@ -45,7 +45,7 @@ gtk_list_store_reorder (GtkListStore *list_store,
 }
 
 void
-gtk_tree_store_reorder (GtkTreeStore *tree_store,
+egg_tree_store_reorder (GtkTreeStore *tree_store,
 			GtkTreeIter  *parent_iter,
 			gint         *new_order)
 {

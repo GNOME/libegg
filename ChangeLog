@@ -1,3 +1,7 @@
+Mon Mar 18 15:27:53 2002  Jonathan Blandford  <jrb@redhat.com>
+
+	* libegg/eggreorder.c (egg_{list,tree}_store_reorder): s/gtk/egg/g
+
 Sun Mar 17 23:19:26 2002  Jonathan Blandford  <jrb@redhat.com>
 
 	* libegg/eggcellrendererkeys.c (egg_cell_renderer_keys_get_size):
