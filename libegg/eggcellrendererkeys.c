@@ -177,7 +177,6 @@ egg_cell_renderer_keys_new (void)
 static void
 egg_cell_renderer_keys_finalize (GObject *object)
 {
-  G_BREAKPOINT ();
   
   (* G_OBJECT_CLASS (parent_class)->finalize) (object);
 }
