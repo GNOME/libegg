@@ -1,3 +1,14 @@
+Sun Mar  3 20:16:16 2002  Kristian Rietveld  <kris@gtk.org>
+
+	* libegg/gtktreemodelfilter.[ch]: merge changes from
+	gtk+/gtk/gtktreemodelsort.c HEAD, and get it working again
+
+	* libegg/gtktreemodelfilter.c (gtk_tree_model_filter_row_changed):
+	add code to build root level if it isn't there, and set visibility
+	to FALSE by default. (We don't let the path conversion func build
+	levels, so we special case the root level here). (Pointed out
+	by Bastien Nocera and Jorn Baayen).
+
 2002-03-02  Havoc Pennington  <hp@pobox.com>
 
 	* libegg/eggcellrendererkeys.c

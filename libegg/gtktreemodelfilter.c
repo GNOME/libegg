@@ -138,6 +138,9 @@ static void         gtk_tree_model_filter_ref_node           (GtkTreeModel      
 							      GtkTreeIter           *iter);
 static void         gtk_tree_model_filter_unref_node         (GtkTreeModel          *tree_model,
 							      GtkTreeIter           *iter);
+static void         gtk_tree_model_filter_real_unref_node    (GtkTreeModel          *tree_model,
+							      GtkTreeIter           *iter,
+							      gboolean               propagate_unref);
 
 /* Private functions */
 static void         gtk_tree_model_filter_build_level       (GtkTreeModelFilter *tree_model_filter,
@@ -493,6 +496,7 @@ gtk_tree_model_filter_row_back_child_updater (GtkTreeModelFilter *filter,
 
 	      gtk_tree_model_ref_node (GTK_TREE_MODEL (filter), &it);
 	      gtk_tree_model_filter_increment_stamp (filter);
+	      it.stamp = filter->stamp;
 	      gtk_tree_model_unref_node (GTK_TREE_MODEL (filter), &it);
 
 	      path = gtk_tree_model_get_path (GTK_TREE_MODEL (filter), &it);
@@ -513,26 +517,26 @@ gtk_tree_model_filter_row_back_child_updater (GtkTreeModelFilter *filter,
 
 	      if (!e->visible)
 	        {
-              e->visible = FALSE;
+		  e->visible = FALSE;
 
 #ifdef VERBOSE
-              g_print ("-> row back\n");
+		  g_print ("-> row back\n");
 #endif
 
-	      gtk_tree_model_filter_increment_stamp (filter);
+	          gtk_tree_model_filter_increment_stamp (filter);
 
-	      i.stamp = filter->stamp;
-	      i.user_data = elt->children;
-	      i.user_data2 = e;
+	          i.stamp = filter->stamp;
+	          i.user_data = elt->children;
+	          i.user_data2 = e;
 
-	      path = gtk_tree_model_get_path (GTK_TREE_MODEL (filter), &i);
-	      e->visible = TRUE;
-	      gtk_tree_model_row_inserted (GTK_TREE_MODEL (filter), path, &i);
-	      gtk_tree_path_free (path);
+	          path = gtk_tree_model_get_path (GTK_TREE_MODEL (filter), &i);
+	          e->visible = TRUE;
+	          gtk_tree_model_row_inserted (GTK_TREE_MODEL (filter), path, &i);
+	          gtk_tree_path_free (path);
 
-              if (gtk_tree_model_iter_children (GTK_TREE_MODEL (filter), &tmp, &i))
-                gtk_tree_model_filter_row_back_child_updater (filter,
-                  elt->children, e);
+                  if (gtk_tree_model_iter_children (GTK_TREE_MODEL (filter), &tmp, &i))
+                    gtk_tree_model_filter_row_back_child_updater (filter,
+								  elt->children, e);
 		}
             }
         }
@@ -583,7 +587,7 @@ gtk_tree_model_filter_remove (GtkTreeModelFilter *filter,
 
   /* ref couting */
   while (elt->ref_count > 0)
-    gtk_tree_model_filter_unref_node (GTK_TREE_MODEL (filter), iter);
+    gtk_tree_model_filter_real_unref_node (GTK_TREE_MODEL (filter), iter, FALSE);
 
   if (emit_signal)
     {
@@ -670,6 +674,23 @@ gtk_tree_model_filter_row_changed           (GtkTreeModel          *s_model,
   else
     siter = *start_iter;
 
+  if (!filter->root)
+    {
+      /* build root level and set visibility to FALSE */
+      gtk_tree_model_filter_build_level (filter, NULL, NULL);
+
+      if (filter->root)
+	{
+	  gint i;
+	  GArray *a;
+
+	  a = ((FilterLevel *)filter->root)->array;
+
+	  for (i = 0; i < a->len; i++)
+	    g_array_index (a, FilterElt, i).visible = FALSE;
+	}
+    }
+
   path = gtk_real_tree_model_filter_convert_child_path_to_path (filter, start_path, FALSE, TRUE);
   if (!path)
     {
@@ -720,6 +741,7 @@ gtk_tree_model_filter_row_changed           (GtkTreeModel          *s_model,
       elt->visible = TRUE;
 
       gtk_tree_model_filter_increment_stamp (filter);
+      gtk_tree_model_get_iter (GTK_TREE_MODEL (filter), &iter, path);
       gtk_tree_model_row_inserted (GTK_TREE_MODEL (filter), path, &iter);
 
       if (gtk_tree_model_iter_children (s_model, &tmp, start_iter))
@@ -739,7 +761,8 @@ gtk_tree_model_filter_row_changed           (GtkTreeModel          *s_model,
       GtkTreePath *path = gtk_tree_model_get_path (GTK_TREE_MODEL (filter), &iter);
       GtkTreeIter tmp;
 #ifdef VERBOSE
-      g_print ("visible didn't change -- pass row_changed\n");
+      g_print ("visible didn't change (== %d) -- pass row_changed\n",
+	       elt->visible);
 #endif
       gtk_tree_model_row_changed (GTK_TREE_MODEL (filter), path, &iter);
 
@@ -768,7 +791,7 @@ gtk_tree_model_filter_row_inserted          (GtkTreeModel          *s_model,
   FilterLevel *level;
   FilterLevel *parent_level;
 
-  gint i = 0, offset, index;
+  gint i = 0, offset, index = -1;
 
   gboolean free_s_path = FALSE;
 
@@ -1001,12 +1024,13 @@ gtk_tree_model_filter_row_deleted           (GtkTreeModel          *s_model,
           gtk_tree_path_free (path);
           return;
         }
-      
+
       gtk_tree_model_filter_increment_stamp (filter);
       gtk_tree_model_row_deleted (GTK_TREE_MODEL (data), path);
+      iter.stamp = filter->stamp;
 
       while (elt->ref_count > 0)
-        gtk_tree_model_filter_unref_node (GTK_TREE_MODEL (data), &iter);
+        gtk_tree_model_filter_real_unref_node (GTK_TREE_MODEL (data), &iter, FALSE);
     }
 
   /* remove the row */
@@ -1547,12 +1571,17 @@ gtk_tree_model_filter_ref_node (GtkTreeModel *tree_model,
 				GtkTreeIter  *iter)
 {
   GtkTreeModelFilter *tree_model_filter = (GtkTreeModelFilter *) tree_model;
+  GtkTreeIter child_iter;
   FilterLevel *level;
   FilterElt *elt;
 
   g_return_if_fail (GTK_IS_TREE_MODEL_FILTER (tree_model));
   g_return_if_fail (GTK_TREE_MODEL_FILTER (tree_model)->child_model != NULL);
   g_return_if_fail (GTK_TREE_MODEL_FILTER (tree_model)->stamp == iter->stamp);
+
+  GET_CHILD_ITER (tree_model, &child_iter, iter);
+
+  gtk_tree_model_ref_node (tree_model_filter->child_model, &child_iter);
 
   level = iter->user_data;
   elt = iter->user_data2;
@@ -1585,6 +1614,14 @@ static void
 gtk_tree_model_filter_unref_node (GtkTreeModel *tree_model,
 				  GtkTreeIter  *iter)
 {
+  gtk_tree_model_filter_real_unref_node (tree_model, iter, TRUE);
+}
+
+static void
+gtk_tree_model_filter_real_unref_node (GtkTreeModel *tree_model,
+				       GtkTreeIter  *iter,
+				       gboolean      propagate_unref)
+{
   GtkTreeModelFilter *tree_model_filter = (GtkTreeModelFilter *) tree_model;
   FilterLevel *level;
   FilterElt *elt;
@@ -1592,6 +1629,13 @@ gtk_tree_model_filter_unref_node (GtkTreeModel *tree_model,
   g_return_if_fail (GTK_IS_TREE_MODEL_FILTER (tree_model));
   g_return_if_fail (GTK_TREE_MODEL_FILTER (tree_model)->child_model != NULL);
   g_return_if_fail (GTK_TREE_MODEL_FILTER (tree_model)->stamp == iter->stamp);
+
+  if (propagate_unref)
+    {
+      GtkTreeIter child_iter;
+      GET_CHILD_ITER (tree_model, &child_iter, iter);
+      gtk_tree_model_unref_node (tree_model_filter->child_model, &child_iter);
+    }
 
   level = iter->user_data;
   elt = iter->user_data2;
@@ -1651,7 +1695,8 @@ gtk_tree_model_filter_set_model (GtkTreeModelFilter *tree_model_filter,
                                    tree_model_filter->reordered_id);
 
       /* reset our state */
-      gtk_tree_model_filter_free_level (tree_model_filter, tree_model_filter->root);
+      if (tree_model_filter->root)
+	gtk_tree_model_filter_free_level (tree_model_filter, tree_model_filter->root);
       tree_model_filter->root = NULL;
       g_object_unref (G_OBJECT (tree_model_filter->child_model));
       tree_model_filter->filter_column = -1;
@@ -2122,7 +2167,7 @@ gtk_tree_model_filter_build_level (GtkTreeModelFilter *tree_model_filter,
 	}
       else
         {
-          if (gtk_tree_model_get_iter_root (tree_model_filter->child_model, &iter) == FALSE)
+          if (gtk_tree_model_get_iter_first (tree_model_filter->child_model, &iter) == FALSE)
             return;
           length = gtk_tree_model_iter_n_children (tree_model_filter->child_model, NULL);
 	}
@@ -2143,6 +2188,12 @@ gtk_tree_model_filter_build_level (GtkTreeModelFilter *tree_model_filter,
                                         &iter,
                                         &child_parent_iter) == FALSE)
         return;
+
+      /* stamp may have changed */
+      gtk_tree_model_filter_convert_iter_to_child_iter (tree_model_filter,
+							&child_parent_iter,
+							&parent_iter);
+
       length = gtk_tree_model_iter_n_children (tree_model_filter->child_model, &child_parent_iter);
     }
 
@@ -2273,7 +2324,11 @@ gtk_tree_model_filter_free_level (GtkTreeModelFilter *tree_model_filter,
 static void
 gtk_tree_model_filter_increment_stamp (GtkTreeModelFilter *tree_model_filter)
 {
-  while (tree_model_filter->stamp == 0) tree_model_filter->stamp++;
+  do
+    {
+      tree_model_filter->stamp++;
+    }
+  while (tree_model_filter->stamp == 0);
 
   gtk_tree_model_filter_clear_cache (tree_model_filter);
 }

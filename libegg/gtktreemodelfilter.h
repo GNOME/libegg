@@ -23,9 +23,7 @@
 
 #include <gtk/gtktreemodel.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+G_BEGIN_DECLS
 
 #define GTK_TYPE_TREE_MODEL_FILTER             (gtk_tree_model_filter_get_type ())
 #define GTK_TREE_MODEL_FILTER(obj)             (GTK_CHECK_CAST ((obj), GTK_TYPE_TREE_MODEL_FILTER, GtkTreeModelFilter))
@@ -68,7 +66,7 @@ struct _GtkTreeModelFilterClass
   GObjectClass parent_class;
 };
 
-GtkType       gtk_tree_model_filter_get_type                   (void);
+GType         gtk_tree_model_filter_get_type                   (void);
 GtkTreeModel *gtk_tree_model_filter_new_with_model             (GtkTreeModel       *child_model,
 								gint                filter_column,
 								GtkTreePath        *virtual_root);
@@ -85,9 +83,6 @@ GtkTreePath  *gtk_tree_model_filter_convert_child_path_to_path (GtkTreeModelFilt
 GtkTreePath  *gtk_tree_model_filter_convert_path_to_child_path (GtkTreeModelFilter *tree_model_filter,
 								GtkTreePath        *filtered_path);
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
+G_END_DECLS
 
 #endif /* __GTK_TREE_MODEL_FILTER_H__ */
