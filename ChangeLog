@@ -1,3 +1,20 @@
+2002-03-03  Havoc Pennington  <hp@pobox.com>
+
+	* libegg/eggcellrendererkeys.c: Rework code to store
+	 modmask/keyval instead of the textual representation, then make
+	 Backspace work sanely for deleting the binding.  Remove use of
+	 GtkEntry, just use a cheesy label subclass.
+	(grab_key_filter): remove gratuituous use of GDK_CURRENT_TIME when
+	the event with the right time is right there
+	(egg_cell_renderer_keys_start_editing): use right time for
+	keyboard grab, abort the edit if keyboard grab fails, grab on
+	widget->window instead of root window. Also grab the pointer 
+	so we can cancel if you click somewhere. (except I didn't 
+	connect to button press event yet)
+
+	* libegg/eggcellrendererkeys.h (EGG_CELL_RENDERER_KEYS_GET_CLASS):
+	fix cast macros
+
 Sun Mar  3 20:16:16 2002  Kristian Rietveld  <kris@gtk.org>
 
 	* libegg/gtktreemodelfilter.[ch]: merge changes from
