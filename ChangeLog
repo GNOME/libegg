@@ -1,5 +1,11 @@
 2002-03-02  Havoc Pennington  <hp@pobox.com>
 
+	* libegg/eggcellrendererkeys.c
+	(egg_cell_renderer_keys_start_editing): connect to unrealize and
+	remove the key filter, seems to avoid a crash in some cases.
+
+2002-03-02  Havoc Pennington  <hp@pobox.com>
+
 	* eggcellrendererkeys.c: fix some deprecation stuff.
 	
 
