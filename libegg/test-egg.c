@@ -1,6 +1,59 @@
 #include <gtk/gtk.h>
+#include "eggtreeviewstate.h"
 
 typedef GtkWidget *(* CreateWindowFunc) (void);
+
+const char state_string[] = ""
+"<treeview_state>"
+"  <treeview headers_visible=\"true\" search_column=\"0\">"
+"    <column title=\"Test first\" fixed_width=\"150\" resizable=\"true\" sizing=\"fixed\">"
+"      <cell text=\"Sliff sloff\" type=\"GtkCellRendererText\" />"
+"    </column>"
+"    <column title=\"Test\" reorderable=\"true\" sizing=\"autosize\">"
+"      <cell type=\"GtkCellRendererToggle\" expand=\"false\" active=\"model:1\"/>"
+"      <cell type=\"GtkCellRendererText\" text=\"model:0\"/>"
+"    </column>"
+"  </treeview>"
+"</treeview_state>";
+
+static GtkWidget *
+state_test (void)
+{
+  GtkWidget *window, *sw, *view;
+  GtkListStore *store;
+  GtkTreeIter iter;
+  GError *error = NULL;
+
+  egg_tree_view_state_add_cell_renderer_type (GTK_TYPE_CELL_RENDERER_TOGGLE);
+  
+  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+
+  store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_BOOLEAN);
+
+  gtk_list_store_append (store, &iter);
+  gtk_list_store_set (store, &iter,
+		      0, "Test string",
+		      1, TRUE,
+		      -1);
+  gtk_list_store_append (store, &iter);
+  gtk_list_store_set (store, &iter,
+		      0, "Another string",
+		      1, FALSE,
+		      -1);
+
+  sw = gtk_scrolled_window_new (NULL, NULL);
+  gtk_container_add (GTK_CONTAINER (window), sw);
+  view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
+
+  if (!egg_tree_view_state_apply_from_string (GTK_TREE_VIEW (view), state_string, &error))
+    {
+      g_print ("error: %s\n", error->message);
+    }
+  
+  gtk_container_add (GTK_CONTAINER (sw), view);
+  
+  return window;
+}
 
 static GtkWidget *
 progress_bar_test (void)
@@ -19,7 +72,9 @@ struct
 } entries[] =
 {
   { "Progress Bar Cell", progress_bar_test },
+  { "Tree View State", state_test },
 };
+
 
 static void
 row_activated (GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column)
@@ -42,6 +97,7 @@ row_activated (GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *col
 
   window = (*func) ();
   gtk_window_set_title (GTK_WINDOW (window), str);
+  gtk_window_set_default_size (GTK_WINDOW (window), 400, 300);
   g_free (str);
   
   g_signal_connect (window, "delete_event",

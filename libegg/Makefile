@@ -3,6 +3,7 @@ CFLAGS=`pkg-config gtk+-2.0 --cflags` -g -Wall
 LIBS=`pkg-config gtk+-2.0 --libs`
 
 OBJS=	\
+	eggtreeviewstate.o \
 	test-egg.o
 
 all: test-egg
