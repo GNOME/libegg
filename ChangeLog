@@ -1,3 +1,10 @@
+Fri Apr  5 22:24:54 2002  Kristian Rietveld  <kris@gtk.org>
+
+	* libegg/gtkcellrendererstock.[ch], libegg/Makefile: added
+	GtkCellRendererStock
+
+	* libegg/test-egg.c: added a testcase for the GtkCellRendererStock
+
 Tue Mar 26 22:21:29 2002  Kristian Rietveld  <kris@gtk.org>
 
 	* libegg/gtktreemodelfilter.c
