@@ -206,7 +206,7 @@ main (gint argc, gchar **argv)
   g_signal_connect (dialog, "response",
 		    G_CALLBACK (gtk_main_quit), NULL);
   sw = gtk_scrolled_window_new (NULL, NULL);
-  gtk_container_border_width (GTK_CONTAINER (sw), 8);
+  gtk_container_set_border_width (GTK_CONTAINER (sw), 8);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw),
 				  GTK_POLICY_AUTOMATIC,
 				  GTK_POLICY_AUTOMATIC);
