@@ -5,6 +5,7 @@ LIBS=`pkg-config gtk+-2.0 --libs`
 OBJS=	\
 	eggcellrendererpopup.o \
 	eggtreeviewstate.o \
+	eggreorder.o \
 	test-egg.o
 
 all: test-egg
