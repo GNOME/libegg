@@ -1,3 +1,7 @@
+Mon Mar 18 15:49:51 2002  Jonathan Blandford  <jrb@redhat.com>
+
+	* libegg/eggreorder.c (egg_list_store_reorder): move from N^2 to N ln(N)
+
 Mon Mar 18 15:27:53 2002  Jonathan Blandford  <jrb@redhat.com>
 
 	* libegg/eggreorder.c (egg_{list,tree}_store_reorder): s/gtk/egg/g
