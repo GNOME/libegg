@@ -1,5 +1,11 @@
 2002-03-03  Havoc Pennington  <hp@pobox.com>
 
+	* libegg/eggcellrendererkeys.c
+	(egg_cell_renderer_keys_start_editing): put back unrealize handler
+	to avoid stuck grabs
+
+2002-03-03  Havoc Pennington  <hp@pobox.com>
+
 	* libegg/eggcellrendererkeys.c: Rework code to store
 	 modmask/keyval instead of the textual representation, then make
 	 Backspace work sanely for deleting the binding.  Remove use of
