@@ -1,3 +1,9 @@
+Mon Mar  4 17:09:16 2002  Kristian Rietveld  <kris@gtk.org>
+
+	* libegg/gtktreemodelfilter.c
+	(gtk_tree_model_filter_row_back_child_updater): emit has_child_toggled
+	when we put back some rows
+
 2002-03-03  Havoc Pennington  <hp@pobox.com>
 
 	* libegg/eggcellrendererkeys.c

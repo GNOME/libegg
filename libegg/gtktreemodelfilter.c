@@ -508,6 +508,12 @@ gtk_tree_model_filter_row_back_child_updater (GtkTreeModelFilter *filter,
               if (gtk_tree_model_iter_children (GTK_TREE_MODEL (filter), &tmp, &it))
                 gtk_tree_model_filter_row_back_child_updater (filter,
                   elt->children, e);
+
+	      it.user_data = level;
+	      it.user_data2 = elt;
+	      path = gtk_tree_model_get_path (GTK_TREE_MODEL (filter), &it);
+	      gtk_tree_model_row_has_child_toggled (GTK_TREE_MODEL (filter), path, &it);
+	      gtk_tree_path_free (path);
             }
           else
             {
@@ -537,6 +543,12 @@ gtk_tree_model_filter_row_back_child_updater (GtkTreeModelFilter *filter,
                   if (gtk_tree_model_iter_children (GTK_TREE_MODEL (filter), &tmp, &i))
                     gtk_tree_model_filter_row_back_child_updater (filter,
 								  elt->children, e);
+
+		  i.user_data = level;
+		  i.user_data2 = elt;
+		  path = gtk_tree_model_get_path (GTK_TREE_MODEL (filter), &i);
+		  gtk_tree_model_row_has_child_toggled (GTK_TREE_MODEL (filter), path, &i);
+		  gtk_tree_path_free (path);
 		}
             }
         }
