@@ -6,7 +6,7 @@ OBJS=	\
 	eggcellrendererpopup.o \
 	eggtreeviewstate.o \
 	eggreorder.o \
-	gtkcellrendererstock.o \
+	eggcellrendererpixbuf.o \
 	test-egg.o
 
 all: test-egg

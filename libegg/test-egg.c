@@ -1,6 +1,6 @@
 #include <gtk/gtk.h>
 #include "eggtreeviewstate.h"
-#include "gtkcellrendererstock.h"
+#include "eggcellrendererpixbuf.h"
 
 typedef GtkWidget *(* CreateWindowFunc) (void);
 
@@ -74,6 +74,7 @@ cellstock_test (void)
   GtkTreeViewColumn *column;
   GtkCellRenderer *rend;
   GtkTreeIter iter;
+  GdkPixbuf *pixbuf;
 
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   sw = gtk_scrolled_window_new (NULL, NULL);
@@ -85,16 +86,20 @@ cellstock_test (void)
    * size
    */
 
-  store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_INT);
+  store = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_INT, GDK_TYPE_PIXBUF);
   tv = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
-  gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (tv), FALSE);
+  gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (tv), TRUE);
+
+  pixbuf = gtk_widget_render_icon (tv, GTK_STOCK_FLOPPY, GTK_ICON_SIZE_MENU,
+				   NULL);
 
   column = gtk_tree_view_column_new ();
-  rend = gtk_cell_renderer_stock_new ();
+  gtk_tree_view_column_set_title (column, "Stock icons");
+  rend = egg_cell_renderer_pixbuf_new ();
   gtk_tree_view_column_pack_start (column, rend, FALSE);
   gtk_tree_view_column_set_attributes (column, rend,
 				       "stock_id", 0,
-				       "size", 1,
+				       "stock_size", 1,
 				       NULL);
 
   rend = gtk_cell_renderer_text_new ();
@@ -105,24 +110,38 @@ cellstock_test (void)
 
   gtk_tree_view_append_column (GTK_TREE_VIEW (tv), column);
 
+  column = gtk_tree_view_column_new ();
+  gtk_tree_view_column_set_title (column, "Pixbuf");
+  rend = egg_cell_renderer_pixbuf_new ();
+  gtk_tree_view_column_pack_start (column, rend, FALSE);
+  gtk_tree_view_column_set_attributes (column, rend,
+				       "pixbuf", 2,
+				       NULL);
+
+  gtk_tree_view_append_column (GTK_TREE_VIEW (tv), column);
+
   gtk_container_add (GTK_CONTAINER (sw), tv);
 
   /* fill the list */
   gtk_list_store_append (store, &iter);
   gtk_list_store_set (store, &iter, 0, GTK_STOCK_NEW,
-		      1, GTK_ICON_SIZE_LARGE_TOOLBAR, -1);
+		      1, GTK_ICON_SIZE_LARGE_TOOLBAR,
+		      2, pixbuf, -1);
 
   gtk_list_store_append (store, &iter);
   gtk_list_store_set (store, &iter, 0, GTK_STOCK_QUIT,
-		      1, GTK_ICON_SIZE_BUTTON, -1);
+		      1, GTK_ICON_SIZE_BUTTON,
+		      2, pixbuf, -1);
 
   gtk_list_store_append (store, &iter);
   gtk_list_store_set (store, &iter, 0, GTK_STOCK_CUT,
-		      1, GTK_ICON_SIZE_DND, -1);
+		      1, GTK_ICON_SIZE_DND,
+		      2, pixbuf, -1);
 
   gtk_list_store_append (store, &iter);
   gtk_list_store_set (store, &iter, 0, GTK_STOCK_COPY,
-		      1, GTK_ICON_SIZE_SMALL_TOOLBAR, -1);
+		      1, GTK_ICON_SIZE_SMALL_TOOLBAR,
+		      2, pixbuf, -1);
 
   return window;
 }
@@ -135,7 +154,7 @@ struct
 {
   { "Progress Bar Cell", progress_bar_test },
   { "Tree View State", state_test },
-  { "GtkCellRendererStock", cellstock_test }
+  { "EggCellRendererPixbuf", cellstock_test }
 };
 
 
