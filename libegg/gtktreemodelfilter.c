@@ -1333,7 +1333,7 @@ gtk_tree_model_filter_get_iter (GtkTreeModel *tree_model,
       level = g_array_index (level->array, FilterElt, indices[i]).children;
     }
 
-  if (level == NULL)
+  if (level == NULL || level->array->len <= 0)
     return FALSE;
   iter->stamp = tree_model_filter->stamp;
   iter->user_data = level;
