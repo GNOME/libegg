@@ -1,5 +1,11 @@
 2002-03-03  Havoc Pennington  <hp@pobox.com>
 
+	* libegg/eggcellrendererkeys.c
+	(egg_cell_renderer_keys_set_accelerator): fix to avoid notifying 
+	on the text property in all cases.
+
+2002-03-03  Havoc Pennington  <hp@pobox.com>
+
 	* libegg/eggcellrendererkeys.c: remove debug print
 
 2002-03-03  Havoc Pennington  <hp@pobox.com>
