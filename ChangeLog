@@ -1,0 +1,5 @@
+2002-03-02  Havoc Pennington  <hp@pobox.com>
+
+	* eggcellrendererkeys.c: fix some deprecation stuff.
+	
+
