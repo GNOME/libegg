@@ -1,5 +1,9 @@
 2002-03-03  Havoc Pennington  <hp@pobox.com>
 
+	* libegg/eggcellrendererkeys.c: remove debug print
+
+2002-03-03  Havoc Pennington  <hp@pobox.com>
+
 	* libegg/eggcellrendererkeys.c
 	(egg_cell_renderer_keys_start_editing): put back unrealize handler
 	to avoid stuck grabs

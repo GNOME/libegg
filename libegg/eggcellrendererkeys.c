@@ -269,10 +269,6 @@ grab_key_filter (GdkXEvent *gdk_xevent, GdkEvent *event, gpointer data)
     return GDK_FILTER_CONTINUE;
 	
   keys = EGG_CELL_RENDERER_KEYS (data);
-
-  g_print (" prev key in renderer %s\n",
-           convert_keysym_state_to_string (keys->edit_key,
-                                           keys->edit_mask));
   
   keycode = xevent->xkey.keycode;
 
