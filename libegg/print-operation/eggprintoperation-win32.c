@@ -550,25 +550,18 @@ win32_start_page (EggPrintOperation *op,
 		  EggPageSetup *page_setup)
 {
   EggPrintOperationWin32 *op_win32 = op->priv->platform_data;
-  /*
   LPDEVMODEW devmode;
   EggPaperSize *paper_size;
-  */
-
-  /* TODO: Per page settings are disabled, because this code
-   * doen't work for some reason. Even just calling ResetDC with
-   * the devmode returned from PrintDlgEx seems to reset the
-   * settings to default.
-   */
-  /*
+  
   devmode = GlobalLock (op_win32->devmode);
-
+  
   devmode->dmFields |= DM_ORIENTATION;
   devmode->dmOrientation =
     orientation_to_win32 (egg_page_setup_get_orientation (page_setup));
-
+  
   paper_size = egg_page_setup_get_paper_size (page_setup);
   devmode->dmFields |= DM_PAPERSIZE;
+  devmode->dmFields &= ~(DM_PAPERWIDTH | DM_PAPERLENGTH);
   devmode->dmPaperSize = paper_size_to_win32 (paper_size);
   if (devmode->dmPaperSize == 0)
     {
@@ -577,12 +570,10 @@ win32_start_page (EggPrintOperation *op,
       devmode->dmPaperLength = egg_paper_size_get_height (paper_size, EGG_UNIT_MM) * 10.0;
     }
   
+  ResetDCW (op_win32->hdc, devmode);
+  
   GlobalUnlock (op_win32->devmode);
   
-  if (ResetDCW (op_win32->hdc, op_win32->devmode) == NULL)
-    g_warning ("resetDC failed");
-  */
- 
   StartPage (op_win32->hdc);
 }
 
