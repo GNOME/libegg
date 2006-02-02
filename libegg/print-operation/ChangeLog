@@ -1,3 +1,12 @@
+2006-02-02  John (J5) Palmieri  <johnp@redhat.com>
+
+	* Makefile.am:
+	* configure.in
+	* eggprintbackend.c, eggprintbackend.h, eggprintbackendcups.c,
+	eggprintbackendcups.h, eggprintunixdialog.c, eggprintunixdialog.h,
+	testshowdialog.c:
+	First code drop for the Unix print dialog and CUPS printing backend
+
 2006-02-02  Alexander Larsson  <alexl@redhat.com>
 
 	* Makefile.am: 

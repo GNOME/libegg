@@ -1,5 +1,5 @@
-INCLUDES = $(EGG_CFLAGS)
-LIBS = $(EGG_LIBS)
+INCLUDES = $(EGG_CFLAGS) $(CUPS_CFLAGS) -DEGG_PRINT_BACKEND_ENABLE_UNSUPPORTED
+LIBS = $(EGG_LIBS) $(CUPS_LIBS)
 
 noinst_LTLIBRARIES = libeggprint.la
 
@@ -9,7 +9,7 @@ libeggprint_la_SOURCES = 		\
 	eggprintcontext.c		\
 	eggprintersettings.c		\
 	eggprintmarshal.c		\
-	eggprintoperation.c
+	eggprintoperation.c		
 
 if PLATFORM_WIN32
 
@@ -18,11 +18,13 @@ LIBS += -lcomdlg32
 libeggprint_la_SOURCES +=		\
 	eggprint-win32.c		\
 	eggprintoperation-win32.c
-
 else
 
 libeggprint_la_SOURCES +=		\
-	eggprintoperation-dummy.c
+	eggprintoperation-unix.c	\
+	eggprintunixdialog.c		\
+        eggprintbackend.c		\
+        eggprintbackendcups.c
 
 endif
 
@@ -37,7 +39,10 @@ noinst_HEADERS = 			\
 	eggprintersettings.h		\
 	eggprintmarshal.h		\
 	eggprintoperation-private.h 	\
-	eggprintoperation.h
+	eggprintoperation.h		\
+	eggprintunixdialog.h		\
+	eggprintbackend.h		\
+	eggprintbackendcups.h		
 
 marshal_sources = 		\
 	eggprintmarshal.h	\
@@ -50,8 +55,15 @@ eggprintmarshal.c: eggprintmarshal.list
 
 noinst_PROGRAMS = testprint printedit
 
+if !PLATFORM_WIN32
+noinst_PROGRAMS += testshowdialog
+endif 
+
 testprint_SOURCES = testprint.c testprintfileoperation.c testprintfileoperation.h
 testprint_LDADD = libeggprint.la
+
+testshowdialog_SOURCES = testshowdialog.c
+testshowdialog_LDADD = libeggprint.la
 
 printedit_SOURCES = printedit.c
 printedit_LDADD = libeggprint.la

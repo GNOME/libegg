@@ -55,10 +55,18 @@ AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(memmove strerror)
 
 ## here we get the flags we'll actually use
-PKG_CHECK_MODULES(EGG, gtk+-2.0 >= 2.5.0)
+PKG_CHECK_MODULES(EGG, gtk+-2.0 >= 2.5.0 gobject-2.0 >= 2.5.0)
 AC_SUBST(EGG_LIBS)
 AC_SUBST(EGG_CFLAGS)
 
+AC_PATH_PROG(CUPS_CONFIG, cups-config, no)
+if test "x$CUPS_CONFIG" != "xno"; then
+  CUPS_CFLAGS=`cups-config --cflags | sed 's/-O[0-9]*//' | sed 's/-m[^\t]*//g'`
+  CUPS_LIBS=`cups-config --libs`
+
+  AC_SUBST(CUPS_CFLAGS)
+  AC_SUBST(CUPS_LIBS)
+fi
 
 GLIB_GENMARSHAL=`$PKG_CONFIG --variable=glib_genmarshal glib-2.0`  
 AC_SUBST(GLIB_GENMARSHAL)
