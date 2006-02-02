@@ -1,0 +1,66 @@
+<!-- ##### SECTION Title ##### -->
+egg-background-monitor
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT EggBackgroundMonitorClass ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### STRUCT EggBackgroundMonitor ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL EggBackgroundMonitor::changed ##### -->
+<para>
+
+</para>
+
+@eggbackgroundmonitor: the object which received the signal.
+
+<!-- ##### FUNCTION egg_background_monitor_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_background_monitor_get_region ##### -->
+<para>
+
+</para>
+
+@monitor: 
+@x: 
+@y: 
+@width: 
+@height: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_background_monitor_get_widget_background ##### -->
+<para>
+
+</para>
+
+@monitor: 
+@widget: 
+@Returns: 
+
+

@@ -1,0 +1,9 @@
+.libs
+.deps
+*.lo
+*.la
+Makefile
+Makefile.in
+test-multi-drag
+test-tree-utils
+

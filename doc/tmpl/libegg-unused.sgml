@@ -1,0 +1,693 @@
+<!-- ##### SECTION ./tmpl/eggcellrendererpixbuf.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/eggcellrendererpixbuf.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/eggcellrendererpixbuf.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/eggcellrendererpixbuf.sgml:Title ##### -->
+EggCellRendererPixbuf
+
+
+<!-- ##### SECTION ./tmpl/gtktreemodelfilter.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/gtktreemodelfilter.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/gtktreemodelfilter.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/gtktreemodelfilter.sgml:Title ##### -->
+GtkTreeModelFilter
+
+
+<!-- ##### MACRO EGG_ICON_LIST_ITEM ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO EGG_IS_ICON_LIST_ITEM ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO EGG_TYPE_ICON_LIST_ITEM ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL EggAction::activate ##### -->
+<para>
+
+</para>
+
+@eggaction: the object which received the signal.
+
+<!-- ##### ARG EggAction:label ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggAction:name ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggAction:sensitive ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggAction:short-label ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggAction:stock-id ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggAction:tooltip ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggAction:visible ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL EggCellRendererKeys::keys-edited ##### -->
+<para>
+
+</para>
+
+@eggcellrendererkeys: the object which received the signal.
+@arg1: 
+@arg2: 
+@arg3: 
+@arg4: 
+
+<!-- ##### ARG EggCellRendererKeys:accel-key ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererKeys:accel-mask ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererKeys:accel-mode ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererPixbuf:detail ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererPixbuf:pixbuf ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererPixbuf:pixbuf-expander-closed ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererPixbuf:pixbuf-expander-open ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererPixbuf:stock-id ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggCellRendererPixbuf:stock-size ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggDruid:header-padding ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggDruidPage:title ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggDruidPageStandard:title ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL EggIconList::item-activated ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL EggIconList::item-added ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL EggIconList::item-removed ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL EggIconList::select-all ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+
+<!-- ##### SIGNAL EggIconList::select-cursor-item ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+
+<!-- ##### SIGNAL EggIconList::selection-changed ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+
+<!-- ##### SIGNAL EggIconList::set-scroll-adjustments ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+@arg1: 
+@arg2: 
+
+<!-- ##### SIGNAL EggIconList::toggle-cursor-item ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+
+<!-- ##### SIGNAL EggIconList::unselect-all ##### -->
+<para>
+
+</para>
+
+@eggiconlist: the object which received the signal.
+
+<!-- ##### ARG EggIconList:bottom-margin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:icon-padding ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:left-margin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:right-margin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:selection-box-alpha ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:selection-box-color ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:selection-mode ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:sort-order ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:sorted ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggIconList:top-margin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### USER_FUNCTION EggIconListItemCompareFunc ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@a: 
+@b: 
+@user_data: 
+@Returns: 
+
+<!-- ##### SIGNAL EggMenuMerge::add-widget ##### -->
+<para>
+
+</para>
+
+@eggmenumerge: the object which received the signal.
+@widget: 
+
+<!-- ##### SIGNAL EggMenuMerge::remove-widget ##### -->
+<para>
+
+</para>
+
+@eggmenumerge: the object which received the signal.
+@widget: 
+
+<!-- ##### SIGNAL EggToggleAction::toggled ##### -->
+<para>
+
+</para>
+
+@eggtoggleaction: the object which received the signal.
+
+<!-- ##### ARG EggTreeModelFilter:child-model ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG EggTreeModelFilter:virtual-root ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION egg_cell_renderer_pixbuf_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_append_item ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@item: 
+
+<!-- ##### FUNCTION egg_icon_list_foreach ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@func: 
+@data: 
+
+<!-- ##### FUNCTION egg_icon_list_get_item_at_pos ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@x: 
+@y: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_get_item_count ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_get_items ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_get_selected ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_get_sort_order ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_get_sorted ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_insert_item_after ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@sibling: 
+@item: 
+
+<!-- ##### FUNCTION egg_icon_list_insert_item_before ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@sibling: 
+@item: 
+
+<!-- ##### FUNCTION egg_icon_list_item_get_data ##### -->
+<para>
+
+</para>
+
+@item: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_item_get_icon ##### -->
+<para>
+
+</para>
+
+@item: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_item_get_label ##### -->
+<para>
+
+</para>
+
+@item: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_item_is_selected ##### -->
+<para>
+
+</para>
+
+@item: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_item_new ##### -->
+<para>
+
+</para>
+
+@icon: 
+@label: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_icon_list_item_set_data ##### -->
+<para>
+
+</para>
+
+@item: 
+@data: 
+
+<!-- ##### FUNCTION egg_icon_list_item_set_data_full ##### -->
+<para>
+
+</para>
+
+@item: 
+@data: 
+@destroy_notify: 
+
+<!-- ##### FUNCTION egg_icon_list_item_set_icon ##### -->
+<para>
+
+</para>
+
+@item: 
+@icon: 
+
+<!-- ##### FUNCTION egg_icon_list_item_set_label ##### -->
+<para>
+
+</para>
+
+@item: 
+@label: 
+
+<!-- ##### FUNCTION egg_icon_list_prepend_item ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@item: 
+
+<!-- ##### FUNCTION egg_icon_list_remove_item ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@item: 
+
+<!-- ##### FUNCTION egg_icon_list_select_item ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@item: 
+
+<!-- ##### FUNCTION egg_icon_list_set_sort_func ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@func: 
+@data: 
+@destroy_notify: 
+
+<!-- ##### FUNCTION egg_icon_list_set_sort_order ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@order: 
+
+<!-- ##### FUNCTION egg_icon_list_set_sorted ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@sorted: 
+
+<!-- ##### FUNCTION egg_icon_list_unselect_item ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@item: 
+
+<!-- ##### FUNCTION egg_list_store_reorder ##### -->
+<para>
+
+</para>
+
+@list_store: 
+@new_order: 
+
+<!-- ##### FUNCTION egg_node_state_restore_from_file ##### -->
+<para>
+
+</para>
+
+@tree_view: 
+@filename: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_node_state_save_to_file ##### -->
+<para>
+
+</para>
+
+@tree_view: 
+@filename: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_manager_check_running_default_screen ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_manager_manage ##### -->
+<para>
+
+</para>
+
+@manager: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tree_store_reorder ##### -->
+<para>
+
+</para>
+
+@tree_store: 
+@parent_iter: 
+@new_order: 
+
+<!-- ##### FUNCTION gtk_tree_model_filter_clear_cache ##### -->
+<para>
+
+</para>
+
+@tree_model_filter: 
+
+<!-- ##### FUNCTION gtk_tree_model_filter_convert_child_iter_to_iter ##### -->
+<para>
+
+</para>
+
+@tree_model_filter: 
+@filter_iter: 
+@child_iter: 
+
+<!-- ##### FUNCTION gtk_tree_model_filter_convert_child_path_to_path ##### -->
+<para>
+
+</para>
+
+@tree_model_filter: 
+@child_path: 
+@Returns: 
+
+<!-- ##### FUNCTION gtk_tree_model_filter_convert_iter_to_child_iter ##### -->
+<para>
+
+</para>
+
+@tree_model_filter: 
+@child_iter: 
+@filtered_iter: 
+
+<!-- ##### FUNCTION gtk_tree_model_filter_convert_path_to_child_path ##### -->
+<para>
+
+</para>
+
+@tree_model_filter: 
+@filtered_path: 
+@Returns: 
+
+<!-- ##### FUNCTION gtk_tree_model_filter_new_with_model ##### -->
+<para>
+
+</para>
+
+@child_model: 
+@filter_column: 
+@virtual_root: 
+@Returns: 
+

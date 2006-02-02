@@ -1,0 +1,35 @@
+<!-- ##### SECTION Title ##### -->
+eggtreeviewstate
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION egg_tree_view_state_apply_from_string ##### -->
+<para>
+
+</para>
+
+@tree_view: 
+@string: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tree_view_state_add_cell_renderer_type ##### -->
+<para>
+
+</para>
+
+@type: 
+
+

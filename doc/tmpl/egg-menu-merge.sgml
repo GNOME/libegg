@@ -1,0 +1,124 @@
+<!-- ##### SECTION Title ##### -->
+EggMenuMerge
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT EggMenuMergeNode ##### -->
+<para>
+
+</para>
+
+@type: 
+@name: 
+@action_name: 
+@action: 
+@proxy: 
+@extra: 
+@uifiles: 
+@dirty: 
+
+<!-- ##### ENUM EggMenuMergeNodeType ##### -->
+<para>
+
+</para>
+
+@EGG_MENU_MERGE_UNDECIDED: 
+@EGG_MENU_MERGE_ROOT: 
+@EGG_MENU_MERGE_MENUBAR: 
+@EGG_MENU_MERGE_MENU: 
+@EGG_MENU_MERGE_TOOLBAR: 
+@EGG_MENU_MERGE_MENU_PLACEHOLDER: 
+@EGG_MENU_MERGE_TOOLBAR_PLACEHOLDER: 
+@EGG_MENU_MERGE_POPUPS: 
+@EGG_MENU_MERGE_MENUITEM: 
+@EGG_MENU_MERGE_TOOLITEM: 
+@EGG_MENU_MERGE_SEPARATOR: 
+
+<!-- ##### FUNCTION egg_menu_merge_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_menu_merge_insert_action_group ##### -->
+<para>
+
+</para>
+
+@self: 
+@action_group: 
+@pos: 
+
+
+<!-- ##### FUNCTION egg_menu_merge_remove_action_group ##### -->
+<para>
+
+</para>
+
+@self: 
+@action_group: 
+
+
+<!-- ##### FUNCTION egg_menu_merge_get_widget ##### -->
+<para>
+
+</para>
+
+@self: 
+@path: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_menu_merge_add_ui_from_string ##### -->
+<para>
+
+</para>
+
+@self: 
+@buffer: 
+@length: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_menu_merge_add_ui_from_file ##### -->
+<para>
+
+</para>
+
+@self: 
+@filename: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_menu_merge_remove_ui ##### -->
+<para>
+
+</para>
+
+@self: 
+@merge_id: 
+
+
+<!-- ##### FUNCTION egg_menu_merge_ensure_update ##### -->
+<para>
+
+</para>
+
+@self: 
+
+

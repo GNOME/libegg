@@ -1,0 +1,56 @@
+<!-- ##### SECTION Title ##### -->
+egg-markup
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### USER_FUNCTION EggWidgetFunc ##### -->
+<para>
+
+</para>
+
+@widget: 
+@type: 
+@name: 
+@user_data: 
+
+
+<!-- ##### FUNCTION egg_create_from_string ##### -->
+<para>
+
+</para>
+
+@action_group: 
+@widget_func: 
+@user_data: 
+@accel_group: 
+@buffer: 
+@length: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_create_from_file ##### -->
+<para>
+
+</para>
+
+@action_group: 
+@widget_func: 
+@user_data: 
+@accel_group: 
+@filename: 
+@error: 
+@Returns: 
+
+

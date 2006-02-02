@@ -1,0 +1,213 @@
+libegg/recentchooser/README:
+============================
+
+** About **
+
+This is the proposed replacement for the recent-files module that lives in
+libegg.
+
+Recently used resources are handled by an object called RecentManager, which
+keeps a list of them; the resources are indexed by their URI, and stored on
+disk using the Desktop Bookmarks specification (the list is located into the
+${HOME}/.recently-used.xbel file).  Changes in the storage will be monitored
+by the RecentManager object.
+
+You should use the RecentManager object for adding and looking up resources
+into the Recently Used Resources list.
+
+Visualization of the items in the list is left to the implementors of the
+RecentChooser GInterface, which offers a uniform API for accessors to the
+recently used resources list.
+
+** Dependecies **
+
+The code depends on:
+
+ + GLib
+ + GTK+
+ + the XDG Shared MIME Database (for xdgmime)
+ + the Desktop Bookmark specification parser (libegg/bookmarkfile)
+
+** Provided widgets **
+
+These widgets should be considered as default viewers:
+	
+  * EggRecentChooserMenu: a simple GtkMenu, to be used as the sub-menu
+    for an 'Open Recent' menu item, or as the menu of a GtkMenuToolButton
+    widget.
+	
+  * EggRecentChooserWidget: a complex widget, composed of a GtkTreeView
+    showing a list of recently used resources, complete with icons and
+    meta-data such as full location, MIME Type, etc.
+
+  * EggRecentChooserDialog: a dialog widget containing a
+    EggRecentChooserWidget.
+
+** Frequently Asked Questions **
+
+Q: Why did you wrote the RecentManager?
+A: The code living recent-files started to bit-rot, after being unmaintained
+   for a long time; also, we never made clear whether the RecentModel code
+   should live in a Gnome platform library on the same level of libgnome,
+   or on a lower position on the dependency chain.  The RecentManager code
+   should go into Gtk, so it does not depend on anything more than GLib and Gtk
+
+Q: Shouldn't you have tried to save the RecentModel object first?
+A: I tried, at first.  It soon became obvious that the RecentModel code had
+   become a collection of hacks, especially WRT visualization, trying to hide
+   its usage of Gnome-VFS; also, the storage file format was subject to a
+   review process, both for enhancements and for interoperability.  The model
+   code would have been subject to a mass rewrite process anyway.
+
+Q: No, really, I liked the RecentModel API, can't you please keep it?
+A: The short answer is no.  The long answer is: it's not worth it.
+   The RecentModel tried to retrieve for itself most of the metadata
+   reguarding a recently used resource.  While this kept the API simple
+   (what you had to do was to feed it a URI, in most of the cases),
+   it also had a negative impact on the performances of the RecentModel
+   object - which, obviously, negatively impacted on the overall performance
+   of the widgets.  Even if you did not use Gnome-VFS, the RecentModel was
+   depending on it for querying the file metadata; if you did use it, you ended
+   up with twice the number of the queries: one did by you code, and one did
+   by the RecentModel code; this, especially in a networked environment, had
+   caused many performance issues that the only solution was to create a
+   RecentItem by yourself - and that made the API as complex as the
+   RecentManager API could be (in fact, a bit more complex, since a RecentData
+   structure is very lightweight when compared to a RecentItem object).
+
+Q: You even changed the viewer widget.  Why did you scrapped the entire
+   EggRecentViewGtk object?
+A: I really hated its name.
+
+Q: Now, be serious...
+A: Okay: I hated the whole thing - starting from the name.
+   It was a clever hack, which tried to be useful for both the "inlined
+   recent files" and the "recent files sub-menu" concepts.  But it was an
+   hack - which, clever or not, had passed the point of being maintainable.
+   The interface upon which was based was too simple for being useful
+   (EggRecentView only has two methods: "set_model" and "get_model"), so it
+   had to be refactored; the menu API was too dependent on the RecentModel
+   code - which led to separation issues when it came to visualization; for
+   instance, you don't sort a ListStore: you pass a sorting function to the
+   TreeView, so that you can have multiple views of the same data.  The same
+   should happen with the Recently Used Resources List: same data, multiple
+   viewers. Oh, and did I mention that the name was ugly?
+
+Q: Why the RecentChooserMenu shows up in a sub-menu?  Wasn't this removed
+   from the HIG?
+A: It was indeed removed, and I consider it a mistake made by the GUP.  The
+   rationale for its removal was, shortly: "recently used files should live on
+   the same level of the Open menu item"; which could be fine - if it didn't
+   bring up issues involving latency when building the File menu; or issues
+   involving the total utility of a list composed of just four items.  I
+   believe that the "Open Recent" menu just as appears in OS-X should be the
+   right approach, WRT recently used resources shown in a menu.  Also, this
+   keeps the code compact (the entire RecentChooserMenu size is < 1 kLOC), and
+   maintainable.
+
+Q: What if I wanted an inlined recently used resources list?
+A: It's not difficult to build, using the list returned by the RecentManager;
+   you don't even need to implement a widget:
+   
+     ...
+     menu_item = gtk_separator_menu_item_new ();
+     gtk_menu_shell_append (GTK_MENU_SHELL (file_menu), menu_item);
+     gtk_widget_show (menu_item);
+     
+     manager = egg_recent_manager_new ();
+     egg_recent_manager_set_limit (manager, 4);
+     egg_recent_manager_set_sort_type (manager, EGG_RECENT_SORT_MRU);
+     
+     items = egg_recent_manager_get_items (manager);
+     for (l = items, count = 1; l != NULL; l = l->next, count++)
+       {
+         EggRecentInfo *info = (EggRecentInfo *) l->data;
+         gchar *text, *name;
+         
+         name = egg_recent_info_get_display_name (info);
+         text = g_strdup_printf ("_%d. %s", count, name);
+         
+         menu_item = gtk_menu_item_new_with_mnemonic (text);
+         gtk_menu_shell_append (GTK_MENU_SHELL (file_menu), menu_item);
+         gtk_widget_show (menu_item);
+         
+         egg_recent_info_unref (info);
+       }
+     
+     g_list_free (item);
+     
+     menu_item = gtk_separator_menu_item_new ();
+     gtk_menu_shell_append (GTK_MENU_SHELL (file_menu), menu_item);
+     gtk_widget_show (menu_item);
+     ...
+   
+   Less than thirty lines of code.
+
+   Obviously, this could be done inside the UIManager, for instance, and all
+   you'd have to do would be adding a placeholder tag like "<recent-items/>"
+   to the UIManager definitions.
+
+Q: Do you plan to create a inlined menu widget?
+A: Eventually; if the HIG does not change, or if the demand is high enough.
+   Or you could implement it.  It's Open Source, you know...
+
+Q: In which library this code should go?
+A: Inside Gtk+, starting from the 2.9 development cycle (I hope).
+
+Q: Why Gtk?  Why not libgnome?
+A: We are in the process of getting rid of libgnome, and Gtk makes sense.
+
+Q: The old recent-files code depended on libgnomevfs.  Why yours does not?
+A: The recent-files code depended on libgnomevfs for the fancy stuff needed
+   in order to retrieve the MIME type of a file, and on the conversion of the
+   URI in order to be displayable; also, it needed libgnomevfs for the monitor
+   on the storage file.  The MIME stuff could go away, since we require the
+   user of this code to pass the MIME type of the resource when registering it;
+   it makes sense, because if you used libgnomevfs yourself in your code,
+   you wouldn't have to check the MIME type twice.  Also, many of the UTF-8
+   and URI manipulation code it's now available directly inside GLib.  At the
+   end of the day, we needed only the GnomeVFSMonitor from libgnomevfs - and
+   that could be easily replaced with a timed poll() on the file.
+
+Q: The old recent-files code depended on libgnomeui.  Why yours does not?
+A: The only left-over of the libgnomeui dependency inside libegg/recent-files
+   was the usage of gnome_icon_lookup() function.  I removed it, and switched
+   to the same system used by the GtkFileChooser object (we'll also share the
+   cache, so it should even be more efficient once this code goes in).
+
+Q: Why did you have to change the format of the storage file?
+A: Because the old format, as defined by the recent-file spec, has shown its
+   limits, since the day it has been proposed.  Also, that spec is still a
+   draft after three years, and it’s not used by anyone else but GNOME.
+
+Q: What limits the recent-file spec has?
+A: It lacks the meta-data needed to know which applications registered a
+   recently used resources.  It lacks descriptors for meta-data such as a
+   human readable name for the recently used resource.
+
+Q: But recently used files need not a human readable name. Why should we
+   use it?
+A: The “human readable” name and description are not mandatory. Anyway, a user
+   might have set that meta-data on its document; we strongly encourage the
+   existence of this meta-data for other purposes, such searching (see Beagle
+   et al.). It would be totally unfriendly to show the file name instead of
+   what the user decided to use as a name for that document. Also, “Wireless
+   adapter WX-6615 Manual” (my first entry in the recently used documents ATM)
+   is more readable than “wx-6615.pdf”.
+
+Q: Still, a recent file is not bookmark; then, why allow things that a bookmark
+   allows on a recently used file pointer?
+A: For me, a recent file is a bookmark to a file, with a lifetime that is kept
+   artificially short, so it makes perfectly sense to use a bookmark-definition
+   language in order to store it.  You are gladly invited to prove me wrong,
+   by providing examples on how a recent file pointer could be described apart
+   from using a URI and meta-data, and how XBEL fails to be up to the task.
+
+Q: We could extend the recent-file spec, then, instead of using XBEL; did you
+   think about it?
+A: Yes, in fact I did. The first proposal of the desktop-bookmark spec used an
+   updated version of the recent-file spec, but it was shot down, and usage of
+   XBEL was proposed.
+
+-- ebassi <ebassi (AT) gmail (DOT) com>
+++ $Revision$

@@ -1,0 +1,103 @@
+<!-- ##### SECTION Title ##### -->
+EggIconList
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT EggIconListPrivate ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### STRUCT EggIconListItem ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### USER_FUNCTION EggIconListForeachFunc ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@path: 
+@data: 
+<!-- # Unused Parameters # -->
+@item: 
+
+
+<!-- ##### FUNCTION egg_icon_list_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_icon_list_selected_foreach ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@func: 
+@data: 
+
+
+<!-- ##### FUNCTION egg_icon_list_set_selection_mode ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@mode: 
+
+
+<!-- ##### FUNCTION egg_icon_list_get_selection_mode ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_icon_list_select_all ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+
+
+<!-- ##### FUNCTION egg_icon_list_unselect_all ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+
+
+<!-- ##### FUNCTION egg_icon_list_item_activated ##### -->
+<para>
+
+</para>
+
+@icon_list: 
+@path: 
+<!-- # Unused Parameters # -->
+@item: 
+
+

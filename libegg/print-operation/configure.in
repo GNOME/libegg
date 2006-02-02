@@ -1,0 +1,74 @@
+AC_INIT(eggprint.h)
+
+AM_CONFIG_HEADER(config.h)
+
+AM_INIT_AUTOMAKE(libeggprint, 0.0.2)
+
+AM_MAINTAINER_MODE
+
+AC_PROG_CC
+AC_ISC_POSIX
+AC_HEADER_STDC
+AC_LIBTOOL_WIN32_DLL
+AM_PROG_LIBTOOL
+
+AC_MSG_CHECKING([for some Win32 platform])
+case "$host" in
+  *-*-mingw*|*-*-cygwin*)
+    platform_win32=yes
+    NO_UNDEFINED=-no-undefined
+    ;;
+  *)
+    platform_win32=no
+    ;;
+esac
+AC_MSG_RESULT([$platform_win32])
+AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
+AC_SUBST(NO_UNDEFINED)
+
+changequote(,)dnl
+if test "x$GCC" = "xyes"; then
+  case " $CFLAGS " in
+  *[\ \	]-Wall[\ \	]*) ;;
+  *) CFLAGS="$CFLAGS -Wall" ;;
+  esac
+
+  if test "x$enable_ansi" = "xyes"; then
+    case " $CFLAGS " in
+    *[\ \	]-ansi[\ \	]*) ;;
+    *) CFLAGS="$CFLAGS -ansi" ;;
+    esac
+
+    case " $CFLAGS " in
+    *[\ \	]-pedantic[\ \	]*) ;;
+    *) CFLAGS="$CFLAGS -pedantic" ;;
+    esac
+  fi
+fi
+changequote([,])dnl
+
+AC_PATH_XTRA
+
+# Check return type of signal
+AC_TYPE_SIGNAL
+
+AC_CHECK_FUNCS(memmove strerror)
+
+## here we get the flags we'll actually use
+PKG_CHECK_MODULES(EGG, gtk+-2.0 >= 2.5.0)
+AC_SUBST(EGG_LIBS)
+AC_SUBST(EGG_CFLAGS)
+
+
+GLIB_GENMARSHAL=`$PKG_CONFIG --variable=glib_genmarshal glib-2.0`  
+AC_SUBST(GLIB_GENMARSHAL)
+
+GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`  
+AC_SUBST(GLIB_MKENUMS)
+
+# Honor aclocal flags
+ACLOCAL="$ACLOCAL $ACLOCAL_FLAGS"
+
+AC_OUTPUT([
+Makefile
+])

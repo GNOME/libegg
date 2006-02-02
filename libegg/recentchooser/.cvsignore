@@ -1,0 +1,12 @@
+.libs
+.deps
+*.lo
+*.la
+Makefile
+Makefile.in
+eggrecenttypebuiltins.*
+test-viewer
+test-manager
+test-recent-menu
+populate-recent
+

@@ -1,0 +1,67 @@
+These are all things that need to be fixed/worked out (hopefully) before going into one of the main GNOME libraries.  Please contact me before doing any of this.
+
+--James
+
+[X] - Figure out how to make this work with BonoboUI.
+      (switched to model-view architecture)
+
+[X] - The test programs need some love. (mostly fixed)
+
+[X] - Add API to specify the GtkIconSize to use for EggRecentViewGtk.
+
+[ ] - Use some sort of async way to get mime types.
+
+[ ] - Find and plug all memory leaks.
+
+[ ] - Read/filter/sort the list in a separate thread
+
+[ ] - Maybe keep a cache of the last known list, so we don't have to read it
+      every time we add an item (or delete one).
+
+
+Things I am thinking about:
+===========================
+
+* Adding support for arbitrary properties to GnomeRecentItem.  This would make
+it easy to use gnome-recent to store history from a web browser, or bookmarks
+in nautilus.  Problems with this is that the list could be unbelievably huge
+(like > 2000 items), so performance would become a real problem.
+Additionally, I'm not sure something like this should be used for such things.
+
+* A better way to implement the model-view "connection".  Currently there
+is a lot of duplicated code in the bonobo and gtk views, so making
+GnomeRecentView an abstract class sounds like a good way to eliminate this.
+However, the ability to make a widget or something that is also a
+GnomeRecentView is lost.  Not sure if that is really a good thing to have,
+though.  You could always delegate to a GnomeRecentView object.
+
+* Support filtering based on URI scheme.  This would let you see only recently
+sent mail (mailto: URI), or recently used servers (smb:, ssh:, etc) for example. (Done)
+
+* Some older versions of gnome-recent used gnome-vfs to monitor files in the
+list, but I removed it when I rewrote GnomeRecentModel.  I want to put this
+feature back, but there are some problems:
+
+a)  If a file is removed from the list, how do we know to stop monitoring it?
+
+b)  If a file is deleted, all running instances of gnome-recent will be racing
+to delete it from the list (if they all have the file in the list, which is
+actually unlikely).  Do we need a "master" instance?
+
+* The ability to have custom filters and sorting functions would be kind of
+cool.  Unfortunately, I can't really think of a good use for this, so it is
+probably crack :)
+
+* Need to find a reliable way to get mime-type icons.
+
+Long range plans (these are not really solid at all):
+=====================================================
+
+* I think a gnome-vfs module would be cool.  That way you could see the
+list of recent files from nautilus, and it may make it a bit easier to
+see recent-files in a file selector.  Also, it would make it easy for a user
+to delete an individual file from the list (pr0n, sensitive docs, etc).
+
+* If the recent-file spec flies (which is based on the code in this module),
+I should break the relevant bits out into a standalone library so everyone
+could use it.

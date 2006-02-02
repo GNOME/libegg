@@ -1,0 +1,5 @@
+Parts of this module have been merged in GTK+ 2.4:
+
+EggTreeModelFilter has become GtkTreeModelFilter
+
+Matthias Clasen, 2004-07-04

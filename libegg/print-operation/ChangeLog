@@ -1,0 +1,88 @@
+2006-02-02  Alexander Larsson  <alexl@redhat.com>
+
+        * eggprintoperation.c:
+	Handle print ranges
+	
+        * eggprintoperation-win32.c:
+	More win32 implementation
+	
+	* eggprintersettings.c:
+	Some small fixes
+
+	* eggprintenums.h:
+	* eggprintoperation-private.h
+	* eggprintcontext.c:
+	Some cleanup
+	Add/Remove TODO comments
+
+2006-02-01  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintoperation.c (egg_print_operation_get_printer_settings):
+	ref return value
+
+2006-02-01  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintoperation-win32.c:
+	Add support for lots of settings in dialog_from_printer_settings.
+
+	* eggprintoperation-private.h:
+	* eggprintoperation.[ch]:
+	Add current_page and way to set it
+
+	* eggprintersettings.[ch]: 
+	* eggprintenums.h:
+	Add EggPrintPages
+
+	* eggprint-win32.h:
+	Add missing defines
+
+2006-02-01  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintersettings.[ch]:
+	Add a lot more settings
+
+	* eggprintenums.h:
+	Add more orientations
+	Add print quality and duplex enums
+
+2006-02-01  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintoperation.c:
+	Handle page setup better.
+	Fix some leaks
+
+	* eggprintoperation-win32.c:
+	Handle orientation in printer settings.
+
+	* eggprintersettings.[ch]:
+	Add egg_printer_settings_get/set_length()
+	Use it for page size
+
+	* eggpagesetup.c (egg_page_setup_init):
+	Default margins to 0.25 inch
+
+	* testprintfileoperation.[ch]:
+	Take font size instead of lines per page as argument
+
+	* testprint.c:
+	Update to the new TestPrintFileOperation API
+
+2006-01-31  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintoperation-win32.c:
+	Add support for driver specific data and driver version
+
+	* eggprintersettings.[ch]:
+	Add has_key and get/set_int
+	Add some windows specific keys
+	
+	
+2006-01-31  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintoperation-win32.c:
+	Initial setup to handle settings.
+	Just printer name is handled atm.
+
+	* eggprintersettings.c (egg_printer_settings_copy):
+	Fix crash
+

@@ -1,0 +1,44 @@
+<!-- ##### SECTION Title ##### -->
+EggCellRendererKeys
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION egg_cell_renderer_keys_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_cell_renderer_keys_set_accelerator ##### -->
+<para>
+
+</para>
+
+@keys: 
+@keyval: 
+@mask: 
+
+
+<!-- ##### FUNCTION egg_cell_renderer_keys_get_accelerator ##### -->
+<para>
+
+</para>
+
+@keys: 
+@keyval: 
+@mask: 
+
+

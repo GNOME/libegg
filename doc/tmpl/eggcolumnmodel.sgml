@@ -1,0 +1,91 @@
+<!-- ##### SECTION Title ##### -->
+EggColumnModel
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION egg_column_model_get_type ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_column_model_new ##### -->
+<para>
+
+</para>
+
+@tree_view: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_column_model_set_column_visible ##### -->
+<para>
+
+</para>
+
+@model: 
+@iter: 
+@visible: 
+
+
+<!-- ##### FUNCTION egg_column_model_get_column_visible ##### -->
+<para>
+
+</para>
+
+@model: 
+@iter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_column_model_is_column_first ##### -->
+<para>
+
+</para>
+
+@model: 
+@iter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_column_model_is_column_last ##### -->
+<para>
+
+</para>
+
+@model: 
+@iter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_column_model_move_down_column ##### -->
+<para>
+
+</para>
+
+@model: 
+@iter: 
+
+
+<!-- ##### FUNCTION egg_column_model_move_up_column ##### -->
+<para>
+
+</para>
+
+@model: 
+@iter: 
+
+

@@ -1,0 +1,59 @@
+<!-- ##### SECTION Title ##### -->
+EggTrayManager
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT EggTrayManagerChild ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION egg_tray_manager_check_running ##### -->
+<para>
+
+</para>
+
+@screen: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tray_manager_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tray_manager_manage_screen ##### -->
+<para>
+
+</para>
+
+@manager: 
+@screen: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tray_manager_get_child_title ##### -->
+<para>
+
+</para>
+
+@manager: 
+@child: 
+@Returns: 
+
+

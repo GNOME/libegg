@@ -1,0 +1,19 @@
+<toolbars>
+<toolbar name="Toolbar1">
+	<toolitem name="PasteAction"/>
+	<separator/>
+	<toolitem name="NewAction"/>
+	<toolitem name="OpenAction"/>
+</toolbar>
+<toolbar name="Toolbar2">
+	<toolitem name="QuitAction"/>
+</toolbar>
+<available>
+	<toolitem name="NewAction"/>
+	<toolitem name="OpenAction"/>
+	<toolitem name="QuitAction"/>
+	<toolitem name="CutAction"/>
+	<toolitem name="CopyAction"/>
+	<toolitem name="PasteAction"/>
+</available>
+</toolbars>

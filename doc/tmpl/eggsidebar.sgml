@@ -1,0 +1,74 @@
+<!-- ##### SECTION Title ##### -->
+EggSidebar
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT EggSidebarPriv ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ENUM EggSidebarDNDType ##### -->
+<para>
+
+</para>
+
+@EGG_SIDEBAR_DND_TYPE_NEW_BUTTON: 
+@EGG_SIDEBAR_DND_TYPE_BUTTON: 
+
+<!-- ##### FUNCTION egg_sidebar_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_sidebar_append ##### -->
+<para>
+
+</para>
+
+@sidebar: 
+@button: 
+
+
+<!-- ##### FUNCTION egg_sidebar_remove ##### -->
+<para>
+
+</para>
+
+@sidebar: 
+@button: 
+
+
+<!-- ##### FUNCTION egg_sidebar_save_layout ##### -->
+<para>
+
+</para>
+
+@sidebar: 
+@filename: 
+
+
+<!-- ##### FUNCTION egg_sidebar_load_layout ##### -->
+<para>
+
+</para>
+
+@sidebar: 
+@filename: 
+
+

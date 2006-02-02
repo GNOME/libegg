@@ -1,0 +1,157 @@
+2005-02-27  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* Slightly changed some translator comments.
+
+2005-02-26  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* egg-datetime.c (egg_datetime_init): gtk_calendar_display_options()
+	-> gtk_calendar_set_display_options()
+
+2003-10-25  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* egg-datetime.c (egg_datetime_init): Steal code from GtkCalendar
+	for start of week determination.
+
+2003-08-04  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* egg-datetime.c (egg_datetime_init): Clarified translator
+	note for week-starts-monday.
+
+2003-05-29  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* egg-datetime.[ch]: Streamlined and fixed doc strings.
+	(egg_datetime_get_date_layout):
+	(egg_datetime_get_time_layout): New methods for a11y after input
+	from Bill Haneman.
+
+2003-05-27  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* test-datetime.c: Test program.
+	* Makefile.am: Compile test program.
+	* egg-datetime.[ch]: Some more todo items.
+	(egg_datetime_init): Don't call
+	apply_display_mode(). Week now starts at Monday by default as per
+	ISO 8601. New time popup implementation. Use private variable
+	priv instead of edt->priv.
+	(egg_datetime_destroy): Destroy time popup. Use private variable
+	priv instead of edt->priv.
+	(egg_datetime_set_property): Call egg_datetime_set_display_mode()
+	when ARG_DISPLAY_MODE gets set and egg_datetime_set_lazy() when
+	ARG_LAZY gets set.
+	(egg_datetime_new_from_datetime):
+	(egg_datetime_get_as_time_t):
+	(egg_datetime_get_as_struct_tm):
+	(egg_datetime_get_as_gdate):
+	(egg_datetime_set_date):
+	(egg_datetime_get_date):
+	(egg_datetime_set_clamp_date):
+	(egg_datetime_get_clamp_date): Use GDateYear and friends.
+	(timelist_new):
+	(timelist_set_list):
+	(timelist_set_time):
+	(timelist_get_time):
+	(timelist_clamp):
+	(timelist_selection_cb):
+	(timelist_set_selection_callback): New timelist widget for use as
+	time popup.
+	(popup_position):
+	(popup_show):
+	(popup_hide): New utility functions.
+	(time_arrow_toggled):
+	(time_popup_key_pressed):
+	(time_popup_button_pressed):
+	(time_popup_closed):
+	(time_popup_hide): New methods.
+	(time_arrow_toggled):
+	(clamp_time_labels):
+	(apply_display_mode): New time popup implementation.
+	(date_arrow_toggled): Cleanup. Use popup_position() and popup_show().
+
+2003-05-21  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	(egg_datetime_set_normalize):
+	(egg_datetime_get_normalize): Renamed to egg_datetime_[sg]et_lazy,
+	changed semantics and made doc clarifications (also in other methods).
+
+2003-04-22  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	(egg_datetime_class_init): Reworded the blurb of clamp_* attributes.
+	(egg_datetime_get_clamp_date):
+	(egg_datetime_get_clamp_time): Reworded docstring.
+
+2003-02-10  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	(egg_datetime_class_init): Fixed a typo.
+
+2003-02-02  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	(egg_datetime_class_init): Property "day": Default to 1, not 0.
+
+2003-02-01  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	(_EggDateTimePrivate): New fields: date_valid, time_valid.
+	(egg_datetime_class_init): Install properties.
+	(egg_datetime_init): Don't initialize values, initialized by
+	properties.
+	(egg_datetime_set_property):
+	(egg_datetime_get_property): New methods.
+	(date_focus_out):
+	(time_focus_out): Don't initialize field to invalid values if parsing
+	of the date or time fails.
+	(date_arrow_toggled): Always use the current date as popup, no need
+	to use the current date, anymore.
+	(cal_popup_changed):
+	(time_popup_changed) Normalize the date/time and mark the date/time
+	as valid.
+	(update_date_label):
+	(update_time_label): Don't normalize and use the validity flags to
+	check for a valid date/time.
+	(parse_date):
+	(parse_time): Don't return gboolean, but void and set the valid
+	flag. Normalize date/time.
+	(normalize_date):
+	(normalize_time): Set the validity flags.
+	(parse_and_normalize_date): Renamed to parse_and_update_date().
+	(parse_and_normalize_time): Renamed to parse_and_update_time().
+	(egg_datetime_set_none): Just set the invalid flags.
+	(egg_datetime_set_date):
+	(egg_datetime_set_time): Set the validity flag and normalize date.
+	(egg_datetime_get_date):
+	(egg_datetime_get_time): Use the validity flag.
+	(egg_datetime_set_normalize):
+	(egg_datetime_set_clamp_date): parse_and_normalize -> parse_and_update
+	(egg_datetime_set_clamp_time): Fix documentation. parse_and_normalize
+	-> parse_and_update
+
+2003-01-30  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	This check-in should stabilize the handling of non-normalized widgets.
+
+	* egg-datetime.c (egg_datetime_set_none): Normalize values (if
+	applicable). Update displays correctly. Emit changed signals.
+	(egg_datetime_set_from_gdate): Allow invalid GDates to be supplied.
+	(egg_datetime_set_from_time_t): Allow negative time_t values and
+	call egg_datetime_set_none() is this case.
+	(update_date_label): Call normalize_date(). Handle invalid dates.
+	(update_time_label): Call normalize_time(). Handle invalid times.
+	(parse_and_normalize_date):
+	(egg_datetime_set_date): Don't call normalize_date() (now in
+	update_date_label()).
+	(parse_and_normalize_time):
+	(egg_datetime_set_time): Don't call normalize_time() (now in
+	update_time_label()).
+	(date_focus_out):
+	(time_focus_out): Normalize and update label, so that a blank entry
+	is shown if value is incorrect.
+
+2002-12-20  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* egg-datetime.[ch] (egg_datetime_set_none): New method.
+	(date_focus_out):
+	(time_focus_out): Return FALSE.
+
+2002-12-16  Sebastian Rittau  <srittau@jroger.in-berlin.de>
+
+	* Makefile.am:
+	* README:
+	* egg-datetime.[ch]: New files.

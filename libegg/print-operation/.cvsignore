@@ -1,0 +1,15 @@
+Makefile
+Makefile.in
+eggprintmarshal.c
+eggprintmarshal.h
+testprint
+config.log
+config.h
+config.h.in
+libtool
+config.status
+stamp-h
+stamp-h1
+aclocal.m4
+configure
+autom4te.cache

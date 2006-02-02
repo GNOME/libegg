@@ -1,0 +1,5 @@
+This is a new API/widget for picking an icon from a freedesktop.org icon theme,
+or a file.
+
+The organization is similar to GtkFileChooser, with a core GInterface-based API
+and some implementing widgets.

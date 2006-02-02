@@ -1,0 +1,246 @@
+- Send note (and preferably a patch) to Emacs developers about their
+  use of the toolbar
+
+- check that property setters call g_object_notify()
+
+- documentation
+
+- tests (setting icon sets, inserting/removing, using deprecated
+  API, destroying tool items while the menu is up)
+
+WHEN GTK+ VERSION IS BUMPED TO 2.3:
+
+- enable click_on_focus (FALSE)
+
+AFTER INCLUSION IN GTK+
+
+- the keynav signals should be done with the _gtk_binding_signal_new() function
+
+- use _gtk_boolean_handled() for the create_menu_proxy signal
+
+- remove "#define _"'s 
+
+
+DONE:
+
+- Rename insert_tool_item/append_tool_item/prepend_tool_item
+
+- Some functions do not have proper g_return_if_fail() guards
+
+- make arrow visible with "Center" and "right" menu items, select *both* with keyboard.
+  That shouldn't be possible. Problem is probably that toggle-tool-item doesn't change
+  the state of its menu item when it is toggled.
+
+- egg_tool_item_map() does:
+
+      gdk_window_raise (toolitem->drag_window);
+      gdk_window_show (toolitem->drag_window);
+    
+  But gdk_window_show() already raises.
+
+- The inclusion of headers that are just pulled in because they 
+  were pulled in before by gtktoolbar.h should be guarded with  
+  DISABLE_DEPRECATED, so we have some hope of removing them
+  some time in the future.
+ 
+- The comment /* Style functions */ in eggtoolbar.h should
+  go away  but get_tool_items()/get_drop_index() probably
+  should't be in that block (which is configuration)
+  anyways.
+
+- Looks to me like the overflow menus are leaked.
+
+- There are some broken boolean setters: [check them all]
+
+- make expandable pack-end items actually expand
+
+- toolbar is broken with RTL + vertical.at the same time
+
+- there is other weirdness going on with vertical toolbars.
+
+- when we remove an item, make sure the first_non_fitting_item is updated, 
+  (or perhpaps better: make non_fitting a property of the item).
+
+- remove the input/output gdk window. replace with input-only.
+
+- expandable/homogenous/pack end should be child properties
+
+  * implement set/get_child_properties in eggtoolbar.c
+  * make getters/setters in toolitem do notifications
+
+  The question then is whether we can keep
+
+    egg_tool_item_set_pack_end (tool_item);
+
+  Or need to switch to:
+
+    egg_tool_bar_set_pack_end (tool_bar, tool_item)
+
+  Answer: we can keep it the former way
+
+- (expand, not expandable, btw)
+
+- create getters and setters for properties  
+
+- What's the purpose of egg_toggle_tool_button_toggled()?
+  Yes, GtkToggleButton has it, but that's no reason to
+  add if it doesn't have a useful purpose.
+
+- egg_toolbar_remove_tool_item () should go away. container_remove can be used.
+
+- Why is the "clicked" signal on EggToolItem, not
+  EggToolButton?
+
+- I'm not too crazy about egg_toolbar_get_tool_items();
+  it's sort of consistent with some other parts of GTK+, 
+  but it doesn't language bind well. The memory management
+  now is wrong (must allocate new list for consistency),
+  but the copied list is awkward as well. Perhaps
+  n_tool_items(), nth_tool_item() would be better.
+
+- For the set_tooltip(), is there any reason that there can't
+  at least be a default implementation that calls 
+  gtk_tooltips_set_tip () on bin->child?
+
+- Get rid of
+
+  void       (* set_orientation)     (EggToolItem    *tool_item,
+                                      GtkOrientation  orientation);
+  void       (* set_icon_size)       (EggToolItem    *tool_item,
+                                      GtkIconSize     icon_size);
+  void       (* set_toolbar_style)   (EggToolItem    *tool_item,
+                                      GtkToolbarStyle style);
+  void       (* set_relief_style)    (EggToolItem    *tool_item,
+                                      GtkReliefStyle  relief_style);
+
+  Instead have functions "egg_tool_item_get_orientation()" etc. that
+  get these configuration options from the toolbar. Have a single 
+  signal ToolItem::toolbar_reconfigured.
+
+  [This will require toolitems to know about their toolbar - can we
+  just look at widget->parent for this?].
+
+  What does the get_orientation() functions return when the items
+  haven't been inserted in a toolbar?
+
+  It is better to just have gtk_toolbar_get_icon_size() etc. and then a signal
+  EggToolItem::toolbar_reconfigured.
+
+- properties on eggtoolbutton:
+
+  	     - make icon_set/icon_widget mutually exclusive
+
+	     - label overrides stock_id if label is non-NULL
+
+	     - icon_set/icon_widget override stock_if they are non-NULL
+
+	     - if use_underline is TRUE, it means "toolbutton will
+               ignore underlines in the label property"
+
+	       If we are using stock_id (because label is NULL and
+	       stock_id is not), then underscores are always elided.
+
+- does show_all() work correctly? Ie. do we show labels that
+  shouldn't be shown?
+
+- should there be a way to unset EggToolbutton::stock_id? (yes,
+  stock_id can be set to NULL now).
+
+- precise semantics of create_proxy_menu_item()
+
+  Each tool item should have a weak reference to no more than one menu item. 
+  See Owen's post on gtk-devel.
+
+  I need to understand the new menu API and how it uses
+  create_proxy_menu_item().
+
+	- set/get menu item, with a context string to identify the item
+	- retrieve menu item (can return NULL, which means "no item")
+
+- the menu id's need to be #defines
+
+- we are leaking the proxy menu items when the tool item dies
+
+- tool items need to actually update the menu items
+
+- proxy menu items should get mnemonics
+
+- figure out what happens if a tool item is destroyed while the menu is
+  up. When are the signal connections removed?
+
+
+- looks like find_drop_pos() is broken. It is not totally clear to me
+  what it actually should do. How will the caller know if the drop
+  position is "pack end"?
+
+  Actually, it isn't broken, but you can't drop at a pack_end
+  position.
+
+- make sure we queue_resize() as appropriate when properties change
+
+- make set_use_drag_window() private
+
+  So should it be on or off by default? (Off, because the window may
+  cover other windows
+
+- Check that g_return_if_fail() are the first things happening (before
+  eg. EGG_TOOLBAR_GET_PRIVATE())
+
+- grep "FIXME" (they are all covered elsewhere in this file)
+
+- pass over public functions to add "g_return_if_fail"s (also check if
+  existing guards make sense) 
+
+- gtk_container_remove/add (toolbar, widget) is broken, because
+  egg_toolbar_remove() will cast the widget to EggToolItem
+  
+  should be implemented now, needs testing. ditto for
+  gtk_container_add().
+
+- make toolbar compatible with the old toolbar.  if that can't be
+  done, then maybe warn when old and new API are used together? What
+  about "forall"? When you mixed old and new API what does this mean?
+
+  And idea is to get rid of priv->items and use toolbar->children
+  instead.  Special-case based on EGG_IS_TOOL_ITEM (child->widget)
+
+- The CVS version Emacs does
+
+	children = gtk_container_get_children (toolbar);
+	for (list = children; list != NULL; list = list->next)
+	{
+		GtkWidget *widget = list->data;
+
+		GTK_IMAGE (GTK_VBOX (GTK_BIN (widget)->child));
+	}
+
+  [Resolution: declare CVS Emacs irreparably broken.
+
+- Size allocation:
+
+     currently all widgets are allocated over the bevel. This means window
+     widgets _hide_ the bevel, which is not good
+
+     - Allocate buttons over bevel, all other inside
+
+     - Allocate everything inside
+     
+     - Allocate everything inside, but with the twist that the bevel
+       of the toolbar is still active (Add a hack on GtkButton)
+
+  For now go with the first. We should probably go with three longer term.
+
+- keyboard navigation is slightly weird in Gnumeric. You can navigate
+  out of the toolbar and make the focus disappear entirely.
+  (start of fix is in eggtoolbar (don't navigate to overflow items)
+
+- what if somebody calls append_widget (button), then calls gtk_widget_hide (button)?
+
+  This would make the old toolbar hide the entire item; EggToolItems will display blank
+  space.
+
+  It appears libglade does something like this.
+
+- should the event window cover the border too? No, the border doesn't
+  look like it's part of the toolbar.
+

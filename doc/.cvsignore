@@ -1,0 +1,15 @@
+*-unused.txt
+*-undocumented.txt
+*.bak
+*.lo
+*.stamp
+.libs
+Makefile
+Makefile.in
+html
+xml
+libegg-decl-list.txt
+libegg-decl.txt
+libegg.args
+libegg.hierarchy
+libegg.signals

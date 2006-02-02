@@ -1,0 +1,981 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" 
+"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+  <!ENTITY specrevision "0.8.2">
+]>
+<article id="index">
+  <articleinfo>
+    <title>Desktop Bookmarks Storage Specification</title>
+    <releaseinfo>Version &specrevision;</releaseinfo>
+    <date>15 November 2005</date>
+    <authorgroup>
+      <author>
+        <firstname>Emmanuele</firstname>
+        <surname>Bassi</surname>
+        <affiliation>
+          <address>
+            <email>ebassi@gmail.com</email>
+          </address>
+        </affiliation>
+      </author>
+    </authorgroup>
+  </articleinfo>
+
+  <sect1 id="introduction">
+    <title>Introduction</title>
+    
+    <sect2 id="overview">
+      <title>Overview</title>
+      <para>
+        Bookmarks are widely-used part of the World Wide Web browsers.  They are
+        a mechanism through which a user can return to specific sites already
+        visited, much like their book counterparts.
+      </para>
+    
+      <para>
+        Recently, bookmarks have become a feature for user with regards to
+        browsing their file system, as a way to access recently used, or often
+        used, places.
+      </para>
+    
+      <para>
+        Even the list of recently used files can be seen as being composed of
+        short-lived bookmarks.
+      </para>
+      
+    </sect2>
+    
+    <sect2 id="objectives">
+      <title>Objectives of this specification</title>
+      <para>This specification aims to do the following things:</para>
+    
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>
+	    Provide a standard mechanism for storing and accessing a list of
+	    bookmarks (in form of URIs)
+	  </para>
+        </listitem>
+      
+        <listitem>
+          <para>Provide per-application and per-task bookmarks</para>
+        </listitem>
+      
+        <listitem>
+          <para>
+	    Replace the Recent Files Storage Specification, providing a
+	    single specification for both bookmarks and recent files
+	  </para>
+        </listitem>
+      
+      </itemizedlist>
+    
+      <para>
+        Applications implementing the following specification will have the
+        ability to access all, or just a part of, the bookmarks, which will be
+        stored in a system-wide fashion instead of re-implementing their
+        bookmark system.  This way, all the bookmarks associated to an
+        application will be available to each instance of said application, and
+        to other applications performing the same tasks.  Also, a notification
+        mechanism should be implemented so that every change inside the
+        bookmarks should be propagated to each application using the bookmarks.
+      </para>
+    
+    </sect2>
+    
+    <sect2 id="language-used">
+      <title>Language used in this specification</title>
+      <para>
+        The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+        "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+        document are to be interpreted as described in RFC 2119 [RFC-2119].
+      </para>
+      
+    </sect2>
+    
+  </sect1>
+
+  <sect1 id="storage-format">
+    <title>Storage Format</title>
+    <para>
+      For different desktops and applications to have access to the same
+      information, a protocol for storing the bookmarks list has to be
+      determined.
+    </para>
+    
+    <sect2 id="base-layout">
+      <title>Base Layout</title>
+      <para>
+        A valid, UTF-8 encoded XML document will be used for storing the
+	desktop bookmarks.  The storage format will conform to the
+        <ulink url="http://pyxml.sourceforge.net/topics/dtds/xbel-1.0.dtd">XBEL DTD</ulink>
+        with custom meta-data; see the XBEL specification [XBEL] for the
+	contents of the <varname>bookmark</varname>, <varname>title</varname>,
+	<varname>desc</varname> and <varname>info</varname> elements used in
+	this specification.
+      </para>
+
+      <para>
+        A valid desktop bookmark stream must conform to the 1.0 version of
+	the XBEL Specification.  The root element must be <varname>xbel</varname>,
+	with its attribute <varname>version</varname> set to "1.0".  No
+	<varname>folder</varname> element should be used, as well as no
+	<varname>alias</varname> and <varname>separator</varname> elements; if
+	any of those elements are found, they should be ignored.
+      </para>
+
+      <para>
+        Each bookmark must have the <varname>bookmark</varname> element as root
+        node.  The target URI of the bookmark must be stored in the
+        <varname>href</varname> attribute of the <varname>bookmark</varname>
+        element.
+      </para>
+    
+      <para>
+        Each bookmark should have its attributes <varname>added</varname>,
+        <varname>modified</varname> and <varname>visited</varname> set with date
+        and time specified as a string conformant to the ISO 8601
+        specification [ISO8601] [DateTime].  The time should be relative to UTC
+        time; local time should be converted to UTC before encoding, and
+        converted back after reading the attribute payload.
+      </para>
+      
+    </sect2> <!-- base-layout -->
+    
+    <sect2 id="desktop-metadata">
+      <title>Desktop Bookmarks Meta-data</title>
+      <para>  
+        The owner for all the meta-data elements defined in this specification
+	must be Freedesktop.Org. Thus, the <varname>owner</varname> attribute
+	of the <varname>meta-data</varname> element containing the following
+	elements must be set to <literal>http://freedesktop.org</literal>.
+	Other metadata, enclosed inside a <varname>metadata</varname> element
+	with another, or no owner, should be ignored.
+      </para>
+
+      <para>
+        All meta-data defined in this specification belongs to a namespace,
+        named <varname>bookmark</varname> whose URI is <ulink url="http://www.freedesktop.org/standards/desktop-bookmarks">http://www.freedesktop.org/standards/desktop-bookmarks</ulink>,
+        except for the <varname>mime-type</varname> element, whose namespace,
+        named <varname>mime</varname>,
+	must have this URI: <ulink url="http://www.freedesktop.org/standards/shared-mime-info">http://www.freedesktop.org/standards/shared-mime-info</ulink>.
+      </para>
+    
+      <para>
+        Each <varname>metadata</varname> element might contain any combination
+	of the following elements, in any order:
+      </para>
+    
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>
+            The <varname>mime-type</varname> element is mandatory.  It must
+	    contain the MIME Type of the target pointed by the URI, as defined
+	    by the Shared MIME Database [SharedMime].
+          </para>
+        </listitem>
+        
+        <listitem>
+          <para>
+            The <varname>groups</varname> element contains a list of
+	    <varname>group</varname> elements, each containing a group name.
+	    See <xref linkend="registered-groups"/> for more details on the
+	    group names defined by this specification.
+          </para>
+          
+          <para>
+            The <varname>groups</varname> element is not mandatory.
+          </para>
+        </listitem>
+        
+        <listitem>
+          <para>
+            The <varname>applications</varname> section contains a list of
+	    <varname>application</varname> elements, each referring to an
+	    application that has registered the bookmark.
+          </para>
+          
+          <para>
+            Each application element has a number of attributes:
+          </para>
+          
+          <informaltable>
+            <tgroup cols="3">
+	      <thead>
+	        <row>
+		  <entry>Attribute</entry>
+		  <entry>Required</entry>
+		  <entry>Value</entry>
+		</row>
+	      </thead>
+              <tbody>
+                <row>
+		  <entry id="attr-name">name</entry>
+		  <entry>Yes</entry>
+		  <entry>
+		    The name of the application that has registered the
+		    bookmark. It must a unique name for each application.
+		    Every <varname>application</varname> element must have
+		    this attribute set.
+		  </entry>
+		</row>
+                <row>
+		  <entry id="attr-exec">exec</entry>
+		  <entry>No</entry>
+		  <entry>
+		    The preferred command line to be used when launching the
+		    application; it might contain variables,
+		    see <xref linkend="exec-vars"/> for more details.  If no
+		    <varname>exec</varname> attribute has been set, implementors
+		    should use the application name followed by the URI of the
+		    bookmark as a substitute.
+		  </entry>
+		</row>
+                <row>
+		  <entry id="attr-count">count</entry>
+		  <entry>No</entry>
+		  <entry>
+		    The number of times the application has registered the
+		    bookmark. If not <varname>count</varname> attribute has
+		    been defined, then implementors should assume that the
+		    total number of registrations is equal to one.
+		  </entry>
+		</row>
+                <row>
+		  <entry id="attr-timestamp">timestamp</entry>
+		  <entry>Yes</entry>
+		  <entry>
+		    The last time, expresses in seconds from the system's Epoch,
+		    the application registered the bookmark. Each <varname>application</varname>
+		    element must have this attribute set.
+		  </entry>
+		</row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+          
+          <para>
+            See <xref linkend="applications"/> for the
+            correct behaviour when handling duplicate application
+            registrations.
+          </para>
+          
+          <para>
+            The <varname>applications</varname> element is mandatory; every
+            bookmark must have at least one <varname>application</varname>
+            element.
+          </para>
+          
+        </listitem>
+
+	<listitem>
+	  <para>
+	    The <varname>icon</varname> element, if present, specifies the
+	    icon that should be associated to the bookmark.  The
+	    <varname>icon</varname> element must have the following attributes:
+	  </para>
+
+	  <informaltable>
+            <tgroup cols="3">
+	      <thead>
+	        <row>
+		  <entry>Attribute</entry>
+		  <entry>Required</entry>
+		  <entry>Value</entry>
+		</row>
+	      </thead>
+              <tbody>
+                <row>
+		  <entry id="attr-icon-type">type</entry>
+		  <entry>Yes</entry>
+		  <entry>
+		    The MIME type, belonging to the <literal>image/*</literal>
+		    family of MIME types, of the icon.
+		  </entry>
+		</row>
+		
+		<row>
+		  <entry id="attr-icon-href">href</entry>
+		  <entry>Yes</entry>
+		  <entry>
+		    The URI to the icon file.
+		  </entry>
+		</row>
+		
+              </tbody>
+	    </tgroup>
+	  </informaltable>
+
+	  <para>
+	    Implementers should use the file specified inside the
+	    <literal>href</literal> of the <varname>icon</varname> element when
+	    showing the bookmark.
+	  </para>
+	
+	</listitem>
+
+        
+        <listitem>
+          <para>
+            The <varname>private</varname> element, if present, alters the
+	    visibility of the bookmark.  A bookmark should be considered
+	    private to the groups where it belongs and to the applications
+	    that have registered it. See <xref linkend="visibility"/>.
+          </para>
+        </listitem>
+      
+      </itemizedlist>
+      
+    </sect2>
+    
+  </sect1>
+    
+  <sect1 id="storage-files">
+    <title>Storage Files</title>
+    <para>
+      Desktop bookmarks file might contain a variable number of bookmarks. Each
+      bookmark file should contain at least one bookmark stored using the format
+      described previously. The default extension for the desktop bookmarks file
+      should be <varname>xbel</varname>.  Implementors should not rely on these
+      files to contain bookmark entries sorted using any method, and should
+      therefore sort bookmarks using their own sorting methods.  Implementors
+      should also take care of avoiding concurrent accesses to these files; for
+      instance, by using file locking techniques.
+    </para>
+    
+    <sect2 id="location">
+      <title>File location</title>
+      <para>
+        Standard locations for bookmark files defined in this specification are:
+      </para>
+      
+      <informaltable>
+        <tgroup cols="2">
+          <thead>
+            <row>
+	      <entry>File</entry>
+	      <entry>Use</entry>
+            </row>
+	  </thead>
+          
+          <tbody>
+            <row>
+	      <entry id="recently-used">$HOME/.recently-used.xbel</entry>
+	      <entry>
+	        This file must be used for the bookmarks to recently used
+	        resources.
+	      </entry>
+            </row>
+            <row>
+              <entry id="shortcuts">$HOME/.shortcuts.xbel</entry>
+              <entry>
+                This file must be used for creating bookmarks to often used
+                folders of files.
+              </entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+      
+      <para>
+        Application specific desktop bookmark files should be stored under the
+        <varname>$XDG_DATA_DIRS/desktop-bookmarks</varname> directory. Each
+        directory in the search path should be used.  When two desktop bookmark
+        files have the same name, the one appearing earlier should be used.  Only
+        files with the <varname>.xbel</varname> extension are used; other files
+        are ignored.
+      </para>
+
+    </sect2>
+
+    <sect2 id="encoding">
+      <title>File encoding</title>
+      <para>
+        All text in the file should be stored in the UTF-8 encoding.  Standard
+	encoding rules for XML and XBEL documents applies the desktop bookmark
+	files.  No local paths are allowed in the URI tag; they should be
+	converted to a valid URI [RFC-2396] with a "file" scheme.  Items with
+	the same URI are not allowed.
+      </para>
+    
+    </sect2>
+    
+    <sect2 id="notification">
+      <title>Change notification</title>
+      <para>
+        Notification should be accomplished by simply monitoring the files for
+        changes.  This can be done by either polling the file every so often, or
+        using a libraries like FAM [FAM], d-notify [dnotify] or i-notify [inotify].
+      </para>
+    
+    </sect2>
+    
+  </sect1>
+  
+  <sect1 id="registered-metadata">
+    <title>Registered Meta-data</title>
+    
+    <para>
+      The meta-data associated to this spec will contain informations about the
+      applications that have registered a bookmark, the groups to which a
+      bookmark belongs and its visibility in relation to applications and groups.
+    </para>
+    
+    <sect2 id="groups">
+      <title>Groups</title>
+      
+      <para>
+        Groups implement meta-classes of bookmarks.  The bookmarks belonging to
+	a group (or a set of groups) will be shared across each member of the
+	group.
+      </para>
+      
+      <para>
+        For instance, each email client application could register its bookmarks
+        under the group <literal>Mail</literal>, so that each other mail-related
+	application could access those bookmarks.
+      </para>
+      
+      <para>
+        For a list of registered group names, see <xref linkend="registered-groups"/>.
+      </para>
+      
+     
+    </sect2>
+
+    <sect2 id="applications">
+      <title>Applications</title>
+      <para>
+        Bookmarks might be registered by more than one application.  For each
+        application registering a bookmark, will be stored the application's
+	name, the application's command line, the number of registrations for
+	the application and the last time the application registered a bookmark,
+	the timestamp (seconds from the system's epoch) of the registration
+	time.
+      </para>
+
+      <para>
+        If an application tries to register again a bookmark, that is: if there
+        already is an <varname>application</varname> tag with its
+	<varname>name</varname> attribute set to the same name passed by the
+	application, then the <varname>application</varname> tag should
+        have the content of the <varname>timestamp</varname> attribute updated,
+	and the content of the <varname>count</varname> attribute increased by
+	one.
+      </para>
+    
+      <sect3 id="exec-vars">
+        <title>List of valid <varname>exec</varname> attribute variables</title>
+        
+        <para>
+          Each <varname>exec</varname> parameter of the
+	  <varname>application</varname> element may take a number
+	  of arguments which will be expanded by the implementor.
+        </para>
+        
+        <para>
+          Literal <literal>%</literal> characters must be escaped as
+	  <literal>%%</literal>.  Each unrecognised variable should be left
+	  unexpanded.
+        </para>
+        
+        <para>
+          Recognised variables are as follows:
+        </para>
+        
+        <informaltable>
+          <tgroup cols="2">
+          <tbody>
+            <row><entry>%f</entry><entry>the path of the file/directory, retrieved from the URI</entry></row>
+            <row><entry>%u</entry><entry>the literal URI for the bookmark</entry></row>
+          </tbody>
+          </tgroup>
+        </informaltable>
+          
+      </sect3>
+      
+    </sect2>
+
+    <sect2 id="visibility">
+      <title>Visibility</title>
+      <para>
+        The privacy hint of a bookmark is set using the <varname>private</varname>
+	element.  Each item with this hint set should be visible only for the
+	groups and applications that registered it.
+      </para>
+    
+    </sect2>
+    
+  </sect1>
+  
+  <sect1 id="recommendations">
+    <title>Implementation Recommendations</title>
+    <para>
+      Any implementer of this specification should conform to these
+      recommendations:
+    </para>
+    
+    <itemizedlist>
+      <listitem>
+        <para>
+          Implementors should use the command line inside the
+	  <varname>exec</varname> attribute of the
+	  <varname>application</varname> element, when launching a bookmark
+	  with a specific application.  If no <varname>exec</varname> attribute
+	  was found, implementors should try the application's name stored
+	  inside the <varname>name</varname> attribute, followed by a space
+	  character and the bookmark's URI.  If this fails, the default
+	  application for the bookmark's MIME type should be invoked using the
+	  bookmark's URI.
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+	  No duplicate entries should be found inside a valid desktop bookmark
+	  data stream.  If two or more applications register a bookmark to the
+	  same URI, implementors should update the <varname>modified</varname>
+	  attribute of the <varname>bookmark</varname> element; a new
+	  <varname>application</varname> element should be added for each
+	  application that is registering the bookmark; if any of the
+	  applications is also adding group names, all of these must be merged
+	  with the previously set group names; the <varname>private</varname>
+	  element should be set the first time an application requires it.
+	</para>
+
+	<para>
+	  If the same application registers the same bookmark, only the
+	  <varname>modified</varname> attribute of the
+	  <varname>bookmark</varname> element; the
+	  <varname>timestamp</varname> and <varname>count</varname> attributes
+	  of the <varname>application</varname> element with the same
+	  application's name set into the <varname>name</varname> attribute;
+	  the <varname>private</varname> element should be modified.
+	</para>
+
+      </listitem>
+
+      <listitem>
+        <para>
+	  If an icon for the bookmark item is shown, it should be taken from
+	  the image file stored inside the <varname>href</varname> attribute
+	  of the <varname>icon</varname> element; if no such element exists
+	  inside the meta-data for the bookmark item, the icon should be
+	  the thumbnail of the resource (if available), retrieved using the
+	  thumbnail managing specification [Thumbnail], or - if no thumbnail is
+	  present - the icon associated to the MIME type of the resource.
+	</para>
+	
+      </listitem>
+
+    </itemizedlist>
+    
+  </sect1>
+
+  <appendix id="storage-example">
+    <title>Storage Format Example</title>
+      
+    <programlisting><![CDATA[
+<?xml version="1.0"?>
+<!DOCTYPE xbel PUBLIC 
+  "+//IDN python.org//DTD XML Bookmark Exchange Language 1.0//EN//XML"
+  "http://www.python.org/topics/xml/dtds/xbel-1.0.dtd">
+<xbel version="1.0"
+      xmlns:mime="http://www.freedesktop.org/standards/shared-mime-info"
+      xmlns:bookmark="http://www.freedesktop.org/standards/desktop-bookmarks">
+  <bookmark href="file:///home/ebassi">
+    <title>my Home</title>
+    <desc>ebassi's home</desc>
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Nautilus"
+	                        count="4"
+				exec="nautilus --no-desktop %u"
+				timestamp="1115726763"/>
+	</bookmark:applications>
+	<bookmark:groups>
+          <bookmark:group>Desktop</bookmark:group>
+        </bookmark:group>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/ebassi/bookmark-spec/bookmark-spec.xml">
+    <title>Bookmarks Storage Spec</title>
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type>text/xml</mime:mime-type>
+	<bookmark:applications>
+          <bookmark:application name="GEdit" count="2" exec="gedit %u" timestamp="1115726763"/>
+          <bookmark:application name="GViM" count="7" exec="gvim %f" timestamp="1115726812"/>
+	</bookmark:applications>
+	<bookmark:groups>
+	  <bookmark:group>Editors</bookmark:group>
+	</bookmark:groups>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="http://www.emmanuelebassi.net/images/ebassi.png">
+    <title>ebassi.png</title>
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <bookmark:applications>
+          <bookmark:application name="Gimp" exec="gimp %u" count="1" timestamp="1115716763"/>
+	  <bookmark:application name="Eye of Gnome" exec="eog %u" count="1" timestamp="1115728763"/>
+	</bookmark:applications>
+	<mime:mime-type>image/png</mime:mime-type>
+	<bookmark:groups>
+	  <bookmark:group>Graphics</bookmark:group>
+	</bookmark:groups>
+	<bookmark:private/>
+      </metadata>
+    </info>
+  </bookmark>
+</xbel>
+    ]]></programlisting>
+  </appendix>
+
+  <appendix id="references">
+    <title>References</title>
+    <itemizedlist>
+      <listitem>
+        <para>[SharedMime] <ulink url="http://www.freedesktop.org/standards/shared-mime-info.html">The shared MIME-info database</ulink></para>
+      </listitem>
+      
+      <listitem>
+        <para>[BaseDir] <ulink url="http://www.freedesktop.org/standards/basedir/draft/basedir-spec/basedir-spec.html">XDG Base Directory Specification</ulink></para>
+      </listitem>
+
+      <listitem>
+        <para>[MenuEntry] <ulink url="http://standards.freedesktop.org/menu-spec/">XDG Desktop Menu Specification</ulink></para>
+      </listitem>
+      
+      <listitem>
+        <para>[XBEL] <ulink url="http://pyxml.sourceforge.net/topics/xbel/">XML Bookmarks Exchange Language</ulink></para>
+      </listitem>
+      
+      <listitem>
+        <para>[FAM] <ulink url="http://oss.sgi.com/projects/fam/">File Alteration Monitor</ulink></para>
+      </listitem>
+      
+      <listitem>
+        <para>[dnotify] dnotify, Linux kernel interface for file monitoring.</para>
+      </listitem>
+      
+      <listitem>
+        <para>[inotify] <ulink url="http://www.kernel.org/pub/linux/kernel/people/rml/inotify/README">inotify</ulink></para>
+      </listitem>
+      
+      <listitem>
+        <para>[RFC-2119] <ulink url="http://www.ietf.org/rfc/rfc2119.txt?number=2119">Key words for use in RFCs to Indicate Requirement Levels</ulink></para>
+      </listitem>
+      
+      <listitem>
+        <para>[RFC-2396] <ulink url="http://www.ietf.org/rfc/rfc2396.txt?number=2396">Uniform Resource Identifiers</ulink></para>
+      </listitem>
+
+      <listitem>
+        <para>[Thumbnail] <ulink url="http://jens.triq.net/thumbnail-spec/index.html">Thumbnail Managing Standard</ulink></para>
+      </listitem>
+      
+    </itemizedlist>
+  </appendix>
+  
+  <appendix id="registered-groups">
+    <title>Registered Groups</title>
+    <para>
+       Remember, these are case-sensitive. When using a group name described in
+       the list below it is strongly recommended to also include the group
+       listed under Related Groups. If a group has multiple related groups the
+       most suitable related group should be included.
+    </para>
+    
+    <informaltable>
+      <tgroup cols="3">
+        <thead>
+          <row>
+            <entry>Group</entry>
+            <entry>Description</entry>
+            <entry>Related Groups</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>Development</entry>
+            <entry>A bookmark related to development</entry>
+            <entry></entry>
+          </row>
+	  
+          <row>
+            <entry>Office</entry>
+            <entry>A bookmark related to an office type document or folder</entry>
+            <entry></entry>
+          </row>
+	  
+	  <row>
+	    <entry>Database</entry>
+	    <entry>A bookmark related to a database application</entry>
+	    <entry>Office; Development</entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Email</entry>
+	    <entry>A bookmark related to an email application</entry>
+	    <entry>Office</entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Presentation</entry>
+	    <entry>A bookmark related to a presentation application</entry>
+	    <entry>Office</entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Spreadsheet</entry>
+	    <entry>A bookmark related to a spreadsheet application</entry>
+	    <entry>Office</entry>
+	  </row>
+	  
+	  <row>
+	    <entry>WordProcessor</entry>
+	    <entry>A bookmark related to a word processing application</entry>
+	    <entry>Office</entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Graphics</entry>
+	    <entry>A bookmark related to a graphical application</entry>
+	    <entry></entry>
+	  </row>
+	  
+	  <row>
+	    <entry>TextEditor</entry>
+	    <entry>A bookmark related to a text editor</entry>
+	    <entry></entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Viewer</entry>
+	    <entry>A bookmark related to any kind of file viewer</entry>
+	    <entry></entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Archive</entry>
+	    <entry>A bookmark related to an archive file</entry>
+	    <entry></entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Multimedia</entry>
+	    <entry>A bookmark related to a multimedia file or application</entry>
+	    <entry></entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Audio</entry>
+	    <entry>A bookmark related to an audio file or application</entry>
+	    <entry>Multimedia</entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Video</entry>
+	    <entry>A bookmark related to a video file or application</entry>
+	    <entry>Multimedia</entry>
+	  </row>
+	  
+	  <row>
+	    <entry>Photo</entry>
+	    <entry>A bookmark related to a digital photography file or
+	    application</entry>
+	    <entry>Multimedia; Graphics; Viewer</entry>
+	  </row>
+
+	  <row>
+	    <entry>Application</entry>
+	    <entry>Special bookmark for application launchers</entry>
+	    <entry> </entry>
+	  </row>
+
+        </tbody>
+      </tgroup>
+    </informaltable>
+    
+  </appendix>
+
+  <appendix id="adding-bookmark-files">
+    <title>How to add a new desktop bookmark file</title>
+    <para>
+      In order to properly install a new desktop bookmark file, third party
+      applications should:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+        <para>
+	  Install new desktop bookmark files inside
+	  <replaceable>XDG_DATA_DIR</replaceable>
+	  /desktop-bookmarks/ for each desktop bookmark file. Please, namespace
+	  the filename, as in "vendor-foo.xbel", or use a subdirectory or
+	  <replaceable>XDG_DATA_DIR</replaceable>
+	  /desktop-bookmarks/ so you have "vendor/foo.xbel." Please ensure all
+	  desktop bookmark entries are valid.
+	</para>
+      </listitem>
+      
+    </itemizedlist>
+  
+  </appendix>
+  
+  <appendix id="availability">
+    <title>Availability</title>
+    <para>
+      The latest version of this document will be available at this URI: <ulink
+      url="http://devel.emmanuelebassi.net/papers/bookmark-spec.html">http://devel.emmanuelebassi.net/papers/bookmark-spec.html</ulink>.
+    </para>
+
+    <para>
+      This is the URI of this version of the document: <ulink
+      url="http://devel.emmanuelebassi.net/papers/bookmark-spec-&specrevision;.html">http://devel.emmanuelebassi.net/papers/bookmark-spec-&specrevision;.html</ulink>.
+    </para>
+    
+  </appendix>
+
+  <appendix id="changes">
+    <title>Change history</title>
+    <formalpara>
+      <title>Version 0.8.2, December 18, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+	  <listitem><para>Added the Application group for desktop launchers.</para></listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Version 0.8.1, November 15, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+	  <listitem><para>
+	  Added the implementation recommendations for showing the icon of
+	  a bookmark item
+	  </para></listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Version 0.8, November 9, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+	  <listitem>
+	    <para>Added the <varname>icon</varname> element to the bookmark meta-data</para>
+	  </listitem>
+	  <listitem>
+	    <para>Added more groups to the Registered Groups</para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+
+    <formalpara>
+      <title>Version 0.7, October 29, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+	  <listitem>
+	    <para>Added the desktop bookmark files section</para>
+	  </listitem>
+	  <listitem>
+	    <para>Specified mandatory and optional storage elements</para>
+	  </listitem>
+	  <listitem>
+	    <para>Added the registered groups appendix</para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Version 0.6, May 16, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+          <listitem>
+            <para>Reordered the sections layout.</para>
+          </listitem>
+          <listitem>
+            <para>Added the References appendix.</para>
+          </listitem>
+          <listitem>
+            <para>Added the Recommendations section.</para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </formalpara>
+      
+    <formalpara>
+      <title>Version 0.5, May 12, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+          <listitem>
+            <para>Logically separated the desktop bookmarks file and the recently used objects file.</para>
+          </listitem>
+          <listitem>
+            <para>Moved the bookmarks file under "$XDG_DATA_DIRS/desktop-bookmarks", as defined by the basedir specification.</para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Version 0.4, May 10, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+	  <listitem>
+	    <para>Moved to a XBEL compliant format.</para>
+	  </listitem>
+	  <listitem>
+	    <para>Changed the "Bookmarks" group to "Desktop".</para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Version 0.3, May 6, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+	  <listitem>
+	    <para>
+	      Fixed the Visibility section and the Private tag description.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      Added the Availability section.
+	    </para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Version 0.2, May 3, 2005, Emmanuele Bassi</title>
+      <para>
+        <itemizedlist>
+	  <listitem>
+	    <para>
+	      Expanded the Groups, Applications and Visibility sections.
+	    </para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Version 0.1, April 30, 2005, Emmanuele Bassi</title>    
+      <para>
+	<itemizedlist>
+	  <listitem>
+	    <para>
+              Created initial draft.
+	    </para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+    </formalpara>
+  </appendix>
+</article>

@@ -1,0 +1,64 @@
+<!-- ##### SECTION Title ##### -->
+EggTreeModelFilter
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION egg_tree_model_filter_clear_cache ##### -->
+<para>
+
+</para>
+
+@filter: 
+
+
+<!-- ##### FUNCTION egg_tree_model_filter_convert_child_iter_to_iter ##### -->
+<para>
+
+</para>
+
+@filter: 
+@filter_iter: 
+@child_iter: 
+
+
+<!-- ##### FUNCTION egg_tree_model_filter_convert_iter_to_child_iter ##### -->
+<para>
+
+</para>
+
+@filter: 
+@child_iter: 
+@filter_iter: 
+
+
+<!-- ##### FUNCTION egg_tree_model_filter_convert_child_path_to_path ##### -->
+<para>
+
+</para>
+
+@filter: 
+@child_path: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tree_model_filter_convert_path_to_child_path ##### -->
+<para>
+
+</para>
+
+@path: 
+@filter_path: 
+@Returns: 
+
+

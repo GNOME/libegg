@@ -1,0 +1,32 @@
+A new ComboBox framework for GTK+
+--------------------------------
+Official development area!!!
+
+
+NOTE: this code REQUIRES patching of gtk+, patches are included:
+- table-menu-patch
+
+NOTE (2): please do not commit anything here without my permission. (where
+'my' is kris).
+
+
+my todolist
+-----------
+
+* positing code needs to get the menu under the mouse cursor such that
+the active item is under the mouse cursor. Still following me? (:
+
+General stuff:
+* drag selection in treeview
+* egg_cell_view_set_values really needs to work like gtk_tree_model_set. It
+  confuses the hell out of my right now. (-- still needed?)
+* what to do if the combo box item list is being cleared? (wrt to sample)
+
+Completion:
+ - figure out if we need async data sources, and if so think about a nice
+   API. (load-on-demand? call some given function if the contents of the
+   entry changed? update func? invalidation?)
+ - configurable completion delay? (this may be bloat)
+ - need something for the TAB key?
+ - you should be able to move through the popup with the arrow keys, we
+   prolly need treeview modes for this, or some hackish code.

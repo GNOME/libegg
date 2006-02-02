@@ -1,0 +1,38 @@
+RecentManager TODO
+======================
+
+* RecentManager
++---- [ ] watch file changes, instead of using a timed poll() (see inotify);
++---- [ ] watch resources for changes (see inotify);
++---- [ ] allow the creation of modules for a RecentManager loadable 
+          at runtime (?);
+       +---- [ ] Create a GInterface, implemented by RecentManager;
+       +---- [ ] Create a gamin/inotify/Gnome-VFS/whatever enabled
+                 RecentManager, allowing monitoring of the resources
+		 and of the recently-used.xbel file;
++---- [x] add EggRecentManager::move function to move an item to another URI;
+
+* RecentInfo
+
+Widgets TODO
+============
+
+* RecentChooser
++---- [ ] Add support for a preview widget;
++---- [ ] Add support for an extra widget (?);
++---- [x] Add support for a user provided RecentManager instance;
+
+* RecentChooserMenu
++---- [ ] Support prepending MenuItem widgets;
++---- [ ] Add API for custom tooltip text;
++---- [ ] Verify a11y;
+
+* RecentChooserDefault
++---- [x] Finish implementing the missing EggRecentChooser vfuncs;
++---- [x] Implement the removal of a resource from the list using
+          the popup menu;
+
+* RecentChooserButton
++---- [ ] Similar to GtkFileChooserButton for files, will show the latest
+          recently used resource, and will open a EggRecentChooserDialog
+	  when clicked;

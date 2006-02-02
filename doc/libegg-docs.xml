@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" 
+               "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<book id="index" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <bookinfo>
+    <title>LibEgg Reference Manual</title>
+  </bookinfo>
+
+  <part id="tree-extensions">
+    <title>GtkTree Extensions</title>
+
+    <partintro>
+      <para>LibEgg includes a number of extensions to the new tree and
+      list widgets found in GTK 2.0.</para>
+    </partintro>
+
+    <xi:include href="xml/eggcellrendererkeys.xml"/>
+    <xi:include href="xml/eggcellrendererpixbuf.xml"/>
+    <xi:include href="xml/eggcellrendererpopup.xml"/>
+    <xi:include href="xml/egg-cell-renderer-text.xml"/>
+    <xi:include href="xml/eggreorder.xml"/>
+    <xi:include href="xml/eggnodestate.xml"/>
+    <xi:include href="xml/eggtreemultidnd.xml"/>
+    <xi:include href="xml/eggtreeviewstate.xml"/>
+    <xi:include href="xml/eggtreemodelfilter.xml"/>
+  </part>
+
+  <part id="menu">
+    <title>Action Based Menus</title>
+
+    <partintro>
+      <para>This section covers the new action based menu system
+      included in libegg</para>
+    </partintro>
+
+    <xi:include href="xml/egg-action.xml"/>
+    <xi:include href="xml/egg-action-group.xml"/>
+    <xi:include href="xml/egg-toggle-action.xml"/>
+    <xi:include href="xml/egg-radio-action.xml"/>
+    <xi:include href="xml/egg-menu-merge.xml"/>
+    <xi:include href="xml/egg-accel-dialog.xml"/>
+    <xi:include href="xml/egg-markup.xml"/>
+  </part>
+
+  <part id="background-monitor">
+    <title>Background Monitor</title>
+
+    <partintro>
+      <para>This is a widget for monitoring changes to the desktop
+      wallpaper.  It is intended for widgets that wish to provide
+      pseudo transparency or translucency.</para>
+    </partintro>
+
+    <xi:include href="xml/egg-background-monitor.xml"/>
+  </part>
+
+  <!--
+    <xi:include href="xml/eggcolumnmodel.xml"/>
+    <xi:include href="xml/eggcolumnchooserdialog.xml"/>
+  -->
+
+  <part id="icon-list">
+    <title>Icon List</title>
+
+    <partintro>
+      <para>This is a new icon list widget.</para>
+    </partintro>
+
+    <xi:include href="xml/eggiconlist.xml"/>
+  </part>
+
+  <part id="druid">
+    <title>Druid</title>
+
+    <partintro>
+      <para>This is a new druid widget (also known as wizards).</para>
+    </partintro>
+
+    <xi:include href="xml/eggdruid.xml"/>
+    <xi:include href="xml/eggdruiddialog.xml"/>
+    <xi:include href="xml/eggdruidpage.xml"/>
+    <xi:include href="xml/eggdruidpagestandard.xml"/>
+  </part>
+
+  <!--
+    <xi:include href="xml/eggtrayicon.xml"/>
+    <xi:include href="xml/eggtraymanager.xml"/>
+  -->
+
+  <part id="sidebar">
+    <title>Sidebar</title>
+
+    <partintro>
+      <para>This widget implements a sidebar widget similar to the one
+      used in various Microsoft Officce applications, and Evolution,
+      Mr Project, etc.</para>
+    </partintro>
+    <xi:include href="xml/eggsidebar.xml"/>
+    <xi:include href="xml/eggsidebarbutton.xml"/>
+  </part>
+
+  <part id="thumbnailing">
+    <title>Thumbnailing</title>
+    
+    <partintro>
+      <para>Utility functions related to thumbnailing, and a widget for
+      displaying them.</para>
+    </partintro>
+    <xi:include href="xml/eggmd5.xml"/>
+    <xi:include href="xml/eggpixbufthumbnail.xml"/>
+    <xi:include href="xml/eggthumbnailpreview.xml"/>
+  </part>
+
+  <part id="utilities">
+    <title>Utility functions</title>
+
+    <partintro>
+      <para>Some utility functions used by other parts of
+      Libegg.</para>
+    </partintro>
+
+    <xi:include href="xml/eggintl.xml"/>
+  </part>
+</book>

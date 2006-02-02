@@ -1,0 +1,71 @@
+<!-- ##### SECTION Title ##### -->
+eggtreemultidnd
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT EggTreeMultiDragSource ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### STRUCT EggTreeMultiDragSourceIface ##### -->
+<para>
+
+</para>
+
+@g_iface: 
+@row_draggable: 
+@drag_data_get: 
+@drag_data_delete: 
+
+<!-- ##### FUNCTION egg_tree_multi_drag_source_row_draggable ##### -->
+<para>
+
+</para>
+
+@drag_source: 
+@path_list: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tree_multi_drag_source_drag_data_delete ##### -->
+<para>
+
+</para>
+
+@drag_source: 
+@path_list: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tree_multi_drag_source_drag_data_get ##### -->
+<para>
+
+</para>
+
+@drag_source: 
+@path_list: 
+@selection_data: 
+@Returns: 
+
+
+<!-- ##### FUNCTION egg_tree_multi_drag_add_drag_support ##### -->
+<para>
+
+</para>
+
+@tree_view: 
+
+

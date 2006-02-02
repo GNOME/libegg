@@ -1,0 +1,82 @@
+#This is a comment
+
+[Desktop Entry]
+Encoding=UTF-8
+Name=Stones
+Name[bg]=Камъни
+#This is a comment
+
+
+
+
+
+Name[ca]=Pedres
+Name[cs]=Kameny
+Name[cy]=Cerrig
+Name[da]=Sten
+Name[de]=Stones
+Name[el]=Πέτρες
+Name[es]=Piedras
+Name[fi]=Luolat
+Name[fr]=Stones
+Name[he]=אבנים
+Name[hi]=स्टोन्स
+Name[it]=Stones
+Name[ja]=Stones
+#This is a comment
+#This is a comment
+Name[ko]=보석
+Name[ms]=Batu
+Name[nl]=Stenen
+Name[no]=Steiner
+Name[pl]=Kamienie
+Name[pt]=Pedras
+Name[pt_BR]=Pedras
+Name[sk]=Kamene
+Name[sl]=Kamni
+Name[sr]=ГНОМ Камење
+Name[sr@Latn]=GNOM Kamenje
+Name[sv]=Stenar
+Name[wa]=Pires
+Name[zh_CN]=Stones
+Name[zh_TW]=寶石
+Comment=Collect diamonds while avoiding falling boulders
+Comment[bg]=Събиране на диаманти и избягване на падащи камъни
+Comment[cs]=Sbírat diamanty a vyhýbat se padajícím balvanům
+Comment[cy]=Casglu diemyntau wrth osgoi meini sy'n cwympo
+Comment[da]=Saml diamanter og undgå faldende rullesten
+Comment[de]=Sammeln Sie Diamanten und weichen Sie dabei herabfallenden Felsbrocken aus
+Comment[el]=Συλλέξτε τα διαμάντια ενώ αποφεύγετε τους λίθους που πέφτουν
+Comment[es]=Recolecte todos los diamantes mientras evita las rocas
+Comment[fi]=Kerää kaikki timantit samalla väistäen putoilevia kiviä
+Comment[he]=אסוף יהלומים בזמן שתמנע מסלעים נופלים
+Comment[hi]=गिरते पत्थरों से बचते हुए हीरों को बटोरें
+Comment[it]=Raccogli tutti i diamanti evitando i massi cadenti
+Comment[ja]=落ちてくる石を避けながらダイアモンドを集めて下さい
+Comment[ko]=떨어지는 돌덩어리를 피해 모든 다이아몬드를 모읍니다
+Comment[ms]=Pungut semua berlian sambil mengelakkan batu tongkol yang jatuh
+Comment[nl]=Verzamel de diamanten maar kijk uit voor vallend gesteente
+Comment[no]=Samle diamanter og unngå fallende steiner
+#This is a comment
+Comment[pl]=Zbierz wszystkie diamenty unikając spadających głazów
+Comment[pt]=Coleccione diamantes enquanto evita pedregulhos em queda
+Comment[pt_BR]=Colete diamantes enquanto desvia de rochas que caem
+Comment[sk]=Pozbierajte všetky diamanty a nájdite cestu von
+Comment[sl]=Poberite diamante, medtem ko se izogibate padajočim kamnom
+Comment[sr]=Покупи све дијаманте и нађи излаз
+Comment[sr@Latn]=Pokupi sve dijamante i nađi izlaz
+Comment[sv]=Samla diamanter och undvik fallande stenblock
+Comment[zh_TW]=收集所有寶石並避開石塊
+Exec=gnome-stones
+Icon=gnome-stones.png
+Terminal=false
+Type=Application
+Categories=GNOME;Application;Game;PuzzleGame;X-Red-Hat-Base;
+X-GNOME-Bugzilla-Bugzilla=GNOME
+X-GNOME-Bugzilla-Product=gnome-games
+X-GNOME-Bugzilla-Component=gnome-stones
+StartupNotify=true
+X-Desktop-File-Install-Version=0.3
+Bools=true;false;1;0;T;F;
+                # This is a comment
+Ints=10;12;3434;43;20;

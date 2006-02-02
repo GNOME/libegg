@@ -1,0 +1,39 @@
+#include <libegg/treeviewutils/eggcellrendererkeys.h>
+#include <libegg/treeviewutils/eggcellrendererpopup.h>
+#include <libegg/treeviewutils/egg-cell-renderer-text.h>
+#include <libegg/treeviewutils/eggtreemultidnd.h>
+#include <libegg/treeviewutils/eggtreemodelfilter.h>
+
+#include <libegg/background-monitor/egg-background-monitor.h>
+
+#include <libegg/druid/eggdruid.h>
+#include <libegg/druid/eggdruiddialog.h>
+#include <libegg/druid/eggdruidpage.h>
+#include <libegg/druid/eggdruidpagestandard.h>
+
+#include <libegg/iconlist/eggiconlist.h>
+
+#include <libegg/menu/egg-menu.h>
+
+#include <libegg/sidebar/eggsidebar.h>
+#include <libegg/sidebar/eggsidebarbutton.h>
+
+egg_cell_renderer_keys_get_type
+egg_cell_renderer_popup_get_type
+egg_cell_renderer_text_get_type
+egg_tree_multi_drag_source_get_type
+egg_tree_model_filter_get_type
+egg_background_monitor_get_type
+egg_druid_get_type
+egg_druid_dialog_get_type
+egg_druid_page_get_type
+egg_druid_page_standard_get_type
+egg_icon_list_get_type
+egg_action_get_type
+egg_action_group_get_type
+egg_toggle_action_get_type
+egg_radio_action_get_type
+egg_menu_merge_get_type
+egg_accel_dialog_get_type
+egg_sidebar_get_type
+egg_sidebar_button_get_type

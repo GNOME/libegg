@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<xbel xmlns:bookmark="http://www.freedesktop.org/standards/desktop-bookmarks" xmlns:mime="http://www.freedesktop.org/standards/shared-mime-info" version="1.0">
+  <bookmark href="file:///home/ebassi/Desktop/TODO" added="20050702T16:15:50Z" modified="20050703T03:55:14Z" visited="20050702T16:15:50Z">
+    <title>To Do</title>
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="text/plain"/>
+        <bookmark:applications>
+          <bookmark:application name="test-manager" exec="test-manager %f" count="4" timestamp="1120362914"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/ebassi/Pictures/Photos" added="20050702T16:15:50Z" modified="20050703T03:55:14Z" visited="20050702T16:15:50Z">
+    <title>Pictures</title>
+    <desc>My Pictures</desc>
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="x-directory/normal"/>
+        <bookmark:applications>
+          <bookmark:application name="test-manager" exec="test-manager %f" count="4" timestamp="1120362914"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+</xbel>
