@@ -48,10 +48,13 @@ eggprintmarshal.h: eggprintmarshal.list
 eggprintmarshal.c: eggprintmarshal.list
 	$(GLIB_GENMARSHAL) $< --body --prefix=_egg_marshal > $@
 
-noinst_PROGRAMS = testprint
+noinst_PROGRAMS = testprint printedit
 
 testprint_SOURCES = testprint.c testprintfileoperation.c testprintfileoperation.h
 testprint_LDADD = libeggprint.la
+
+printedit_SOURCES = printedit.c
+printedit_LDADD = libeggprint.la
 
 EXTRA_DIST =				\
 	eggprint-win32.c		\

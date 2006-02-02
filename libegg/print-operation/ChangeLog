@@ -1,5 +1,11 @@
 2006-02-02  Alexander Larsson  <alexl@redhat.com>
 
+	* Makefile.am: 
+	* printedit.c:
+	New test app. Small editor that can print.
+
+2006-02-02  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintoperation-win32.c (win32_end_page):
 	Enable and fix the win32 per-page settings.
 
