@@ -1,5 +1,11 @@
 2006-02-02  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintoperation-win32.c:
+	Initial work to handle per-page settings, disabled due to
+	it not working.
+
+2006-02-02  Alexander Larsson  <alexl@redhat.com>
+
         * eggprintoperation.c:
 	Handle print ranges
 	

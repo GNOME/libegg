@@ -26,6 +26,11 @@
 
 #define MAX_PAGE_RANGES 20
 
+typedef struct {
+  HDC hdc;
+  HGLOBAL devmode;
+} EggPrintOperationWin32;
+
 /* Base64 utils (straight from camel-mime-utils.c) */
 static char *base64_alphabet =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -285,51 +290,6 @@ base64_decode (const char   *text,
 	return ret; 
 }
 
-void
-win32_start_page (EggPrintOperation *op,
-		  EggPrintContext *print_context,
-		  EggPageSetup *page_setup)
-{
-  HDC hdc;
-
-  hdc = (HDC) op->priv->platform_data;
-
-  /* TODO: Set up page size from page_setup */
-
-  StartPage (hdc);
-}
-
-static void
-win32_end_page (EggPrintOperation *op,
-		EggPrintContext *print_context)
-{
-  HDC hdc;
-  hdc = (HDC) op->priv->platform_data;
-  EndPage (hdc);
-}
-
-static void
-win32_end_run (EggPrintOperation *op)
-{
-  HDC hdc;
-
-  hdc = (HDC) op->priv->platform_data;
-
-  EndDoc (hdc);
-
-  cairo_surface_destroy (op->priv->surface);
-  op->priv->surface = NULL;
-
-  DeleteDC(hdc);
-}
-
-static HWND
-get_parent_hwnd (GtkWidget *widget)
-{
-  gtk_widget_realize (widget);
-  return gdk_win32_drawable_get_handle (widget->window);
-}
-
 static EggPageOrientation
 orientation_from_win32 (short orientation)
 {
@@ -582,6 +542,79 @@ paper_size_to_win32 (EggPaperSize *paper_size)
     return DMPAPER_LETTER_PLUS;
 
   return 0;
+}
+
+void
+win32_start_page (EggPrintOperation *op,
+		  EggPrintContext *print_context,
+		  EggPageSetup *page_setup)
+{
+  EggPrintOperationWin32 *op_win32 = op->priv->platform_data;
+  /*
+  LPDEVMODEW devmode;
+  EggPaperSize *paper_size;
+  */
+
+  /* TODO: Per page settings are disabled, because this code
+   * doen't work for some reason. Even just calling ResetDC with
+   * the devmode returned from PrintDlgEx seems to reset the
+   * settings to default.
+   */
+  /*
+  devmode = GlobalLock (op_win32->devmode);
+
+  devmode->dmFields |= DM_ORIENTATION;
+  devmode->dmOrientation =
+    orientation_to_win32 (egg_page_setup_get_orientation (page_setup));
+
+  paper_size = egg_page_setup_get_paper_size (page_setup);
+  devmode->dmFields |= DM_PAPERSIZE;
+  devmode->dmPaperSize = paper_size_to_win32 (paper_size);
+  if (devmode->dmPaperSize == 0)
+    {
+      devmode->dmFields |= DM_PAPERWIDTH | DM_PAPERLENGTH;
+      devmode->dmPaperWidth = egg_paper_size_get_width (paper_size, EGG_UNIT_MM) * 10.0;
+      devmode->dmPaperLength = egg_paper_size_get_height (paper_size, EGG_UNIT_MM) * 10.0;
+    }
+  
+  GlobalUnlock (op_win32->devmode);
+  
+  if (ResetDCW (op_win32->hdc, op_win32->devmode) == NULL)
+    g_warning ("resetDC failed");
+  */
+ 
+  StartPage (op_win32->hdc);
+}
+
+static void
+win32_end_page (EggPrintOperation *op,
+		EggPrintContext *print_context)
+{
+  EggPrintOperationWin32 *op_win32 = op->priv->platform_data;
+  EndPage (op_win32->hdc);
+}
+
+static void
+win32_end_run (EggPrintOperation *op)
+{
+  EggPrintOperationWin32 *op_win32 = op->priv->platform_data;
+
+  EndDoc (op_win32->hdc);
+  GlobalFree(op_win32->devmode);
+
+  cairo_surface_destroy (op->priv->surface);
+  op->priv->surface = NULL;
+
+  DeleteDC(op_win32->hdc);
+  
+  g_free (op_win32);
+}
+
+static HWND
+get_parent_hwnd (GtkWidget *widget)
+{
+  gtk_widget_realize (widget);
+  return gdk_win32_drawable_get_handle (widget->window);
 }
 
 
@@ -1089,7 +1122,8 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
   HWND parentHWnd;
   GtkWidget *invisible = NULL;
   gboolean result = TRUE;
-
+  EggPrintOperationWin32 *op_win32;
+  
   *do_print = FALSE;
 
   if (parent == NULL)
@@ -1168,8 +1202,6 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
       op->priv->dpi_x = (double)GetDeviceCaps (printdlgex->hDC, LOGPIXELSX);
       op->priv->dpi_y = (double)GetDeviceCaps (printdlgex->hDC, LOGPIXELSY);
 
-      op->priv->platform_data = printdlgex->hDC;
-
       memset( &docinfo, 0, sizeof (DOCINFOW));
       docinfo.cbSize = sizeof (DOCINFOW); 
       docinfo.lpszDocName = g_utf8_to_utf16 (op->priv->job_name, -1, NULL, NULL, NULL); 
@@ -1183,11 +1215,16 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
 	{ 
 	  *do_print = FALSE;
 	  result = FALSE;
-	  cairo_sureface_destroy (op->priv->surface);
+	  cairo_surface_destroy (op->priv->surface);
 	  op->priv->surface = NULL;
 	  goto out; 
 	} 
 
+      op_win32 = g_new (EggPrintOperationWin32, 1);
+      op->priv->platform_data = op_win32;
+      op_win32->hdc = printdlgex->hDC;
+      op_win32->devmode = printdlgex->hDevMode;
+      
       op->priv->manual_num_copies = printdlgex->nCopies;
       op->priv->manual_collation = (printdlgex->Flags & PD_COLLATE) != 0;
     }
@@ -1197,7 +1234,7 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
   op->priv->end_run = win32_end_run;
   
   out:
-  if (printdlgex && printdlgex->hDevMode != NULL) 
+  if (!result && printdlgex && printdlgex->hDevMode != NULL) 
     GlobalFree(printdlgex->hDevMode); 
 
   if (printdlgex && printdlgex->hDevNames != NULL) 
