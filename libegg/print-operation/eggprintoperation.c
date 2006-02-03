@@ -381,7 +381,7 @@ run_print_dialog (EggPrintOperation *op,
    * create cairo surface and data for print job
    * return correct result val
    */
-  return egg_print_operation_platfrom_backend_run_dialog (op, parent,
+  return egg_print_operation_platform_backend_run_dialog (op, parent,
 							  do_print,
 							  error);
 }

@@ -54,7 +54,7 @@ struct _EggPrintOperationPrivate
   void (*end_run) (EggPrintOperation *operation);
 };
 
-EggPrintOperationResult egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *operation,
+EggPrintOperationResult egg_print_operation_platform_backend_run_dialog (EggPrintOperation *operation,
 									 GtkWindow *parent,
 									 gboolean *do_print,
 									 GError **error);

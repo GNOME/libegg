@@ -20,12 +20,18 @@
 
 #include "eggprintoperation-private.h"
 
-gboolean
-egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
+EggPrintOperationResult
+egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 						 GtkWindow *parent,
-						 gboolean *do_print)
+						 gboolean *do_print,
+						 GError **error)
 {
   g_print ("Platform has no native printing support");
-  return FALSE;
+  g_set_error (error,
+               EGG_PRINT_ERROR,
+               EGG_PRINT_ERROR_INTERNAL_ERROR,
+               _("Platform has no native printing support"));
+
+  return EGG_PRINT_OPERATION_RESULT_ERROR;
 }
 

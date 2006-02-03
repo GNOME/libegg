@@ -1,3 +1,13 @@
+2006-02-03  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprintoperation.c:
+	* eggprintoperation-private.h: 
+	* eggprintoperation-unix.c:
+	* eggprintoperation-win32:
+	* eggprintoperation-dubby:
+	Fix typo in egg_print_operation_platform_backend_run_dialog 
+	s/platfrom/platform
+
 2006-02-03  Alexander Larsson  <alexl@redhat.com>
 
 	* testprint.c (main):

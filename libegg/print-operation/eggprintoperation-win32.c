@@ -1105,7 +1105,7 @@ dialog_from_printer_settings (EggPrintOperation *op,
 }
 
 EggPrintOperationResult
-egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
+egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 						 GtkWindow *parent,
 						 gboolean *do_print,
 						 GError **error)

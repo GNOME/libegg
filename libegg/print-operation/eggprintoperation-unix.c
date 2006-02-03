@@ -21,13 +21,16 @@
 #include "eggprintoperation-private.h"
 #include "eggprintunixdialog.h"
 
-gboolean
-egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
+EggPrintOperationResult
+egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 						 GtkWindow *parent,
-						 gboolean *do_print)
+						 gboolean *do_print,
+						 GError **error)
 {
   GtkWidget *pd;
-  gboolean result;
+  EggPrintOperationResult result;
+  
+  result = EGG_PRINT_OPERATION_RESULT_APPLY;
   
   pd = egg_print_unix_dialog_new ("Print...", parent, NULL);
 
