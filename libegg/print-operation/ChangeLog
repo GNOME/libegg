@@ -1,5 +1,10 @@
 2006-02-03  Alexander Larsson  <alexl@redhat.com>
 
+	* testprint.c (main):
+	Clean up demo a bit
+
+2006-02-03  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintoperation-private.h:
 	* eggprintoperation-win32.c:
 	* eggprintoperation.[ch]:

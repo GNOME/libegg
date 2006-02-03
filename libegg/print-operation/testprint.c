@@ -30,6 +30,7 @@ request_page_setup (EggPrintOperation *operation,
 		    int page_nr,
 		    EggPageSetup *setup)
 {
+  /* Make the second page landscape mode */
   if (page_nr == 1)
     egg_page_setup_set_orientation (setup, EGG_PAGE_ORIENTATION_LANDSCAPE);
 }
@@ -45,7 +46,7 @@ draw_page (EggPrintOperation *operation,
   
   cr = egg_print_context_get_cairo (context);
 
-  /* Draw a red rectangle, as wide as the paper inside the margins */
+  /* Draw a red rectangle, as wide as the paper (inside the margins) */
   cairo_set_source_rgb (cr, 1.0, 0, 0);
   cairo_rectangle (cr, 0, 0, egg_print_context_get_width (context), 50);
   
@@ -87,65 +88,29 @@ draw_page (EggPrintOperation *operation,
   g_object_unref (layout);
 }
 
-static void
-print_setting (const char *key,
-	       const char *value,
-	       gpointer  user_data)
-{
-  g_print ("%s = %s\n", key, value);
-}
-
-static void
-print_settings (EggPrinterSettings *settings)
-{
-  g_print ("settings for %p:\n", settings);
-  egg_printer_settings_foreach (settings, print_setting, NULL);
-}
-
 int
 main (int argc, char **argv)
 {
   EggPrintOperation *print;
-  TestPrintFileOperation *print_file;
-  EggPrinterSettings *settings;
   EggPrintOperationResult res;
+  TestPrintFileOperation *print_file;
 
   gtk_init (&argc, &argv);
 
+  /* Test some random drawing, with per-page paper settings */
   print = egg_print_operation_new ();
   egg_print_operation_set_nr_of_pages (print, 2);
   egg_print_operation_set_unit (print, EGG_UNIT_MM);
-  //egg_print_operation_set_pdf_target (print, "test.pdf");
-  
+  egg_print_operation_set_pdf_target (print, "test.pdf");
   g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), NULL);
   g_signal_connect (print, "request_page_setup", G_CALLBACK (request_page_setup), NULL);
-  
   res = egg_print_operation_run (print, NULL, NULL);
 
-  settings = NULL;
-  if (res == EGG_PRINT_OPERATION_RESULT_APPLY)
-    {
-      settings = egg_print_operation_get_printer_settings (print);
-      print_settings (settings);
-    }
-
+  /* Test subclassing of EggPrintOperation */
   print_file = test_print_file_operation_new ("testprint.c");
-
-  if (settings)
-    {
-      egg_print_operation_set_printer_settings (EGG_PRINT_OPERATION (print_file), settings);
-      g_object_unref (settings);
-    }
-  
   test_print_file_operation_set_font_size (print_file, 12.0);
-  //egg_print_operation_set_pdf_target (EGG_PRINT_OPERATION (print_file), "test2.pdf");
+  egg_print_operation_set_pdf_target (EGG_PRINT_OPERATION (print_file), "test2.pdf");
   res = egg_print_operation_run (EGG_PRINT_OPERATION (print_file), NULL, NULL);
 
-  if (res == EGG_PRINT_OPERATION_RESULT_APPLY)
-    {
-      settings = egg_print_operation_get_printer_settings (print);
-      print_settings (settings);
-    }
-  
   return 0;
 }
