@@ -62,6 +62,23 @@ struct _EggPrintOperationClass
 		     EggPrintContext *context);
 };
 
+typedef enum {
+  EGG_PRINT_OPERATION_RESULT_ERROR,
+  EGG_PRINT_OPERATION_RESULT_APPLY,
+  EGG_PRINT_OPERATION_RESULT_CANCEL
+} EggPrintOperationResult;
+
+#define EGG_PRINT_ERROR egg_print_error_quark ()
+
+typedef enum
+{
+  EGG_PRINT_ERROR_GENERAL,
+  EGG_PRINT_ERROR_INTERNAL_ERROR,
+  EGG_PRINT_ERROR_NOMEM
+} EggPrintError;
+
+GQuark egg_print_error_quark (void);
+
 GType                   egg_print_operation_get_type               (void);
 EggPrintOperation *     egg_print_operation_new                    (void);
 void                    egg_print_operation_set_default_page_setup (EggPrintOperation  *op,
@@ -84,8 +101,9 @@ void                    egg_print_operation_set_show_dialog        (EggPrintOper
 								    gboolean            show_dialog);
 void                    egg_print_operation_set_pdf_target         (EggPrintOperation  *op,
 								    const char         *filename);
-gboolean                egg_print_operation_run                    (EggPrintOperation  *op,
-								    GtkWindow          *parent);
+EggPrintOperationResult egg_print_operation_run                    (EggPrintOperation  *op,
+								    GtkWindow          *parent,
+								    GError            **error);
 
 G_END_DECLS
 

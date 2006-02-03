@@ -24,6 +24,8 @@
 #include <glib.h>
 #include <stdlib.h>
 
+#define _(x) (x)
+
 #define MAX_PAGE_RANGES 20
 
 typedef struct {
@@ -1102,17 +1104,18 @@ dialog_from_printer_settings (EggPrintOperation *op,
 
 }
 
-gboolean
+EggPrintOperationResult
 egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
 						 GtkWindow *parent,
-						 gboolean *do_print)
+						 gboolean *do_print,
+						 GError **error)
 {
   HRESULT hResult;
   LPPRINTDLGEXW printdlgex = NULL;
   LPPRINTPAGERANGE page_ranges = NULL;
   HWND parentHWnd;
   GtkWidget *invisible = NULL;
-  gboolean result = TRUE;
+  EggPrintOperationResult result;
   EggPrintOperationWin32 *op_win32;
   
   *do_print = FALSE;
@@ -1128,7 +1131,11 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
   printdlgex = (LPPRINTDLGEXW)GlobalAlloc (GPTR, sizeof (PRINTDLGEXW));
   if (!printdlgex)
     {
-      result = FALSE;
+      result = EGG_PRINT_OPERATION_RESULT_ERROR;
+      g_set_error (error,
+		   EGG_PRINT_ERROR,
+		   EGG_PRINT_ERROR_NOMEM,
+		   _("Not enough free memory"));
       goto out;
     }      
 
@@ -1136,7 +1143,11 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
 						MAX_PAGE_RANGES * sizeof (PRINTPAGERANGE));
   if (!page_ranges) 
     {
-      result = FALSE;
+      result = EGG_PRINT_OPERATION_RESULT_ERROR;
+      g_set_error (error,
+		   EGG_PRINT_ERROR,
+		   EGG_PRINT_ERROR_NOMEM,
+		   _("Not enough free memory"));
       goto out;
     }
 
@@ -1174,13 +1185,43 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
 
   if (hResult != S_OK) 
     {
-      result = FALSE;
+      result = EGG_PRINT_OPERATION_RESULT_ERROR;
+      if (hResult == E_OUTOFMEMORY)
+	g_set_error (error,
+		     EGG_PRINT_ERROR,
+		     EGG_PRINT_ERROR_NOMEM,
+		     _("Not enough free memory"));
+      else if (hResult == E_INVALIDARG)
+	g_set_error (error,
+		     EGG_PRINT_ERROR,
+		     EGG_PRINT_ERROR_INTERNAL_ERROR,
+		     _("Invalid argument to PrintDlgEx"));
+      else if (hResult == E_POINTER)
+	g_set_error (error,
+		     EGG_PRINT_ERROR,
+		     EGG_PRINT_ERROR_INTERNAL_ERROR,
+		     _("Invalid pointer to PrintDlgEx"));
+      else if (hResult == E_HANDLE)
+	g_set_error (error,
+		     EGG_PRINT_ERROR,
+		     EGG_PRINT_ERROR_INTERNAL_ERROR,
+		     _("Invalid handle to PrintDlgEx"));
+      else /* E_FAIL */
+	g_set_error (error,
+		     EGG_PRINT_ERROR,
+		     EGG_PRINT_ERROR_GENERAL,
+		     _("Unspecified error"));
       goto out;
     }
 
   if (printdlgex->dwResultAction == PD_RESULT_PRINT ||
       printdlgex->dwResultAction == PD_RESULT_APPLY)
-    dialog_to_printer_settings (op, printdlgex);
+    {
+      result = EGG_PRINT_OPERATION_RESULT_APPLY;
+      dialog_to_printer_settings (op, printdlgex);
+    }
+  else
+    result = EGG_PRINT_OPERATION_RESULT_CANCEL;
   
   if (printdlgex->dwResultAction == PD_RESULT_PRINT)
     {
@@ -1202,10 +1243,14 @@ egg_print_operation_platfrom_backend_run_dialog (EggPrintOperation *op,
 
       job_id = StartDocW(printdlgex->hDC, &docinfo); 
       g_free ((void *)docinfo.lpszDocName);
-      if (job_id == SP_ERROR) 
+      if (job_id <= 0) 
 	{ 
+	  result = EGG_PRINT_OPERATION_RESULT_ERROR;
+	  g_set_error (error,
+		       EGG_PRINT_ERROR,
+		       EGG_PRINT_ERROR_GENERAL,
+		     _("Error from StartDoc"));
 	  *do_print = FALSE;
-	  result = FALSE;
 	  cairo_surface_destroy (op->priv->surface);
 	  op->priv->surface = NULL;
 	  goto out; 

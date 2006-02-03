@@ -1,3 +1,16 @@
+2006-02-03  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintoperation-private.h:
+	* eggprintoperation-win32.c:
+	* eggprintoperation.[ch]:
+	Add error handling to operation_run()
+
+	* printedit.c:
+	More polish, convert to unix linefeeds
+
+	* testprint.c:
+	Update to new api
+
 2006-02-02  John (J5) Palmieri  <johnp@redhat.com>
 
 	* Makefile.am:

@@ -5,12 +5,75 @@
 static GtkWidget *main_window;
 static char *filename = NULL;
 static EggPrinterSettings *settings = NULL;
+static gboolean file_changed = FALSE;
 static GtkTextBuffer *buffer;
+static GtkWidget *statusbar;
 
 static void
-do_quit (GtkAction *action)
+update_title (void)
 {
-  gtk_main_quit ();
+  char *basename;
+  char *title;
+  
+  if (filename == NULL)
+    basename = g_strdup ("Untitled");
+  else
+    basename = g_path_get_basename (filename);
+
+  title = g_strdup_printf ("Simple Editor with printing - %s", basename);
+  g_free (basename);
+  
+  gtk_window_set_title (GTK_WINDOW (main_window), title);
+  g_free (title);
+}
+
+static void
+update_statusbar (void)
+{
+  gchar *msg;
+  gint row, col;
+  GtkTextIter iter;
+
+  gtk_statusbar_pop (GTK_STATUSBAR (statusbar), 0);
+  
+  gtk_text_buffer_get_iter_at_mark (buffer,
+                                    &iter,
+                                    gtk_text_buffer_get_insert (buffer));
+
+  row = gtk_text_iter_get_line (&iter);
+  col = gtk_text_iter_get_line_offset (&iter);
+
+  msg = g_strdup_printf ("%d, %d%s",
+                         row, col, file_changed?" - Modified":"");
+
+  gtk_statusbar_push (GTK_STATUSBAR (statusbar), 0, msg);
+
+  g_free (msg);
+}
+
+static void
+update_ui (void)
+{
+  update_title ();
+  update_statusbar ();
+}
+
+static char *
+get_text (void)
+{
+  GtkTextIter start, end;
+
+  gtk_text_buffer_get_start_iter (buffer, &start);
+  gtk_text_buffer_get_end_iter (buffer, &end);
+  return gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+}
+
+static void
+set_text (const char *text, gsize len)
+{
+  gtk_text_buffer_set_text (buffer, text, len);
+  file_changed = FALSE;
+  update_ui ();
 }
 
 static void
@@ -18,7 +81,55 @@ do_new (GtkAction *action)
 {
   g_free (filename);
   filename = NULL;
-  gtk_text_buffer_set_text (buffer, "", 0);
+  set_text ("", 0);
+}
+
+static void
+load_file (const char *open_filename)
+{
+  GtkWidget *error_dialog;
+  char *contents;
+  GError *error;
+  gsize len;
+  
+  error_dialog = NULL;
+  error = NULL;
+  if (g_file_get_contents (open_filename, &contents, &len, &error))
+    {
+      if (g_utf8_validate (contents, len, NULL))
+	{
+	  filename = g_strdup (open_filename);
+	  set_text (contents, len);
+	  g_free (contents);
+	}
+      else
+	{
+	  error_dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+						 GTK_DIALOG_DESTROY_WITH_PARENT,
+						 GTK_MESSAGE_ERROR,
+						 GTK_BUTTONS_CLOSE,
+						 "Error loading file %s:\n%s",
+						 open_filename,
+						 "Not valid utf8");
+	}
+    }
+  else
+    {
+      error_dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+					     GTK_DIALOG_DESTROY_WITH_PARENT,
+					     GTK_MESSAGE_ERROR,
+					     GTK_BUTTONS_CLOSE,
+					     "Error loading file %s:\n%s",
+					     open_filename,
+					     error->message);
+      
+      g_error_free (error);
+    }
+  if (error_dialog)
+    {
+      g_signal_connect (error_dialog, "response", G_CALLBACK (gtk_widget_destroy), NULL);
+      gtk_widget_show (error_dialog);
+    }
 }
 
 static void
@@ -27,7 +138,6 @@ do_open (GtkAction *action)
   GtkWidget *dialog;
   gint response;
   char *open_filename;
-  char *contents;
   
   dialog = gtk_file_chooser_dialog_new ("Select file",
 					GTK_WINDOW (main_window),
@@ -41,29 +151,82 @@ do_open (GtkAction *action)
   if (response == GTK_RESPONSE_OK)
     {
       open_filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-      g_print ("filename: %s\n", open_filename);
-      if (g_file_get_contents (open_filename, &contents, NULL, NULL))
-	{
-	  g_print ("got content\n");
-	  filename = open_filename;
-	  gtk_text_buffer_set_text (buffer, contents, -1);
-	  g_free (contents);
-	}
-      else
-	g_free (open_filename);
+      load_file (open_filename);
+      g_free (open_filename);
     }
 
   gtk_widget_destroy (dialog);
 }
 
 static void
-do_save (GtkAction *action)
+save_file (const char *save_filename)
 {
+  char *text = get_text ();
+  GtkWidget *error_dialog;
+  GError *error;
+
+  error = NULL;
+  if (g_file_set_contents (save_filename,
+			   text, -1, &error))
+    {
+      if (save_filename != filename)
+	{
+	  g_free (filename);
+	  save_filename = g_strdup (save_filename);
+	}
+      file_changed = FALSE;
+      update_ui ();
+    }
+  else
+    {
+      error_dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+					     GTK_DIALOG_DESTROY_WITH_PARENT,
+					     GTK_MESSAGE_ERROR,
+					     GTK_BUTTONS_CLOSE,
+					     "Error saving to file %s:\n%s",
+					     filename,
+					     error->message);
+      
+      g_signal_connect (error_dialog, "response", G_CALLBACK (gtk_widget_destroy), NULL);
+      gtk_widget_show (error_dialog);
+      
+      g_error_free (error);
+    }
 }
 
 static void
 do_save_as (GtkAction *action)
 {
+  GtkWidget *dialog;
+  gint response;
+  char *save_filename;
+  
+  dialog = gtk_file_chooser_dialog_new ("Select file",
+					GTK_WINDOW (main_window),
+					GTK_FILE_CHOOSER_ACTION_SAVE,
+					GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+					NULL);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
+  response = gtk_dialog_run (GTK_DIALOG (dialog));
+
+  if (response == GTK_RESPONSE_OK)
+    {
+      save_filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+      save_file (save_filename);
+      g_free (save_filename);
+    }
+  
+  gtk_widget_destroy (dialog);
+}
+
+static void
+do_save (GtkAction *action)
+{
+  if (filename == NULL)
+    do_save_as (action);
+  else
+    save_file (filename);
 }
 
 typedef struct {
@@ -174,14 +337,13 @@ draw_page (EggPrintOperation *operation,
 static void
 do_print (GtkAction *action)
 {
-  GtkTextIter start, end;
+  GtkWidget *error_dialog;
   EggPrintOperation *print;
   PrintData print_data;
-  gboolean res;
+  EggPrintOperationResult res;
+  GError *error;
 
-  gtk_text_buffer_get_start_iter (buffer, &start);
-  gtk_text_buffer_get_end_iter (buffer, &end);
-  print_data.text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
+  print_data.text = get_text ();
 
   print = egg_print_operation_new ();
 
@@ -191,9 +353,22 @@ do_print (GtkAction *action)
   g_signal_connect (print, "begin_print", G_CALLBACK (begin_print), &print_data);
   g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), &print_data);
 
-  res = egg_print_operation_run (print, GTK_WINDOW (main_window));
+  error = NULL;
+  res = egg_print_operation_run (print, GTK_WINDOW (main_window), &error);
 
-  if (res)
+  if (res == EGG_PRINT_OPERATION_RESULT_ERROR)
+    {
+      error_dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+					     GTK_DIALOG_DESTROY_WITH_PARENT,
+					     GTK_MESSAGE_ERROR,
+					     GTK_BUTTONS_CLOSE,
+					     "Error printing file:\n%s",
+					     error->message);
+      g_signal_connect (error_dialog, "response", G_CALLBACK (gtk_widget_destroy), NULL);
+      gtk_widget_show (error_dialog);
+      g_error_free (error);
+    }
+  else if (res == EGG_PRINT_OPERATION_RESULT_APPLY)
     {
       if (settings != NULL)
 	g_object_unref (settings);
@@ -215,6 +390,12 @@ do_about (GtkAction *action)
 			 "comments", "Program to demonstrate GTK+ printing.",
 			 "authors", authors,
 			 NULL);
+}
+
+static void
+do_quit (GtkAction *action)
+{
+  gtk_main_quit ();
 }
 
 static GtkActionEntry entries[] = {
@@ -267,38 +448,13 @@ static const gchar *ui_info =
 "      <menuitem action='About'/>"
 "    </menu>"
 "  </menubar>"
-"  <toolbar  name='ToolBar'>"
-"    <toolitem action='New'/>"
-"    <toolitem action='Save'/>"
-"    <toolitem action='Print'/>"
-"  </toolbar>"
 "</ui>";
 
 static void
-update_statusbar (GtkTextBuffer *buffer,
-                  GtkStatusbar  *statusbar)
+buffer_changed_callback (GtkTextBuffer *buffer)
 {
-  gchar *msg;
-  gint row, col;
-  GtkTextIter iter;
-  
-  gtk_statusbar_pop (statusbar, 0); /* clear any previous message, 
-				     * underflow is allowed 
-				     */
-
-  gtk_text_buffer_get_iter_at_mark (buffer,
-                                    &iter,
-                                    gtk_text_buffer_get_insert (buffer));
-
-  row = gtk_text_iter_get_line (&iter);
-  col = gtk_text_iter_get_line_offset (&iter);
-
-  msg = g_strdup_printf ("%d, %d",
-                         row, col);
-
-  gtk_statusbar_push (statusbar, 0, msg);
-
-  g_free (msg);
+  file_changed = TRUE;
+  update_statusbar ();
 }
 
 static void
@@ -307,7 +463,7 @@ mark_set_callback (GtkTextBuffer     *buffer,
                    GtkTextMark       *mark,
                    gpointer           data)
 {
-  update_statusbar (buffer, GTK_STATUSBAR (data));
+  update_statusbar ();
 }
 
 static void
@@ -326,18 +482,16 @@ update_resize_grip (GtkWidget           *widget,
     }
 }
 
-
 static void
 create_window (void)
 {
   GtkWidget *bar;
   GtkWidget *table;
-  GtkWidget *statusbar;
   GtkWidget *contents;
   GtkUIManager *ui;
   GtkWidget *sw;
   GtkActionGroup *actions;
-  GError *error = NULL;
+  GError *error;
   
   main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
@@ -354,16 +508,16 @@ create_window (void)
   gtk_ui_manager_insert_action_group (ui, actions, 0);
   gtk_window_add_accel_group (GTK_WINDOW (main_window), 
 			      gtk_ui_manager_get_accel_group (ui));
-  gtk_window_set_title (GTK_WINDOW (main_window), "Editor (with printing)");
   gtk_container_set_border_width (GTK_CONTAINER (main_window), 0);
-  
+
+  error = NULL;
   if (!gtk_ui_manager_add_ui_from_string (ui, ui_info, -1, &error))
     {
       g_message ("building menus failed: %s", error->message);
       g_error_free (error);
     }
 
-  table = gtk_table_new (1, 4, FALSE);
+  table = gtk_table_new (1, 3, FALSE);
   gtk_container_add (GTK_CONTAINER (main_window), table);
 
   bar = gtk_ui_manager_get_widget (ui, "/MenuBar");
@@ -374,16 +528,6 @@ create_window (void)
 		    0, 1,                      0, 1,
 		    GTK_EXPAND | GTK_FILL,     0,
 		    0,                         0);
-
-  bar = gtk_ui_manager_get_widget (ui, "/ToolBar");
-  gtk_toolbar_set_tooltips (GTK_TOOLBAR (bar), TRUE);
-  gtk_widget_show (bar);
-  gtk_table_attach (GTK_TABLE (table),
-		    bar, 
-		    /* X direction */       /* Y direction */
-		    0, 1,                   1, 2,
-		    GTK_EXPAND | GTK_FILL,  0,
-		    0,                      0);
 
   /* Create document  */
   sw = gtk_scrolled_window_new (NULL, NULL);
@@ -398,7 +542,7 @@ create_window (void)
   gtk_table_attach (GTK_TABLE (table),
 		    sw,
 		    /* X direction */       /* Y direction */
-		    0, 1,                   2, 3,
+		    0, 1,                   1, 2,
 		    GTK_EXPAND | GTK_FILL,  GTK_EXPAND | GTK_FILL,
 		    0,                      0);
   
@@ -414,7 +558,7 @@ create_window (void)
   gtk_table_attach (GTK_TABLE (table),
 		    statusbar,
 		    /* X direction */       /* Y direction */
-		    0, 1,                   3, 4,
+		    0, 1,                   2, 3,
 		    GTK_EXPAND | GTK_FILL,  0,
 		    0,                      0);
 
@@ -423,14 +567,14 @@ create_window (void)
   
   g_signal_connect_object (buffer,
 			   "changed",
-			   G_CALLBACK (update_statusbar),
-			   statusbar,
+			   G_CALLBACK (buffer_changed_callback),
+			   NULL,
 			   0);
   
   g_signal_connect_object (buffer,
 			   "mark_set", /* cursor moved */
 			   G_CALLBACK (mark_set_callback),
-			   statusbar,
+			   NULL,
 			   0);
   
   g_signal_connect_object (main_window, 
@@ -439,7 +583,7 @@ create_window (void)
 			   statusbar,
 			   0);
   
-  update_statusbar (buffer, GTK_STATUSBAR (statusbar));
+  update_ui ();
   
   gtk_widget_show_all (main_window);
 }
@@ -451,7 +595,9 @@ main (int argc, char **argv)
 
   create_window ();
 
+  if (argc == 2)
+    load_file (argv[1]);
+  
   gtk_main ();
   return 0;
 }
-

@@ -38,6 +38,15 @@ static int job_nr = 1;
 
 G_DEFINE_TYPE (EggPrintOperation, egg_print_operation, G_TYPE_OBJECT)
 
+GQuark     
+egg_print_error_quark (void)
+{
+  static GQuark quark = 0;
+  if (quark == 0)
+    quark = g_quark_from_static_string ("egg-print-error-quark");
+  return quark;
+}
+     
 static void
 egg_print_operation_finalize (GObject *object)
 {
@@ -251,31 +260,6 @@ egg_print_operation_set_pdf_target (EggPrintOperation  *op,
   op->priv->pdf_target = g_strdup (filename);
 }
 
-static void 
-pdf_start_page (EggPrintOperation *op,
-		EggPrintContext *print_context,
-		EggPageSetup *page_setup)
-{
-  /* TODO: Set up page size, not supported in cairo yet */
-}
-
-static void
-pdf_end_page (EggPrintOperation *op,
-	      EggPrintContext *print_context)
-{
-  cairo_t *cr;
-
-  cr = egg_print_context_get_cairo (print_context);
-  cairo_show_page (cr);
-}
-
-static void
-pdf_end_run (EggPrintOperation *op)
-{
-  cairo_surface_destroy (op->priv->surface);
-  op->priv->surface = NULL;
-}
-
 /* Creates the initial page setup used for printing unless the
  * app overrides this on a per-page basis using request_page_setup.
  *
@@ -319,41 +303,75 @@ create_page_setup (EggPrintOperation  *op)
   return page_setup;
 }
 
-static gboolean
+static void 
+pdf_start_page (EggPrintOperation *op,
+		EggPrintContext *print_context,
+		EggPageSetup *page_setup)
+{
+  /* TODO: Set up page size, not supported in cairo yet */
+}
+
+static void
+pdf_end_page (EggPrintOperation *op,
+	      EggPrintContext *print_context)
+{
+  cairo_t *cr;
+
+  cr = egg_print_context_get_cairo (print_context);
+  cairo_show_page (cr);
+}
+
+static void
+pdf_end_run (EggPrintOperation *op)
+{
+  cairo_surface_destroy (op->priv->surface);
+  op->priv->surface = NULL;
+}
+
+static EggPrintOperationResult
+run_pdf (EggPrintOperation *op,
+	 GtkWindow *parent,
+	 gboolean *do_print,
+	 GError **error)
+{
+  EggPageSetup *page_setup;
+  double width, height;
+  /* This will be overwritten later by the non-default size, but
+     we need to pass some size: */
+  
+  page_setup = create_page_setup (op);
+  width = egg_page_setup_get_paper_width (page_setup, EGG_UNIT_POINTS);
+  height = egg_page_setup_get_paper_height (page_setup, EGG_UNIT_POINTS);
+  g_object_unref (page_setup);
+  
+  op->priv->surface = cairo_pdf_surface_create (op->priv->pdf_target,
+						width, height);
+  /* TODO: DPI from settings object? */
+  cairo_pdf_surface_set_dpi (op->priv->surface, 300, 300);
+  
+  op->priv->dpi_x = 72;
+  op->priv->dpi_y = 72;
+
+  op->priv->manual_num_copies = 1;
+  op->priv->manual_collation = FALSE;
+  
+  *do_print = TRUE;
+  
+  op->priv->start_page = pdf_start_page;
+  op->priv->end_page = pdf_end_page;
+  op->priv->end_run = pdf_end_run;
+  
+  return EGG_PRINT_OPERATION_RESULT_APPLY; 
+}
+
+static EggPrintOperationResult
 run_print_dialog (EggPrintOperation *op,
 		  GtkWindow *parent,
-		  gboolean *do_print)
+		  gboolean *do_print,
+		  GError **error)
 {
-  if (op->priv->pdf_target != NULL) {
-    EggPageSetup *page_setup;
-    double width, height;
-    /* This will be overwritten later by the non-default size, but
-       we need to pass some size: */
-    
-    page_setup = create_page_setup (op);
-    width = egg_page_setup_get_paper_width (page_setup, EGG_UNIT_POINTS);
-    height = egg_page_setup_get_paper_height (page_setup, EGG_UNIT_POINTS);
-    g_object_unref (page_setup);
-    
-    op->priv->surface = cairo_pdf_surface_create (op->priv->pdf_target,
-						  width, height);
-    /* TODO: DPI from settings object? */
-    cairo_pdf_surface_set_dpi (op->priv->surface, 300, 300);
-
-    op->priv->dpi_x = 72;
-    op->priv->dpi_y = 72;
-
-    op->priv->manual_num_copies = 1;
-    op->priv->manual_collation = FALSE;
-    
-    *do_print = TRUE;
-
-    op->priv->start_page = pdf_start_page;
-    op->priv->end_page = pdf_end_page;
-    op->priv->end_run = pdf_end_run;
-
-    return TRUE; 
-  }
+  if (op->priv->pdf_target != NULL)
+    return run_pdf (op, parent, do_print, error);
 
   /* This does:
    * Open print dialog 
@@ -363,12 +381,15 @@ run_print_dialog (EggPrintOperation *op,
    * create cairo surface and data for print job
    * return correct result val
    */
-  return egg_print_operation_platfrom_backend_run_dialog (op, parent, do_print);
+  return egg_print_operation_platfrom_backend_run_dialog (op, parent,
+							  do_print,
+							  error);
 }
 
-gboolean
+EggPrintOperationResult
 egg_print_operation_run (EggPrintOperation  *op,
-			 GtkWindow *parent)
+			 GtkWindow *parent,
+			 GError **error)
 {
   int page, range;
   EggPageSetup *initial_page_setup, *page_setup;
@@ -379,12 +400,11 @@ egg_print_operation_run (EggPrintOperation  *op,
   int i, j;
   EggPageRange *ranges;
   int num_ranges;
+  EggPrintOperationResult result;
 
-  if (!run_print_dialog (op, parent, &do_print))
-    return FALSE;
-
+  result = run_print_dialog (op, parent, &do_print, error);
   if (!do_print)
-    return TRUE;
+    return result;
   
   if (op->priv->manual_collation)
     {
@@ -481,5 +501,5 @@ egg_print_operation_run (EggPrintOperation  *op,
 
   op->priv->end_run (op);
 
-  return TRUE;
+  return EGG_PRINT_OPERATION_RESULT_APPLY;
 }
