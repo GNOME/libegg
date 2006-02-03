@@ -172,7 +172,7 @@ save_file (const char *save_filename)
       if (save_filename != filename)
 	{
 	  g_free (filename);
-	  save_filename = g_strdup (save_filename);
+	  filename = g_strdup (save_filename);
 	}
       file_changed = FALSE;
       update_ui ();
