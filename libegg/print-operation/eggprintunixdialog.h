@@ -20,6 +20,7 @@
 #define __EGG_PRINT_UNIX_DIALOG_H__
 
 #include <gtk/gtk.h>
+#include "eggprintbackend.h"
 
 G_BEGIN_DECLS
 
@@ -31,7 +32,7 @@ G_BEGIN_DECLS
 #define EGG_PRINT_UNIX_DIALOG_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYPE_PRINT_UNIX_DIALOG, EggPrintUnixDialogClass))
 
 
-typedef struct _EggPrintUnixDialog	       EggPrintUnixDialog;
+typedef struct _EggPrintUnixDialog         EggPrintUnixDialog;
 typedef struct _EggPrintUnixDialogClass    EggPrintUnixDialogClass;
 typedef struct EggPrintUnixDialogPrivate   EggPrintUnixDialogPrivate;
 
@@ -54,9 +55,13 @@ struct _EggPrintUnixDialogClass
 };
 
 GType		 egg_print_unix_dialog_get_type	   (void) G_GNUC_CONST;
-GtkWidget *      egg_print_unix_dialog_new              (const gchar *title,
+GtkWidget *      egg_print_unix_dialog_new         (const gchar *title,
                                                     GtkWindow *parent,
 						    const gchar *print_backend);
+
+EggPrintPrinter *egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog, 
+                                                             EggPrintBackend **out_backend);
+
 
 G_END_DECLS
 

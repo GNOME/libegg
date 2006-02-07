@@ -1,3 +1,36 @@
+2006-02-06  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprintprinter-private.h:
+	* eggprintprinter.c:
+	* eggprintprinter.h:
+	New printer object for describing UI element publicly and
+	backend specific data privately
+
+	* Makefile.am:
+	Add eggprintprinter to the mix
+
+	* eggprintbackend.c:
+	Signals now return the printer object instead of just the printer name
+	(egg_print_backend_printer_get_*): 
+	All removed in favor of using the printer object
+	(egg_print_backend_printer_create_cairo_surface):
+	New interface for getting a cairo surface to print on from the backend
+	(egg_print_backend_find_printer):
+	New interface for finding a printer given the name of the printer
+	
+	* eggprintbackendcups.c:
+	Revamp for using the printer object and hook up to print.
+	Can now print to a PDF stream which is displayed in the console.
+	TODO: Send the PDF stream to CUPS
+
+	* eggprintunixdialog.c:
+	Revamped to use printer object
+	(egg_print_unix_dialog_get_selected_printer): New method for
+	getting the currently selected printer and associated backend
+	
+	* eggprintoperation-unix.c:
+	Hooked up all the printing bits so it now "prints"
+
 2006-02-03  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggprintoperation.c:

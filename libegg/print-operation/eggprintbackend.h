@@ -30,10 +30,13 @@
 #endif
 
 #include <glib-object.h>
+#include <cairo/cairo.h>
+
+#include "eggprintprinter.h"
 
 G_BEGIN_DECLS
 typedef struct _EggPrintBackend       EggPrintBackend;
-typedef struct _EggPrintBackendIface EggPrintBackendIface;
+typedef struct _EggPrintBackendIface  EggPrintBackendIface;
 
 #define EGG_PRINT_BACKEND_ERROR (egg_print_backend_error_quark ())
 
@@ -58,47 +61,31 @@ struct _EggPrintBackendIface
 
   /* Methods
    */
-  gchar *               (*printer_get_location)       (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
-  gchar *               (*printer_get_description)    (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
-  gchar *               (*printer_get_make_and_model) (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
-  gchar *               (*printer_get_device_uri)     (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
-  gchar *               (*printer_get_printer_uri)    (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
-  gchar *               (*printer_get_state_message)  (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
-  guint                 (*printer_get_state)          (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
-  guint                 (*printer_get_job_count)      (EggPrintBackend  *print_backend,
-                                                       const gchar *printer_name);
+  cairo_surface_t * (*printer_create_cairo_surface) (EggPrintBackend *print_backend,
+                                                     EggPrintPrinter *printer,
+                                                     gdouble height,
+                                                     gdouble width);
+
+  EggPrintPrinter * (*find_printer) (EggPrintBackend *print_backend,
+                                     const gchar *printer_name);
+
   /* Signals 
    */
-  void (*printer_added)          (EggPrintBackend *print_backend);
-  void (*printer_removed)        (EggPrintBackend *print_backend);
-  void (*printer_status_changed) (EggPrintBackend *print_backend);
+  void (*printer_added)          (EggPrintPrinter *printer);
+  void (*printer_removed)        (EggPrintPrinter *printer);
+  void (*printer_status_changed) (EggPrintPrinter *printer);
 };
 
 GType   egg_print_backend_get_type       (void) G_GNUC_CONST;
 
-gchar * egg_print_backend_printer_get_location          (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
-gchar * egg_print_backend_printer_get_description       (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
-gchar * egg_print_backend_printer_get_make_and_model    (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
-gchar * egg_print_backend_printer_get_device_uri        (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
-gchar * egg_print_backend_printer_get_printer_uri       (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
-gchar * egg_print_backend_printer_get_state_message     (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
-guint   egg_print_backend_printer_get_state             (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
-guint   egg_print_backend_printer_get_job_count         (EggPrintBackend  *print_backend,
-                                                         const gchar *printer_name);
+cairo_surface_t *egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
+                                                                 EggPrintPrinter *printer,
+                                                                 gdouble width, 
+                                                                 gdouble height);
+
+EggPrintPrinter *egg_print_backend_find_printer                 (EggPrintBackend *print_backend,
+                                                                 const gchar *printer_name);
+							 
 
 G_END_DECLS
 

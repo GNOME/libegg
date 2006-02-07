@@ -19,7 +19,49 @@
  */
 
 #include "eggprintoperation-private.h"
+#include "eggprintcontext-private.h"
+#include "eggprintmarshal.h"
+
 #include "eggprintunixdialog.h"
+#include "eggprintbackend.h"
+#include "eggprintprinter.h"
+
+typedef struct {
+  EggPrintBackend *backend;  /* the backend to print with */
+  EggPrintPrinter *printer;  /* the printer to send the job to */
+} EggPrintOperationUnix;
+
+static void
+unix_start_page (EggPrintOperation *op,
+		 EggPrintContext *print_context,
+		 EggPageSetup *page_setup)
+{
+
+}
+
+static void
+unix_end_page (EggPrintOperation *op,
+	       EggPrintContext *print_context)
+{
+  cairo_t *cr;
+
+  cr = egg_print_context_get_cairo (print_context);
+  cairo_show_page (cr);
+}
+
+static void
+unix_end_run (EggPrintOperation *op)
+{
+  EggPrintOperationUnix *op_unix = op->priv->platform_data;
+  g_object_unref (G_OBJECT (op_unix->printer));
+  g_object_unref (G_OBJECT (op_unix->backend));
+
+  g_free (op_unix);
+  op->priv->platform_data = NULL;
+
+  cairo_surface_destroy (op->priv->surface);
+  op->priv->surface = NULL;
+}
 
 EggPrintOperationResult
 egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
@@ -30,17 +72,58 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
   GtkWidget *pd;
   EggPrintOperationResult result;
   
-  result = EGG_PRINT_OPERATION_RESULT_APPLY;
+  result = EGG_PRINT_OPERATION_RESULT_CANCEL;
   
   pd = egg_print_unix_dialog_new ("Print...", parent, NULL);
-
-  result = FALSE;
+  
   *do_print = FALSE; 
   if (gtk_dialog_run (GTK_DIALOG (pd)) == GTK_RESPONSE_ACCEPT)
     {
-      do_print = TRUE;
-      result = TRUE;
-    }
+      EggPrintBackend *be;
+      EggPrintOperationUnix *op_unix;
+      EggPrintPrinter *printer;
+      EggPageSetup *page_setup;
+      double width, height;
+
+      *do_print = TRUE;
+      result = EGG_PRINT_OPERATION_RESULT_APPLY;
+
+      printer = egg_print_unix_dialog_get_selected_printer (EGG_PRINT_UNIX_DIALOG (pd), &be);
+
+      g_object_ref (G_OBJECT (printer));
+      g_object_ref (G_OBJECT (be));
+
+      if (op->priv->default_page_setup)
+        page_setup = egg_page_setup_copy (op->priv->default_page_setup);
+      else
+        page_setup = egg_page_setup_new ();
+
+      width = egg_page_setup_get_paper_width (page_setup, EGG_UNIT_POINTS);
+      height = egg_page_setup_get_paper_height (page_setup, EGG_UNIT_POINTS);
+      g_object_unref (page_setup); 
+
+      op_unix = g_new (EggPrintOperationUnix, 1);
+      op_unix->printer = printer;
+      op_unix->backend = be;
+
+      op->priv->surface = egg_print_backend_printer_create_cairo_surface (be, 
+                                                                          printer,
+                                                                          width, 
+									  height);
+
+      op->priv->dpi_x = 72;
+      op->priv->dpi_y = 72;
+ 
+      op->priv->platform_data = op_unix;
+
+      /* TODO: hook up to dialog elements */
+      op->priv->manual_num_copies = 1;
+      op->priv->manual_collation = FALSE;
+    } 
+
+  op->priv->start_page = unix_start_page;
+  op->priv->end_page = unix_end_page;
+  op->priv->end_run = unix_end_run;
 
   gtk_widget_destroy (pd);
 

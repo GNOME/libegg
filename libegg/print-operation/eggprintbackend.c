@@ -75,108 +75,26 @@ egg_print_backend_base_init (gpointer g_class)
 		    G_SIGNAL_RUN_LAST,
 		    G_STRUCT_OFFSET (EggPrintBackendIface, printer_added),
 		    NULL, NULL,
-		    g_cclosure_marshal_VOID__STRING,
-		    G_TYPE_NONE, 1, G_TYPE_STRING);
+		    g_cclosure_marshal_VOID__OBJECT,
+		    G_TYPE_NONE, 1, G_TYPE_OBJECT);
       g_signal_new ("printer-removed",
 		    iface_type,
 		    G_SIGNAL_RUN_LAST,
 		    G_STRUCT_OFFSET (EggPrintBackendIface, printer_removed),
 		    NULL, NULL,
-		    g_cclosure_marshal_VOID__STRING,
-		    G_TYPE_NONE, 1, G_TYPE_STRING);
+		    g_cclosure_marshal_VOID__OBJECT,
+		    G_TYPE_NONE, 1, G_TYPE_OBJECT);
       g_signal_new ("printer-status-changed",
 		    iface_type,
 		    G_SIGNAL_RUN_LAST,
 		    G_STRUCT_OFFSET (EggPrintBackendIface, printer_status_changed),
 		    NULL, NULL,
-		    g_cclosure_marshal_VOID__STRING,
-		    G_TYPE_NONE, 1, G_TYPE_STRING);
+		    g_cclosure_marshal_VOID__OBJECT,
+		    G_TYPE_NONE, 1, G_TYPE_OBJECT);
 
       initialized = TRUE;
     }
 }
-
-gchar *
-egg_print_backend_printer_get_location (EggPrintBackend  *print_backend,
-                                        const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_location (print_backend, printer_name);
-
-}
-
-gchar *
-egg_print_backend_printer_get_description (EggPrintBackend  *print_backend,
-                                           const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_description (print_backend, printer_name);
-
-}
-
-gchar *
-egg_print_backend_printer_get_make_and_model (EggPrintBackend  *print_backend,
-                                              const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_make_and_model (print_backend, printer_name);
-
-}
-
-gchar *
-egg_print_backend_printer_get_device_uri (EggPrintBackend  *print_backend,
-                                          const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_device_uri (print_backend, printer_name);
-
-}
-
-gchar *
-egg_print_backend_printer_get_printer_uri (EggPrintBackend  *print_backend,
-                                           const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_printer_uri (print_backend, printer_name);
-
-}
-
-gchar *
-egg_print_backend_printer_get_state_message (EggPrintBackend  *print_backend,
-                                        const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_state_message (print_backend, printer_name);
-
-}
-
-guint
-egg_print_backend_printer_get_state (EggPrintBackend  *print_backend,
-                                     const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), 0);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_state (print_backend, printer_name);
-
-}
-
-guint
-egg_print_backend_printer_get_job_count (EggPrintBackend  *print_backend,
-                                         const gchar *printer_name)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), 0);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_get_job_count (print_backend, printer_name);
-
-}
-
-
 
 /* TODO: setup loading of backends */
 EggPrintBackend *
@@ -222,5 +140,26 @@ _egg_print_backend_create (const char *backend_name)
 #endif 
 
   return NULL;
+}
+
+cairo_surface_t *
+egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
+                                                EggPrintPrinter *printer,
+                                                gdouble width, 
+                                                gdouble height)
+{
+  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
+
+  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_create_cairo_surface (print_backend, printer, width, height);
+}
+
+EggPrintPrinter *
+egg_print_backend_find_printer (EggPrintBackend *print_backend,
+                                const gchar *printer_name)
+{
+  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
+
+  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->find_printer (print_backend, printer_name);
+
 }
 

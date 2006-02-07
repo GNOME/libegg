@@ -139,17 +139,17 @@ egg_print_unix_dialog_finalize (GObject *object)
 
 static void
 _printer_added_cb (EggPrintBackend *backend, 
-                   const gchar *printer_name, 
+                   EggPrintPrinter *printer, 
 		   EggPrintUnixDialog *impl)
 {
   /* TODO: use a model instead of just text */
   gtk_combo_box_append_text (GTK_COMBO_BOX (impl->priv->printer_select),
-                             printer_name);
+                             printer->name);
 }
 
 static void
 _printer_removed_cb (EggPrintBackend *backend, 
-                   const gchar *printer_name, 
+                   EggPrintPrinter *printer, 
 		   EggPrintUnixDialog *impl)
 {
 }
@@ -157,7 +157,7 @@ _printer_removed_cb (EggPrintBackend *backend,
 
 static void
 _printer_status_cb (EggPrintBackend *backend, 
-                   const gchar *printer_name, 
+                   EggPrintPrinter *printer, 
 		   EggPrintUnixDialog *impl)
 {
 }
@@ -396,7 +396,7 @@ _populate_dialog (EggPrintUnixDialog *dialog)
  *
  * Return value: a new #EggPrintUnixDialog
  *
- * Since: 2.6
+ * Since: 2.8
  **/
 GtkWidget *
 egg_print_unix_dialog_new (const gchar *title,
@@ -427,3 +427,22 @@ egg_print_unix_dialog_new (const gchar *title,
   
 }
 
+EggPrintPrinter *
+egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog, 
+                                            EggPrintBackend **out_backend)
+{
+  EggPrintBackend *backend;
+  EggPrintPrinter *printer;
+  const gchar *printer_name;
+  
+  /* TODO: work with mulitple backends */
+  backend = dialog->priv->print_backend;
+
+  printer_name = gtk_combo_box_get_active_text (GTK_COMBO_BOX (dialog->priv->printer_select));
+
+  printer = egg_print_backend_find_printer (backend, printer_name); 
+
+  *out_backend = backend;
+
+  return printer; 
+}

@@ -25,9 +25,15 @@
 #include <cups/http.h>
 #include <cups/ipp.h>
 #include <errno.h>
+#include <cairo.h>
+#include <cairo-pdf.h>
+#include <cairo-ps.h>
 
 #include "eggprintbackend.h"
 #include "eggprintbackendcups.h"
+
+#include "eggprintprinter.h"
+#include "eggprintprinter-private.h"
 
 typedef struct _EggPrintBackendCupsClass EggPrintBackendCupsClass;
 
@@ -69,20 +75,9 @@ typedef struct
 
 typedef struct
 {
-  gchar *name;
-
-  guint is_new: 1;
-  
-  gchar *location;
-  gchar *description;
-
-  gchar *make_and_model;
   gchar *device_uri;
   gchar *printer_uri;
-  gchar *state_message;
   ipp_pstate_t state;
-  gint job_count;
-
 } CupsPrinter;
 
 struct _EggPrintBackendCupsClass
@@ -109,14 +104,8 @@ static void _cups_request_printer_list (EggPrintBackendCups *print_backend);
 static void
 _free_cups_printer (CupsPrinter *printer)
 {
-  g_free (printer->name);
-  g_free (printer->location);
-  g_free (printer->description);
-
-  g_free (printer->make_and_model);
   g_free (printer->device_uri);
   g_free (printer->printer_uri);
-  g_free (printer->state_message);
 
   g_free (printer);
 }
@@ -187,17 +176,63 @@ egg_print_backend_cups_class_init (EggPrintBackendCupsClass *class)
   gobject_class->finalize = egg_print_backend_cups_finalize;
 }
 
+static cairo_status_t
+_cairo_write_to_cups (EggPrintBackendCups *backend,
+                      const unsigned char *data,
+                      unsigned int         length)
+{
+  cairo_status_t result;
+  
+  /* TODO: Hookup to CUPS */
+  result = CAIRO_STATUS_WRITE_ERROR;
+  
+  /* for now just print out the buffer */
+  printf ("%.*s", length, data);
+
+  result = CAIRO_STATUS_SUCCESS;
+
+  return result;
+}
+
+
+static cairo_surface_t *
+egg_print_backend_cups_printer_create_cairo_surface (EggPrintBackend *backend, 
+                                                     EggPrintPrinter *printer,
+                                                     gdouble width, 
+                                                     gdouble height)
+{
+  cairo_surface_t *surface;
+  EggPrintBackendCups *cups_backend;
+  
+  /* TODO: check if it is a ps or pdf printer */
+  
+  cups_backend = EGG_PRINT_BACKEND_CUPS (backend);
+  
+  surface = cairo_pdf_surface_create_for_stream  (_cairo_write_to_cups, cups_backend, width, height);
+
+  /* TODO: DPI from settings object? */
+  cairo_pdf_surface_set_dpi (surface, 300, 300);
+
+  return surface;
+}
+
+static EggPrintPrinter *
+egg_print_backend_cups_find_printer (EggPrintBackend *print_backend,
+                                     const gchar *printer_name)
+{
+  EggPrintBackendCups *cups_print_backend;
+
+  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
+  
+  return (EggPrintPrinter *) g_hash_table_lookup (cups_print_backend->printers, 
+                                                  printer_name);  
+}
+
 static void
 egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
 {
-  iface->printer_get_location = egg_print_backend_cups_printer_get_location;
-  iface->printer_get_description = egg_print_backend_cups_printer_get_description;
-  iface->printer_get_make_and_model = egg_print_backend_cups_printer_get_make_and_model;
-  iface->printer_get_device_uri = egg_print_backend_cups_printer_get_device_uri;
-  iface->printer_get_printer_uri = egg_print_backend_cups_printer_get_printer_uri;
-  iface->printer_get_state_message = egg_print_backend_cups_printer_get_state_message;
-  iface->printer_get_state = egg_print_backend_cups_printer_get_state;
-  iface->printer_get_job_count = egg_print_backend_cups_printer_get_job_count;
+  iface->printer_create_cairo_surface = egg_print_backend_cups_printer_create_cairo_surface;
+  iface->find_printer = egg_print_backend_cups_find_printer;
 }
 
 static void
@@ -208,7 +243,7 @@ egg_print_backend_cups_init (EggPrintBackendCups *backend_cups)
                                                  (GDestroyNotify) g_free,
                                                  (GDestroyNotify) _free_cups_printer);
 
-  _cups_request_printer_list (EGG_PRINT_BACKEND (backend_cups));
+  _cups_request_printer_list (backend_cups);
 }
 
 static void
@@ -504,16 +539,19 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
 {
   ipp_attribute_t *attr;
   gchar *printer_name;
-  CupsPrinter *printer;
+  CupsPrinter *cups_printer;
+  EggPrintPrinter *printer;
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
 
-  printer_name = (gchar *) user_data;
-  printer = g_hash_table_lookup (print_backend->printers, printer_name);
+  printer_name = (gchar *)user_data;
+  printer = (EggPrintPrinter *) g_hash_table_lookup (print_backend->printers, printer_name);
 
   if (!printer)
     return;
- 
+
+  cups_printer = (CupsPrinter *) printer->priv->backend_data;
+
   for (attr = response->attrs; attr != NULL; attr = attr->next) {
     if (!attr->name)
       continue;
@@ -521,11 +559,10 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
     _CUPS_MAP_ATTR_STR (attr, printer->location, "printer-location");
     _CUPS_MAP_ATTR_STR (attr, printer->description, "printer-info");
 
-    _CUPS_MAP_ATTR_STR (attr, printer->make_and_model, "printer-make-and-model");
-    _CUPS_MAP_ATTR_STR (attr, printer->device_uri, "device-uri");
-    _CUPS_MAP_ATTR_STR (attr, printer->printer_uri, "printer-uri-supported");
+    _CUPS_MAP_ATTR_STR (attr, cups_printer->device_uri, "device-uri");
+    _CUPS_MAP_ATTR_STR (attr, cups_printer->printer_uri, "printer-uri-supported");
     _CUPS_MAP_ATTR_STR (attr, printer->state_message, "printer-state-message");
-    _CUPS_MAP_ATTR_INT (attr, printer->state, "printer-state");
+    _CUPS_MAP_ATTR_INT (attr, cups_printer->state, "printer-state");
     _CUPS_MAP_ATTR_INT (attr, printer->job_count, "queued-job-count");
 
   }
@@ -533,7 +570,7 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   if (printer->is_new)
     {
       
-      g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer->name);
+      g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
       printer->is_new = FALSE;
     }
 }
@@ -581,15 +618,21 @@ _cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
   attr = ippFindAttribute (response, "printer-name", IPP_TAG_NAME);
   while (attr) 
     {
-      CupsPrinter *printer;
+      EggPrintPrinter *printer;
+      CupsPrinter *cups_printer;
 
-      printer = g_hash_table_lookup (print_backend->printers, attr->values[0].string.text);
+      printer = (EggPrintPrinter *) g_hash_table_lookup (print_backend->printers, 
+                                                         attr->values[0].string.text);
 
       if (!printer)
         {
-          printer = g_new0 (CupsPrinter, 1);
+	  printer = egg_print_printer_new ();
+          cups_printer = g_new0 (CupsPrinter, 1);
           printer->name = g_strdup (attr->values[0].string.text);
-          printer->is_new = TRUE;
+
+          egg_print_printer_set_backend_data (printer,
+                                              cups_printer,
+                                              (GFreeFunc) _free_cups_printer);
 
           g_hash_table_insert (print_backend->printers,
                                g_strdup (printer->name), 
@@ -624,161 +667,5 @@ _cups_request_printer_list (EggPrintBackendCups *print_backend)
                          NULL,
                          &error);
 
-}
-
-gchar *
-egg_print_backend_cups_printer_get_location (EggPrintBackend  *print_backend,
-                                             const gchar *printer_name)
-{
-  CupsPrinter *printer;
-  gchar *result;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-
-  result = NULL;
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL && printer->location !=NULL)
-    result = g_strdup (printer->location);
-  
-  return result; 
-}
-
-gchar *
-egg_print_backend_cups_printer_get_description (EggPrintBackend  *print_backend,
-                                                const gchar *printer_name)
-{  
-  CupsPrinter *printer;
-  gchar *result;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-
-  result = NULL;
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL && printer->description !=NULL)
-    result = g_strdup (printer->description);
-  
-  return result; 
-}
-
-gchar *
-egg_print_backend_cups_printer_get_make_and_model (EggPrintBackend  *print_backend,
-                                                   const gchar *printer_name)
-{
-  CupsPrinter *printer;
-  gchar *result;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-
-  result = NULL;
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL && printer->make_and_model !=NULL)
-    result = g_strdup (printer->make_and_model);
-  
-  return result; 
-}
-
-gchar *
-egg_print_backend_cups_printer_get_device_uri (EggPrintBackend  *print_backend,
-                                               const gchar *printer_name)
-{
-  CupsPrinter *printer;
-  gchar *result;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-
-  result = NULL;
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL && printer->device_uri !=NULL)
-    result = g_strdup (printer->device_uri);
-  
-  return result; 
-}
-
-gchar *
-egg_print_backend_cups_printer_get_printer_uri (EggPrintBackend  *print_backend,
-                                                const gchar *printer_name)
-{
-  CupsPrinter *printer;
-  gchar *result;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-
-  result = NULL;
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL && printer->printer_uri !=NULL)
-    result = g_strdup (printer->printer_uri);
-  
-  return result; 
-}
-
-gchar *
-egg_print_backend_cups_printer_get_state_message (EggPrintBackend  *print_backend,
-                                                  const gchar *printer_name)
-{
-  CupsPrinter *printer;
-  gchar *result;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-
-  result = NULL;
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL && printer->state_message !=NULL)
-    result = g_strdup (printer->state_message);
-  
-  return result; 
-}
-
-guint
-egg_print_backend_cups_printer_get_state (EggPrintBackend  *print_backend,
-                                          const gchar *printer_name)
-{
-  CupsPrinter *printer;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-  
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL)
-    return (guint) printer->state;
-  else
-    return 0;
-}
-
-guint
-egg_print_backend_cups_printer_get_job_count (EggPrintBackend  *print_backend,
-                                              const gchar *printer_name)
-{
-  CupsPrinter *printer;
-  EggPrintBackendCups  *cups_print_backend;
-
-  cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
-
-  printer = g_hash_table_lookup (cups_print_backend->printers,
-                                 printer_name);
-
-  if (printer != NULL)
-    return printer->job_count;
-  else
-    return 0;
 }
 
