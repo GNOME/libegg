@@ -1,0 +1,11 @@
+Highlevel API:
+* Add API for showing a page setup dialog
+* Add a way to make the cairo printing callbacks (optionally) happen in a thread
+* Add API to EggPrintOperation to handle job status feedback while printing.
+  Needs something like "job_status_changed" and "job_finished" signals
+* Add API to allow the app to add a custom tab with gtk+ widgets to the
+  print dialog. We can hopefully implement this on osx & win32.
+* Finish all the tables in paper_names.c
+
+Win32:
+* Use threads for the dialog, to allow repaints of other windows while they are up
