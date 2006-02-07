@@ -1,5 +1,10 @@
 2006-02-07  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintbackend.h:
+	Correct cairo include
+
+2006-02-07  Alexander Larsson  <alexl@redhat.com>
+
 	* TODO:
 	Add todo file
 

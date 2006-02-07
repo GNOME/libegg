@@ -30,7 +30,7 @@
 #endif
 
 #include <glib-object.h>
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 #include "eggprintprinter.h"
 
