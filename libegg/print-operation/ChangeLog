@@ -1,5 +1,13 @@
 2006-02-07  John (J5) Palmieri  <johnp@redhat.com>
 
+	* eggprintoperation-unix.c (egg_print_operation_platform_backend_run):
+	remove ref since printer object is already reffed in the API
+
+	* eggprintunixdialog.c:
+	Add model/view to printer list
+
+2006-02-07  John (J5) Palmieri  <johnp@redhat.com>
+
 	* eggprintprinter-private.h:
 	* eggprintprinter.c:
 	* eggprintprinter.h:

@@ -182,7 +182,7 @@ _cairo_write_to_cups (EggPrintBackendCups *backend,
                       unsigned int         length)
 {
   cairo_status_t result;
-  
+ 
   /* TODO: Hookup to CUPS */
   result = CAIRO_STATUS_WRITE_ERROR;
   
@@ -207,7 +207,6 @@ egg_print_backend_cups_printer_create_cairo_surface (EggPrintBackend *backend,
   /* TODO: check if it is a ps or pdf printer */
   
   cups_backend = EGG_PRINT_BACKEND_CUPS (backend);
-  
   surface = cairo_pdf_surface_create_for_stream  (_cairo_write_to_cups, cups_backend, width, height);
 
   /* TODO: DPI from settings object? */

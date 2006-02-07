@@ -56,6 +56,16 @@ enum {
 
 //static guint egg_print_unix_dialog_signals[LAST_SIGNAL] = { 0 };
 
+enum {
+  PRINTER_LIST_COL_ICON,
+  PRINTER_LIST_COL_NAME,
+  PRINTER_LIST_COL_STATE,
+  PRINTER_LIST_COL_JOBS,
+  PRINTER_LIST_COL_LOCATION,
+  PRINTER_LIST_COL_PRINTER_OBJ,
+  PRINTER_LIST_N_COLS
+};
+
 struct EggPrintUnixDialogPrivate
 {
   GtkWidget *main_hbox;
@@ -79,6 +89,8 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *pages_from_start_entry;
   GtkWidget *pages_from_to_label;
   GtkWidget *pages_from_end_entry;
+
+  GtkTreeModel *printer_list;
 
   EggPrintBackend *print_backend;
 };
@@ -142,13 +154,18 @@ _printer_added_cb (EggPrintBackend *backend,
                    EggPrinter *printer, 
 		   EggPrintUnixDialog *impl)
 {
-  gchar *name;
+  GtkTreeIter iter;
 
-  /* TODO: use a model instead of just text */
+  gtk_list_store_append (impl->priv->printer_list, &iter);
 
-  name = egg_printer_get_name (printer);
-  gtk_combo_box_append_text (GTK_COMBO_BOX (impl->priv->printer_select),
-                             name);
+  gtk_list_store_set (impl->priv->printer_list, &iter,
+                      PRINTER_LIST_COL_ICON, NULL,
+                      PRINTER_LIST_COL_NAME, egg_printer_get_name (printer),
+                      PRINTER_LIST_COL_STATE, egg_printer_get_state_message (printer),
+                      PRINTER_LIST_COL_JOBS, egg_printer_get_job_count (printer),
+                      PRINTER_LIST_COL_LOCATION, egg_printer_get_location (printer),
+                      PRINTER_LIST_COL_PRINTER_OBJ, printer,
+                      -1);
 }
 
 static void
@@ -274,6 +291,55 @@ egg_print_unix_dialog_get_property (GObject    *object,
 }
 
 static void
+_create_printer_list_model (EggPrintUnixDialog *dialog)
+{
+  GtkTreeModel *model;
+
+  model = gtk_list_store_new (PRINTER_LIST_N_COLS,
+                              GDK_TYPE_PIXBUF,
+                              G_TYPE_STRING, 
+                              G_TYPE_STRING, 
+                              G_TYPE_INT, 
+                              G_TYPE_STRING, 
+                              G_TYPE_OBJECT);
+
+  dialog->priv->printer_list = model;
+}
+
+static void
+_create_printer_selection_view (EggPrintUnixDialog *dialog)
+{
+  GtkCellLayout *cell_layout;
+  GtkCellRenderer *cell;
+ 
+  /* TODO: Make this all layout better (prehaps an expandable tree? 
+           or a mouseover popup?) */
+ 
+  cell_layout = GTK_CELL_LAYOUT (dialog->priv->printer_select);
+
+  cell = gtk_cell_renderer_pixbuf_new ();
+  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
+  gtk_cell_layout_add_attribute (cell_layout, cell, "pixbuf", PRINTER_LIST_COL_ICON);
+  
+  cell = gtk_cell_renderer_text_new ();
+  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
+  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_NAME);
+
+  cell = gtk_cell_renderer_text_new ();
+  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
+  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_STATE);
+
+  cell = gtk_cell_renderer_text_new ();
+  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
+  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_JOBS);
+
+  cell = gtk_cell_renderer_text_new ();
+  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
+  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_LOCATION);
+}
+
+
+static void
 _populate_dialog (EggPrintUnixDialog *dialog)
 {
   GtkSizeGroup *printer_group;
@@ -285,7 +351,9 @@ _populate_dialog (EggPrintUnixDialog *dialog)
   g_return_if_fail (EGG_IS_PRINT_UNIX_DIALOG (dialog));
   
   priv = dialog->priv;
-  
+ 
+  _create_printer_list_model (dialog);
+ 
   printer_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
   settings_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
   copies_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
@@ -307,8 +375,9 @@ _populate_dialog (EggPrintUnixDialog *dialog)
 		      TRUE, TRUE, 0);
   
   priv->printer_label = gtk_label_new ("Send To:");
-  /* TODO: make printer selection model */
-  priv->printer_select = gtk_combo_box_new_text (); 
+  priv->printer_select = gtk_combo_box_new_with_model (priv->printer_list); 
+  _create_printer_selection_view (dialog);
+
   gtk_size_group_add_widget (printer_group, priv->printer_label);
   gtk_size_group_add_widget (printer_group, priv->printer_select);
   gtk_box_pack_start (GTK_BOX (priv->label_vbox), 
@@ -434,16 +503,19 @@ egg_print_unix_dialog_new (const gchar *title,
 EggPrinter *
 egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog)
 {
-  EggPrintBackend *backend;
   EggPrinter *printer;
-  const gchar *printer_name;
-  
-  /* TODO: work with mulitple backends */
-  backend = dialog->priv->print_backend;
+  GtkTreeIter iter;
 
-  printer_name = gtk_combo_box_get_active_text (GTK_COMBO_BOX (dialog->priv->printer_select));
+  printer = NULL;
 
-  printer = egg_print_backend_find_printer (backend, printer_name); 
+  if (gtk_combo_box_get_active_iter (GTK_COMBO_BOX (dialog->priv->printer_select),
+                                     &iter))
+    {
+      gtk_tree_model_get (dialog->priv->printer_list,
+                          &iter,
+                          PRINTER_LIST_COL_PRINTER_OBJ, &printer,
+                          -1); 
+    }
 
   return printer; 
 }

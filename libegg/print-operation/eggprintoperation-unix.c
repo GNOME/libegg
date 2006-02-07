@@ -86,8 +86,6 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 
       printer = egg_print_unix_dialog_get_selected_printer (EGG_PRINT_UNIX_DIALOG (pd));
 
-      g_object_ref (G_OBJECT (printer));
-
       if (op->priv->default_page_setup)
         page_setup = egg_page_setup_copy (op->priv->default_page_setup);
       else
