@@ -26,9 +26,9 @@
 #include <gtk/gtk.h>
 #include <gtk/gtkprivate.h>
 
-#include "eggprintunixdialog.h"
 #include "eggprintbackend.h"
 #include "eggprintbackendcups.h"
+#include "eggprintunixdialog.h"
 
 #define EGG_PRINT_UNIX_DIALOG_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINT_UNIX_DIALOG, EggPrintUnixDialogPrivate))
@@ -139,17 +139,21 @@ egg_print_unix_dialog_finalize (GObject *object)
 
 static void
 _printer_added_cb (EggPrintBackend *backend, 
-                   EggPrintPrinter *printer, 
+                   EggPrinter *printer, 
 		   EggPrintUnixDialog *impl)
 {
+  gchar *name;
+
   /* TODO: use a model instead of just text */
+
+  name = egg_printer_get_name (printer);
   gtk_combo_box_append_text (GTK_COMBO_BOX (impl->priv->printer_select),
-                             printer->name);
+                             name);
 }
 
 static void
 _printer_removed_cb (EggPrintBackend *backend, 
-                   EggPrintPrinter *printer, 
+                   EggPrinter *printer, 
 		   EggPrintUnixDialog *impl)
 {
 }
@@ -157,7 +161,7 @@ _printer_removed_cb (EggPrintBackend *backend,
 
 static void
 _printer_status_cb (EggPrintBackend *backend, 
-                   EggPrintPrinter *printer, 
+                   EggPrinter *printer, 
 		   EggPrintUnixDialog *impl)
 {
 }
@@ -427,12 +431,11 @@ egg_print_unix_dialog_new (const gchar *title,
   
 }
 
-EggPrintPrinter *
-egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog, 
-                                            EggPrintBackend **out_backend)
+EggPrinter *
+egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog)
 {
   EggPrintBackend *backend;
-  EggPrintPrinter *printer;
+  EggPrinter *printer;
   const gchar *printer_name;
   
   /* TODO: work with mulitple backends */
@@ -441,8 +444,6 @@ egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog,
   printer_name = gtk_combo_box_get_active_text (GTK_COMBO_BOX (dialog->priv->printer_select));
 
   printer = egg_print_backend_find_printer (backend, printer_name); 
-
-  *out_backend = backend;
 
   return printer; 
 }

@@ -32,7 +32,7 @@
 #include <glib-object.h>
 #include <cairo.h>
 
-#include "eggprintprinter.h"
+#include "eggprinter.h"
 
 G_BEGIN_DECLS
 typedef struct _EggPrintBackend       EggPrintBackend;
@@ -62,28 +62,28 @@ struct _EggPrintBackendIface
   /* Methods
    */
   cairo_surface_t * (*printer_create_cairo_surface) (EggPrintBackend *print_backend,
-                                                     EggPrintPrinter *printer,
+                                                     EggPrinter *printer,
                                                      gdouble height,
                                                      gdouble width);
 
-  EggPrintPrinter * (*find_printer) (EggPrintBackend *print_backend,
+  EggPrinter * (*find_printer) (EggPrintBackend *print_backend,
                                      const gchar *printer_name);
 
   /* Signals 
    */
-  void (*printer_added)          (EggPrintPrinter *printer);
-  void (*printer_removed)        (EggPrintPrinter *printer);
-  void (*printer_status_changed) (EggPrintPrinter *printer);
+  void (*printer_added)          (EggPrinter *printer);
+  void (*printer_removed)        (EggPrinter *printer);
+  void (*printer_status_changed) (EggPrinter *printer);
 };
 
 GType   egg_print_backend_get_type       (void) G_GNUC_CONST;
 
 cairo_surface_t *egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
-                                                                 EggPrintPrinter *printer,
+                                                                 EggPrinter *printer,
                                                                  gdouble width, 
                                                                  gdouble height);
 
-EggPrintPrinter *egg_print_backend_find_printer                 (EggPrintBackend *print_backend,
+EggPrinter *egg_print_backend_find_printer                 (EggPrintBackend *print_backend,
                                                                  const gchar *printer_name);
 							 
 

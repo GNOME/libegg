@@ -18,9 +18,9 @@
  */
 #ifndef __EGG_PRINT_UNIX_DIALOG_H__
 #define __EGG_PRINT_UNIX_DIALOG_H__
+#include "eggprinter.h"
 
 #include <gtk/gtk.h>
-#include "eggprintbackend.h"
 
 G_BEGIN_DECLS
 
@@ -59,8 +59,7 @@ GtkWidget *      egg_print_unix_dialog_new         (const gchar *title,
                                                     GtkWindow *parent,
 						    const gchar *print_backend);
 
-EggPrintPrinter *egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog, 
-                                                             EggPrintBackend **out_backend);
+EggPrinter *egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog);
 
 
 G_END_DECLS

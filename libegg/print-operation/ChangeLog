@@ -1,3 +1,25 @@
+2006-02-07  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprintprinter-private.h:
+	* eggprintprinter.c:
+	* eggprintprinter.h:
+	eggprintprinter renamed to eggprinter
+
+	* eggprinter-private.h:
+	* eggprinter.c:
+	* eggprinter.h:
+	Moved all data into private stuct and added accessor functions
+	(egg_print_printer_get_backend):
+	Added a backend member and API for accessing backend
+	(egg_print_printer_create_cairo_surface):
+	Added convinience API for getting a cairo surface directly
+	from the printer 
+	
+	* eggprintoperation-unix.c:
+	(egg_print_operation_platform_backend_run):
+	Don't worry about the backend anymore as it is encapulated
+	in the printer object
+
 2006-02-07  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintbackend.h:

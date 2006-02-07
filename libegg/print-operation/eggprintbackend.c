@@ -144,7 +144,7 @@ _egg_print_backend_create (const char *backend_name)
 
 cairo_surface_t *
 egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
-                                                EggPrintPrinter *printer,
+                                                EggPrinter *printer,
                                                 gdouble width, 
                                                 gdouble height)
 {
@@ -153,7 +153,7 @@ egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
   return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_create_cairo_surface (print_backend, printer, width, height);
 }
 
-EggPrintPrinter *
+EggPrinter *
 egg_print_backend_find_printer (EggPrintBackend *print_backend,
                                 const gchar *printer_name)
 {

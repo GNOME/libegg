@@ -24,11 +24,9 @@
 
 #include "eggprintunixdialog.h"
 #include "eggprintbackend.h"
-#include "eggprintprinter.h"
 
 typedef struct {
-  EggPrintBackend *backend;  /* the backend to print with */
-  EggPrintPrinter *printer;  /* the printer to send the job to */
+  EggPrinter *printer;  /* the printer to send the job to */
 } EggPrintOperationUnix;
 
 static void
@@ -54,7 +52,6 @@ unix_end_run (EggPrintOperation *op)
 {
   EggPrintOperationUnix *op_unix = op->priv->platform_data;
   g_object_unref (G_OBJECT (op_unix->printer));
-  g_object_unref (G_OBJECT (op_unix->backend));
 
   g_free (op_unix);
   op->priv->platform_data = NULL;
@@ -79,19 +76,17 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
   *do_print = FALSE; 
   if (gtk_dialog_run (GTK_DIALOG (pd)) == GTK_RESPONSE_ACCEPT)
     {
-      EggPrintBackend *be;
       EggPrintOperationUnix *op_unix;
-      EggPrintPrinter *printer;
+      EggPrinter *printer;
       EggPageSetup *page_setup;
       double width, height;
 
       *do_print = TRUE;
       result = EGG_PRINT_OPERATION_RESULT_APPLY;
 
-      printer = egg_print_unix_dialog_get_selected_printer (EGG_PRINT_UNIX_DIALOG (pd), &be);
+      printer = egg_print_unix_dialog_get_selected_printer (EGG_PRINT_UNIX_DIALOG (pd));
 
       g_object_ref (G_OBJECT (printer));
-      g_object_ref (G_OBJECT (be));
 
       if (op->priv->default_page_setup)
         page_setup = egg_page_setup_copy (op->priv->default_page_setup);
@@ -104,12 +99,10 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 
       op_unix = g_new (EggPrintOperationUnix, 1);
       op_unix->printer = printer;
-      op_unix->backend = be;
 
-      op->priv->surface = egg_print_backend_printer_create_cairo_surface (be, 
-                                                                          printer,
-                                                                          width, 
-									  height);
+      op->priv->surface = egg_printer_create_cairo_surface (printer,
+                                                                  width, 
+                                                                  height);
 
       op->priv->dpi_x = 72;
       op->priv->dpi_y = 72;

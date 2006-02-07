@@ -32,8 +32,8 @@
 #include "eggprintbackend.h"
 #include "eggprintbackendcups.h"
 
-#include "eggprintprinter.h"
-#include "eggprintprinter-private.h"
+#include "eggprinter.h"
+#include "eggprinter-private.h"
 
 typedef struct _EggPrintBackendCupsClass EggPrintBackendCupsClass;
 
@@ -197,7 +197,7 @@ _cairo_write_to_cups (EggPrintBackendCups *backend,
 
 static cairo_surface_t *
 egg_print_backend_cups_printer_create_cairo_surface (EggPrintBackend *backend, 
-                                                     EggPrintPrinter *printer,
+                                                     EggPrinter *printer,
                                                      gdouble width, 
                                                      gdouble height)
 {
@@ -216,7 +216,7 @@ egg_print_backend_cups_printer_create_cairo_surface (EggPrintBackend *backend,
   return surface;
 }
 
-static EggPrintPrinter *
+static EggPrinter *
 egg_print_backend_cups_find_printer (EggPrintBackend *print_backend,
                                      const gchar *printer_name)
 {
@@ -224,7 +224,7 @@ egg_print_backend_cups_find_printer (EggPrintBackend *print_backend,
 
   cups_print_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
   
-  return (EggPrintPrinter *) g_hash_table_lookup (cups_print_backend->printers, 
+  return (EggPrinter *) g_hash_table_lookup (cups_print_backend->printers, 
                                                   printer_name);  
 }
 
@@ -540,12 +540,12 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   ipp_attribute_t *attr;
   gchar *printer_name;
   CupsPrinter *cups_printer;
-  EggPrintPrinter *printer;
+  EggPrinter *printer;
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
 
   printer_name = (gchar *)user_data;
-  printer = (EggPrintPrinter *) g_hash_table_lookup (print_backend->printers, printer_name);
+  printer = (EggPrinter *) g_hash_table_lookup (print_backend->printers, printer_name);
 
   if (!printer)
     return;
@@ -556,22 +556,22 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
     if (!attr->name)
       continue;
 
-    _CUPS_MAP_ATTR_STR (attr, printer->location, "printer-location");
-    _CUPS_MAP_ATTR_STR (attr, printer->description, "printer-info");
+    _CUPS_MAP_ATTR_STR (attr, printer->priv->location, "printer-location");
+    _CUPS_MAP_ATTR_STR (attr, printer->priv->description, "printer-info");
 
     _CUPS_MAP_ATTR_STR (attr, cups_printer->device_uri, "device-uri");
     _CUPS_MAP_ATTR_STR (attr, cups_printer->printer_uri, "printer-uri-supported");
-    _CUPS_MAP_ATTR_STR (attr, printer->state_message, "printer-state-message");
+    _CUPS_MAP_ATTR_STR (attr, printer->priv->state_message, "printer-state-message");
     _CUPS_MAP_ATTR_INT (attr, cups_printer->state, "printer-state");
-    _CUPS_MAP_ATTR_INT (attr, printer->job_count, "queued-job-count");
+    _CUPS_MAP_ATTR_INT (attr, printer->priv->job_count, "queued-job-count");
 
   }
 
-  if (printer->is_new)
+  if (printer->priv->is_new)
     {
       
       g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
-      printer->is_new = FALSE;
+      printer->priv->is_new = FALSE;
     }
 }
 
@@ -618,28 +618,29 @@ _cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
   attr = ippFindAttribute (response, "printer-name", IPP_TAG_NAME);
   while (attr) 
     {
-      EggPrintPrinter *printer;
+      EggPrinter *printer;
       CupsPrinter *cups_printer;
 
-      printer = (EggPrintPrinter *) g_hash_table_lookup (print_backend->printers, 
+      printer = (EggPrinter *) g_hash_table_lookup (print_backend->printers, 
                                                          attr->values[0].string.text);
 
       if (!printer)
         {
-	  printer = egg_print_printer_new ();
+	  printer = egg_printer_new ();
           cups_printer = g_new0 (CupsPrinter, 1);
-          printer->name = g_strdup (attr->values[0].string.text);
+          printer->priv->name = g_strdup (attr->values[0].string.text);
+          printer->priv->backend = EGG_PRINT_BACKEND (print_backend);
 
-          egg_print_printer_set_backend_data (printer,
+          egg_printer_set_backend_data (printer,
                                               cups_printer,
                                               (GFreeFunc) _free_cups_printer);
 
           g_hash_table_insert (print_backend->printers,
-                               g_strdup (printer->name), 
+                               g_strdup (printer->priv->name), 
                                printer); 
         }
     
-      _cups_request_printer_info (print_backend, printer->name);
+      _cups_request_printer_info (print_backend, printer->priv->name);
       
       attr = ippFindNextAttribute (response, 
                                    "printer-name",
