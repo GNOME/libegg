@@ -30,6 +30,10 @@
 #include "eggprintbackendcups.h"
 #include "eggprintunixdialog.h"
 
+#define EXAMPLE_PAGE_AREA_SIZE 140
+
+#define _(x) (x)
+
 #define EGG_PRINT_UNIX_DIALOG_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINT_UNIX_DIALOG, EggPrintUnixDialogPrivate))
 
@@ -43,7 +47,7 @@ static void egg_print_unix_dialog_get_property (GObject      *object,
 			                   GValue *value,
 			                   GParamSpec   *pspec);
 
-static void _populate_dialog (EggPrintUnixDialog *dialog);
+static void populate_dialog (EggPrintUnixDialog *dialog);
 
 enum {
   PROP_0,
@@ -68,35 +72,197 @@ enum {
 
 struct EggPrintUnixDialogPrivate
 {
-  GtkWidget *main_hbox;
-  GtkWidget *label_vbox;
-  GtkWidget *input_vbox;
+  GtkWidget *notebook;
+
+  GtkWidget *printer_treeview;
   
-  GtkWidget *printer_label;
-  GtkWidget *printer_select;
-
-  GtkWidget *settings_label;
-  GtkWidget *settings_select;
-  
-  GtkWidget *copies_label;
-  GtkWidget *copies_spinner_hbox;
-  GtkWidget *copies_spinner;
-
-  GtkWidget *pages_label;
-  GtkWidget *pages_all_radio;
-  GtkWidget *pages_from_hbox;
-  GtkWidget *pages_from_radio;
-  GtkWidget *pages_from_start_entry;
-  GtkWidget *pages_from_to_label;
-  GtkWidget *pages_from_end_entry;
-
   GtkTreeModel *printer_list;
 
   EggPrintBackend *print_backend;
 };
 
-
 G_DEFINE_TYPE (EggPrintUnixDialog, egg_print_unix_dialog, GTK_TYPE_DIALOG);
+
+/* XPM */
+static const char *collate_xpm[] = {
+"65 35 6 1",
+" 	c None",
+".	c #000000",
+"+	c #020202",
+"@	c #FFFFFF",
+"#	c #010101",
+"$	c #070707",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           ..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..",
+"           ..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"..+++++++++##++++++$@@@@@@@@@..   ..+++++++++##++++++$@@@@@@@@@..",
+"..+++++++++##+++++#+@@@@@@@@@..   ..+++++++++##+++++#+@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@..@@@@..   ..@@@@@@@@@@@@@@@@++@@@..@@@@..",
+"..@@@@@@@@@@@@@@@@++@@.@@.@@@..   ..@@@@@@@@@@@@@@@@++@@.@@.@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@.@@@..   ..@@@@@@@@@@@@@@@@++@@@@@.@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@.@@@@..   ..@@@@@@@@@@@@@@@@++@@@@.@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@.@@@@@..   ..@@@@@@@@@@@@@@@@++@@@.@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@.@@@@@@..   ..@@@@@@@@@@@@@@@@++@@.@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@....@@@..   ..@@@@@@@@@@@@@@@@++@@....@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@@.@@@@.............   ..@@@@@@@@@@@.@@@@.............",
+"..@@@@@@@@@@..@@@@.............   ..@@@@@@@@@@..@@@@.............",
+"..@@@@@@@@@@@.@@@@..              ..@@@@@@@@@@@.@@@@..           ",
+"..@@@@@@@@@@@.@@@@..              ..@@@@@@@@@@@.@@@@..           ",
+"..@@@@@@@@@@@.@@@@..              ..@@@@@@@@@@@.@@@@..           ",
+"..@@@@@@@@@@@.@@@@..              ..@@@@@@@@@@@.@@@@..           ",
+"..@@@@@@@@@@...@@@..              ..@@@@@@@@@@...@@@..           ",
+"..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..           ",
+"..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..           ",
+"..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..           ",
+"....................              ....................           ",
+"....................              ....................           "};
+
+/* XPM */
+static const char *nocollate_xpm[] = {
+"65 35 6 1",
+" 	c None",
+".	c #000000",
+"+	c #FFFFFF",
+"@	c #020202",
+"#	c #010101",
+"$	c #070707",
+"           ....................              ....................",
+"           ....................              ....................",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"..@@@@@@@@@##@@@@@@$+++++++++..   ..@@@@@@@@@##@@@@@@$+++++++++..",
+"..@@@@@@@@@##@@@@@#@+++++++++..   ..@@@@@@@@@##@@@@@#@+++++++++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..++++++++++++++++@@++++.++++..   ..++++++++++++++++@@+++..++++..",
+"..++++++++++++++++@@+++..++++..   ..++++++++++++++++@@++.++.+++..",
+"..++++++++++++++++@@++++.++++..   ..++++++++++++++++@@+++++.+++..",
+"..++++++++++++++++@@++++.++++..   ..++++++++++++++++@@++++.++++..",
+"..++++++++++++++++@@++++.++++..   ..++++++++++++++++@@+++.+++++..",
+"..++++++++++++++++@@++++.++++..   ..++++++++++++++++@@++.++++++..",
+"..++++++++++++++++@@+++...+++..   ..++++++++++++++++@@++....+++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..+++++++++++.++++.............   ..++++++++++..++++.............",
+"..++++++++++..++++.............   ..+++++++++.++.+++.............",
+"..+++++++++++.++++..              ..++++++++++++.+++..           ",
+"..+++++++++++.++++..              ..+++++++++++.++++..           ",
+"..+++++++++++.++++..              ..++++++++++.+++++..           ",
+"..+++++++++++.++++..              ..+++++++++.++++++..           ",
+"..++++++++++...+++..              ..+++++++++....+++..           ",
+"..++++++++++++++++..              ..++++++++++++++++..           ",
+"..++++++++++++++++..              ..++++++++++++++++..           ",
+"..++++++++++++++++..              ..++++++++++++++++..           ",
+"....................              ....................           ",
+"....................              ....................           "};
+
+/* XPM */
+static const char *collate_reverse_xpm[] = {
+"65 35 6 1",
+" 	c None",
+".	c #000000",
+"+	c #020202",
+"@	c #FFFFFF",
+"#	c #010101",
+"$	c #070707",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           ..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..",
+"           ..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"           ++@@@@@@@@@@@@@@@@..              ++@@@@@@@@@@@@@@@@..",
+"..+++++++++##++++++$@@@@@@@@@..   ..+++++++++##++++++$@@@@@@@@@..",
+"..+++++++++##+++++#+@@@@@@@@@..   ..+++++++++##+++++#+@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@.@@@@..   ..@@@@@@@@@@@@@@@@++@@@@.@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@..@@@@..   ..@@@@@@@@@@@@@@@@++@@@..@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@.@@@@..   ..@@@@@@@@@@@@@@@@++@@@@.@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@.@@@@..   ..@@@@@@@@@@@@@@@@++@@@@.@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@.@@@@..   ..@@@@@@@@@@@@@@@@++@@@@.@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@.@@@@..   ..@@@@@@@@@@@@@@@@++@@@@.@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@...@@@..   ..@@@@@@@@@@@@@@@@++@@@...@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@@@@@@@++@@@@@@@@@..   ..@@@@@@@@@@@@@@@@++@@@@@@@@@..",
+"..@@@@@@@@@@..@@@@.............   ..@@@@@@@@@@..@@@@.............",
+"..@@@@@@@@@.@@.@@@.............   ..@@@@@@@@@.@@.@@@.............",
+"..@@@@@@@@@@@@.@@@..              ..@@@@@@@@@@@@.@@@..           ",
+"..@@@@@@@@@@@.@@@@..              ..@@@@@@@@@@@.@@@@..           ",
+"..@@@@@@@@@@.@@@@@..              ..@@@@@@@@@@.@@@@@..           ",
+"..@@@@@@@@@.@@@@@@..              ..@@@@@@@@@.@@@@@@..           ",
+"..@@@@@@@@@....@@@..              ..@@@@@@@@@....@@@..           ",
+"..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..           ",
+"..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..           ",
+"..@@@@@@@@@@@@@@@@..              ..@@@@@@@@@@@@@@@@..           ",
+"....................              ....................           ",
+"....................              ....................           "};
+
+/* XPM */
+static const char *nocollate_reverse_xpm[] = {
+"65 35 6 1",
+" 	c None",
+".	c #000000",
+"+	c #FFFFFF",
+"@	c #020202",
+"#	c #010101",
+"$	c #070707",
+"           ....................              ....................",
+"           ....................              ....................",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           ..++++++++++++++++..              ..++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"           @@++++++++++++++++..              @@++++++++++++++++..",
+"..@@@@@@@@@##@@@@@@$+++++++++..   ..@@@@@@@@@##@@@@@@$+++++++++..",
+"..@@@@@@@@@##@@@@@#@+++++++++..   ..@@@@@@@@@##@@@@@#@+++++++++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..++++++++++++++++@@+++..++++..   ..++++++++++++++++@@++++.++++..",
+"..++++++++++++++++@@++.++.+++..   ..++++++++++++++++@@+++..++++..",
+"..++++++++++++++++@@+++++.+++..   ..++++++++++++++++@@++++.++++..",
+"..++++++++++++++++@@++++.++++..   ..++++++++++++++++@@++++.++++..",
+"..++++++++++++++++@@+++.+++++..   ..++++++++++++++++@@++++.++++..",
+"..++++++++++++++++@@++.++++++..   ..++++++++++++++++@@++++.++++..",
+"..++++++++++++++++@@++....+++..   ..++++++++++++++++@@+++...+++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..++++++++++++++++@@+++++++++..   ..++++++++++++++++@@+++++++++..",
+"..++++++++++..++++.............   ..+++++++++++.++++.............",
+"..+++++++++.++.+++.............   ..++++++++++..++++.............",
+"..++++++++++++.+++..              ..+++++++++++.++++..           ",
+"..+++++++++++.++++..              ..+++++++++++.++++..           ",
+"..++++++++++.+++++..              ..+++++++++++.++++..           ",
+"..+++++++++.++++++..              ..+++++++++++.++++..           ",
+"..+++++++++....+++..              ..++++++++++...+++..           ",
+"..++++++++++++++++..              ..++++++++++++++++..           ",
+"..++++++++++++++++..              ..++++++++++++++++..           ",
+"..++++++++++++++++..              ..++++++++++++++++..           ",
+"....................              ....................           ",
+"....................              ....................           "};
+
 
 static void
 egg_print_unix_dialog_class_init (EggPrintUnixDialogClass *class)
@@ -135,7 +301,7 @@ egg_print_unix_dialog_init (EggPrintUnixDialog *dialog)
 {
   dialog->priv = EGG_PRINT_UNIX_DIALOG_GET_PRIVATE (dialog); 
   dialog->priv->print_backend = NULL;
-  _populate_dialog (dialog);
+  populate_dialog (dialog);
 }
 
 static void
@@ -156,9 +322,9 @@ _printer_added_cb (EggPrintBackend *backend,
 {
   GtkTreeIter iter;
 
-  gtk_list_store_append (impl->priv->printer_list, &iter);
+  gtk_list_store_append (GTK_LIST_STORE (impl->priv->printer_list), &iter);
 
-  gtk_list_store_set (impl->priv->printer_list, &iter,
+  gtk_list_store_set (GTK_LIST_STORE (impl->priv->printer_list), &iter,
                       PRINTER_LIST_COL_ICON, NULL,
                       PRINTER_LIST_COL_NAME, egg_printer_get_name (printer),
                       PRINTER_LIST_COL_STATE, egg_printer_get_state_message (printer),
@@ -293,7 +459,7 @@ egg_print_unix_dialog_get_property (GObject    *object,
 static void
 _create_printer_list_model (EggPrintUnixDialog *dialog)
 {
-  GtkTreeModel *model;
+  GtkListStore *model;
 
   model = gtk_list_store_new (PRINTER_LIST_N_COLS,
                               GDK_TYPE_PIXBUF,
@@ -303,49 +469,623 @@ _create_printer_list_model (EggPrintUnixDialog *dialog)
                               G_TYPE_STRING, 
                               G_TYPE_OBJECT);
 
-  dialog->priv->printer_list = model;
+  dialog->priv->printer_list = (GtkTreeModel *)model;
 }
 
-static void
-_create_printer_selection_view (EggPrintUnixDialog *dialog)
+static GtkWidget *
+wrap_in_frame (const char *label, GtkWidget *child)
 {
-  GtkCellLayout *cell_layout;
-  GtkCellRenderer *cell;
- 
-  /* TODO: Make this all layout better (prehaps an expandable tree? 
-           or a mouseover popup?) */
- 
-  cell_layout = GTK_CELL_LAYOUT (dialog->priv->printer_select);
-
-  cell = gtk_cell_renderer_pixbuf_new ();
-  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
-  gtk_cell_layout_add_attribute (cell_layout, cell, "pixbuf", PRINTER_LIST_COL_ICON);
+  GtkWidget *frame, *alignment;
   
-  cell = gtk_cell_renderer_text_new ();
-  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
-  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_NAME);
+  frame = gtk_frame_new (label);
+  gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_NONE);
+  
+  alignment = gtk_alignment_new (0.5, 0.5, 1.0, 1.0);
+  gtk_alignment_set_padding (GTK_ALIGNMENT (alignment),
+			     0, 0, 12, 0);
+  gtk_container_add (GTK_CONTAINER (frame), alignment);
 
-  cell = gtk_cell_renderer_text_new ();
-  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
-  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_STATE);
+  gtk_container_add (GTK_CONTAINER (alignment), child);
 
-  cell = gtk_cell_renderer_text_new ();
-  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
-  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_JOBS);
-
-  cell = gtk_cell_renderer_text_new ();
-  gtk_cell_layout_pack_start (cell_layout, cell, FALSE);
-  gtk_cell_layout_add_attribute (cell_layout, cell, "text", PRINTER_LIST_COL_LOCATION);
+  gtk_widget_show (frame);
+  gtk_widget_show (alignment);
+  
+  return frame;
 }
 
 
 static void
-_populate_dialog (EggPrintUnixDialog *dialog)
+create_main_page (EggPrintUnixDialog *dialog)
 {
-  GtkSizeGroup *printer_group;
-  GtkSizeGroup *settings_group;
-  GtkSizeGroup *copies_group;
-  GtkSizeGroup *pages_group;
+  EggPrintUnixDialogPrivate *priv;
+  GtkWidget *main_vbox, *label, *hbox;
+  GtkWidget *scrolled, *treeview, *frame, *table;
+  GtkWidget *entry, *spinbutton;
+  GtkWidget *radio, *check, *image;
+  GdkPixbuf *pixbuf;
+  GtkCellRenderer *renderer;
+  GtkTreeViewColumn *column;
+  GtkTreeSelection *selection;
+  
+  priv = dialog->priv;
+
+  main_vbox = gtk_vbox_new (FALSE, 8);
+  gtk_widget_show (main_vbox);
+
+  scrolled = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
+				  GTK_POLICY_AUTOMATIC,
+				  GTK_POLICY_AUTOMATIC);
+  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled),
+				       GTK_SHADOW_IN);
+  gtk_widget_show (scrolled);
+  gtk_box_pack_start (GTK_BOX (main_vbox), scrolled, TRUE, TRUE, 6);
+
+  treeview = gtk_tree_view_new_with_model (priv->printer_list);
+  priv->printer_treeview = treeview;
+  gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview), TRUE);
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
+  gtk_tree_selection_set_mode (selection, GTK_SELECTION_BROWSE);
+  
+  renderer = gtk_cell_renderer_text_new ();
+  column = gtk_tree_view_column_new_with_attributes (_("Printer"),
+						     renderer,
+						     "text",
+						     PRINTER_LIST_COL_NAME,
+						     NULL);
+  gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
+  
+  renderer = gtk_cell_renderer_text_new ();
+  column = gtk_tree_view_column_new_with_attributes (_("Status"),
+						     renderer,
+						     "text",
+						     PRINTER_LIST_COL_STATE,
+						     NULL);
+  gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
+  
+  renderer = gtk_cell_renderer_text_new ();
+  column = gtk_tree_view_column_new_with_attributes (_("Location"),
+						     renderer,
+						     "text",
+						     PRINTER_LIST_COL_LOCATION,
+						     NULL);
+  gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
+
+  gtk_widget_show (treeview);
+  gtk_container_add (GTK_CONTAINER (scrolled), treeview);
+
+  hbox = gtk_hbox_new (FALSE, 8);
+  gtk_widget_show (hbox);
+  gtk_box_pack_start (GTK_BOX (main_vbox), hbox, FALSE, FALSE, 6);
+
+  table = gtk_table_new (3, 2, FALSE);
+  frame = wrap_in_frame (_("Print Pages"), table);
+  gtk_box_pack_start (GTK_BOX (hbox), frame, TRUE, TRUE, 6);
+  gtk_widget_show (table);
+
+  radio = gtk_radio_button_new_with_label (NULL, _("All"));
+  gtk_widget_show (radio);
+  gtk_table_attach (GTK_TABLE (table), radio,
+		    0, 1, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+  radio = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio)),
+					   _("Current"));
+  gtk_widget_show (radio);
+  gtk_table_attach (GTK_TABLE (table), radio,
+		    0, 1, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+  radio = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio)),
+					   _("Range: "));
+  gtk_widget_show (radio);
+  gtk_table_attach (GTK_TABLE (table), radio,
+		    0, 1, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+  entry = gtk_entry_new ();
+  gtk_widget_show (entry);
+  gtk_table_attach (GTK_TABLE (table), entry,
+		    1, 2, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+
+  table = gtk_table_new (3, 2, FALSE);
+  frame = wrap_in_frame (_("Copies"), table);
+  gtk_box_pack_start (GTK_BOX (hbox), frame, TRUE, TRUE, 6);
+  gtk_widget_show (table);
+
+  label = gtk_label_new (_("Copies:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+  spinbutton = gtk_spin_button_new_with_range (1.0, 100.0, 1.0);
+  gtk_widget_show (spinbutton);
+  gtk_table_attach (GTK_TABLE (table), spinbutton,
+		    1, 2, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+
+  check = gtk_check_button_new_with_mnemonic (_("_Collate"));
+  gtk_widget_show (check);
+  gtk_table_attach (GTK_TABLE (table), check,
+		    0, 1, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+  check = gtk_check_button_new_with_mnemonic (_("_Reverse"));
+  gtk_widget_show (check);
+  gtk_table_attach (GTK_TABLE (table), check,
+		    0, 1, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+
+  image = gtk_image_new ();
+  gtk_widget_show (image);
+  gtk_table_attach (GTK_TABLE (table), image,
+		    1, 2, 1, 3, GTK_FILL, 0,
+		    0, 0);
+
+  pixbuf = gdk_pixbuf_new_from_xpm_data (collate_xpm);
+  gtk_image_set_from_pixbuf (GTK_IMAGE (image), pixbuf);
+  g_object_unref (pixbuf);
+  
+  label = gtk_label_new (_("General"));
+  gtk_widget_show (label);
+  
+  gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
+			    main_vbox, label);
+  
+}
+
+static gboolean
+draw_page_cb (GtkWidget	     *widget,
+	      GdkEventExpose      *event,
+	      EggPrintUnixDialog *dialog)
+{
+  cairo_t *cr;
+  double ratio;
+  int w, h, shadow_offset;
+  
+  
+  cr = gdk_cairo_create (widget->window);
+
+  ratio = 1.4142;
+
+  w = (EXAMPLE_PAGE_AREA_SIZE - 3) / ratio;
+  h = w * ratio;
+
+  shadow_offset = 3;
+  
+  cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 0.5);
+  cairo_rectangle (cr, shadow_offset + 1, shadow_offset + 1, w, h);
+  cairo_fill (cr);
+  
+  cairo_set_source_rgb (cr, 1.0, 1.0, 1.0);
+  cairo_rectangle (cr, 1, 1, w, h);
+  cairo_fill (cr);
+  cairo_set_line_width (cr, 1.0);
+  cairo_rectangle (cr, 0.5, 0.5, w+1, h+1);
+  
+  cairo_set_source_rgb (cr, 0.0, 0.0, 0.0);
+  cairo_stroke (cr);
+
+  return TRUE;
+}
+
+static void
+create_page_setup_page (EggPrintUnixDialog *dialog)
+{
+  EggPrintUnixDialogPrivate *priv;
+  GtkWidget *main_vbox, *label, *hbox, *hbox2;
+  GtkWidget *frame, *table;
+  GtkWidget *combo, *spinbutton, *draw;
+  
+  priv = dialog->priv;
+
+  main_vbox = gtk_vbox_new (FALSE, 8);
+  gtk_widget_show (main_vbox);
+
+  hbox = gtk_hbox_new (FALSE, 8);
+  gtk_widget_show (hbox);
+  gtk_box_pack_start (GTK_BOX (main_vbox), hbox, TRUE, TRUE, 6);
+
+  table = gtk_table_new (5, 2, FALSE);
+  frame = wrap_in_frame (_("Layout"), table);
+  gtk_box_pack_start (GTK_BOX (hbox), frame, TRUE, TRUE, 6);
+  gtk_widget_show (table);
+
+  label = gtk_label_new (_("Pages per sheet:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "1");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "2");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "4");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "6");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "9");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "16");  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  label = gtk_label_new (_("Two-sided:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Off");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Long Edge");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Short Edge");  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  label = gtk_label_new (_("Scale:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+
+  hbox2 = gtk_hbox_new (FALSE, 0);
+  gtk_widget_show (hbox2);
+  gtk_table_attach (GTK_TABLE (table), hbox2,
+		    1, 2, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+  
+  spinbutton = gtk_spin_button_new_with_range (1.0, 1000.0, 1.0);
+  gtk_spin_button_set_digits (GTK_SPIN_BUTTON (spinbutton), 1);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (spinbutton), 100.0);
+  gtk_widget_show (spinbutton);
+  gtk_box_pack_start (GTK_BOX (hbox2), spinbutton, FALSE, FALSE, 0);
+  label = gtk_label_new ("%");
+  gtk_widget_show (label);
+  gtk_box_pack_start (GTK_BOX (hbox2), label, FALSE, FALSE, 0);
+
+  label = gtk_label_new (_("Orientation:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 3, 4,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 3, 4,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Portrait"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Landscape"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Reverse Portrait"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Reverse Landscape"));  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  label = gtk_label_new (_("Only Print:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 4, 5,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 4, 5,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("All pages"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Even pages"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Odd pages"));  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  table = gtk_table_new (4, 2, FALSE);
+  frame = wrap_in_frame (_("Paper"), table);
+  gtk_box_pack_start (GTK_BOX (hbox), frame, TRUE, TRUE, 6);
+  gtk_widget_show (table);
+
+  label = gtk_label_new (_("Paper size:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "A4");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Letter");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "...");  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  label = gtk_label_new (_("Paper Type:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Plain");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Transparency");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "...");  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  label = gtk_label_new (_("Paper Source:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Upper");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Lower");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Manual");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "...");  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  label = gtk_label_new (_("Output Tray:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 3, 4,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 3, 4,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Tray 1");  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), "Tray 2");  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+
+  hbox2 = gtk_hbox_new (FALSE, 0);
+  gtk_widget_show (hbox2);
+  gtk_box_pack_start (GTK_BOX (main_vbox), hbox2, TRUE, TRUE, 6);
+
+  draw = gtk_drawing_area_new ();
+  gtk_widget_set_size_request (draw, 200, 200);
+  g_signal_connect (draw, "expose_event", G_CALLBACK (draw_page_cb), dialog);
+  gtk_widget_show (draw);
+
+  gtk_box_pack_start (GTK_BOX (hbox2), draw, TRUE, FALSE, 6);
+  
+  label = gtk_label_new (_("Page Setup"));
+  gtk_widget_show (label);
+  
+  gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
+			    main_vbox, label);
+  
+}
+
+static void
+create_job_page (EggPrintUnixDialog *dialog)
+{
+  EggPrintUnixDialogPrivate *priv;
+  GtkWidget *main_table, *label;
+  GtkWidget *frame, *table, *radio;
+  GtkWidget *combo, *entry;
+  
+  priv = dialog->priv;
+
+  main_table = gtk_table_new (2, 2, FALSE);
+  gtk_widget_show (main_table);
+
+
+  table = gtk_table_new (2, 2, FALSE);
+  frame = wrap_in_frame (_("Job Details"), table);
+  gtk_table_attach (GTK_TABLE (main_table), frame,
+		    0, 1, 0, 1,  0, 0,
+		    0, 0);
+  gtk_widget_show (table);
+
+  label = gtk_label_new (_("Priority:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Urgent"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("High"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Medium"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Low"));  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 2);
+
+  label = gtk_label_new (_("Billing info:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+
+  entry = gtk_entry_new ();
+  gtk_widget_show (entry);
+  gtk_table_attach (GTK_TABLE (table), entry,
+		    1, 2, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+
+
+  table = gtk_table_new (2, 2, FALSE);
+  frame = wrap_in_frame (_("Print Document"), table);
+  gtk_table_attach (GTK_TABLE (main_table), frame,
+		    0, 1, 1, 2,  0, 0,
+		    0, 0);
+  gtk_widget_show (table);
+
+  radio = gtk_radio_button_new_with_label (NULL, _("Now"));
+  gtk_widget_show (radio);
+  gtk_table_attach (GTK_TABLE (table), radio,
+		    0, 1, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+  radio = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio)),
+					   _("At:"));
+  gtk_widget_show (radio);
+  gtk_table_attach (GTK_TABLE (table), radio,
+		    0, 1, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+  radio = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio)),
+					   _("On Hold"));
+  gtk_widget_show (radio);
+  gtk_table_attach (GTK_TABLE (table), radio,
+		    0, 1, 2, 3,  GTK_FILL, 0,
+		    0, 0);
+  entry = gtk_entry_new ();
+  gtk_widget_show (entry);
+  gtk_table_attach (GTK_TABLE (table), entry,
+		    1, 2, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+ 
+
+  table = gtk_table_new (2, 2, FALSE);
+  frame = wrap_in_frame (_("Add Cover Page"), table);
+  gtk_table_attach (GTK_TABLE (main_table), frame,
+		    1, 2, 0, 1,  0, 0,
+		    0, 0);
+  gtk_widget_show (table);
+
+  label = gtk_label_new (_("Before:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 0, 1,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("None"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Standard"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Confidential"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Secret"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Classified"));  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+  label = gtk_label_new (_("After:"));
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_show (label);
+  gtk_table_attach (GTK_TABLE (table), label,
+		    0, 1, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+
+  combo = gtk_combo_box_new_text ();
+  gtk_widget_show (combo);
+  gtk_table_attach (GTK_TABLE (table), combo,
+		    1, 2, 1, 2,  GTK_FILL, 0,
+		    0, 0);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("None"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Standard"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Confidential"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Secret"));  
+  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Classified"));  
+  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
+
+
+  label = gtk_label_new (_("Job"));
+  gtk_widget_show (label);
+  
+  gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
+			    main_table, label);
+}
+
+static void
+create_image_quality_page (EggPrintUnixDialog *dialog)
+{
+  EggPrintUnixDialogPrivate *priv;
+  GtkWidget *main_vbox, *label;
+  
+  priv = dialog->priv;
+
+  main_vbox = gtk_vbox_new (FALSE, 8);
+  gtk_widget_show (main_vbox);
+
+  label = gtk_label_new ("Autogenerated image quality settings go here");
+  gtk_widget_show (label);
+
+  gtk_box_pack_start (GTK_BOX (main_vbox), label, TRUE, TRUE, 6);
+  
+  label = gtk_label_new (_("Image Quality"));
+  gtk_widget_show (label);
+  
+  gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
+			    main_vbox, label);
+}
+
+static void
+create_finishing_page (EggPrintUnixDialog *dialog)
+{
+  EggPrintUnixDialogPrivate *priv;
+  GtkWidget *main_vbox, *label;
+  
+  priv = dialog->priv;
+
+  main_vbox = gtk_vbox_new (FALSE, 8);
+  gtk_widget_show (main_vbox);
+
+  label = gtk_label_new ("Autogenerated finishing settings go here");
+  gtk_widget_show (label);
+
+  gtk_box_pack_start (GTK_BOX (main_vbox), label, TRUE, TRUE, 6);
+  
+  label = gtk_label_new (_("Finishing"));
+  gtk_widget_show (label);
+  
+  gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
+			    main_vbox, label);
+}
+
+static void
+create_advanced_page (EggPrintUnixDialog *dialog)
+{
+  EggPrintUnixDialogPrivate *priv;
+  GtkWidget *main_vbox, *label;
+  
+  priv = dialog->priv;
+
+  main_vbox = gtk_vbox_new (FALSE, 8);
+  gtk_widget_show (main_vbox);
+
+  label = gtk_label_new ("Autogenerated settings that are not on other pages go here");
+  gtk_widget_show (label);
+
+  gtk_box_pack_start (GTK_BOX (main_vbox), label, TRUE, TRUE, 6);
+  
+  label = gtk_label_new (_("Advanced"));
+  gtk_widget_show (label);
+  
+  gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
+			    main_vbox, label);
+}
+
+
+static void
+populate_dialog (EggPrintUnixDialog *dialog)
+{
   EggPrintUnixDialogPrivate *priv;
   
   g_return_if_fail (EGG_IS_PRINT_UNIX_DIALOG (dialog));
@@ -353,110 +1093,21 @@ _populate_dialog (EggPrintUnixDialog *dialog)
   priv = dialog->priv;
  
   _create_printer_list_model (dialog);
- 
-  printer_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
-  settings_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
-  copies_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
-  pages_group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
 
-  priv->main_hbox = gtk_hbox_new (FALSE, 5);
-  priv->label_vbox = gtk_vbox_new (FALSE, 5);
-  priv->input_vbox = gtk_vbox_new (FALSE, 5);
+  priv->notebook = gtk_notebook_new ();
+
   gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), 
-                      priv->main_hbox,
+                      priv->notebook,
                       TRUE, TRUE, 10);
+
+  create_main_page (dialog);
+  create_page_setup_page (dialog);
+  create_job_page (dialog);
+  create_image_quality_page (dialog);
+  create_finishing_page (dialog);
+  create_advanced_page (dialog);
   
-  gtk_box_pack_start (GTK_BOX (priv->main_hbox), 
-                               priv->label_vbox,
-			       FALSE, FALSE, 0);
-			       
-  gtk_box_pack_start (GTK_BOX (priv->main_hbox), 
-                      priv->input_vbox,
-		      TRUE, TRUE, 0);
-  
-  priv->printer_label = gtk_label_new ("Send To:");
-  priv->printer_select = gtk_combo_box_new_with_model (priv->printer_list); 
-  _create_printer_selection_view (dialog);
-
-  gtk_size_group_add_widget (printer_group, priv->printer_label);
-  gtk_size_group_add_widget (printer_group, priv->printer_select);
-  gtk_box_pack_start (GTK_BOX (priv->label_vbox), 
-                      priv->printer_label,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->input_vbox), 
-                      priv->printer_select,
-		      FALSE, FALSE, 0);
-
-  priv->settings_label = gtk_label_new ("Settings:");
-  priv->settings_select = gtk_combo_box_new_text ();
-  
-  gtk_size_group_add_widget (settings_group, priv->settings_label);
-  gtk_size_group_add_widget (settings_group, priv->settings_select);
-  gtk_box_pack_start (GTK_BOX (priv->label_vbox), 
-                      priv->settings_label,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->input_vbox), 
-                      priv->settings_select,
-		      FALSE, FALSE, 0);
-  
-  
-  priv->copies_label = gtk_label_new ("Copies:");
-  priv->copies_spinner = gtk_spin_button_new_with_range (1, 9999, 1);
-  priv->copies_spinner_hbox = gtk_hbox_new (FALSE, 0);
-  gtk_entry_set_width_chars (GTK_ENTRY (priv->copies_spinner), 4);
-  gtk_size_group_add_widget (copies_group, priv->copies_label);
-  gtk_size_group_add_widget (copies_group, priv->copies_spinner_hbox);
-  gtk_box_pack_start (GTK_BOX (priv->label_vbox), 
-                      priv->copies_label,
-                      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->input_vbox), 
-                      priv->copies_spinner_hbox,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->copies_spinner_hbox), 
-                      priv->copies_spinner,
-		      FALSE, FALSE, 0);
-
-  priv->pages_label = gtk_label_new ("Pages:");
-  priv->pages_all_radio = gtk_radio_button_new_with_label (NULL, "All");
-  priv->pages_from_hbox = gtk_hbox_new (FALSE, 5);
-  priv->pages_from_radio = gtk_radio_button_new_with_label_from_widget (GTK_RADIO_BUTTON (priv->pages_all_radio), 
-                                                                        "From:");
-  priv->pages_from_start_entry = gtk_entry_new ();
-  priv->pages_from_to_label = gtk_label_new ("to:");
-  priv->pages_from_end_entry = gtk_entry_new ();
-  gtk_entry_set_width_chars (GTK_ENTRY (priv->pages_from_start_entry), 3);
-  gtk_entry_set_width_chars (GTK_ENTRY (priv->pages_from_end_entry), 3);
-
-  gtk_box_pack_start (GTK_BOX (priv->pages_from_hbox), 
-                      priv->pages_from_radio,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->pages_from_hbox), 
-                      priv->pages_from_start_entry,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->pages_from_hbox), 
-                      priv->pages_from_to_label,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->pages_from_hbox), 
-                      priv->pages_from_end_entry,
-		      FALSE, FALSE, 0);
-  gtk_size_group_add_widget (pages_group, priv->pages_label);
-  gtk_size_group_add_widget (pages_group, priv->pages_all_radio);
-  gtk_box_pack_start (GTK_BOX (priv->label_vbox), 
-                      priv->pages_label,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->input_vbox), 
-                      priv->pages_all_radio,
-		      FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (priv->input_vbox), 
-                      priv->pages_from_hbox,
-		      FALSE, FALSE, 0);
-
-  gtk_widget_show_all (GTK_DIALOG (dialog)->vbox);
-
-  g_object_unref (printer_group);
-  g_object_unref (settings_group);
-  g_object_unref (copies_group);
-  g_object_unref (pages_group);
+  gtk_widget_show (priv->notebook);
 }
 
 
@@ -473,8 +1124,8 @@ _populate_dialog (EggPrintUnixDialog *dialog)
  **/
 GtkWidget *
 egg_print_unix_dialog_new (const gchar *title,
-                      GtkWindow *parent,
-		      const gchar *print_backend)
+			   GtkWindow *parent,
+			   const gchar *print_backend)
 {
   GtkWidget *result;
   const gchar *_title = "Print";
@@ -505,11 +1156,12 @@ egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog)
 {
   EggPrinter *printer;
   GtkTreeIter iter;
-
+  GtkTreeSelection *selection;
   printer = NULL;
 
-  if (gtk_combo_box_get_active_iter (GTK_COMBO_BOX (dialog->priv->printer_select),
-                                     &iter))
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
+
+  if (gtk_tree_selection_get_selected (selection, NULL, &iter))
     {
       gtk_tree_model_get (dialog->priv->printer_list,
                           &iter,
