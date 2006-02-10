@@ -64,10 +64,19 @@ struct _EggPrintBackendIface
   cairo_surface_t * (*printer_create_cairo_surface) (EggPrintBackend *print_backend,
                                                      EggPrinter *printer,
                                                      gdouble height,
-                                                     gdouble width);
+                                                     gdouble width,
+						     gint cache_fd);
 
   EggPrinter * (*find_printer) (EggPrintBackend *print_backend,
-                                     const gchar *printer_name);
+                                const gchar *printer_name);
+
+  void         (*print_stream) (EggPrintBackend *print_backend,
+                                EggPrinter *printer,
+				const gchar *title,
+				gint data_fd,
+				EggPrinterSendCompleteFunc callback,
+				gpointer user_data);
+
 
   /* Signals 
    */
@@ -81,11 +90,18 @@ GType   egg_print_backend_get_type       (void) G_GNUC_CONST;
 cairo_surface_t *egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
                                                                  EggPrinter *printer,
                                                                  gdouble width, 
-                                                                 gdouble height);
+                                                                 gdouble height,
+								 gint cache_fd);
 
-EggPrinter *egg_print_backend_find_printer                 (EggPrintBackend *print_backend,
+EggPrinter *egg_print_backend_find_printer                      (EggPrintBackend *print_backend,
                                                                  const gchar *printer_name);
 							 
+void egg_print_backend_print_stream                             (EggPrintBackend *print_backend,
+                                                                 EggPrinter *printer,
+				                                 const gchar *title,
+				                                 gint data_fd,
+				                                 EggPrinterSendCompleteFunc callback,
+				                                 gpointer user_data);
 
 G_END_DECLS
 

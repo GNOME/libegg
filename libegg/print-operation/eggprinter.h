@@ -36,6 +36,10 @@ typedef struct _EggPrinter	        EggPrinter;
 typedef struct _EggPrinterClass    EggPrinterClass;
 typedef struct _EggPrinterPrivate   EggPrinterPrivate;
 
+typedef void (*EggPrinterSendCompleteFunc) (EggPrinter *printer,
+                                           void *user_data, 
+                                           GError **error);
+
 struct _EggPrintBackend;
 
 struct _EggPrinter
@@ -51,8 +55,8 @@ struct _EggPrinterClass
 
 };
 
-GType		         egg_printer_get_type             (void) G_GNUC_CONST;
-EggPrinter         *egg_printer_new                  (void);
+GType                    egg_printer_get_type             (void) G_GNUC_CONST;
+EggPrinter              *egg_printer_new                  (void);
 
 void                     egg_printer_set_backend_data     (EggPrinter *printer,
                                                                  void *data,
@@ -66,8 +70,15 @@ const gchar             *egg_printer_get_location         (EggPrinter *printer);
 gint                     egg_printer_get_job_count        (EggPrinter *printer);
 
 cairo_surface_t         *egg_printer_create_cairo_surface (EggPrinter *printer,
-                                                                 double width,
-                                                                 double heigh);
+                                                           double width,
+                                                           double height,
+                                                           gint cache_fd);
+
+void                     egg_printer_print_stream         (EggPrinter *printer,
+                                                           const gchar *title,
+							   gint data_fd, 
+							   EggPrinterSendCompleteFunc callback,
+							   gpointer user_data);
 
 G_END_DECLS
 

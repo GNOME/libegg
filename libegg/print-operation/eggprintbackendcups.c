@@ -19,6 +19,10 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <config.h>
 #include <cups/cups.h>
 #include <cups/language.h>
@@ -35,6 +39,9 @@
 #include "eggprinter.h"
 #include "eggprinter-private.h"
 
+#include "eggprintercups.h"
+#include "eggprintercups-private.h"
+
 typedef struct _EggPrintBackendCupsClass EggPrintBackendCupsClass;
 
 #define EGG_PRINT_BACKEND_CUPS_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_PRINT_BACKEND_CUPS, EggPrintBackendCupsClass))
@@ -42,6 +49,7 @@ typedef struct _EggPrintBackendCupsClass EggPrintBackendCupsClass;
 #define EGG_PRINT_BACKEND_CUPS_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYPE_PRINT_BACKEND_CUPS, EggPrintBackendCupsClass))
 
 #define _CUPS_MAX_ATTEMPTS 10 
+#define _CUPS_MAX_CHUNK_SIZE 8192
 
 #define _CUPS_MAP_ATTR_INT(attr, v, a) {if (!g_ascii_strcasecmp (attr->name, (a))) v = attr->values[0].integer;}
 #define _CUPS_MAP_ATTR_STR(attr, v, a) {if (!g_ascii_strcasecmp (attr->name, (a))) v = g_strdup (attr->values[0].string.text);}
@@ -54,7 +62,9 @@ typedef void (* EggPrintCupsResponseCallbackFunc) (EggPrintBackend *print_backen
 typedef enum 
 {
   DISPATCH_SETUP,
+  DISPATCH_REQUEST,
   DISPATCH_SEND,
+  DISPATCH_CHECK,
   DISPATCH_READ,
   DISPATCH_ERROR
 } EggPrintCupsDispatchState;
@@ -71,14 +81,9 @@ typedef struct
 
   gint attempts;
   EggPrintCupsDispatchState state;
-} EggPrintCupsDispatchWatch;
 
-typedef struct
-{
-  gchar *device_uri;
-  gchar *printer_uri;
-  ipp_pstate_t state;
-} CupsPrinter;
+  gint data_fd;                    /* Open file descriptor of the data we wish to send */
+} EggPrintCupsDispatchWatch;
 
 struct _EggPrintBackendCupsClass
 {
@@ -101,14 +106,17 @@ static void egg_print_backend_cups_finalize     (GObject                  *objec
 
 static void _cups_request_printer_list (EggPrintBackendCups *print_backend);
 
-static void
-_free_cups_printer (CupsPrinter *printer)
-{
-  g_free (printer->device_uri);
-  g_free (printer->printer_uri);
+static ipp_t * _cups_request_new     (int operation_id);
+static void    _cups_request_execute (EggPrintBackendCups *print_backend,
+                                      ipp_t               *request,
+		                      gint                 data_fd,
+                                      const char          *server, 
+                                      const char          *path,
+                                      EggPrintCupsResponseCallbackFunc callback,
+                                      gpointer             user_data,
+                                      GDestroyNotify       notify,
+                                      GError             **err);
 
-  g_free (printer);
-}
 
 /*
  * EggPrintBackendCups
@@ -177,19 +185,20 @@ egg_print_backend_cups_class_init (EggPrintBackendCupsClass *class)
 }
 
 static cairo_status_t
-_cairo_write_to_cups (EggPrintBackendCups *backend,
+_cairo_write_to_cups (void *cache_fd_as_pointer,
                       const unsigned char *data,
                       unsigned int         length)
 {
   cairo_status_t result;
- 
-  /* TODO: Hookup to CUPS */
+  gint cache_fd;
+
+  cache_fd = GPOINTER_TO_INT (cache_fd_as_pointer);
+  
   result = CAIRO_STATUS_WRITE_ERROR;
   
-  /* for now just print out the buffer */
-  printf ("%.*s", length, data);
-
-  result = CAIRO_STATUS_SUCCESS;
+  /* write out the buffer */
+  if (write (cache_fd, data, length) != -1); 
+    result = CAIRO_STATUS_SUCCESS;
 
   return result;
 }
@@ -199,7 +208,8 @@ static cairo_surface_t *
 egg_print_backend_cups_printer_create_cairo_surface (EggPrintBackend *backend, 
                                                      EggPrinter *printer,
                                                      gdouble width, 
-                                                     gdouble height)
+                                                     gdouble height,
+						     gint cache_fd)
 {
   cairo_surface_t *surface;
   EggPrintBackendCups *cups_backend;
@@ -207,7 +217,7 @@ egg_print_backend_cups_printer_create_cairo_surface (EggPrintBackend *backend,
   /* TODO: check if it is a ps or pdf printer */
   
   cups_backend = EGG_PRINT_BACKEND_CUPS (backend);
-  surface = cairo_pdf_surface_create_for_stream  (_cairo_write_to_cups, cups_backend, width, height);
+  surface = cairo_pdf_surface_create_for_stream  (_cairo_write_to_cups, GINT_TO_POINTER (cache_fd), width, height);
 
   /* TODO: DPI from settings object? */
   cairo_pdf_surface_set_dpi (surface, 300, 300);
@@ -227,11 +237,83 @@ egg_print_backend_cups_find_printer (EggPrintBackend *print_backend,
                                                   printer_name);  
 }
 
+typedef struct {
+  EggPrinterSendCompleteFunc callback;
+  EggPrinter *printer;
+  gpointer user_data;
+} _PrintStreamData;
+
+void
+_cups_print_cb (EggPrintBackendCups *print_backend,
+                               ipp_t *response,
+                               gpointer user_data)
+{
+  GError *error = NULL;
+
+  _PrintStreamData *ps = (_PrintStreamData *) user_data;
+
+  if (ps->callback)
+    ps->callback (ps->printer, ps->user_data, &error);
+
+  g_free (ps);
+}
+
+static void
+egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
+                                     EggPrinter *printer,
+				     const gchar *title,
+				     gint data_fd,
+				     EggPrinterSendCompleteFunc callback,
+				     gpointer user_data)
+{
+  GError *error;
+  ipp_t *request;
+  EggPrinterCups *cups_printer;
+  _PrintStreamData *ps;
+  
+  cups_printer = EGG_PRINTER_CUPS (printer);
+
+  error = NULL;
+
+  request = _cups_request_new (IPP_PRINT_JOB);
+
+  ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri",
+               NULL, cups_printer->priv->printer_uri);
+
+  ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
+               NULL, cupsUser());
+
+  if (title)
+    ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
+                 title);
+
+  /* TODO: encode options here */
+
+  ps = g_new0 (_PrintStreamData, 1);
+  ps->callback = callback;
+  ps->user_data = user_data;
+  ps->printer = printer;
+
+  g_message ("P: %s, D: %s", cups_printer->priv->printer_uri, cups_printer->priv->device_uri);
+  _cups_request_execute (print_backend,
+                         request,
+			 data_fd,
+                         NULL, 
+                         cups_printer->priv->device_uri,
+                         (EggPrintCupsResponseCallbackFunc) _cups_print_cb,
+                         ps,
+                         NULL,
+                         &error);
+
+}
+
+
 static void
 egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
 {
   iface->printer_create_cairo_surface = egg_print_backend_cups_printer_create_cairo_surface;
   iface->find_printer = egg_print_backend_cups_find_printer;
+  iface->print_stream = egg_print_backend_cups_print_stream;
 }
 
 static void
@@ -240,7 +322,7 @@ egg_print_backend_cups_init (EggPrintBackendCups *backend_cups)
   backend_cups->printers = g_hash_table_new_full (g_str_hash, 
                                                   g_str_equal, 
                                                  (GDestroyNotify) g_free,
-                                                 (GDestroyNotify) _free_cups_printer);
+                                                 (GDestroyNotify) g_object_unref);
 
   _cups_request_printer_list (backend_cups);
 }
@@ -300,10 +382,20 @@ _cups_dispatch_watch_check (GSource *source)
     gchar length[255];
     http_status_t http_status;
     ipp_state_t ipp_status;
+    struct stat data_info;
 
     case DISPATCH_SETUP:
-      sprintf (length, "%lu", (unsigned long)ippLength(dispatch->request));
+      if (dispatch->data_fd != 0)
+        {
+          fstat (dispatch->data_fd, &data_info);
+	  sprintf (length, "%lu", (unsigned long)ippLength(dispatch->request) + data_info.st_size);
 
+	}
+      else
+	{
+          sprintf (length, "%lu", (unsigned long)ippLength(dispatch->request));
+        }
+	
       httpClearFields(dispatch->http);
       httpSetField(dispatch->http, HTTP_FIELD_CONTENT_LENGTH, length);
       httpSetField(dispatch->http, HTTP_FIELD_CONTENT_TYPE, "application/ipp");
@@ -320,11 +412,11 @@ _cups_dispatch_watch_check (GSource *source)
         }
         
       dispatch->attempts = 0;
-      dispatch->state = DISPATCH_SEND;
+
+      dispatch->state = DISPATCH_REQUEST;
       dispatch->request->state = IPP_IDLE;
 
-    case DISPATCH_SEND:
-
+    case DISPATCH_REQUEST:
       ipp_status = ippWrite(dispatch->http, dispatch->request);
 
       if (ipp_status == IPP_ERROR)
@@ -332,25 +424,59 @@ _cups_dispatch_watch_check (GSource *source)
           g_warning ("We got an error writting to the socket");
           goto fail;
         }
-      else if (ipp_status != IPP_DATA)
+ 
+     if (ipp_status != IPP_DATA)
         {
           /* write attempts don't count
              since we will get an error
              if anything goes wrong */
           dispatch->attempts--;
           break;
+        } 
+
+    case DISPATCH_SEND:
+      dispatch->state = DISPATCH_SEND;
+      http_status = HTTP_CONTINUE;
+
+      if (dispatch->data_fd != 0)
+        {
+	  ssize_t bytes;
+	  char buffer[_CUPS_MAX_CHUNK_SIZE];
+
+          if (httpCheck (dispatch->http))
+            http_status = httpUpdate(dispatch->http);
+
+          if (http_status == HTTP_CONTINUE || http_status == HTTP_OK)
+            {
+	      /* send data */
+              bytes = read(dispatch->data_fd, buffer, _CUPS_MAX_CHUNK_SIZE);
+	   
+	      if (bytes == 0)
+	        {
+                  dispatch->state = DISPATCH_CHECK;
+		  break;
+		}
+	   
+	      if (httpWrite(dispatch->http, buffer, (int)bytes) < bytes)
+	        goto fail;
+	   
+              /* only count an attempt on recoverable errors */
+              dispatch->attempts--;
+              break;
+            }
         }
-    
+
+    case DISPATCH_CHECK:
+
+      dispatch->state = DISPATCH_CHECK;
       http_status = HTTP_CONTINUE;
 
       if (httpCheck (dispatch->http))
-        {
-          http_status = httpUpdate(dispatch->http);
-        }
+            http_status = httpUpdate(dispatch->http);
 
       if (http_status == HTTP_CONTINUE)
         {
-          /* only count an attempt on recoverable errors */
+	  /* only count an attempt on recoverable errors */
           dispatch->attempts--;
           break;
         }
@@ -495,7 +621,8 @@ static GSourceFuncs _cups_dispatch_watch_funcs =
 
 static void
 _cups_request_execute (EggPrintBackendCups *print_backend,
-                       ipp_t *request, 
+                       ipp_t *request,
+		       gint data_fd,
                        const char *server, 
                        const char *path,
                        EggPrintCupsResponseCallbackFunc callback,
@@ -525,6 +652,7 @@ _cups_request_execute (EggPrintBackendCups *print_backend,
   dispatch->attempts = 0;
   dispatch->state = DISPATCH_SETUP;
   dispatch->response = NULL;
+  dispatch->data_fd = data_fd;
 
   g_source_set_callback ((GSource *) dispatch, (GSourceFunc) callback, user_data, notify);
 
@@ -538,19 +666,19 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
 {
   ipp_attribute_t *attr;
   gchar *printer_name;
-  CupsPrinter *cups_printer;
+  EggPrinterCups *cups_printer;
   EggPrinter *printer;
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
 
   printer_name = (gchar *)user_data;
-  printer = (EggPrinter *) g_hash_table_lookup (print_backend->printers, printer_name);
+  cups_printer = (EggPrinterCups *) g_hash_table_lookup (print_backend->printers, printer_name);
 
-  if (!printer)
+  if (!cups_printer)
     return;
-
-  cups_printer = (CupsPrinter *) printer->priv->backend_data;
-
+    
+  printer = EGG_PRINTER (cups_printer);
+  cups_printer->priv->device_uri = g_strdup_printf ("/printers/%s", printer_name);
   for (attr = response->attrs; attr != NULL; attr = attr->next) {
     if (!attr->name)
       continue;
@@ -558,17 +686,16 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
     _CUPS_MAP_ATTR_STR (attr, printer->priv->location, "printer-location");
     _CUPS_MAP_ATTR_STR (attr, printer->priv->description, "printer-info");
 
-    _CUPS_MAP_ATTR_STR (attr, cups_printer->device_uri, "device-uri");
-    _CUPS_MAP_ATTR_STR (attr, cups_printer->printer_uri, "printer-uri-supported");
+    /*_CUPS_MAP_ATTR_STR (attr, cups_printer->priv->device_uri, "device-uri");*/
+    _CUPS_MAP_ATTR_STR (attr, cups_printer->priv->printer_uri, "printer-uri-supported");
     _CUPS_MAP_ATTR_STR (attr, printer->priv->state_message, "printer-state-message");
-    _CUPS_MAP_ATTR_INT (attr, cups_printer->state, "printer-state");
+    _CUPS_MAP_ATTR_INT (attr, cups_printer->priv->state, "printer-state");
     _CUPS_MAP_ATTR_INT (attr, printer->priv->job_count, "queued-job-count");
 
   }
 
   if (printer->priv->is_new)
     {
-      
       g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
       printer->priv->is_new = FALSE;
     }
@@ -595,7 +722,8 @@ _cups_request_printer_info (EggPrintBackendCups *print_backend,
   g_free (printer_uri);
 
   _cups_request_execute (print_backend,
-                         request, 
+                         request,
+			 0,
                          NULL, 
                          NULL,
                          (EggPrintCupsResponseCallbackFunc) _cups_request_printer_info_cb,
@@ -617,29 +745,26 @@ _cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
   attr = ippFindAttribute (response, "printer-name", IPP_TAG_NAME);
   while (attr) 
     {
+      EggPrinterCups *cups_printer;
       EggPrinter *printer;
-      CupsPrinter *cups_printer;
+      
+      cups_printer = (EggPrinterCups *) g_hash_table_lookup (print_backend->printers, 
+                                                             attr->values[0].string.text);
+      printer = cups_printer ? EGG_PRINTER (cups_printer) : NULL;
 
-      printer = (EggPrinter *) g_hash_table_lookup (print_backend->printers, 
-                                                         attr->values[0].string.text);
-
-      if (!printer)
+      if (!cups_printer)
         {
-	  printer = egg_printer_new ();
-          cups_printer = g_new0 (CupsPrinter, 1);
+	  cups_printer = egg_printer_cups_new ();
+	  printer = EGG_PRINTER (cups_printer);
           printer->priv->name = g_strdup (attr->values[0].string.text);
           printer->priv->backend = EGG_PRINT_BACKEND (print_backend);
 
-          egg_printer_set_backend_data (printer,
-                                              cups_printer,
-                                              (GFreeFunc) _free_cups_printer);
-
           g_hash_table_insert (print_backend->printers,
                                g_strdup (printer->priv->name), 
-                               printer); 
+                               cups_printer); 
         }
     
-      _cups_request_printer_info (print_backend, printer->priv->name);
+      _cups_request_printer_info (print_backend, egg_printer_get_name (printer));
       
       attr = ippFindNextAttribute (response, 
                                    "printer-name",
@@ -659,7 +784,8 @@ _cups_request_printer_list (EggPrintBackendCups *print_backend)
   request = _cups_request_new (CUPS_GET_PRINTERS);
 
   _cups_request_execute (print_backend,
-                         request, 
+                         request,
+			 0,
                          NULL, 
                          NULL,
                          (EggPrintCupsResponseCallbackFunc) _cups_request_printer_list_cb,

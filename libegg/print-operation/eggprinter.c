@@ -107,13 +107,21 @@ egg_printer_new (void)
 
 void
 egg_printer_set_backend_data (EggPrinter *printer,
-                                    void *data,
-                                    GFreeFunc destroy_notify)
+                              void *data,
+                              GFreeFunc destroy_notify)
 {
   EGG_IS_PRINTER (printer);
 
   printer->priv->backend_data = data;
   printer->priv->backend_data_destroy_notify = destroy_notify;
+}
+
+EggPrintBackend *
+egg_printer_get_backend (EggPrinter *printer)
+{
+  EGG_IS_PRINTER (printer);
+  
+  return g_object_ref (G_OBJECT (printer->priv->backend));
 }
 
 const gchar *
@@ -151,14 +159,32 @@ egg_printer_get_job_count (EggPrinter *printer)
 
 cairo_surface_t *
 egg_printer_create_cairo_surface (EggPrinter *printer,
-                                        double width,
-                                        double height)
+                                  double width,
+                                  double height,
+                                  gint cache_fd)
 {
    EGG_IS_PRINTER (printer);
 
   return egg_print_backend_printer_create_cairo_surface (printer->priv->backend,
                                                          printer,
                                                          width,
-                                                         height);
+                                                         height,
+							 cache_fd);
+}
+
+
+void 
+egg_printer_print_stream (EggPrinter *printer,
+                          const gchar *title,
+                          gint data_fd, 
+                          EggPrinterSendCompleteFunc callback,
+                          gpointer user_data)
+{
+  egg_print_backend_print_stream (printer->priv->backend,
+                                  printer,
+                                  title,
+                                  data_fd,
+                                  callback,
+                                  user_data);
 }
 

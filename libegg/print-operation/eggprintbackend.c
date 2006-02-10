@@ -146,11 +146,12 @@ cairo_surface_t *
 egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
                                                 EggPrinter *printer,
                                                 gdouble width, 
-                                                gdouble height)
+                                                gdouble height,
+						gint cache_fd)
 {
   g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
 
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_create_cairo_surface (print_backend, printer, width, height);
+  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_create_cairo_surface (print_backend, printer, width, height, cache_fd);
 }
 
 EggPrinter *
@@ -160,6 +161,25 @@ egg_print_backend_find_printer (EggPrintBackend *print_backend,
   g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
 
   return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->find_printer (print_backend, printer_name);
+
+}
+
+void
+egg_print_backend_print_stream (EggPrintBackend *print_backend,
+                                EggPrinter *printer,
+                                const gchar *title,
+                                gint data_fd,
+                                EggPrinterSendCompleteFunc callback,
+                                gpointer user_data)
+{
+  g_return_if_fail (EGG_IS_PRINT_BACKEND (print_backend));
+
+  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->print_stream (print_backend,
+                                                                    printer,
+                                                                    title,
+                                                                    data_fd,
+                                                                    callback,
+                                                                    user_data);
 
 }
 

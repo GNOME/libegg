@@ -1,3 +1,55 @@
+2006-02-10  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprintbackend.c:
+	(egg_print_backend_printer_create_cairo_surface): 
+	Pass in a file descriptor where we cache the final output 
+	before we send it to the printer
+	(egg_print_backend_print_stream): 
+	Interface to send a file stream to the printer
+	
+	* eggprintbackendcups.c:
+	(_free_cups_printer):
+	(struct CupsPrinter):
+	removed in favor of subclassing backend specific printers
+	(_cups_request_execute):
+	Add file decriptor to params for sending file streams
+	(_cairo_write_to_cups): Write out to a cache file
+	as cairo sends chuncks of data
+	(egg_print_backend_cups_printer_create_cairo_surface):
+	Pass in a file descriptor where we cache the final output 
+	before we send it to the printer
+	(struct _PrintStreamData): 
+	Userdata used when streaming file to cups
+	(_cups_print_cb): 
+	Callback called when we are done streaming a file
+	(egg_print_backend_cups_print_stream): 
+	Sets up an async call to stream a file to cups for printing
+	Implements egg_print_backend_print_stream
+	(_cups_dispatch_watch_check): 
+	Add a new state DIPATCH_CHECK
+	Stream a file in 8k chuncks in DISPATCH_SEND if we have a file descriptor
+	Add length of stream to header if we have a file descriptor
+	(_cups_request_execute):
+	Add file descriptor param
+	
+	* eggprinter.c:
+	(egg_printer_get_backend):
+	Return the backend and ref it
+
+	* eggprintercups.c:
+	* eggprintercups.h:
+	* eggprintercups-private.h:
+	Subclass eggprinter with backend specific data
+
+	* eggprintoperation-unix.c:
+	(unix_finish_send): 
+	Callback triggered when we finish sending a file to cups
+	(unix_end_run):
+	Send the cached file stream to the backend
+	(egg_print_operation_platform_backend_run):
+	Get a ref to the backend that we release after the printing is done
+	Open up a temp file for caching print output
+	
 2006-02-07  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggprintoperation-unix.c (egg_print_operation_platform_backend_run):
