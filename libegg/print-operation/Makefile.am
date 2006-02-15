@@ -21,11 +21,14 @@ libeggprint_la_SOURCES +=		\
 else
 
 libeggprint_la_SOURCES +=		\
+	eggprintbackendsetting.c	\
+	eggprintbackendsettingset.c	\
+	eggprinter.c			\
 	eggprintoperation-unix.c	\
+	eggprintsettingwidget.c		\
 	eggprintunixdialog.c		\
         eggprintbackend.c		\
         eggprintbackendcups.c		\
-	eggprinter.c			\
 	eggprintercups.c
 
 endif
@@ -35,19 +38,22 @@ noinst_HEADERS = 			\
 	eggpapersize.h			\
 	eggprint-win32.h		\
 	eggprint.h			\
+	eggprintbackend.h		\
+	eggprintbackendcups.h		\
+	eggprintbackendsetting.h	\
+	eggprintbackendsettingset.h	\
 	eggprintcontext-private.h 	\
 	eggprintcontext.h		\
 	eggprintenums.h			\
+	eggprinter-private.h		\
+	eggprinter.h			\
+	eggprintercups.h		\
 	eggprintersettings.h		\
 	eggprintmarshal.h		\
 	eggprintoperation-private.h 	\
 	eggprintoperation.h		\
+	eggprintsettingwidget.h		\
 	eggprintunixdialog.h		\
-	eggprintbackend.h		\
-	eggprintbackendcups.h		\
-	eggprinter.h			\
-	eggprinter-private.h		\
-	eggprintercups.h		\
 	eggprintercups-private.h
 
 marshal_sources = 		\

@@ -180,6 +180,14 @@ egg_print_backend_print_stream (EggPrintBackend *print_backend,
                                                                     data_fd,
                                                                     callback,
                                                                     user_data);
-
 }
 
+EggPrintBackendSettingSet *
+egg_print_backend_create_settings (EggPrintBackend *print_backend,
+				   EggPrinter *printer)
+{
+  g_return_if_fail (EGG_IS_PRINT_BACKEND (print_backend));
+
+  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->create_settings (print_backend,
+								       printer);
+}

@@ -19,6 +19,7 @@
 #ifndef __EGG_PRINT_UNIX_DIALOG_H__
 #define __EGG_PRINT_UNIX_DIALOG_H__
 #include "eggprinter.h"
+#include "eggprintersettings.h"
 
 #include <gtk/gtk.h>
 
@@ -59,8 +60,17 @@ GtkWidget *      egg_print_unix_dialog_new         (const gchar *title,
                                                     GtkWindow *parent,
 						    const gchar *print_backend);
 
+
+void egg_print_unix_dialog_set_current_page   (EggPrintUnixDialog *dialog,
+					       int                 current_page);
+
 EggPrinter *egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog);
 
+EggPrinterSettings *egg_print_unix_dialog_get_settings       (EggPrintUnixDialog *dialog);
+int                 egg_print_unix_dialog_get_manual_copies  (EggPrintUnixDialog *dialog);
+double              egg_print_unix_dialog_get_manual_scale   (EggPrintUnixDialog *dialog);
+gboolean            egg_print_unix_dialog_get_manual_collate (EggPrintUnixDialog *dialog);
+gboolean            egg_print_unix_dialog_get_manual_reverse (EggPrintUnixDialog *dialog);
 
 G_END_DECLS
 

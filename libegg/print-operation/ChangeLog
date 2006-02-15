@@ -1,3 +1,29 @@
+2006-02-15  Alexander Larsson  <alexl@redhat.com>
+
+	* Makefile.am:
+	* eggprintbackend.[ch]:
+	Add egg_print_backend_create_settings ()
+	* eggprintbackendcups.c:
+	Implement create_settings() for cups
+	
+	* eggprintbackendsetting.[ch]:
+	New class. Storage for one backend setting.
+	
+	* eggprintbackendsettingset.[ch]:
+	New class. A set of settings.
+	
+	* eggprintsettingwidget.[ch]:
+	New class. Widget that displays a backend setting
+	
+	* eggprintunixdialog.[ch]:
+	Initial work on hooking up settings.
+	
+	* test.ppd:
+	Used as ppd for now.
+	
+	* testprint.c: (main):
+	Disable set_pdf_target so we can test print dialog.
+
 2006-02-10  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintunixdialog.c:

@@ -42,6 +42,9 @@
 #include "eggprintercups.h"
 #include "eggprintercups-private.h"
 
+#define N_(x) (x)
+#define _(x) (x)
+
 typedef struct _EggPrintBackendCupsClass EggPrintBackendCupsClass;
 
 #define EGG_PRINT_BACKEND_CUPS_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_PRINT_BACKEND_CUPS, EggPrintBackendCupsClass))
@@ -103,6 +106,9 @@ static void egg_print_backend_cups_class_init   (EggPrintBackendCupsClass *class
 static void egg_print_backend_cups_iface_init   (EggPrintBackendIface     *iface);
 static void egg_print_backend_cups_init         (EggPrintBackendCups      *impl);
 static void egg_print_backend_cups_finalize     (GObject                  *object);
+static EggPrintBackendSettingSet * egg_print_backend_cups_create_settings (EggPrintBackend *print_backend,
+									   EggPrinter *printer);
+
 
 static void _cups_request_printer_list (EggPrintBackendCups *print_backend);
 
@@ -295,7 +301,7 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
   ps->printer = printer;
 
   g_message ("P: %s, D: %s", cups_printer->priv->printer_uri, cups_printer->priv->device_uri);
-  _cups_request_execute (print_backend,
+  _cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
                          request,
 			 data_fd,
                          NULL, 
@@ -314,6 +320,7 @@ egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
   iface->printer_create_cairo_surface = egg_print_backend_cups_printer_create_cairo_surface;
   iface->find_printer = egg_print_backend_cups_find_printer;
   iface->print_stream = egg_print_backend_cups_print_stream;
+  iface->create_settings = egg_print_backend_cups_create_settings;
 }
 
 static void
@@ -795,3 +802,333 @@ _cups_request_printer_list (EggPrintBackendCups *print_backend)
 
 }
 
+static const struct {
+  const char *keyword;
+  const char *translation;
+} cups_option_translations[] = {
+  { "Duplex", N_("Two Sided") },
+};
+
+
+static const struct {
+  const char *keyword;
+  const char *choice;
+  const char *translation;
+} cups_choice_translations[] = {
+  { "Duplex", "None", N_("One Sided") },
+};
+
+const char *
+get_option_text (ppd_option_t *option)
+{
+  int i;
+  
+  for (i = 0; i < G_N_ELEMENTS (cups_option_translations); i++)
+    {
+      if (strcmp (cups_option_translations[i].keyword, option->keyword) == 0)
+	return _(cups_option_translations[i].translation);
+    }
+  return option->text;
+}
+
+const char *
+get_choice_text (ppd_choice_t *choice)
+{
+  int i;
+  ppd_option_t *option = choice->option;
+  const char *keyword = option->keyword;
+  
+  for (i = 0; i < G_N_ELEMENTS (cups_choice_translations); i++)
+    {
+      if (strcmp (cups_choice_translations[i].keyword, keyword) == 0 &&
+	  strcmp (cups_choice_translations[i].choice, choice->choice) == 0)
+	return _(cups_choice_translations[i].translation);
+    }
+  return choice->text;
+}
+
+static gboolean
+group_has_option (ppd_group_t *group, ppd_option_t *option)
+{
+  int i;
+
+  if (group == NULL)
+    return FALSE;
+  
+  if (group->num_options > 0)
+    if (option > group->options && option < group->options + group->num_options)
+      return TRUE;
+  for (i = 0; i < group->num_subgroups; i++)
+    {
+      if (group_has_option (&group->subgroups[i],option))
+	return TRUE;
+    }
+  return FALSE;
+}
+
+static gboolean
+value_is_off (const char *value)
+{
+  return  (strcasecmp (value, "None") == 0 ||
+	   strcasecmp (value, "Off") == 0 ||
+	   strcasecmp (value, "False") == 0);
+}
+
+static int
+availible_choices (ppd_file_t *ppd,
+		   ppd_option_t *option,
+		   ppd_choice_t ***availible)
+{
+  ppd_option_t *other_option;
+  int i, j;
+  char *conflicts;
+  ppd_const_t *constraint;
+  const char *choice, *other_choice;
+  ppd_option_t *option1, *option2;
+  ppd_group_t *installed_options;
+  int num_conflicts;
+  gboolean all_off;
+
+  if (availible)
+    *availible = NULL;
+
+  conflicts = g_new0 (char, option->num_choices);
+
+  installed_options = NULL;
+  for (i = 0; i < ppd->num_groups; i++)
+    {
+      if (strcmp (ppd->groups[i].name, "InstallableOptions") == 0)
+	{
+	  installed_options = &ppd->groups[i];
+	  break;
+	}
+    }
+
+  for (i = ppd->num_consts, constraint = ppd->consts; i > 0; i--, constraint++)
+    {
+      option1 = ppdFindOption (ppd, constraint->option1);
+      if (option1 == NULL)
+	continue;
+
+      option2 = ppdFindOption (ppd, constraint->option2);
+      if (option2 == NULL)
+	continue;
+
+      if (option == option1)
+	{
+	  choice = constraint->choice1;
+	  other_option = option2;
+	  other_choice = constraint->choice2;
+	}
+      else if (option == option2)
+	{
+	  choice = constraint->choice2;
+	  other_option = option1;
+	  other_choice = constraint->choice1;
+	}
+      else
+	continue;
+
+      /* We only care of conflicts with installed_options */
+      if (!group_has_option (installed_options, other_option))
+	continue;
+
+      if (*other_choice == 0)
+	{
+	  /* Conflict only if the installed option is not off */
+	  if (value_is_off (other_option->defchoice))
+	    continue;
+	}
+      /* Conflict if the installed option has the specified default */
+      else if (strcasecmp (other_choice, other_option->defchoice) != 0)
+	continue;
+
+      if (*choice == 0)
+	{
+	  /* Conflict with all non-off choices */
+	  for (j = 0; j < option->num_choices; j++)
+	    {
+	      if (!value_is_off (option->choices[j].choice))
+		conflicts[j] = 1;
+	    }
+	}
+      else
+	{
+	  for (j = 0; j < option->num_choices; j++)
+	    {
+	      if (strcasecmp (option->choices[j].choice, choice) == 0)
+		conflicts[j] = 1;
+	    }
+	}
+    }
+
+  num_conflicts = 0;
+  all_off = TRUE;
+  for (j = 0; j < option->num_choices; j++)
+    {
+      if (conflicts[j])
+	num_conflicts++;
+      else if (!value_is_off (option->choices[j].choice))
+	all_off = FALSE;
+    }
+
+  if (num_conflicts == option->num_choices)
+    return 0;
+    
+  if (availible)
+    {
+      *availible = g_new (ppd_choice_t *, option->num_choices - num_conflicts);
+
+      i = 0;
+      for (j = 0; j < option->num_choices; j++)
+	{
+	  if (!conflicts[j]) {
+	    (*availible)[i++] = &option->choices[j];
+	  }
+	}
+    }
+  
+  return option->num_choices - num_conflicts;
+}
+
+static EggPrintBackendSetting *
+create_pickone_setting (ppd_file_t *ppd_file,
+			const char *ppd_keyword,
+			const char *gtk_name,
+			const char *label)
+{
+  EggPrintBackendSetting *setting;
+  ppd_choice_t **availible;
+  ppd_option_t *option;
+  int n_choices;
+  int i;
+
+  setting = NULL;
+  
+  option = ppdFindOption(ppd_file, ppd_keyword);
+  if (option && option->ui == PPD_UI_PICKONE)
+    {
+      n_choices = availible_choices (ppd_file, option, &availible);
+      if (n_choices > 0)
+	{
+	  setting = egg_print_backend_setting_new (gtk_name, label,
+						   EGG_PRINT_BACKEND_SETTING_TYPE_PICKONE);
+
+	  egg_print_backend_setting_allocate_choices (setting, n_choices);
+	  for (i = 0; i < n_choices; i++)
+	    {
+	      setting->choices[i] = g_strdup (availible[i]->choice);
+	      setting->choices_display[i] = g_strdup (get_choice_text (availible[i]));
+	    }
+	  egg_print_backend_setting_set (setting, option->defchoice);
+	}
+      g_free (availible);
+    }
+
+  return setting;
+}
+
+const struct {
+  const char *ppd_keyword;
+  const char *name;
+} setting_names[] = {
+  {"Duplex", "gtk-duplex"},
+  {"PageSize", "gtk-paper-size"},
+  {"MediaType", "gtk-paper-type"},
+  {"InputSlot", "gtk-paper-source"},
+  {"OutputBin", "gtk-output-tray"},
+};
+
+char *
+get_setting_name (const char *keyword)
+{
+  int i;
+
+  for (i = 0; i < G_N_ELEMENTS (setting_names); i++)
+    if (strcmp (setting_names[i].ppd_keyword, keyword) == 0)
+      return g_strdup (setting_names[i].name);
+
+  return g_strdup_printf ("cups-%s", keyword);
+}
+
+static void
+handle_option (EggPrintBackendSettingSet *set,
+	       ppd_file_t *ppd_file,
+	       ppd_option_t *option,
+	       ppd_group_t *toplevel_group)
+{
+  EggPrintBackendSetting *setting;
+  char *name = get_setting_name (option->keyword);
+
+  setting = NULL;
+  if (option->ui == PPD_UI_PICKONE)
+    {
+      setting = create_pickone_setting (ppd_file, option->keyword,
+					name, get_option_text (option));
+      
+    }
+
+  
+  if (setting)
+    {
+      setting->group = g_strdup (toplevel_group->text);
+      egg_print_backend_setting_set_add (set, setting);
+    }
+  
+  g_free (name);
+}
+
+static void
+handle_group (EggPrintBackendSettingSet *set,
+	      ppd_file_t *ppd_file,
+	      ppd_group_t *group,
+	      ppd_group_t *toplevel_group)
+{
+  int i;
+
+  /* Ignore installable options */
+  if (strcmp (toplevel_group->name, "InstallableOptions") == 0)
+    return;
+  
+  for (i = 0; i < group->num_options; i++)
+    handle_option (set, ppd_file, &group->options[i], toplevel_group);
+
+  for (i = 0; i < group->num_subgroups; i++)
+    handle_group (set, ppd_file, &group->subgroups[i], toplevel_group);
+
+}
+
+static EggPrintBackendSettingSet *
+egg_print_backend_cups_create_settings (EggPrintBackend *print_backend,
+					EggPrinter *printer)
+{
+  EggPrintBackendSettingSet *set;
+  EggPrintBackendSetting *setting;
+  ppd_file_t *ppd_file;
+  int i;
+  char *n_up[] = {"1", "2", "4", "6", "9", "16" };
+
+  set = egg_print_backend_setting_set_new ();
+
+  /* Cups specific, non-ppd related settings */
+
+  setting = egg_print_backend_setting_new ("gtk-n-up", _("Pages Per Sheet"), EGG_PRINT_BACKEND_SETTING_TYPE_PICKONE);
+  egg_print_backend_setting_choices_from_array (setting, G_N_ELEMENTS (n_up),
+						n_up, n_up);
+  egg_print_backend_setting_set (setting, "1");
+  egg_print_backend_setting_set_add (set, setting);
+  g_object_unref (setting);
+
+
+  /* Printer (ppd) specific settings */
+  
+  ppd_file = ppdOpenFile("test.ppd");
+  ppdMarkDefaults(ppd_file);
+
+  for (i = 0; i < ppd_file->num_groups; i++)
+    {
+      handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
+    }
+  
+  return set;
+}

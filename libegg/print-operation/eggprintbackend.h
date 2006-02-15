@@ -1,6 +1,6 @@
 /* GTK - The GIMP Toolkit
  * eggprintbackend.h: Abstract printer backend interfaces
- * Copyright (C) 2003, Red Hat, Inc.
+ * Copyright (C) 2006, Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 #include <cairo.h>
 
 #include "eggprinter.h"
+#include "eggprintbackendsettingset.h"
 
 G_BEGIN_DECLS
 typedef struct _EggPrintBackend       EggPrintBackend;
@@ -77,6 +78,9 @@ struct _EggPrintBackendIface
 				EggPrinterSendCompleteFunc callback,
 				gpointer user_data);
 
+  EggPrintBackendSettingSet * (*create_settings) (EggPrintBackend *print_backend,
+						  EggPrinter *printer);
+  
 
   /* Signals 
    */
@@ -102,6 +106,10 @@ void egg_print_backend_print_stream                             (EggPrintBackend
 				                                 gint data_fd,
 				                                 EggPrinterSendCompleteFunc callback,
 				                                 gpointer user_data);
+
+EggPrintBackendSettingSet * egg_print_backend_create_settings   (EggPrintBackend *print_backend,
+								 EggPrinter *printer);
+
 
 G_END_DECLS
 

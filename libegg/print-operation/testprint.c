@@ -101,7 +101,7 @@ main (int argc, char **argv)
   print = egg_print_operation_new ();
   egg_print_operation_set_nr_of_pages (print, 2);
   egg_print_operation_set_unit (print, EGG_UNIT_MM);
-  egg_print_operation_set_pdf_target (print, "test.pdf");
+  //egg_print_operation_set_pdf_target (print, "test.pdf");
   g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), NULL);
   g_signal_connect (print, "request_page_setup", G_CALLBACK (request_page_setup), NULL);
   res = egg_print_operation_run (print, NULL, NULL);
