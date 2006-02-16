@@ -108,10 +108,10 @@ static void egg_print_backend_cups_init         (EggPrintBackendCups      *impl)
 static void egg_print_backend_cups_finalize     (GObject                  *object);
 static EggPrintBackendSettingSet * egg_print_backend_cups_create_settings (EggPrintBackend *print_backend,
 									   EggPrinter *printer);
-
-
+static void egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend,
+						    EggPrinter                *printer,
+						    EggPrintBackendSettingSet *settings);
 static void _cups_request_printer_list (EggPrintBackendCups *print_backend);
-
 static ipp_t * _cups_request_new     (int operation_id);
 static void    _cups_request_execute (EggPrintBackendCups *print_backend,
                                       ipp_t               *request,
@@ -321,6 +321,7 @@ egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
   iface->find_printer = egg_print_backend_cups_find_printer;
   iface->print_stream = egg_print_backend_cups_print_stream;
   iface->create_settings = egg_print_backend_cups_create_settings;
+  iface->mark_conflicts = egg_print_backend_cups_mark_conflicts;
 }
 
 static void
@@ -802,6 +803,57 @@ _cups_request_printer_list (EggPrintBackendCups *print_backend)
 
 }
 
+char *
+ppd_text_to_utf8 (ppd_file_t *ppd_file, const char *text)
+{
+  const char *encoding = NULL;
+  char *res;
+  
+  if (g_ascii_strcasecmp (ppd_file->lang_encoding, "UTF-8") == 0)
+    {
+      return g_strdup (text);
+    }
+  else if (g_ascii_strcasecmp (ppd_file->lang_encoding, "ISOLatin1") == 0)
+    {
+      encoding = "ISO-8859-1";
+    }
+  else if (g_ascii_strcasecmp (ppd_file->lang_encoding, "ISOLatin2") == 0)
+    {
+      encoding = "ISO-8859-2";
+    }
+  else if (g_ascii_strcasecmp (ppd_file->lang_encoding, "ISOLatin5") == 0)
+    {
+      encoding = "ISO-8859-5";
+    }
+  else if (g_ascii_strcasecmp (ppd_file->lang_encoding, "JIS83-RKSJ") == 0)
+    {
+      encoding = "SHIFT-JIS";
+    }
+  else if (g_ascii_strcasecmp (ppd_file->lang_encoding, "MacStandard") == 0)
+    {
+      encoding = "MACINTOSH";
+    }
+  else if (g_ascii_strcasecmp (ppd_file->lang_encoding, "WindowsANSI") == 0)
+    {
+      encoding = "WINDOWS-1252";
+    }
+  else 
+    {
+      /* Fallback, try iso-8859-1... */
+      encoding = "ISO-8859-1";
+    }
+
+  res = g_convert (text, -1, "UTF-8", encoding, NULL, NULL, NULL);
+
+  if (res == NULL)
+    {
+      g_warning ("unable to convert PPD text");
+      res = g_strdup ("???");
+    }
+  
+  return res;
+}
+
 static const struct {
   const char *keyword;
   const char *translation;
@@ -818,21 +870,22 @@ static const struct {
   { "Duplex", "None", N_("One Sided") },
 };
 
-const char *
-get_option_text (ppd_option_t *option)
+char *
+get_option_text (ppd_file_t *ppd_file, ppd_option_t *option)
 {
   int i;
   
   for (i = 0; i < G_N_ELEMENTS (cups_option_translations); i++)
     {
       if (strcmp (cups_option_translations[i].keyword, option->keyword) == 0)
-	return _(cups_option_translations[i].translation);
+	return g_strdup (_(cups_option_translations[i].translation));
     }
-  return option->text;
+  
+  return ppd_text_to_utf8 (ppd_file, option->text);
 }
 
-const char *
-get_choice_text (ppd_choice_t *choice)
+char *
+get_choice_text (ppd_file_t *ppd_file, ppd_choice_t *choice)
 {
   int i;
   ppd_option_t *option = choice->option;
@@ -842,9 +895,9 @@ get_choice_text (ppd_choice_t *choice)
     {
       if (strcmp (cups_choice_translations[i].keyword, keyword) == 0 &&
 	  strcmp (cups_choice_translations[i].choice, choice->choice) == 0)
-	return _(cups_choice_translations[i].translation);
+	return g_strdup (_(cups_choice_translations[i].translation));
     }
-  return choice->text;
+  return ppd_text_to_utf8 (ppd_file, choice->text);
 }
 
 static gboolean
@@ -993,37 +1046,36 @@ availible_choices (ppd_file_t *ppd,
 
 static EggPrintBackendSetting *
 create_pickone_setting (ppd_file_t *ppd_file,
-			const char *ppd_keyword,
-			const char *gtk_name,
-			const char *label)
+			ppd_option_t *option,
+			const char *gtk_name)
 {
   EggPrintBackendSetting *setting;
   ppd_choice_t **availible;
-  ppd_option_t *option;
+  char *label;
   int n_choices;
   int i;
 
-  setting = NULL;
+  g_assert (option->ui == PPD_UI_PICKONE);
   
-  option = ppdFindOption(ppd_file, ppd_keyword);
-  if (option && option->ui == PPD_UI_PICKONE)
-    {
-      n_choices = availible_choices (ppd_file, option, &availible);
-      if (n_choices > 0)
-	{
-	  setting = egg_print_backend_setting_new (gtk_name, label,
-						   EGG_PRINT_BACKEND_SETTING_TYPE_PICKONE);
+  setting = NULL;
 
-	  egg_print_backend_setting_allocate_choices (setting, n_choices);
-	  for (i = 0; i < n_choices; i++)
-	    {
-	      setting->choices[i] = g_strdup (availible[i]->choice);
-	      setting->choices_display[i] = g_strdup (get_choice_text (availible[i]));
-	    }
-	  egg_print_backend_setting_set (setting, option->defchoice);
+  n_choices = availible_choices (ppd_file, option, &availible);
+  if (n_choices > 0)
+    {
+      label = get_option_text (ppd_file, option);
+      setting = egg_print_backend_setting_new (gtk_name, label,
+					       EGG_PRINT_BACKEND_SETTING_TYPE_PICKONE);
+      g_free (label);
+      
+      egg_print_backend_setting_allocate_choices (setting, n_choices);
+      for (i = 0; i < n_choices; i++)
+	{
+	  setting->choices[i] = g_strdup (availible[i]->choice);
+	  setting->choices_display[i] = get_choice_text (ppd_file, availible[i]);
 	}
-      g_free (availible);
+      egg_print_backend_setting_set (setting, option->defchoice);
     }
+  g_free (availible);
 
   return setting;
 }
@@ -1058,13 +1110,14 @@ handle_option (EggPrintBackendSettingSet *set,
 	       ppd_group_t *toplevel_group)
 {
   EggPrintBackendSetting *setting;
-  char *name = get_setting_name (option->keyword);
+  char *name;
+
+  name = get_setting_name (option->keyword);
 
   setting = NULL;
   if (option->ui == PPD_UI_PICKONE)
     {
-      setting = create_pickone_setting (ppd_file, option->keyword,
-					name, get_option_text (option));
+      setting = create_pickone_setting (ppd_file, option, name);
       
     }
 
@@ -1122,13 +1175,110 @@ egg_print_backend_cups_create_settings (EggPrintBackend *print_backend,
 
   /* Printer (ppd) specific settings */
   
-  ppd_file = ppdOpenFile("test.ppd");
-  ppdMarkDefaults(ppd_file);
+  ppd_file = ppdOpenFile ("test.ppd");
+  ppdMarkDefaults (ppd_file);
 
   for (i = 0; i < ppd_file->num_groups; i++)
-    {
-      handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
-    }
+    handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
+
+  ppdClose (ppd_file);
   
   return set;
+}
+
+
+static void
+mark_option_from_set (EggPrintBackendSettingSet *set,
+		      ppd_file_t *ppd_file,
+		      ppd_option_t *option)
+{
+  EggPrintBackendSetting *setting;
+  char *name = get_setting_name (option->keyword);
+
+  setting = egg_print_backend_setting_set_lookup (set, name);
+
+  if (setting)
+    ppdMarkOption (ppd_file, option->keyword, setting->value);
+  
+  g_free (name);
+}
+
+
+static void
+mark_group_from_set (EggPrintBackendSettingSet *set,
+		     ppd_file_t *ppd_file,
+		     ppd_group_t *group)
+{
+  int i;
+
+  for (i = 0; i < group->num_options; i++)
+    mark_option_from_set (set, ppd_file, &group->options[i]);
+
+  for (i = 0; i < group->num_subgroups; i++)
+    mark_group_from_set (set, ppd_file, &group->subgroups[i]);
+}
+
+static void
+set_conflicts_from_option (EggPrintBackendSettingSet *set,
+			   ppd_file_t *ppd_file,
+			   ppd_option_t *option)
+{
+  EggPrintBackendSetting *setting;
+  char *name;
+  if (option->conflicted)
+    {
+      name = get_setting_name (option->keyword);
+      setting = egg_print_backend_setting_set_lookup (set, name);
+
+      if (setting)
+	{
+	  g_print ("setting %p(%s) as conflicted\n", setting, name);
+	  egg_print_backend_setting_set_has_conflict (setting, TRUE);
+	}
+      else
+	g_warning ("conflict for option %s ignored", option->keyword);
+      
+      g_free (name);
+    }
+}
+
+static void
+set_conflicts_from_group (EggPrintBackendSettingSet *set,
+			  ppd_file_t *ppd_file,
+			  ppd_group_t *group)
+{
+  int i;
+
+  for (i = 0; i < group->num_options; i++)
+    set_conflicts_from_option (set, ppd_file, &group->options[i]);
+
+  for (i = 0; i < group->num_subgroups; i++)
+    set_conflicts_from_group (set, ppd_file, &group->subgroups[i]);
+}
+
+static void
+egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend,
+					EggPrinter                *printer,
+					EggPrintBackendSettingSet *settings)
+{
+  ppd_file_t *ppd_file;
+  int num_conflicts;
+  int i;
+  
+  ppd_file = ppdOpenFile("test.ppd");
+  ppdMarkDefaults (ppd_file);
+
+  for (i = 0; i < ppd_file->num_groups; i++)
+    mark_group_from_set (settings, ppd_file, &ppd_file->groups[i]);
+
+  num_conflicts = ppdConflicts (ppd_file);
+
+  if (num_conflicts > 0)
+    {
+      for (i = 0; i < ppd_file->num_groups; i++)
+	set_conflicts_from_group (settings, ppd_file, &ppd_file->groups[i]);
+    }
+
+  
+  ppdClose (ppd_file);
 }

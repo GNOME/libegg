@@ -44,6 +44,8 @@ egg_print_backend_setting_set_finalize (GObject *object)
   EggPrintBackendSettingSet *set = EGG_PRINT_BACKEND_SETTING_SET (object);
 
   g_hash_table_destroy (set->hash);
+  g_ptr_array_foreach (set->array, (GFunc)g_object_unref, NULL);
+  g_ptr_array_free (set->array, TRUE);
   
   G_OBJECT_CLASS (egg_print_backend_setting_set_parent_class)->finalize (object);
 }
@@ -51,8 +53,8 @@ egg_print_backend_setting_set_finalize (GObject *object)
 static void
 egg_print_backend_setting_set_init (EggPrintBackendSettingSet *set)
 {
-  set->hash = g_hash_table_new_full (g_str_hash, g_str_equal,
-				     g_free, g_object_unref);
+  set->array = g_ptr_array_new ();
+  set->hash = g_hash_table_new (g_str_hash, g_str_equal);
 }
 
 static void
@@ -86,10 +88,36 @@ egg_print_backend_setting_set_new (void)
 }
 
 void
+egg_print_backend_setting_set_remove (EggPrintBackendSettingSet *set,
+				      EggPrintBackendSetting    *setting)
+{
+  int i;
+  
+  for (i = 0; i < set->array->len; i++)
+    {
+      if (g_ptr_array_index (set->array, i) == setting)
+	{
+	  g_ptr_array_remove_index (set->array, i);
+	  g_hash_table_remove (set->hash, setting->name);
+	  g_signal_handlers_disconnect_by_func (setting, emit_changed, set);
+
+	  g_object_unref (setting);
+	  break;
+	}
+    }
+}
+
+void
 egg_print_backend_setting_set_add (EggPrintBackendSettingSet *set,
 				   EggPrintBackendSetting    *setting)
 {
-  g_hash_table_insert (set->hash, g_strdup (setting->name), g_object_ref (setting));
+  g_object_ref (setting);
+  
+  if (egg_print_backend_setting_set_lookup (set, setting->name))
+    egg_print_backend_setting_set_remove (set, setting);
+    
+  g_ptr_array_add (set->array, setting);
+  g_hash_table_insert (set->hash, setting->name, setting);
   g_signal_connect_object (setting, "changed", G_CALLBACK (emit_changed), set, G_CONNECT_SWAPPED);
 }
 
@@ -104,38 +132,6 @@ egg_print_backend_setting_set_lookup (EggPrintBackendSettingSet *set,
   return EGG_PRINT_BACKEND_SETTING (ptr);
 }
 
-struct SettingSetForeach {
-  EggPrintBackendSettingSetFunc func;
-  const char *group;
-  gpointer user_data;
-};
-
-static void
-hash_foreach (gpointer       key,
-	      gpointer       value,
-	      gpointer       user_data)
-{
-  struct SettingSetForeach *data = user_data;
-  EggPrintBackendSetting *setting;
-
-  setting = EGG_PRINT_BACKEND_SETTING (value);
-  if (data->group == NULL || strcmp (data->group, setting->group) == 0)
-    data->func (setting, data->user_data);
-}
-
-void
-egg_print_backend_setting_set_foreach (EggPrintBackendSettingSet *set,
-				       EggPrintBackendSettingSetFunc func,
-				       gpointer	    user_data)
-{
-  struct SettingSetForeach data;
-  data.func = func;
-  data.user_data =  user_data;
-  data.group = NULL;
-  
-  g_hash_table_foreach (set->hash, hash_foreach, &data);
-}
-
 
 
 void
@@ -146,25 +142,20 @@ egg_print_backend_setting_set_clear_conflicts (EggPrintBackendSettingSet *set)
 					 NULL);
 }
 
-static void
-get_groups (EggPrintBackendSetting *setting, GList **list)
-{
-  if (g_list_find_custom (*list, setting->group, strcmp) != NULL)
-    return;
-
-  *list = g_list_prepend (*list, g_strdup (setting->group));
-}
-  
-
-
 GList *
 egg_print_backend_setting_set_get_groups (EggPrintBackendSettingSet     *set)
 {
+  EggPrintBackendSetting *setting;
   GList *list = NULL;
-  
-  egg_print_backend_setting_set_foreach (set,
-					 (EggPrintBackendSettingSetFunc)get_groups,
-					 &list);
+  int i;
+
+  for (i = 0; i < set->array->len; i++)
+    {
+      setting = g_ptr_array_index (set->array, i);
+
+      if (g_list_find_custom (list, setting->group, (GCompareFunc)strcmp) == NULL)
+	list = g_list_prepend (list, g_strdup (setting->group));
+    }
 
   return list;
 }
@@ -175,11 +166,23 @@ egg_print_backend_setting_set_foreach_in_group (EggPrintBackendSettingSet     *s
 						EggPrintBackendSettingSetFunc  func,
 						gpointer                       user_data)
 {
-  struct SettingSetForeach data;
-  data.func = func;
-  data.user_data =  user_data;
-  data.group = group;
-  
-  g_hash_table_foreach (set->hash, hash_foreach, &data);
+  EggPrintBackendSetting *setting;
+  int i;
+
+  for (i = 0; i < set->array->len; i++)
+    {
+      setting = g_ptr_array_index (set->array, i);
+
+      if (group == NULL || strcmp (group, setting->group) == 0)
+	func (setting, user_data);
+    }
+}
+
+void
+egg_print_backend_setting_set_foreach (EggPrintBackendSettingSet *set,
+				       EggPrintBackendSettingSetFunc func,
+				       gpointer	    user_data)
+{
+  egg_print_backend_setting_set_foreach_in_group (set, NULL, func, user_data);
 }
 

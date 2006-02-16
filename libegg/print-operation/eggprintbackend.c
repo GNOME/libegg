@@ -191,3 +191,15 @@ egg_print_backend_create_settings (EggPrintBackend *print_backend,
   return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->create_settings (print_backend,
 								       printer);
 }
+
+void
+egg_print_backend_mark_conflicts  (EggPrintBackend           *print_backend,
+				   EggPrinter                *printer,
+				   EggPrintBackendSettingSet *settings)
+{
+  g_return_if_fail (EGG_IS_PRINT_BACKEND (print_backend));
+
+  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->mark_conflicts (print_backend,
+								      printer,
+								      settings);
+}

@@ -1,3 +1,21 @@
+2006-02-16  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintbackend.[ch]:
+	Add egg_print_backend_mark_conflicts
+	* eggprintbackendcups.c:
+	Convert PPD text to utf8.
+	Implement conflict marking.
+	
+	* eggprintbackendsetting.c:
+	Don't emit changed if the value didn't actually change. 
+	
+	* eggprintbackendsettingset.[ch]:
+	Add an array with the settings so we keep the ordering of
+	the settings.
+	
+	* eggprintunixdialog.c:
+	Mark conflicts in UI.
+
 2006-02-15  Alexander Larsson  <alexl@redhat.com>
 
 	* Makefile.am:

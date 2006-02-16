@@ -20,6 +20,7 @@
 
 #include <config.h>
 #include <gmodule.h>
+#include <string.h>
 
 #include "eggprintbackendsetting.h"
 
@@ -104,6 +105,11 @@ void
 egg_print_backend_setting_set (EggPrintBackendSetting *setting,
 			       const char *value)
 {
+  if ((setting->value == NULL && value == NULL) ||
+      (setting->value != NULL && value != NULL &&
+       strcmp (setting->value, value) == 0))
+    return;
+  
   g_free (setting->value);
   setting->value = g_strdup (value);
   
@@ -121,6 +127,11 @@ void
 egg_print_backend_setting_set_has_conflict  (EggPrintBackendSetting *setting,
 					     gboolean                has_conflict)
 {
+  has_conflict = has_conflict != 0;
+  
+  if (setting->has_conflict == has_conflict)
+    return;
+
   setting->has_conflict = has_conflict;
   emit_changed (setting);
 }

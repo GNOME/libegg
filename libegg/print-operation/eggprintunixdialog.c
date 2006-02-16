@@ -49,6 +49,7 @@ static void egg_print_unix_dialog_get_property (GObject      *object,
 			                   GParamSpec   *pspec);
 
 static void populate_dialog (EggPrintUnixDialog *dialog);
+static void unschedule_idle_mark_conflicts (EggPrintUnixDialog *dialog);
 
 enum {
   PROP_0,
@@ -99,6 +100,8 @@ struct EggPrintUnixDialogPrivate
   EggPrintBackend *print_backend;
   
   EggPrintBackendSettingSet *settings;
+  gulong settings_changed_handler;
+  gulong mark_conflicts_id;
 };
 
 G_DEFINE_TYPE (EggPrintUnixDialog, egg_print_unix_dialog, GTK_TYPE_DIALOG);
@@ -327,10 +330,12 @@ egg_print_unix_dialog_init (EggPrintUnixDialog *dialog)
 static void
 egg_print_unix_dialog_finalize (GObject *object)
 {
+  EggPrintUnixDialog *dialog = EGG_PRINT_UNIX_DIALOG (object);
+  
   g_return_if_fail (object != NULL);
 
-  /* EggPrintUnixDialog *dialog = EGG_PRINT_UNIX_DIALOG (object); */
-
+  unschedule_idle_mark_conflicts (dialog);
+  
   if (G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize)
     G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize (object);
 }
@@ -498,95 +503,6 @@ _create_printer_list_model (EggPrintUnixDialog *dialog)
   dialog->priv->printer_list = (GtkTreeModel *)model;
 }
 
-static GtkWidget *
-combo_box_new_option (void)
-{
-  GtkWidget *combo_box;
-  GtkCellRenderer *cell;
-  GtkListStore *store;
-
-  store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
-  combo_box = gtk_combo_box_new_with_model (GTK_TREE_MODEL (store));
-  g_object_unref (store);
-
-  cell = gtk_cell_renderer_text_new ();
-  gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo_box), cell, TRUE);
-  gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo_box), cell,
-                                  "text", 0,
-                                  NULL);
-
-  return combo_box;
-}
-
-static void
-option_combo_box_clear (GtkComboBox *combo)
-{
-  GtkTreeModel *model;
-  GtkListStore *store;
-  
-  model = gtk_combo_box_get_model (GTK_COMBO_BOX (combo));
-  store = GTK_LIST_STORE (model);
-
-  gtk_list_store_clear (store);
-}
-  
-static void
-option_combo_box_append (GtkWidget *combo,
-			 const char *display_text,
-			 const char *value)
-{
-  GtkTreeModel *model;
-  GtkListStore *store;
-  GtkTreeIter iter;
-  
-  model = gtk_combo_box_get_model (GTK_COMBO_BOX (combo));
-  store = GTK_LIST_STORE (model);
-
-  gtk_list_store_append (store, &iter);
-  gtk_list_store_set (store, &iter,
-		      0, display_text,
-		      1, value,
-		      -1);
-}
-
-struct ComboSet {
-  GtkComboBox *combo;
-  const char *value;
-};
-
-static gboolean
-set_cb (GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
-{
-  struct ComboSet *set_data = data;
-  gboolean found;
-  char *value;
-  
-  gtk_tree_model_get (model, iter, 1, &value, -1);
-  found = (strcmp (value, set_data->value) == 0);
-  g_free (value);
-  
-  if (found)
-    gtk_combo_box_set_active_iter (set_data->combo, iter);
-
-  return found;
-}
-
-static void
-option_combo_box_set (GtkWidget *combo,
-		      const char *value)
-{
-  GtkTreeModel *model;
-  GtkListStore *store;
-  struct ComboSet set_data;
-  
-  model = gtk_combo_box_get_model (GTK_COMBO_BOX (combo));
-  store = GTK_LIST_STORE (model);
-
-  set_data.combo = GTK_COMBO_BOX (combo);
-  set_data.value = value;
-  gtk_tree_model_foreach (model, set_cb, &set_data);
-}
-
 
 static GtkWidget *
 wrap_in_frame (const char *label, GtkWidget *child)
@@ -670,6 +586,71 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
 }
 
 static void
+mark_conflicts (EggPrintUnixDialog *dialog)
+{
+  EggPrinter *printer;
+  EggPrintBackend *backend;
+  GtkTreeIter iter;
+  GtkTreeSelection *selection;
+
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
+  
+  if (gtk_tree_selection_get_selected (selection, NULL, &iter))
+    {
+      gtk_tree_model_get (dialog->priv->printer_list, &iter,
+			  PRINTER_LIST_COL_PRINTER_OBJ, &printer,
+			  -1);
+
+      backend = egg_printer_get_backend (printer);
+
+      g_signal_handler_block (dialog->priv->settings,
+			      dialog->priv->settings_changed_handler);
+      
+      egg_print_backend_setting_set_clear_conflicts (dialog->priv->settings);
+      egg_print_backend_mark_conflicts (backend, printer,
+					dialog->priv->settings);
+      
+      g_signal_handler_unblock (dialog->priv->settings,
+				dialog->priv->settings_changed_handler);
+
+      g_object_unref (backend);
+      g_object_unref (printer);
+    }
+}
+
+static gboolean
+mark_conflicts_callback (gpointer data)
+{
+  EggPrintUnixDialog *dialog = data;
+
+  dialog->priv->mark_conflicts_id = 0;
+
+  mark_conflicts (dialog);
+
+  return FALSE;
+}
+
+static void
+unschedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
+{
+  if (dialog->priv->mark_conflicts_id != 0)
+    {
+      g_source_remove (dialog->priv->mark_conflicts_id);
+      dialog->priv->mark_conflicts_id = 0;
+    }
+}
+
+static void
+schedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
+{
+  if (dialog->priv->mark_conflicts_id != 0)
+    return;
+
+  dialog->priv->mark_conflicts_id = g_idle_add (mark_conflicts_callback,
+						dialog);
+}
+  
+static void
 selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialog)
 {
   EggPrinter *printer;
@@ -677,8 +658,12 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
   GtkTreeIter iter;
 
   if (dialog->priv->settings)
-    g_object_unref (dialog->priv->settings);
-
+    {
+      g_signal_handler_disconnect (dialog->priv->settings,
+				   dialog->priv->settings_changed_handler);
+      g_object_unref (dialog->priv->settings);
+    }
+  
   dialog->priv->settings = NULL;  
 
   if (gtk_tree_selection_get_selected (selection, NULL, &iter))
@@ -687,13 +672,14 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
 			  PRINTER_LIST_COL_PRINTER_OBJ, &printer,
 			  -1);
 
-      g_print ("selected new printer %p\n", printer);
-  
       backend = egg_printer_get_backend (printer);
 
       /* TODO: Shouldn't the call was on the printer, not the backend */
       dialog->priv->settings =
 	egg_print_backend_create_settings (backend, printer);
+
+      dialog->priv->settings_changed_handler = 
+	g_signal_connect_swapped (dialog->priv->settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
       
       g_object_unref (backend);
       g_object_unref (printer);

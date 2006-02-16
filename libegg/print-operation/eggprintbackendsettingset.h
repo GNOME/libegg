@@ -45,6 +45,8 @@ struct _EggPrintBackendSettingSet
 {
   GObject parent_instance;
 
+  /*< private >*/
+  GPtrArray *array;
   GHashTable *hash;
 };
 
@@ -63,6 +65,8 @@ GType   egg_print_backend_setting_set_get_type       (void) G_GNUC_CONST;
 
 EggPrintBackendSettingSet *egg_print_backend_setting_set_new              (void);
 void                       egg_print_backend_setting_set_add              (EggPrintBackendSettingSet     *set,
+									   EggPrintBackendSetting        *setting);
+void                       egg_print_backend_setting_set_remove           (EggPrintBackendSettingSet     *set,
 									   EggPrintBackendSetting        *setting);
 EggPrintBackendSetting *   egg_print_backend_setting_set_lookup           (EggPrintBackendSettingSet     *set,
 									   const char                    *name);

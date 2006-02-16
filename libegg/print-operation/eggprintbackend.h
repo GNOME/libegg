@@ -80,6 +80,9 @@ struct _EggPrintBackendIface
 
   EggPrintBackendSettingSet * (*create_settings) (EggPrintBackend *print_backend,
 						  EggPrinter *printer);
+  void (*mark_conflicts)                         (EggPrintBackend *print_backend,
+						  EggPrinter *printer,
+						  EggPrintBackendSettingSet *settings);
   
 
   /* Signals 
@@ -107,8 +110,11 @@ void egg_print_backend_print_stream                             (EggPrintBackend
 				                                 EggPrinterSendCompleteFunc callback,
 				                                 gpointer user_data);
 
-EggPrintBackendSettingSet * egg_print_backend_create_settings   (EggPrintBackend *print_backend,
-								 EggPrinter *printer);
+EggPrintBackendSettingSet *egg_print_backend_create_settings (EggPrintBackend           *print_backend,
+							      EggPrinter                *printer);
+void                       egg_print_backend_mark_conflicts  (EggPrintBackend           *print_backend,
+							      EggPrinter                *printer,
+							      EggPrintBackendSettingSet *settings);
 
 
 G_END_DECLS
