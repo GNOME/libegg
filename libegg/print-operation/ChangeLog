@@ -1,6 +1,15 @@
 2006-02-16  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintbackend.[ch]:
+	* eggprintbackendcups.c:
+	Make mark_conflicts return true if there were any conflicts.
+	
+	* eggprintunixdialog.c:
+	Show warning if there are any conflicts in the dialog.
+
+2006-02-16  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintbackend.[ch]:
 	Add egg_print_backend_mark_conflicts
 	* eggprintbackendcups.c:
 	Convert PPD text to utf8.

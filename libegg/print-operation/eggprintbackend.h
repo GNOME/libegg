@@ -80,7 +80,7 @@ struct _EggPrintBackendIface
 
   EggPrintBackendSettingSet * (*create_settings) (EggPrintBackend *print_backend,
 						  EggPrinter *printer);
-  void (*mark_conflicts)                         (EggPrintBackend *print_backend,
+  gboolean (*mark_conflicts)                     (EggPrintBackend *print_backend,
 						  EggPrinter *printer,
 						  EggPrintBackendSettingSet *settings);
   
@@ -112,7 +112,7 @@ void egg_print_backend_print_stream                             (EggPrintBackend
 
 EggPrintBackendSettingSet *egg_print_backend_create_settings (EggPrintBackend           *print_backend,
 							      EggPrinter                *printer);
-void                       egg_print_backend_mark_conflicts  (EggPrintBackend           *print_backend,
+gboolean                   egg_print_backend_mark_conflicts  (EggPrintBackend           *print_backend,
 							      EggPrinter                *printer,
 							      EggPrintBackendSettingSet *settings);
 

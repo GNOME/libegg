@@ -95,6 +95,7 @@ struct EggPrintUnixDialogPrivate
   EggPrintSettingWidget *paper_source;
   EggPrintSettingWidget *output_tray;
 
+  GtkWidget *conflicts_widget;
   GtkWidget *advanced_vbox;
   
   EggPrintBackend *print_backend;
@@ -592,9 +593,10 @@ mark_conflicts (EggPrintUnixDialog *dialog)
   EggPrintBackend *backend;
   GtkTreeIter iter;
   GtkTreeSelection *selection;
+  gboolean have_conflict;
 
+  have_conflict = FALSE;
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
-  
   if (gtk_tree_selection_get_selected (selection, NULL, &iter))
     {
       gtk_tree_model_get (dialog->priv->printer_list, &iter,
@@ -607,8 +609,8 @@ mark_conflicts (EggPrintUnixDialog *dialog)
 			      dialog->priv->settings_changed_handler);
       
       egg_print_backend_setting_set_clear_conflicts (dialog->priv->settings);
-      egg_print_backend_mark_conflicts (backend, printer,
-					dialog->priv->settings);
+      have_conflict = egg_print_backend_mark_conflicts (backend, printer,
+							dialog->priv->settings);
       
       g_signal_handler_unblock (dialog->priv->settings,
 				dialog->priv->settings_changed_handler);
@@ -616,6 +618,11 @@ mark_conflicts (EggPrintUnixDialog *dialog)
       g_object_unref (backend);
       g_object_unref (printer);
     }
+
+  if (have_conflict)
+    gtk_widget_show (dialog->priv->conflicts_widget);
+  else
+    gtk_widget_hide (dialog->priv->conflicts_widget);
 }
 
 static gboolean
@@ -1279,6 +1286,7 @@ static void
 populate_dialog (EggPrintUnixDialog *dialog)
 {
   EggPrintUnixDialogPrivate *priv;
+  GtkWidget *hbox, *conflict_hbox, *image, *label;
   
   g_return_if_fail (EGG_IS_PRINT_UNIX_DIALOG (dialog));
   
@@ -1298,8 +1306,36 @@ populate_dialog (EggPrintUnixDialog *dialog)
   create_image_quality_page (dialog);
   create_finishing_page (dialog);
   create_advanced_page (dialog);
+
+  hbox = gtk_hbox_new (FALSE, 0);
+  gtk_widget_show (hbox);
+  gtk_box_pack_end (GTK_BOX (GTK_DIALOG (dialog)->vbox), hbox,
+                    FALSE, TRUE, 0);
   
-  gtk_widget_show (priv->notebook);
+  conflict_hbox = gtk_hbox_new (FALSE, 0);
+  image = gtk_image_new_from_stock (GTK_STOCK_DIALOG_WARNING, GTK_ICON_SIZE_MENU);
+  gtk_widget_show (image);
+  gtk_box_pack_start (GTK_BOX (conflict_hbox), image, FALSE, TRUE, 0);
+  label = gtk_label_new (_("Some of the settings in the dialog conflict"));
+  gtk_widget_show (label);
+  gtk_box_pack_start (GTK_BOX (conflict_hbox), label, FALSE, TRUE, 0);
+  dialog->priv->conflicts_widget = conflict_hbox;
+
+  gtk_box_pack_start (GTK_BOX (hbox), conflict_hbox,
+		      FALSE, FALSE, 0);
+
+  /* Reparent the action area into the hbox. This is so we can have the
+   * conflict warning on the same row, but not make the buttons the same
+   * width as the warning (which the buttonbox does).
+   */
+  g_object_ref (GTK_DIALOG (dialog)->action_area);
+  gtk_container_remove (GTK_CONTAINER (GTK_DIALOG (dialog)->vbox),
+			GTK_DIALOG (dialog)->action_area);
+  gtk_box_pack_end (GTK_BOX (hbox), GTK_DIALOG (dialog)->action_area,
+		      FALSE, FALSE, 0);
+  g_object_unref (GTK_DIALOG (dialog)->action_area);
+  
+  gtk_widget_show (dialog->priv->notebook);
 }
 
 /**

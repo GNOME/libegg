@@ -192,7 +192,7 @@ egg_print_backend_create_settings (EggPrintBackend *print_backend,
 								       printer);
 }
 
-void
+gboolean 
 egg_print_backend_mark_conflicts  (EggPrintBackend           *print_backend,
 				   EggPrinter                *printer,
 				   EggPrintBackendSettingSet *settings)

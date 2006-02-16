@@ -108,9 +108,9 @@ static void egg_print_backend_cups_init         (EggPrintBackendCups      *impl)
 static void egg_print_backend_cups_finalize     (GObject                  *object);
 static EggPrintBackendSettingSet * egg_print_backend_cups_create_settings (EggPrintBackend *print_backend,
 									   EggPrinter *printer);
-static void egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend,
-						    EggPrinter                *printer,
-						    EggPrintBackendSettingSet *settings);
+static gboolean egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend,
+							EggPrinter                *printer,
+							EggPrintBackendSettingSet *settings);
 static void _cups_request_printer_list (EggPrintBackendCups *print_backend);
 static ipp_t * _cups_request_new     (int operation_id);
 static void    _cups_request_execute (EggPrintBackendCups *print_backend,
@@ -1256,7 +1256,7 @@ set_conflicts_from_group (EggPrintBackendSettingSet *set,
     set_conflicts_from_group (set, ppd_file, &group->subgroups[i]);
 }
 
-static void
+static gboolean
 egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend,
 					EggPrinter                *printer,
 					EggPrintBackendSettingSet *settings)
@@ -1281,4 +1281,6 @@ egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend
 
   
   ppdClose (ppd_file);
+
+  return num_conflicts > 0;
 }
