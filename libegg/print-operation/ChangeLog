@@ -1,5 +1,11 @@
 2006-02-16  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintbackendcups.c (group_has_option):
+	Fix bug that made us not remove enought installable option
+	conflicts.
+
+2006-02-16  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintbackend.[ch]:
 	* eggprintbackendcups.c:
 	Make mark_conflicts return true if there were any conflicts.

@@ -908,9 +908,10 @@ group_has_option (ppd_group_t *group, ppd_option_t *option)
   if (group == NULL)
     return FALSE;
   
-  if (group->num_options > 0)
-    if (option > group->options && option < group->options + group->num_options)
-      return TRUE;
+  if (group->num_options > 0 &&
+      option >= group->options && option < group->options + group->num_options)
+    return TRUE;
+  
   for (i = 0; i < group->num_subgroups; i++)
     {
       if (group_has_option (&group->subgroups[i],option))
