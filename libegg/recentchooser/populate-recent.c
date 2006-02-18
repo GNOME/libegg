@@ -10,7 +10,8 @@ show_usage (void)
 {
   g_print (
 "Usage: populate-recent <option>\n"
-"\nOptions:\n"
+"\n"
+"Options:\n"
 "  --add <uri>   Add <uri> to the list of recently used resources\n"
 "  --info <uri>  Shows informations about <uri>\n"
 "  --list [n]    Lists at max [n] items from teh recently used resources list\n"
@@ -154,6 +155,11 @@ main (int argc, char *argv[])
 	  
           break;
         }
+      else if (0 == strcmp (argv[i], "--help"))
+        {
+	  show_usage ();
+	  return 0;
+	}
       else if (0 == strcmp (argv[i], "--info"))
         {
           gchar *uri;

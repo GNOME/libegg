@@ -1028,7 +1028,7 @@ item_activate_cb (GtkWidget *widget,
 {
   EggRecentChooser *chooser = EGG_RECENT_CHOOSER (user_data);
   
-  g_signal_emit_by_name (chooser, "item-activated");
+  _egg_recent_chooser_item_activated (chooser);
 }
 
 /* we force a redraw if the manager changes when we are showing */

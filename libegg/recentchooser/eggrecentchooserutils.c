@@ -289,12 +289,12 @@ static void
 delegate_selection_changed (EggRecentChooser *receiver,
 			    gpointer          user_data)
 {
-  g_signal_emit_by_name (user_data, "selection-changed");
+  _egg_recent_chooser_selection_changed (EGG_RECENT_CHOOSER (user_data));
 }
 
 static void
 delegate_item_activated (EggRecentChooser *receiver,
 			 gpointer          user_data)
 {
-  g_signal_emit_by_name (user_data, "item-activated");
+  _egg_recent_chooser_item_activated (EGG_RECENT_CHOOSER (user_data));
 }

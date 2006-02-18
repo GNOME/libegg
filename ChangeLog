@@ -1,3 +1,20 @@
+2006-02-18  Emmanuele Bassi  <ebassi@cvs.gnome.org>
+
+	* libegg/recentchooser/eggrecentchooser.c
+	(egg_recent_chooser_class_init),
+	(_egg_recent_chooser_selection_changed),
+	(_egg_recent_chooser_item_activated): add private signal emitters.
+
+	* libegg/recentchooser/eggrecentchooserdefault.c
+	(selection_changed_cb), (row_activated_cb):
+	* libegg/recentchooser/eggrecentchoosermenu.c (item_activate_cb):
+	* libegg/recentchooser/eggrecentchooserutils.c
+	(delegate_selection_changed), (delegate_item_activated): use the signal
+	emitter functions instead of directly calling g_signal_emit().
+
+	* libegg/recentchooser/populate-recent.c (show_usage), (main): add
+	--help command line switch.
+
 2006-01-31  Alexander Larsson  <alexl@redhat.com>
 
 	* configure.in:

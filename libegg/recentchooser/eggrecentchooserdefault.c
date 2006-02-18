@@ -1601,7 +1601,7 @@ static void
 selection_changed_cb (GtkTreeSelection *selection,
 		      gpointer          user_data)
 {
-  g_signal_emit_by_name (user_data, "selection-changed");
+  _egg_recent_chooser_selection_changed (EGG_RECENT_CHOOSER (user_data));
 }
 
 static void
@@ -1610,7 +1610,7 @@ row_activated_cb (GtkTreeView       *tree_view,
 		  GtkTreeViewColumn *tree_column,
 		  gpointer           user_data)
 {
-  g_signal_emit_by_name (user_data, "item-activated");
+  _egg_recent_chooser_item_activated (EGG_RECENT_CHOOSER (user_data));
 }
 
 static void

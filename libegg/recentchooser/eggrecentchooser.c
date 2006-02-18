@@ -28,7 +28,17 @@
 #include "eggrecentmanager.h"
 #include "eggrecenttypebuiltins.h"
 
+enum
+{
+  ITEM_ACTIVATED,
+  SELECTION_CHANGED,
+
+  LAST_SIGNAL
+};
+
 static void	egg_recent_chooser_class_init (gpointer g_iface);
+
+static guint chooser_signals[LAST_SIGNAL] = { 0, };
 
 GType
 egg_recent_chooser_get_type (void)
@@ -71,13 +81,14 @@ egg_recent_chooser_class_init (gpointer g_iface)
    *
    * Since: 2.10
    */
-  g_signal_new ("selection-changed",
-                 iface_type,
-                 G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET (EggRecentChooserIface, selection_changed),
-                 NULL, NULL,
-                 g_cclosure_marshal_VOID__VOID,
-                 G_TYPE_NONE, 0);
+  chooser_signals[SELECTION_CHANGED] =
+    g_signal_new ("selection-changed",
+                  iface_type,
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (EggRecentChooserIface, selection_changed),
+                  NULL, NULL,
+                  g_cclosure_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
    
   /**
    * EggRecentChooser::item-activated
@@ -90,13 +101,14 @@ egg_recent_chooser_class_init (gpointer g_iface)
    *
    * Since: 2.10
    */
-  g_signal_new ("item-activated",
-   		iface_type,
-   		G_SIGNAL_RUN_LAST,
-   		G_STRUCT_OFFSET (EggRecentChooserIface, item_activated),
-   		NULL, NULL,
-   		g_cclosure_marshal_VOID__VOID,
-   		G_TYPE_NONE, 0);
+  chooser_signals[ITEM_ACTIVATED] =
+    g_signal_new ("item-activated",
+                  iface_type,
+		  G_SIGNAL_RUN_LAST,
+		  G_STRUCT_OFFSET (EggRecentChooserIface, item_activated),
+		  NULL, NULL,
+		  g_cclosure_marshal_VOID__VOID,
+		  G_TYPE_NONE, 0);
  
   g_object_interface_install_property (g_iface,
   				       g_param_spec_object ("recent-manager",
@@ -917,4 +929,20 @@ egg_recent_chooser_get_filter (EggRecentChooser *chooser)
     g_object_unref (filter);
   
   return filter;
+}
+
+void
+_egg_recent_chooser_item_activated (EggRecentChooser *chooser)
+{
+  g_return_if_fail (EGG_IS_RECENT_CHOOSER (chooser));
+  
+  g_signal_emit (chooser, chooser_signals[ITEM_ACTIVATED], 0);
+}
+
+void
+_egg_recent_chooser_selection_changed (EggRecentChooser *chooser)
+{
+  g_return_if_fail (EGG_IS_RECENT_CHOOSER (chooser));
+
+  g_signal_emit (chooser, chooser_signals[SELECTION_CHANGED], 0);
 }
