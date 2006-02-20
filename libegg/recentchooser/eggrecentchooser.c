@@ -36,7 +36,7 @@ enum
   LAST_SIGNAL
 };
 
-static void	egg_recent_chooser_class_init (gpointer g_iface);
+static void egg_recent_chooser_class_init (gpointer g_iface);
 
 static guint chooser_signals[LAST_SIGNAL] = { 0, };
 
@@ -126,12 +126,6 @@ egg_recent_chooser_class_init (gpointer g_iface)
   				       g_param_spec_boolean ("show-tips",
   				       			     _("Show Tooltips"),
   				       			     _("Whether there should be a tooltip on the item"),
-  				       			     FALSE,
-  				       			     G_PARAM_READWRITE));
-  g_object_interface_install_property (g_iface,
-  				       g_param_spec_boolean ("show-numbers",
-  				       			     _("Show Numbers"),
-  				       			     _("Whether there should be a number on the item"),
   				       			     FALSE,
   				       			     G_PARAM_READWRITE));
   g_object_interface_install_property (g_iface,

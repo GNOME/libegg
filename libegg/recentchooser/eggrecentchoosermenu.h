@@ -61,6 +61,10 @@ GType      egg_recent_chooser_menu_get_type         (void) G_GNUC_CONST;
 GtkWidget *egg_recent_chooser_menu_new              (void);
 GtkWidget *egg_recent_chooser_menu_new_for_manager  (EggRecentManager     *manager);
 
+gboolean   egg_recent_chooser_menu_get_show_numbers (EggRecentChooserMenu *menu);
+void       egg_recent_chooser_menu_set_show_numbers (EggRecentChooserMenu *menu,
+						     gboolean              show_numbers);
+
 G_END_DECLS
 
 #endif /* ! __EGG_RECENT_CHOOSER_MENU_H__ */

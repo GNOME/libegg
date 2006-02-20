@@ -56,7 +56,7 @@ AC_PATH_XTRA
 # Check return type of signal
 AC_TYPE_SIGNAL
 
-AC_CHECK_FUNCS(memmove strerror)
+AC_CHECK_FUNCS(memmove strerror timegm)
 
 ## here we get the flags we'll actually use
 PKG_CHECK_MODULES(EGG, gtk+-2.0 >= 2.5.0)

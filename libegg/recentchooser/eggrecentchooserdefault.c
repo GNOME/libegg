@@ -226,8 +226,9 @@ static void egg_recent_chooser_default_show_all (GtkWidget *widget);
 static void set_current_filter        (EggRecentChooserDefault *impl,
 				       EggRecentFilter         *filter);
 
-static GtkIconTheme *get_icon_theme_for_widget (GtkWidget *widget);
-static gint          get_icon_size_for_widget  (GtkWidget *widget);
+static GtkIconTheme *get_icon_theme_for_widget (GtkWidget   *widget);
+static gint          get_icon_size_for_widget  (GtkWidget   *widget,
+						GtkIconSize  icon_size);
 
 static void reload_recent_items (EggRecentChooserDefault *impl);
 static void chooser_set_model   (EggRecentChooserDefault *impl);
@@ -277,6 +278,9 @@ static gboolean recent_view_button_press_cb (GtkWidget      *widget,
 					     GdkEventButton *event,
 					     gpointer        user_data);
 
+static void     recent_view_drag_begin_cb         (GtkWidget        *widget,
+						   GdkDragContext   *context,
+						   gpointer          user_data);
 static void     recent_view_drag_data_get_cb      (GtkWidget        *widget,
 						   GdkDragContext   *context,
 						   GtkSelectionData *selection_data,
@@ -336,6 +340,7 @@ egg_recent_chooser_default_init (EggRecentChooserDefault *impl)
   impl->sort_type = EGG_RECENT_SORT_NONE;
   impl->show_private = FALSE;
   impl->show_not_found = FALSE;
+  impl->show_tips = TRUE;
   impl->select_multiple = FALSE;
   impl->local_only = TRUE;
   
@@ -390,6 +395,11 @@ egg_recent_chooser_default_constructor (GType                  type,
   		    G_CALLBACK (recent_view_popup_menu_cb), impl);
   g_signal_connect (impl->recent_view, "button-press-event",
   		    G_CALLBACK (recent_view_button_press_cb), impl);
+  g_signal_connect (impl->recent_view, "drag-begin",
+		    G_CALLBACK (recent_view_drag_begin_cb), impl);
+  g_signal_connect (impl->recent_view, "drag-data-get",
+		    G_CALLBACK (recent_view_drag_data_get_cb), impl);
+
   g_object_set_data (G_OBJECT (impl->recent_view), "EggRecentChooserDefault", impl);
   
   gtk_container_add (GTK_CONTAINER (scrollw), impl->recent_view);
@@ -431,21 +441,22 @@ egg_recent_chooser_default_constructor (GType                  type,
   g_signal_connect (impl->selection, "changed", G_CALLBACK (selection_changed_cb), impl);
 
   /* drag and drop */
-  gtk_tree_view_enable_model_drag_source (GTK_TREE_VIEW (impl->recent_view),
-		  			  GDK_BUTTON1_MASK,
-					  recent_list_source_targets,
-					  num_recent_list_source_targets,
-					  GDK_ACTION_COPY);
+  gtk_drag_source_set (impl->recent_view,
+		       GDK_BUTTON1_MASK,
+		       recent_list_source_targets,
+		       num_recent_list_source_targets,
+		       GDK_ACTION_COPY);
 
-  g_signal_connect (impl->recent_view, "drag-data-get",
-		    G_CALLBACK (recent_view_drag_data_get_cb), impl);
-  
   impl->filter_combo_hbox = gtk_hbox_new (FALSE, 12);
   
   impl->filter_combo = gtk_combo_box_new_text ();
   gtk_combo_box_set_focus_on_click (GTK_COMBO_BOX (impl->filter_combo), FALSE);
   g_signal_connect (impl->filter_combo, "changed",
                     G_CALLBACK (filter_combo_changed_cb), impl);
+  gtk_tooltips_set_tip (impl->tooltips,
+			impl->filter_combo,
+		        _("Select which type of documents are shown"),
+			NULL);
   
   gtk_box_pack_end (GTK_BOX (impl->filter_combo_hbox),
                     impl->filter_combo,
@@ -498,16 +509,12 @@ egg_recent_chooser_default_set_property (GObject      *object,
         gtk_tree_model_filter_refilter (GTK_TREE_MODEL_FILTER (impl->recent_store_filter));
       break;
     case EGG_RECENT_CHOOSER_PROP_SHOW_TIPS:
-      g_warning ("%s: Recent Choosers of type `%s' do not support "
-                 "showing tooltips",
-                 G_STRFUNC,
-                 G_OBJECT_TYPE_NAME (object));
-      break;
-    case EGG_RECENT_CHOOSER_PROP_SHOW_NUMBERS:
-      g_warning ("%s: Recent Choosers of type `%s' do not support "
-                 "showing numbers",
-                 G_STRFUNC,
-                 G_OBJECT_TYPE_NAME (object));
+      impl->show_tips = g_value_get_boolean (value);
+
+      if (impl->show_tips)
+        gtk_tooltips_enable (impl->tooltips);
+      else
+        gtk_tooltips_disable (impl->tooltips);
       break;
     case EGG_RECENT_CHOOSER_PROP_SHOW_ICONS:
       impl->show_icons = g_value_get_boolean (value);
@@ -563,6 +570,9 @@ egg_recent_chooser_default_get_property (GObject    *object,
       break;
     case EGG_RECENT_CHOOSER_PROP_SHOW_NOT_FOUND:
       g_value_set_boolean (value, impl->show_not_found);
+      break;
+    case EGG_RECENT_CHOOSER_PROP_SHOW_TIPS:
+      g_value_set_boolean (value, impl->show_tips);
       break;
     case EGG_RECENT_CHOOSER_PROP_LOCAL_ONLY:
       g_value_set_boolean (value, impl->local_only);
@@ -864,13 +874,18 @@ cleanup_after_load (gpointer user_data)
 static void
 reload_recent_items (EggRecentChooserDefault *impl)
 {
+  /* reload is already in progress - do not disturb */
+  if (impl->load_id)
+    return;
+  
   gtk_tree_view_set_model (GTK_TREE_VIEW (impl->recent_view), NULL);
   gtk_list_store_clear (impl->recent_store);
   
   if (!impl->icon_theme)
     impl->icon_theme = get_icon_theme_for_widget (GTK_WIDGET (impl));
 
-  impl->icon_size = get_icon_size_for_widget (GTK_WIDGET (impl));
+  impl->icon_size = get_icon_size_for_widget (GTK_WIDGET (impl),
+		  			      GTK_ICON_SIZE_BUTTON);
 
   set_busy_cursor (impl, TRUE);
 
@@ -1570,7 +1585,8 @@ get_icon_theme_for_widget (GtkWidget *widget)
 }
 
 static gint
-get_icon_size_for_widget (GtkWidget *widget)
+get_icon_size_for_widget (GtkWidget   *widget,
+			  GtkIconSize  icon_size)
 {
   GtkSettings *settings;
   gint width, height;
@@ -1580,7 +1596,7 @@ get_icon_size_for_widget (GtkWidget *widget)
   else
     settings = gtk_settings_get_default ();
 
-  if (gtk_icon_size_lookup_for_settings (settings, GTK_ICON_SIZE_MENU,
+  if (gtk_icon_size_lookup_for_settings (settings, icon_size,
                                          &width, &height))
     return MAX (width, height);
 
@@ -1627,6 +1643,45 @@ filter_combo_changed_cb (GtkComboBox *combo_box,
   filter = g_slist_nth_data (impl->filters, new_index);
   
   set_current_filter (impl, filter);
+}
+
+static GdkPixbuf *
+get_drag_pixbuf (EggRecentChooserDefault *impl)
+{
+  EggRecentInfo *info;
+  GdkPixbuf *retval;
+  gint size;
+  
+  g_assert (EGG_IS_RECENT_CHOOSER_DEFAULT (impl));
+
+  info = egg_recent_chooser_get_current_item (EGG_RECENT_CHOOSER (impl));
+  if (!info)
+    return NULL;
+
+  size = get_icon_size_for_widget (GTK_WIDGET (impl), GTK_ICON_SIZE_DND);
+
+  retval = egg_recent_info_get_icon (info, size);
+  egg_recent_info_unref (info);
+
+  return retval;
+}
+
+static void
+recent_view_drag_begin_cb (GtkWidget      *widget,
+			   GdkDragContext *context,
+			   gpointer        user_data)
+{
+  EggRecentChooserDefault *impl = EGG_RECENT_CHOOSER_DEFAULT (user_data);
+  GdkPixbuf *pixbuf;
+
+  pixbuf = get_drag_pixbuf (impl);
+  if (pixbuf)
+    {
+      gtk_drag_set_icon_pixbuf (context, pixbuf, 0, 0);
+      g_object_unref (pixbuf);
+    }
+  else
+    gtk_drag_set_icon_default (context);
 }
 
 static void
@@ -1791,12 +1846,38 @@ recent_popup_menu_detach_cb (GtkWidget *attach_widget,
 }
 
 static void
+recent_view_menu_ensure_state (EggRecentChooserDefault *impl)
+{
+  gint count;
+  
+  g_assert (EGG_IS_RECENT_CHOOSER_DEFAULT (impl));
+  g_assert (impl->recent_popup_menu != NULL);
+
+  if (!impl->manager)
+    count = 0;
+  else
+    g_object_get (G_OBJECT (impl->manager), "size", &count, NULL);
+
+  if (count == 0)
+    {
+      gtk_widget_set_sensitive (impl->recent_popup_menu_remove_item, FALSE);
+      gtk_widget_set_sensitive (impl->recent_popup_menu_copy_item, FALSE);
+      gtk_widget_set_sensitive (impl->recent_popup_menu_clear_item, FALSE);
+      gtk_widget_set_sensitive (impl->recent_popup_menu_show_private_item, FALSE);
+    }
+}
+
+static void
 recent_view_menu_build (EggRecentChooserDefault *impl)
 {
   GtkWidget *item;
   
   if (impl->recent_popup_menu)
-    return;
+    {
+      recent_view_menu_ensure_state (impl);
+      
+      return;
+    }
   
   impl->recent_popup_menu = gtk_menu_new ();
   gtk_menu_attach_to_widget (GTK_MENU (impl->recent_popup_menu),
@@ -1830,7 +1911,8 @@ recent_view_menu_build (EggRecentChooserDefault *impl)
   gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (item),
   				 gtk_image_new_from_stock (GTK_STOCK_CLEAR, GTK_ICON_SIZE_MENU));
   g_signal_connect (item, "activate",
-  		    G_CALLBACK (remove_all_activated_cb), impl);
+		    G_CALLBACK (remove_all_activated_cb), impl);
+  
   gtk_widget_show (item);
   gtk_menu_shell_append (GTK_MENU_SHELL (impl->recent_popup_menu), item);
   
@@ -1845,6 +1927,8 @@ recent_view_menu_build (EggRecentChooserDefault *impl)
   		    G_CALLBACK (show_private_toggled_cb), impl);
   gtk_widget_show (item);
   gtk_menu_shell_append (GTK_MENU_SHELL (impl->recent_popup_menu), item);
+  
+  recent_view_menu_ensure_state (impl);
 }
 
 /* taken from gtkfilechooserdefault.c */
@@ -1916,11 +2000,33 @@ recent_view_button_press_cb (GtkWidget      *widget,
 			     GdkEventButton *event,
 			     gpointer        user_data)
 {
-  if (event->button != 3)
-    return FALSE;
+  EggRecentChooserDefault *impl = EGG_RECENT_CHOOSER_DEFAULT (user_data);
   
-  recent_view_menu_popup (EGG_RECENT_CHOOSER_DEFAULT (user_data), event);
-  return TRUE;
+  if (event->button == 3)
+    {
+      GtkTreePath *path;
+      gboolean res;
+
+      if (event->window != gtk_tree_view_get_bin_window (GTK_TREE_VIEW (impl->recent_view)))
+        return FALSE;
+
+      res = gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (impl->recent_view),
+		      			   event->x, event->y,
+					   &path,
+					   NULL, NULL, NULL);
+      if (!res)
+        return FALSE;
+
+      /* select the path before creating the popup menu */
+      gtk_tree_selection_select_path (impl->selection, path);
+      gtk_tree_path_free (path);
+      
+      recent_view_menu_popup (impl, event);
+
+      return TRUE;
+    }
+  
+  return FALSE;
 }
 
 static void
@@ -1962,7 +2068,7 @@ set_recent_manager (EggRecentChooserDefault *impl,
     }
 #endif
   
-  /* create a new recent manager object */
+  /* create a new recent manager object if none was passed */
   if (!impl->manager)
     impl->manager = egg_recent_manager_new ();
   

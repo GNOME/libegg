@@ -52,24 +52,27 @@ typedef struct _EggRecentManagerPrivate EggRecentManagerPrivate;
  * @mime_type: the MIME type of the resource;
  * @app_name: the name of the application that is registering this recently
  *   used resource;
- * @app_exec: command line used to launch this resource;
+ * @app_exec: command line used to launch this resource; may contain the
+ *   "%f" and "%u" escape characters which will be expanded to the resource
+ *   file path and URI respectively when the command line is retrieved;
+ * @groups: a vector of strings containing groups names;
  * @is_private: whether this resource should be displayed only by the
  *   applications that have registered it or not.
  *
- * Meta-data to be passed to egg_recent_manager_add_item() when registering
- * a recently used resource.
+ * Meta-data to be passed to egg_recent_manager_add_full() when
+ * registering a recently used resource.
  **/
 struct _EggRecentData
 {
-  const gchar *display_name;
-  const gchar *description;
+  gchar *display_name;
+  gchar *description;
   
-  const gchar *mime_type;
+  gchar *mime_type;
   
-  const gchar *app_name;
-  const gchar *app_exec;
+  gchar *app_name;
+  gchar *app_exec;
   
-  const gchar **groups;
+  gchar **groups;
   
   gboolean is_private;
 };
@@ -135,31 +138,31 @@ GQuark 	egg_recent_manager_error_quark (void);
 GType 		  egg_recent_manager_get_type    (void) G_GNUC_CONST;
 
 EggRecentManager *egg_recent_manager_new         (void);
-gboolean          egg_recent_manager_add_item    (EggRecentManager  *manager,
-						  const gchar       *uri,
-						  GError           **error);
-gboolean          egg_recent_manager_add_full    (EggRecentManager  *manager,
-						  const gchar       *uri,
-						  EggRecentData     *recent_data,
-						  GError           **error);
-gboolean          egg_recent_manager_remove_item (EggRecentManager  *manager,
-						  const gchar       *uri,
-						  GError           **error);
-EggRecentInfo *   egg_recent_manager_lookup_item (EggRecentManager  *manager,
-						  const gchar       *uri,
-						  GError           **error);
-gboolean          egg_recent_manager_has_item    (EggRecentManager  *manager,
-						  const gchar       *uri);
-gboolean          egg_recent_manager_move_item   (EggRecentManager  *manager,
-						  const gchar       *uri,
-						  const gchar       *new_uri,
-						  GError           **error);
-void              egg_recent_manager_set_limit   (EggRecentManager  *manager,
-						  gint               limit);
-gint              egg_recent_manager_get_limit   (EggRecentManager  *manager);
-GList *           egg_recent_manager_get_items   (EggRecentManager  *manager);
-gint              egg_recent_manager_purge_items (EggRecentManager  *manager,
-						  GError           **error);
+gboolean          egg_recent_manager_add_item    (EggRecentManager     *manager,
+						  const gchar          *uri,
+						  GError              **error);
+gboolean          egg_recent_manager_add_full    (EggRecentManager     *manager,
+						  const gchar          *uri,
+						  const EggRecentData  *recent_data,
+						  GError              **error);
+gboolean          egg_recent_manager_remove_item (EggRecentManager     *manager,
+						  const gchar          *uri,
+						  GError              **error);
+EggRecentInfo *   egg_recent_manager_lookup_item (EggRecentManager     *manager,
+						  const gchar          *uri,
+						  GError              **error);
+gboolean          egg_recent_manager_has_item    (EggRecentManager     *manager,
+						  const gchar          *uri);
+gboolean          egg_recent_manager_move_item   (EggRecentManager     *manager,
+						  const gchar          *uri,
+						  const gchar          *new_uri,
+						  GError              **error);
+void              egg_recent_manager_set_limit   (EggRecentManager     *manager,
+						  gint                  limit);
+gint              egg_recent_manager_get_limit   (EggRecentManager     *manager);
+GList *           egg_recent_manager_get_items   (EggRecentManager     *manager);
+gint              egg_recent_manager_purge_items (EggRecentManager     *manager,
+						  GError              **error);
 
 
 GType	              egg_recent_info_get_type             (void) G_GNUC_CONST;

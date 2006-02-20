@@ -1,3 +1,46 @@
+2006-02-19  Emmanuele Bassi  <ebassi@cvs.gnome.org>
+
+	Re-sync with my development trunk.
+
+	* configure.in: add check for the timegm() function.
+
+	* libegg/bookmarkfile/eggbookmarkfile.c (mktime_utc): use the
+	glibc function timegm() if present at compile time; update the
+	documentation of the timestamp related functions and allow
+	passing (time_t) -1 meaning "use current time"; remove the file locking
+	functions and use g_file_set_contents() and g_file_get_contents():
+	it'll be up to the caller to try and avoid concurrent accesses.
+
+	* libegg/eggrecentchooser.h:
+	* libegg/eggrecentchooser.c: remove the "show-numbers" property and
+	its accessors.
+
+	* libegg/eggrecentchooserutils.h:
+	* libegg/eggrecentchooserutils.c: remove the "show-numbers" property.
+
+	* libegg/recentchooser/eggrecentchooserdefault.c (reload_recent_items):
+	do not reload the items if there's already a load operation in
+	progress; enable tooltips and support the show-tips property; remove
+	the support for the show-numbers property; use the document's own
+	icon as the drag and drop icon; change the state of the context menu
+	items according to the state of the recent documents list; select the
+	item under the cursor before showing the context menu.
+
+	* libegg/recentchooser/eggrecentchoosermenu.h:
+	* libegg/recentchooser/eggrecentchoosermenu.c: add the menu-only
+	show-numbers property and its accessors
+
+	* libegg/recentchooser/eggrecentmanager.c: various fixes and clean ups:
+	do not poll the storage file if another read or write is in progress,
+	but wait for the next poll; use g_slice_new() to allocate the temporary
+	EggRecentData in egg_recent_manager_add_item(); use g_strjoin() to
+	create the default command line "prgname %u"; freeze notification of
+	properties when updating the list.
+
+	* libegg/recentchooser/eggrecentmanager.h: fix EggRecentData members
+	and their documentation; pass a const EggRecentData to
+	egg_recent_manager_add_full().
+
 2006-02-18  Emmanuele Bassi  <ebassi@cvs.gnome.org>
 
 	* libegg/recentchooser/eggrecentchooser.c

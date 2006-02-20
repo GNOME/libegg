@@ -59,9 +59,10 @@ struct _EggRecentChooserMenuPrivate
   guint show_private : 1;
   guint show_not_found : 1;
   guint show_tips : 1;
-  guint show_numbers : 1;
   guint show_icons : 1;
   guint local_only : 1;
+  
+  guint show_numbers : 1;
   
   EggRecentSortType sort_type;
   EggRecentSortFunc sort_func;
@@ -77,6 +78,11 @@ struct _EggRecentChooserMenuPrivate
   GtkTooltips *tooltips;
 };
 
+enum {
+  PROP_0,
+
+  PROP_SHOW_NUMBERS
+};
 
 #define FALLBACK_ICON_SIZE 	32
 #define FALLBACK_ITEM_LIMIT 	10
@@ -175,10 +181,18 @@ egg_recent_chooser_menu_class_init (EggRecentChooserMenuClass *klass)
   gobject_class->finalize = egg_recent_chooser_menu_finalize;
   gobject_class->set_property = egg_recent_chooser_menu_set_property;
   gobject_class->get_property = egg_recent_chooser_menu_get_property;
-  
+
   widget_class->map = egg_recent_chooser_menu_map;
   
   _egg_recent_chooser_install_properties (gobject_class);
+
+  g_object_class_install_property (gobject_class,
+		  		   PROP_SHOW_NUMBERS,
+				   g_param_spec_boolean ("show-numbers",
+							 _("Show Numbers"),
+							 _("Whether the items should be displayed with a number"),
+							 FALSE,
+							 G_PARAM_READWRITE));
   
   g_type_class_add_private (klass, sizeof (EggRecentChooserMenuPrivate));
 }
@@ -267,6 +281,9 @@ egg_recent_chooser_menu_set_property (GObject      *object,
   
   switch (prop_id)
     {
+    case PROP_SHOW_NUMBERS:
+      menu->priv->show_numbers = g_value_get_boolean (value);
+      break;
     case EGG_RECENT_CHOOSER_PROP_RECENT_MANAGER:
       set_recent_manager (menu, g_value_get_object (value));
       break;
@@ -278,9 +295,6 @@ egg_recent_chooser_menu_set_property (GObject      *object,
       break;
     case EGG_RECENT_CHOOSER_PROP_SHOW_TIPS:
       egg_recent_chooser_menu_set_show_tips (menu, g_value_get_boolean (value));
-      break;
-    case EGG_RECENT_CHOOSER_PROP_SHOW_NUMBERS:
-      menu->priv->show_numbers = g_value_get_boolean (value);
       break;
     case EGG_RECENT_CHOOSER_PROP_SHOW_ICONS:
       menu->priv->show_icons = g_value_get_boolean (value);
@@ -319,11 +333,11 @@ egg_recent_chooser_menu_get_property (GObject    *object,
   
   switch (prop_id)
     {
+    case PROP_SHOW_NUMBERS:
+      g_value_set_boolean (value, menu->priv->show_numbers);
+      break;
     case EGG_RECENT_CHOOSER_PROP_SHOW_TIPS:
       g_value_set_boolean (value, menu->priv->show_tips);
-      break;
-    case EGG_RECENT_CHOOSER_PROP_SHOW_NUMBERS:
-      g_value_set_boolean (value, menu->priv->show_numbers);
       break;
     case EGG_RECENT_CHOOSER_PROP_LIMIT:
       g_value_set_int (value, menu->priv->limit);
@@ -1170,4 +1184,47 @@ egg_recent_chooser_menu_new_for_manager (EggRecentManager *manager)
   return g_object_new (EGG_TYPE_RECENT_CHOOSER_MENU,
   		       "recent-manager", manager,
   		       NULL);
+}
+
+/**
+ * egg_recent_chooser_menu_get_show_numbers:
+ * @menu: a #EggRecentChooserMenu
+ *
+ * Returns the value set by egg_recent_chooser_menu_set_show_numbers().
+ * 
+ * Return value: %TRUE if numbers should be shown.
+ *
+ * Since: 2.10
+ */
+gboolean
+egg_recent_chooser_menu_get_show_numbers (EggRecentChooserMenu *menu)
+{
+  g_return_val_if_fail (EGG_IS_RECENT_CHOOSER_MENU (menu), FALSE);
+
+  return menu->priv->show_numbers;
+}
+
+/**
+ * egg_recent_chooser_menu_set_show_numbers:
+ * @menu: a #EggRecentChooserMenu
+ * @show_numbers: whether to show numbers
+ *
+ * Sets whether a number should be added to the items of @menu.  The
+ * numbers are shown to provide a unique character for a mnemonic to
+ * be used inside the menu item's label.  Only the first the items
+ * get a number to avoid clashes.
+ *
+ * Since: 2.10
+ */
+void
+egg_recent_chooser_menu_set_show_numbers (EggRecentChooserMenu *menu,
+					  gboolean              show_numbers)
+{
+  g_return_if_fail (EGG_IS_RECENT_CHOOSER_MENU (menu));
+
+  if (menu->priv->show_numbers == show_numbers)
+    return;
+
+  menu->priv->show_numbers = show_numbers;
+  g_object_notify (G_OBJECT (menu), "show-numbers");
 }

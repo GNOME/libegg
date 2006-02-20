@@ -101,8 +101,11 @@ struct _EggRecentManagerPrivate
   gchar *filename;
 
   guint is_dirty : 1;
+  guint write_in_progress : 1;
+  guint read_in_progress : 1;
   
   gint limit;
+  gint size;
   
   EggBookmarkFile *recent_items;
   
@@ -240,6 +243,7 @@ egg_recent_manager_init (EggRecentManager *manager)
   				     NULL);
   
   priv->limit = DEFAULT_LIMIT;
+  priv->size = 0;
   
   build_recent_items_list (manager);
   
@@ -248,6 +252,8 @@ egg_recent_manager_init (EggRecentManager *manager)
   				      manager);
   
   priv->is_dirty = FALSE;
+  priv->write_in_progress = FALSE;
+  priv->read_in_progress = FALSE;
 }
 
 static void
@@ -283,7 +289,7 @@ egg_recent_manager_get_property (GObject               *object,
       g_value_set_int (value, recent_manager->priv->limit);
       break;
     case PROP_SIZE:
-      g_value_set_int (value, egg_bookmark_file_get_size (recent_manager->priv->recent_items));
+      g_value_set_int (value, recent_manager->priv->size);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -298,7 +304,7 @@ egg_recent_manager_finalize (GObject *object)
   EggRecentManagerPrivate *priv = manager->priv;
 
   /* remove the poll timeout */
-  if (priv->poll_timeout != 0)
+  if (priv->poll_timeout)
     g_source_remove (priv->poll_timeout);
   
   if (priv->filename)
@@ -316,6 +322,8 @@ egg_recent_manager_real_changed (EggRecentManager *manager)
 {
   EggRecentManagerPrivate *priv = manager->priv;
 
+  g_object_freeze_notify (G_OBJECT (manager));
+
   if (priv->is_dirty)
     {
       GError *write_error;
@@ -324,13 +332,18 @@ egg_recent_manager_real_changed (EggRecentManager *manager)
       /* we are marked as dirty, so we dump the content of our
        * recently used items list
        */
-      g_assert (priv->filename);
+      g_assert (priv->filename != NULL);
+
+      priv->write_in_progress = TRUE;
 
       /* if no container object has been defined, we create a new
        * empty container, and dump it
        */
       if (!priv->recent_items)
-        priv->recent_items = egg_bookmark_file_new ();
+        {
+          priv->recent_items = egg_bookmark_file_new ();
+	  priv->size = 0;
+	}
 
       write_error = NULL;
       egg_bookmark_file_to_file (priv->recent_items,
@@ -356,6 +369,10 @@ egg_recent_manager_real_changed (EggRecentManager *manager)
 		     priv->filename,
 		     g_strerror (errno));
 
+	  priv->write_in_progress = FALSE;
+	  
+	  g_object_thaw_notify (G_OBJECT (manager));
+
 	  return;
 	}
       
@@ -372,6 +389,8 @@ egg_recent_manager_real_changed (EggRecentManager *manager)
        */
       build_recent_items_list (manager);
     }
+
+  g_object_thaw_notify (G_OBJECT (manager));
 }
 
 /* timed poll()-ing of the recently used resources file.
@@ -385,6 +404,10 @@ egg_recent_manager_poll_timeout (gpointer data)
   struct stat stat_buf;
   int stat_res;
 
+  /* wait for the next timeout if we have a read/write in progress */
+  if (priv->write_in_progress || priv->read_in_progress)
+    return TRUE;
+
   stat_res = g_stat (priv->filename, &stat_buf);
   if (stat_res < 0)
     {
@@ -396,6 +419,7 @@ egg_recent_manager_poll_timeout (gpointer data)
 		 "at `%s': %s.",
 		 priv->filename,
 		 g_strerror (errno));
+      
       return TRUE;
     }
 
@@ -421,12 +445,16 @@ build_recent_items_list (EggRecentManager *manager)
   int stat_res;
   gboolean res;
   GError *read_error;
+  gint size;
 
   priv = manager->priv;
   g_assert (priv->filename != NULL);
   
   if (!priv->recent_items)
-    priv->recent_items = egg_bookmark_file_new ();
+    {
+      priv->recent_items = egg_bookmark_file_new ();
+      priv->size = 0;
+    }
 
   stat_res = g_stat (priv->filename, &stat_buf);
   if (stat_res < 0)
@@ -487,6 +515,8 @@ build_recent_items_list (EggRecentManager *manager)
     }
 #endif
 
+  priv->read_in_progress = TRUE;
+
   /* the file exists, and it's valid (we hope); if not, destroy the container
    * object and hope for a better result when the next "changed" signal is
    * fired. */
@@ -506,6 +536,16 @@ build_recent_items_list (EggRecentManager *manager)
 
       g_error_free (read_error);
     }
+
+  size = egg_bookmark_file_get_size (priv->recent_items);
+  if (priv->size != size)
+    {
+      priv->size = size;
+      
+      g_object_notify (G_OBJECT (manager), "size");
+    }
+
+  priv->read_in_progress = FALSE;
 }
 
 
@@ -605,15 +645,17 @@ egg_recent_manager_add_item (EggRecentManager  *recent_manager,
 			     const gchar       *uri,
 			     GError           **error)
 {
-  EggRecentData recent_data;
+  EggRecentData *recent_data;
   GError *add_error;
   gboolean retval;
   
   g_return_val_if_fail (EGG_IS_RECENT_MANAGER (recent_manager), FALSE);
   g_return_val_if_fail (uri != NULL, FALSE);
+
+  recent_data = g_slice_new (EggRecentData);
   
-  recent_data.display_name = NULL;
-  recent_data.description = NULL;
+  recent_data->display_name = NULL;
+  recent_data->description = NULL;
   
 #ifdef G_OS_UNIX
   if (g_str_has_prefix (uri, "file://"))
@@ -624,29 +666,31 @@ egg_recent_manager_add_item (EggRecentManager  *recent_manager,
       filename = g_filename_from_uri (uri, NULL, NULL);
       mime_type = xdg_mime_get_mime_type_for_file (filename);
       if (!mime_type)
-        recent_data.mime_type = g_strdup (EGG_RECENT_DEFAULT_MIME);
-      
-      recent_data.mime_type = g_strdup (mime_type);
+        recent_data->mime_type = g_strdup (EGG_RECENT_DEFAULT_MIME);
+      else
+        recent_data->mime_type = g_strdup (mime_type);
       
       g_free (filename);
     }
   else
 #endif
-    recent_data.mime_type = g_strdup (EGG_RECENT_DEFAULT_MIME);
+    recent_data->mime_type = g_strdup (EGG_RECENT_DEFAULT_MIME);
   
-  recent_data.app_name = g_strdup (g_get_application_name ());
-  recent_data.app_exec = g_strdup_printf ("%s %%u", g_get_prgname ());
+  recent_data->app_name = g_strdup (g_get_application_name ());
+  recent_data->app_exec = g_strjoin (" ", g_get_prgname (), "%u", NULL);
   
-  recent_data.groups = NULL;
+  recent_data->groups = NULL;
   
-  recent_data.is_private = FALSE;
+  recent_data->is_private = FALSE;
   
   add_error = NULL;
-  retval = egg_recent_manager_add_full (recent_manager, uri, &recent_data, &add_error);
+  retval = egg_recent_manager_add_full (recent_manager, uri, recent_data, &add_error);
   
-  g_free ((gchar *) recent_data.mime_type);
-  g_free ((gchar *) recent_data.app_name);
-  g_free ((gchar *) recent_data.app_exec);
+  g_free (recent_data->mime_type);
+  g_free (recent_data->app_name);
+  g_free (recent_data->app_exec);
+
+  g_slice_free (EggRecentData, recent_data);
   
   if (!retval)
     {
@@ -691,10 +735,10 @@ egg_recent_manager_add_item (EggRecentManager  *recent_manager,
  * Since: 2.10
  */
 gboolean
-egg_recent_manager_add_full (EggRecentManager  *recent_manager,
-			     const gchar       *uri,
-			     EggRecentData     *data,
-			     GError           **error)
+egg_recent_manager_add_full (EggRecentManager     *recent_manager,
+			     const gchar          *uri,
+			     const EggRecentData  *data,
+			     GError              **error)
 {
   EggRecentManagerPrivate *priv;
   
@@ -759,7 +803,10 @@ egg_recent_manager_add_full (EggRecentManager  *recent_manager,
   priv = recent_manager->priv;
 
   if (!priv->recent_items)
-    priv->recent_items = egg_bookmark_file_new ();
+    {
+      priv->recent_items = egg_bookmark_file_new ();
+      priv->size = 0;
+    }
 
   if (data->display_name)  
     egg_bookmark_file_set_title (priv->recent_items, uri,
@@ -788,7 +835,7 @@ egg_recent_manager_add_full (EggRecentManager  *recent_manager,
       if (!n_old_groups)
         egg_bookmark_file_set_groups (priv->recent_items,
                                       uri,
-                                      data->groups,
+                                      (const gchar **) data->groups,
                                       G_N_ELEMENTS (data->groups));
       else
         {
@@ -833,7 +880,7 @@ egg_recent_manager_add_full (EggRecentManager  *recent_manager,
     }
   
   /* register the application; this will take care of updating the
-   * registration count
+   * registration count and time
    */
   egg_bookmark_file_set_app_info (priv->recent_items, uri,
 		  		  data->app_name,
@@ -883,7 +930,17 @@ egg_recent_manager_remove_item (EggRecentManager  *recent_manager,
   priv = recent_manager->priv;
   
   if (!priv->recent_items)
-    priv->recent_items = egg_bookmark_file_new ();
+    {
+      priv->recent_items = egg_bookmark_file_new ();
+      priv->size = 0;
+
+      g_set_error (error, EGG_RECENT_MANAGER_ERROR,
+		   EGG_RECENT_MANAGER_ERROR_NOT_FOUND,
+		   _("Unable to find an item with URI '%s'"),
+		   uri);
+
+      return FALSE;
+    }
 
   egg_bookmark_file_remove_item (priv->recent_items, uri, &remove_error);
   if (remove_error)
@@ -1023,7 +1080,17 @@ egg_recent_manager_lookup_item (EggRecentManager  *recent_manager,
   
   priv = recent_manager->priv;
   if (!priv->recent_items)
-    priv->recent_items = egg_bookmark_file_new ();
+    {
+      priv->recent_items = egg_bookmark_file_new ();
+      priv->size = 0;
+
+      g_set_error (error, EGG_RECENT_MANAGER_ERROR,
+		   EGG_RECENT_MANAGER_ERROR_NOT_FOUND,
+		   _("Unable to find an item with URI '%s'"),
+		   uri);
+
+      return NULL;
+    }
   
   if (!egg_bookmark_file_has_item (priv->recent_items, uri))
     {
@@ -1192,6 +1259,7 @@ purge_recent_items_list (EggRecentManager  *manager,
   priv->recent_items = NULL;
       
   priv->recent_items = egg_bookmark_file_new ();
+  priv->size = 0;
   priv->is_dirty = TRUE;
       
   /* emit the changed signal, to ensure that the purge is written */
@@ -1220,9 +1288,11 @@ egg_recent_manager_purge_items (EggRecentManager  *recent_manager,
   g_return_val_if_fail (EGG_IS_RECENT_MANAGER (recent_manager), -1);
 
   priv = recent_manager->priv;
+  if (!priv->recent_items)
+    return 0;
   
   count = egg_bookmark_file_get_size (priv->recent_items);
-  if (count == 0)
+  if (!count)
     return 0;
   
   purge_recent_items_list (recent_manager, error);

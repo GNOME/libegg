@@ -722,8 +722,24 @@ egg_bookmark_item_dump (EggBookmarkItem *item)
   added = timestamp_to_iso8601 (item->added);
   modified = timestamp_to_iso8601 (item->modified);
   visited = timestamp_to_iso8601 (item->visited);
-  
+
   escaped_uri = g_markup_escape_text (item->uri, strlen (item->uri));
+  
+#ifdef DO_DEBUG
+  g_print ("(in %s)\n"
+	   "item = '%s' ->\n"
+	   "  {\n"
+	   "    added:    '%s' (%ld),\n"
+	   "    modified: '%s' (%ld),\n"
+	   "    visited:  '%s' (%ld)\n"
+	   "  }\n",
+	   G_STRFUNC,
+	   item->uri,
+	   added, item->added,
+	   modified, item->modified,
+	   visited, item->visited);
+#endif /* DO_DEBUG */
+  
   g_string_append_printf (retval,
                           "  <%s %s=\"%s\" %s=\"%s\" %s=\"%s\" %s=\"%s\">\n",
                           XBEL_BOOKMARK_ELEMENT,
@@ -819,46 +835,6 @@ egg_bookmark_file_clear (EggBookmarkFile *bookmark)
     }
   
   bookmark->is_dirty = FALSE;
-}
-
-/* simple fd lock/unlock pair
- * wait a random interval (< 1sec) between each attempt.
- * we should really make this a GLib function
- */
-static gboolean
-egg_bookmark_file_fd_lock (gint fd)
-{
-#ifdef G_OS_UNIX
-  gint try = 5;
-
-  while (try > 0)
-    {
-       gint rand_delta;
-
-       if (lockf (fd, F_TLOCK, 0) == 0)
-         return TRUE;
-
-       rand_delta = 1 + (int) (10.0 * rand () / (RAND_MAX + 1.0));
-
-       g_usleep (10000 * rand_delta);
-
-       --try;
-    }
-  
-  return FALSE;
-#else /* G_OS_UNIX */
-  return TRUE;
-#endif
-}
-
-static gboolean
-egg_bookmark_file_fd_unlock (gint fd)
-{
-#ifdef G_OS_UNIX
-  return (lockf (fd, F_ULOCK, 0) == 0) ? TRUE : FALSE;
-#else
-  return TRUE;
-#endif
 }
 
 struct _ParseData
@@ -961,6 +937,21 @@ parse_bookmark_element (GMarkupParseContext  *context,
   
   if (visited)
     item->visited = timestamp_from_iso8601 (visited);
+
+#ifdef DO_DEBUG
+  g_print ("(in %s)\n"
+	   "item = '%s' ->\n"
+	   "  {\n"
+	   "    added:    '%s' (%ld),\n"
+	   "    modified: '%s' (%ld),\n"
+	   "    visited:  '%s' (%ld)\n"
+	   "  }\n",
+	   G_STRFUNC,
+	   item->uri,
+	   added, item->added,
+	   modified, item->modified,
+	   visited, item->visited);
+#endif /* DO_DEBUG */
   
   add_error = NULL;
   egg_bookmark_file_add_item (parse_data->bookmark_file,
@@ -1766,34 +1757,41 @@ timestamp_to_iso8601 (time_t timestamp)
 
   retval = g_new0 (gchar, ISO_8601_LEN + 1);
 	
-  strftime (retval, ISO_8601_LEN + 1,
+  strftime (retval, ISO_8601_LEN,
 	    ISO_8601_FORMAT,
 	    gmtime (&timestamp));
   
   return retval;
 }
 
+#ifndef HAVE_TIMEGM
+/* used to compute the day of the year */
 static const int days_before[] =
 {
   0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
 };
+#endif /* HAVE_TIMEGM */
 
 static time_t
 mktime_utc (struct tm *tm)
 {
   time_t retval;
-  
+
+#ifdef HAVE_TIMEGM
+  retval = timegm (tm);
+#else
   if (tm->tm_mon < 0 || tm->tm_mon > 11)
-    return (time_t)-1;
+    return (time_t) -1;
 
   retval = (tm->tm_year - 70) * 365;
   retval += (tm->tm_year - 68) / 4;
-  retval += days_before[tm->tm_mon] + tm->tm_mday - 1;
+  retval += days_before[tm->tm_mon] + tm->tm_mday;
   
   if (tm->tm_year % 4 == 2 && tm->tm_mon < 2)
     retval--;
   
   retval = ((((retval * 24) + tm->tm_hour) * 60) + tm->tm_min) * 60 + tm->tm_sec;
+#endif /* HAVE_TIMEGM */
   
   return retval;
 }
@@ -2016,10 +2014,8 @@ egg_bookmark_file_load_from_file (EggBookmarkFile  *bookmark,
 				  const gchar      *filename,
 				  GError          **error)
 {
-  gint fd;
-  gsize bytes_read;
-  struct stat stat_buf;
-  GString *buffer;
+  gchar *buffer;
+  gsize len;
   GError *read_error;
   gboolean retval;
 	
@@ -2030,97 +2026,24 @@ egg_bookmark_file_load_from_file (EggBookmarkFile  *bookmark,
   do_profile_start ("load_from_file", "start loading from file '%s'", filename);
 #endif
 
-  fd = g_open (filename, O_RDWR, 0);
-  if (fd < 0)
-    {
-      g_set_error (error, G_FILE_ERROR,
-		   g_file_error_from_errno (errno),
-		   "%s", g_strerror (errno));
-      return FALSE;
-    }
-
-  if (fstat (fd, &stat_buf) < 0)
-    {
-      g_set_error (error, G_FILE_ERROR,
-		   g_file_error_from_errno (errno),
-		   "%s", g_strerror (errno));
-      return FALSE;
-    }
-
-  if (!S_ISREG (stat_buf.st_mode))
-    {
-      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
-		   EGG_BOOKMARK_FILE_ERROR_READ,
-		   _("Not a regular file"));
-      return FALSE;
-    }
-
-  if (stat_buf.st_size == 0)
-    {
-      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
-		   EGG_BOOKMARK_FILE_ERROR_READ,
-		   _("File is empty"));
-      return FALSE;
-    }
-
-  if (!egg_bookmark_file_fd_lock (fd))
-    {
-      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
-                   EGG_BOOKMARK_FILE_ERROR_LOCK,
-		   _("Unable to acquire lock on the file"));
-      return FALSE;
-    }
-
-	
-  /* start with a wider string */
-  buffer = g_string_sized_new (stat_buf.st_size * 2);
-  bytes_read = 0;
-  do
-    {
-      gchar read_buf[4096];
-      
-      bytes_read = read (fd, &read_buf, 4096);
-      
-      if (bytes_read < 0)
-	{
-	  if (errno == EINTR || errno == EAGAIN)
-	    continue;
-	  
-	  g_set_error (error, G_FILE_ERROR,
-		       g_file_error_from_errno (errno),
-		       "%s", g_strerror (errno));
-			
-	  g_string_free (buffer, TRUE);
-
-          egg_bookmark_file_fd_unlock (fd);
-
-	  return FALSE;
-	}
-      
-      buffer = g_string_append_len (buffer, read_buf, bytes_read);
-    }
-  while (bytes_read != 0);
-
-  if (!egg_bookmark_file_fd_unlock (fd))
-    {
-      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
-                   EGG_BOOKMARK_FILE_ERROR_UNLOCK,
-		   _("Unable to release lock on the file"));
-      return FALSE;
-    }
-  
-  close (fd);
-  
   read_error = NULL;
-  retval = egg_bookmark_file_load_from_data (bookmark,
-					     buffer->str,
-					     buffer->len,
-					     &read_error);
-  g_string_free (buffer, TRUE);
-  
+  g_file_get_contents (filename, &buffer, &len, &read_error);
   if (read_error)
     {
       g_propagate_error (error, read_error);
+
+      return FALSE;
+    }
+  
+  read_error = NULL;
+  retval = egg_bookmark_file_load_from_data (bookmark,
+					     buffer,
+					     len,
+					     &read_error);
+  if (read_error)
+    {
+      g_propagate_error (error, read_error);
+      
       return FALSE;
     }
 
@@ -2329,10 +2252,8 @@ egg_bookmark_file_to_file (EggBookmarkFile  *bookmark,
 			   GError          **error)
 {
   gchar *data;
-  GError *data_error;
-  gint fd;
+  GError *data_error, *write_error;
   gsize len;
-  struct stat stat_buf;
 
   g_return_val_if_fail (bookmark != NULL, FALSE);
   g_return_val_if_fail (filename != NULL, FALSE);
@@ -2342,68 +2263,20 @@ egg_bookmark_file_to_file (EggBookmarkFile  *bookmark,
   if (data_error)
     {
       g_propagate_error (error, data_error);
-      return FALSE;
-    }
-
-  fd = g_open (filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-  
-  if (fd < 0)
-    {
-      g_set_error (error, G_FILE_ERROR,
-		   g_file_error_from_errno (errno),
-		   "%s", g_strerror (errno));
-      return FALSE;
-    }
-
-  if (!egg_bookmark_file_fd_lock (fd))
-    {
-      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
-                   EGG_BOOKMARK_FILE_ERROR_LOCK,
-		   _("Unable to acquire lock on the file"));
-      return FALSE;
-    }
-
-  /* truncate file to avoid mess at the end */
-  if (fstat (fd, &stat_buf) < 0)
-    g_warning ("Unable to stat() file");
-
-  if ((off_t) len < stat_buf.st_size)
-    ftruncate (fd, len);
-	
-  while (len > 0)
-    {
-      gchar *data_wrote = data;
-      gsize bytes_wrote = write (fd, data_wrote, len);
       
-      if (bytes_wrote < 0)
-	{
-	  if (errno == EINTR || errno == EAGAIN)
-	    continue;
-	  
-	  g_set_error (error, G_FILE_ERROR,
-		       g_file_error_from_errno (errno),
-		       "%s", g_strerror (errno));
-	  g_free (data);
-	  
-	  egg_bookmark_file_fd_unlock (fd);
-	  
-	  return FALSE;
-	}
-      
-      len -= bytes_wrote;
-      data_wrote += bytes_wrote;
-    } 
-	
-  if (!egg_bookmark_file_fd_unlock (fd))
-    {
-      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
-                   EGG_BOOKMARK_FILE_ERROR_UNLOCK,
-		   _("Unable to release lock on the file"));
       return FALSE;
     }
 
-	
-  close (fd);
+  write_error = NULL;
+  g_file_set_contents (filename, data, len, &write_error);
+  if (write_error)
+    {
+      g_propagate_error (error, write_error);
+
+      g_free (data);
+      
+      return FALSE;
+    }
 
   g_free (data);
 	
@@ -2883,7 +2756,7 @@ egg_bookmark_file_get_is_private (EggBookmarkFile  *bookmark,
  * egg_bookmark_file_set_added:
  * @bookmark: a #EggBookmarkFile
  * @uri: a valid URI
- * @added: a timestamp
+ * @added: a timestamp or -1 to use the current time
  *
  * Sets the time the bookmark for @uri was added into @bookmark.
  *
@@ -2905,8 +2778,12 @@ egg_bookmark_file_set_added (EggBookmarkFile *bookmark,
       item = egg_bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
+
+  if (added == (time_t) -1)
+    time (&added);
   
   item->added = added;
+  item->modified = added;
   
   bookmark->is_dirty = TRUE;
 }
@@ -2951,7 +2828,7 @@ egg_bookmark_file_get_added (EggBookmarkFile  *bookmark,
  * egg_bookmark_file_set_modified:
  * @bookmark: a #EggBookmarkFile
  * @uri: a valid URI
- * @modified: a timestamp
+ * @modified: a timestamp or -1 to use the current time
  *
  * Sets the last time the bookmark for @uri was last modified.
  *
@@ -2959,7 +2836,7 @@ egg_bookmark_file_get_added (EggBookmarkFile  *bookmark,
  *
  * The "modified" time should only be set when the bookmark's meta-data
  * was actually changed.  Every function of #EggBookmarkFile that
- * modifies a bookmark also changes this time automatically, except for
+ * modifies a bookmark also changes the modification time, except for
  * egg_bookmark_file_set_visited().
  */
 void
@@ -2978,6 +2855,9 @@ egg_bookmark_file_set_modified (EggBookmarkFile *bookmark,
       item = egg_bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
+  
+  if (modified == (time_t) -1)
+    time (&modified);
   
   item->modified = modified;
 
@@ -3024,7 +2904,7 @@ egg_bookmark_file_get_modified (EggBookmarkFile  *bookmark,
  * egg_bookmark_file_set_visited:
  * @bookmark: a #EggBookmarkFile
  * @uri: a valid URI
- * @visited: a timestamp
+ * @visited: a timestamp or -1 to use the current time
  *
  * Sets the time the bookmark for @uri was last visited.
  *
@@ -3052,6 +2932,9 @@ egg_bookmark_file_set_visited (EggBookmarkFile *bookmark,
       item = egg_bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
+
+  if (visited == (time_t) -1)
+    time (&visited);
   
   item->visited = visited;
   
