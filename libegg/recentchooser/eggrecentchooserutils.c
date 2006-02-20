@@ -84,9 +84,6 @@ _egg_recent_chooser_install_properties (GObjectClass *klass)
   				    EGG_RECENT_CHOOSER_PROP_SHOW_PRIVATE,
   				    "show-private");
   g_object_class_override_property (klass,
-  				    EGG_RECENT_CHOOSER_PROP_SHOW_NUMBERS,
-  				    "show-numbers");
-  g_object_class_override_property (klass,
   				    EGG_RECENT_CHOOSER_PROP_SHOW_TIPS,
   				    "show-tips");
   g_object_class_override_property (klass,
