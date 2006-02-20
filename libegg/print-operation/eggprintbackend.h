@@ -30,10 +30,12 @@
 #endif
 
 #include <glib-object.h>
+#include <gtk/gtk.h>
 #include <cairo.h>
 
 #include "eggprinter.h"
 #include "eggprintbackendsettingset.h"
+#include "eggprintjob.h"
 
 G_BEGIN_DECLS
 typedef struct _EggPrintBackend       EggPrintBackend;
@@ -72,10 +74,10 @@ struct _EggPrintBackendIface
                                 const gchar *printer_name);
 
   void         (*print_stream) (EggPrintBackend *print_backend,
-                                EggPrinter *printer,
+                                EggPrintJob *job,
 				const gchar *title,
 				gint data_fd,
-				EggPrinterSendCompleteFunc callback,
+				EggPrintJobCompleteFunc callback,
 				gpointer user_data);
 
   EggPrintBackendSettingSet * (*create_settings) (EggPrintBackend *print_backend,
@@ -83,6 +85,8 @@ struct _EggPrintBackendIface
   gboolean (*mark_conflicts)                     (EggPrintBackend *print_backend,
 						  EggPrinter *printer,
 						  EggPrintBackendSettingSet *settings);
+
+  //GtkWidget * (*
   
 
   /* Signals 
@@ -104,10 +108,10 @@ EggPrinter *egg_print_backend_find_printer                      (EggPrintBackend
                                                                  const gchar *printer_name);
 							 
 void egg_print_backend_print_stream                             (EggPrintBackend *print_backend,
-                                                                 EggPrinter *printer,
+                                                                 EggPrintJob *job,
 				                                 const gchar *title,
 				                                 gint data_fd,
-				                                 EggPrinterSendCompleteFunc callback,
+				                                 EggPrintJobCompleteFunc callback,
 				                                 gpointer user_data);
 
 EggPrintBackendSettingSet *egg_print_backend_create_settings (EggPrintBackend           *print_backend,

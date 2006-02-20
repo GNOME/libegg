@@ -18,29 +18,32 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef __EGG_PRINTER_PRIVATE_H__
-#define __EGG_PRINTER_PRIVATE_H__
+#ifndef __EGG_PRINT_JOB_PRIVATE_H__
+#define __EGG_PRINT_JOB_PRIVATE_H__
 
 #include <glib.h>
+#include <cairo.h>
 
 G_BEGIN_DECLS
-struct _EggPrinterPrivate
+struct _EggPrintJobPrivate
 {
-  gchar *name;
-  gchar *location;
-  gchar *description;
-  gchar *icon_name;
+  gchar *title;
 
-  guint is_active: 1;
-  guint is_new: 1;
+  gint cache_fd;
+  gchar *cache_filename;
+  cairo_surface_t *surface;
 
-  gchar *state_message;  
-  gint job_count;
+  gdouble width;
+  gdouble height;
 
-  void *backend_data;
-  GFreeFunc backend_data_destroy_notify;
-  struct _EggPrintBackend *backend;
+  struct _EggPrintBackend *backend;  
+  struct _EggPrinter *printer;
+
+  gint printer_set : 1;
+  gint width_set   : 1;
+  gint height_set  : 1;
+  gint prepped     : 1;
 };
 
 G_END_DECLS
-#endif /* __EGG_PRINT_OPERATION_PRIVATE_H__ */
+#endif /* __EGG_PRINT_JOB_PRIVATE_H__ */

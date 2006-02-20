@@ -25,17 +25,14 @@
 #include "eggprintunixdialog.h"
 #include "eggprintbackend.h"
 #include "eggprinter.h"
+#include "eggprintjob.h"
 
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 typedef struct {
-  EggPrinter *printer;      /* the printer to send the job to */
-  EggPrintBackend *backend; /* We need to hold a ref to the backend */
-  gint cache_fd;            /* file descriptor where we cache the data to send to the printer */
-  gchar *cache_filename;    /* file name of the cache */
-  
+  EggPrintJob *job;         /* the job we are sending to the printer */
   GtkWindow *parent;        /* parent window just in case we need to throw error dialogs */
 } EggPrintOperationUnix;
 
@@ -58,45 +55,39 @@ unix_end_page (EggPrintOperation *op,
 }
 
 static void
-_free_op_unix (EggPrintOperationUnix *op_unix)
+_op_unix_free (EggPrintOperationUnix *op_unix)
 {
-  if (op_unix->printer)
-    g_object_unref (G_OBJECT (op_unix->printer));
+  if (op_unix->job)
+    g_object_unref (G_OBJECT (op_unix->job));
 
-  if (op_unix->backend)
-    g_object_unref (G_OBJECT (op_unix->backend));
-
-  g_free (op_unix->cache_filename);
   g_free (op_unix);
 }
 
 static void
-unix_finish_send  (EggPrinter *printer,
+unix_finish_send  (EggPrintJob *job,
                    void *user_data, 
                    GError **error)
 {
   EggPrintOperationUnix *op_unix;
-  GtkWidget *parent;
+  GtkWindow *parent;
 
-  g_message ("wtf");
-
-  op_unix = (EggPrintOperationUnix *)user_data;
+  op_unix = (EggPrintOperationUnix *) user_data;
 
   parent = op_unix->parent;
 
-  close (op_unix->cache_fd);
-  _free_op_unix (op_unix);
+  _op_unix_free (op_unix);
 
-  if (*error != NULL)
+  if (error != NULL && *error != NULL)
     {
       GtkDialog *edialog;
+      GError *err = *error;
 
       edialog = gtk_message_dialog_new (parent, 
                                         GTK_DIALOG_DESTROY_WITH_PARENT,
                                         GTK_MESSAGE_ERROR,
                                         GTK_BUTTONS_CLOSE,
                                         "Error printing: %s",
-                                        g_strerror (error));
+                                        err->message);
 
       gtk_dialog_run (edialog);
       gtk_widget_destroy (GTK_WIDGET (edialog));
@@ -108,23 +99,10 @@ unix_end_run (EggPrintOperation *op)
 {
   EggPrintOperationUnix *op_unix = op->priv->platform_data;
  
-  cairo_surface_destroy (op->priv->surface);
-  op->priv->surface = NULL;
-
-#if 0
-  cupsPrintFile(egg_printer_get_name(op_unix->printer),
-                op_unix->cache_filename,
-	        "test",
-                0,
-	        NULL);	
-#endif 
-
-  lseek (op_unix->cache_fd, 0, SEEK_SET);
-  egg_printer_print_stream (op_unix->printer,
-                            "Title",
-                            op_unix->cache_fd, 
-                            unix_finish_send, 
-                            op_unix);
+  /* TODO: Check for error */
+  egg_print_job_send (op_unix->job,
+                      unix_finish_send, 
+                      op_unix, NULL);
 
   op->priv->platform_data = NULL;
 }
@@ -146,21 +124,14 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
   if (gtk_dialog_run (GTK_DIALOG (pd)) == GTK_RESPONSE_ACCEPT)
     {
       EggPrintOperationUnix *op_unix;
-      EggPrintBackend *backend;
       EggPrinter *printer;
       EggPageSetup *page_setup;
       double width, height;
-      gchar *cache_filename;
-      gint cache_fd;
  
       *do_print = TRUE;
       result = EGG_PRINT_OPERATION_RESULT_APPLY;
 
       printer = egg_print_unix_dialog_get_selected_printer (EGG_PRINT_UNIX_DIALOG (pd));
-
-      /* we need to hold a ref to the backend so we are sure
-         it does not disappear before we are done printing */
-      backend = egg_printer_get_backend (printer);
 
       if (op->priv->default_page_setup)
         page_setup = egg_page_setup_copy (op->priv->default_page_setup);
@@ -172,24 +143,22 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
       g_object_unref (page_setup); 
 
       op_unix = g_new (EggPrintOperationUnix, 1);
-      op_unix->printer = printer;
+      op_unix->job = egg_printer_prep_job (printer,
+                                           "Title",
+                                           width, 
+                                           height,
+					   error);
+    
+      if (error != NULL && *error != NULL)
+        {
+	  _op_unix_free (op_unix);
+          return EGG_PRINT_OPERATION_RESULT_ERROR;
+	}
+
+      g_object_unref (G_OBJECT (printer));
       op_unix->parent = parent;
 
-      cache_fd = g_file_open_tmp ("eggprint_XXXXXX", &cache_filename, error);
-      fchmod (cache_fd, S_IRUSR | S_IWUSR);
-
-      if (*error != NULL)
-        {
-           _free_op_unix (op_unix);
-           return EGG_PRINT_OPERATION_RESULT_ERROR;
-        }
-
-      op->priv->surface = egg_printer_create_cairo_surface (printer,
-                                                            width, 
-                                                            height,
-                                                            cache_fd);
-      op_unix->cache_fd = cache_fd;
-      op_unix->cache_filename = cache_filename;
+      op->priv->surface = egg_print_job_get_surface (op_unix->job);
 
       op->priv->dpi_x = 72;
       op->priv->dpi_y = 72;

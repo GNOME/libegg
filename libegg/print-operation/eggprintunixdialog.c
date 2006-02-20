@@ -374,7 +374,7 @@ _printer_added_cb (EggPrintBackend *backend,
   gtk_list_store_append (GTK_LIST_STORE (impl->priv->printer_list), &iter);
 
   gtk_list_store_set (GTK_LIST_STORE (impl->priv->printer_list), &iter,
-                      PRINTER_LIST_COL_ICON, NULL,
+                      PRINTER_LIST_COL_ICON, egg_printer_get_icon_name (printer),
                       PRINTER_LIST_COL_NAME, egg_printer_get_name (printer),
                       PRINTER_LIST_COL_STATE, egg_printer_get_state_message (printer),
                       PRINTER_LIST_COL_JOBS, egg_printer_get_job_count (printer),
@@ -516,7 +516,7 @@ _create_printer_list_model (EggPrintUnixDialog *dialog)
   GtkListStore *model;
 
   model = gtk_list_store_new (PRINTER_LIST_N_COLS,
-                              GDK_TYPE_PIXBUF,
+                              G_TYPE_STRING,
                               G_TYPE_STRING, 
                               G_TYPE_STRING, 
                               G_TYPE_INT, 
@@ -844,7 +844,16 @@ create_main_page (EggPrintUnixDialog *dialog)
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
   gtk_tree_selection_set_mode (selection, GTK_SELECTION_BROWSE);
   g_signal_connect (selection, "changed", G_CALLBACK (selected_printer_changed), dialog);
-  
+ 
+  renderer = gtk_cell_renderer_pixbuf_new ();
+  column = gtk_tree_view_column_new_with_attributes (_(""),
+						     renderer,
+						     "icon-name",
+						     PRINTER_LIST_COL_ICON,
+						     NULL);
+  gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
+
+ 
   renderer = gtk_cell_renderer_text_new ();
   column = gtk_tree_view_column_new_with_attributes (_("Printer"),
 						     renderer,

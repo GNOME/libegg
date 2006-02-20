@@ -499,6 +499,7 @@ egg_print_operation_run (EggPrintOperation  *op,
   g_object_unref (print_context);
   g_object_unref (initial_page_setup);
 
+  cairo_surface_finish (op->priv->surface);
   op->priv->end_run (op);
 
   return EGG_PRINT_OPERATION_RESULT_APPLY;

@@ -29,7 +29,8 @@ libeggprint_la_SOURCES +=		\
 	eggprintunixdialog.c		\
         eggprintbackend.c		\
         eggprintbackendcups.c		\
-	eggprintercups.c
+	eggprintercups.c		\
+	eggprintjob.c
 
 endif
 
@@ -54,7 +55,9 @@ noinst_HEADERS = 			\
 	eggprintoperation.h		\
 	eggprintsettingwidget.h		\
 	eggprintunixdialog.h		\
-	eggprintercups-private.h
+	eggprintercups-private.h	\
+	eggprintjob.h			\
+	eggprintjob-private.h
 
 marshal_sources = 		\
 	eggprintmarshal.h	\

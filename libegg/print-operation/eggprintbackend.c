@@ -166,16 +166,16 @@ egg_print_backend_find_printer (EggPrintBackend *print_backend,
 
 void
 egg_print_backend_print_stream (EggPrintBackend *print_backend,
-                                EggPrinter *printer,
+                                EggPrintJob *job,
                                 const gchar *title,
                                 gint data_fd,
-                                EggPrinterSendCompleteFunc callback,
+                                EggPrintJobCompleteFunc callback,
                                 gpointer user_data)
 {
   g_return_if_fail (EGG_IS_PRINT_BACKEND (print_backend));
 
   return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->print_stream (print_backend,
-                                                                    printer,
+                                                                    job,
                                                                     title,
                                                                     data_fd,
                                                                     callback,

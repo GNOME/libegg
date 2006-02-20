@@ -29,6 +29,7 @@
 #include "eggprinter.h"
 #include "eggprinter-private.h"
 #include "eggprintbackend.h"
+#include "eggprintjob.h"
 
 #define EGG_PRINTER_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINTER, EggPrinterPrivate))
@@ -58,6 +59,7 @@ egg_printer_init (EggPrinter *printer)
   printer->priv->name = NULL;
   printer->priv->location = NULL;
   printer->priv->description = NULL;
+  printer->priv->icon_name = NULL;
 
   printer->priv->is_active = TRUE;
   printer->priv->is_new = TRUE;
@@ -77,6 +79,7 @@ egg_printer_finalize (GObject *object)
   g_free (printer->priv->location);
   g_free (printer->priv->description);
   g_free (printer->priv->state_message);
+  g_free (printer->priv->icon_name);
 
   if (printer->priv->backend_data_destroy_notify)
     printer->priv->backend_data_destroy_notify (printer->priv->backend_data);
@@ -148,6 +151,13 @@ egg_printer_get_location (EggPrinter *printer)
   return printer->priv->location;
 }
 
+const gchar * 
+egg_printer_get_icon_name (EggPrinter *printer)
+{
+  EGG_IS_PRINTER (printer);
+
+  return printer->priv->icon_name;
+}
 
 gint 
 egg_printer_get_job_count (EggPrinter *printer)
@@ -157,34 +167,26 @@ egg_printer_get_job_count (EggPrinter *printer)
   return printer->priv->job_count;
 }
 
-cairo_surface_t *
-egg_printer_create_cairo_surface (EggPrinter *printer,
-                                  double width,
-                                  double height,
-                                  gint cache_fd)
+EggPrintJob *
+egg_printer_prep_job (EggPrinter *printer,
+		      const gchar *title,
+                      double width, 
+                      double height,
+	              GError **error)
 {
-   EGG_IS_PRINTER (printer);
+  EggPrintJob *job;
 
-  return egg_print_backend_printer_create_cairo_surface (printer->priv->backend,
-                                                         printer,
-                                                         width,
-                                                         height,
-							 cache_fd);
-}
+  job = egg_print_job_new (title,
+                           printer,
+                           width,
+                           height);
 
+  if (!egg_print_job_prep (job, error))
+    {
+      g_object_unref (G_OBJECT (job));
+      job = NULL;
+    }
 
-void 
-egg_printer_print_stream (EggPrinter *printer,
-                          const gchar *title,
-                          gint data_fd, 
-                          EggPrinterSendCompleteFunc callback,
-                          gpointer user_data)
-{
-  egg_print_backend_print_stream (printer->priv->backend,
-                                  printer,
-                                  title,
-                                  data_fd,
-                                  callback,
-                                  user_data);
+  return job;
 }
 

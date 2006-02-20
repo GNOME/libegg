@@ -1,3 +1,47 @@
+2006-02-20  John (J5) Palmieri <johnp@redhat.com>
+
+	* eggprintjob.[ch] eggprintjob-private.h:
+	Hide details of printing in short lived printjob object
+
+	* eggprintbackend.c (egg_print_backend_print_stream):
+	Take a job instead of a printer
+
+	* eggprintbackendcups.c:
+	(struct PrintStreamData):
+	Use EggPrintJob instead of EggPrinter
+	(_cups_dispatch_watch_check):
+	Handle result codes correctly in DISPATCH_SEND
+	(_cups_request_printer_info_cb): 
+	send back an icon name to use in the dialog
+	
+	* eggprinter.c:
+	Add icon support
+	(egg_printer_get_icon_name): 
+	return the name of the icon that represents this printer (or NULL)
+	(egg_printer_create_cairo_surface, egg_printer_print_stream): 
+	removed and encapulated in EggPrintJob
+	(egg_printer_prep_job):
+	Creates and preps a job for printing
+
+	* eggprintoperation-unix.c:
+	(EggPrintOperationUnix): 
+	remove pointers to the temporary file cache and printers and add EggPrintJob
+	which encapulates everything
+	(_free_op_unix): 
+	renamed to _op_unix_free
+	(unix_end_run):
+	Use the print job to send the data to the printer
+	(egg_print_operation_platform_backend_run):
+	Port to using the PrintJob API
+	
+	* eggprintoperation.c:
+	(egg_print_operation_run):
+	call cairo_surface_finish so cairo finishes rendering before we call
+	end_run
+
+	* eggprintunixdialog.c:
+	Show icons in the UI if the printer has one
+	
 2006-02-20  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintunixdialog.c:
