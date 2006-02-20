@@ -308,8 +308,9 @@ combo_changed_cb (GtkWidget *combo,
 static void
 construct_widgets (EggPrintSettingWidget *setting)
 {
-  int i;
   EggPrintBackendSetting *source;
+  char *text;
+  int i;
 
   source = setting->priv->source;
   
@@ -341,8 +342,10 @@ construct_widgets (EggPrintSettingWidget *setting)
       gtk_widget_show (setting->priv->combo);
       gtk_box_pack_start (GTK_BOX (setting), setting->priv->combo, TRUE, TRUE, 0);
       g_signal_connect (setting->priv->combo, "changed", G_CALLBACK (combo_changed_cb), setting);
-      
-      setting->priv->label = gtk_label_new_with_mnemonic (source->display_text);
+
+      text = g_strdup_printf ("%s: ", source->display_text);
+      setting->priv->label = gtk_label_new_with_mnemonic (text);
+      g_free (text);
       gtk_widget_show (setting->priv->label);
       break;
     case EGG_PRINT_BACKEND_SETTING_TYPE_STRING:

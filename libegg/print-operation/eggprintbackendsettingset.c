@@ -142,6 +142,17 @@ egg_print_backend_setting_set_clear_conflicts (EggPrintBackendSettingSet *set)
 					 NULL);
 }
 
+static int
+safe_strcmp (const char *a, const char *b)
+{
+  if (a == NULL)
+    a = "";
+  if (b == NULL)
+    b = "";
+
+  return strcmp (a, b);
+}
+
 GList *
 egg_print_backend_setting_set_get_groups (EggPrintBackendSettingSet     *set)
 {
@@ -153,11 +164,11 @@ egg_print_backend_setting_set_get_groups (EggPrintBackendSettingSet     *set)
     {
       setting = g_ptr_array_index (set->array, i);
 
-      if (g_list_find_custom (list, setting->group, (GCompareFunc)strcmp) == NULL)
+      if (g_list_find_custom (list, setting->group, (GCompareFunc)safe_strcmp) == NULL)
 	list = g_list_prepend (list, g_strdup (setting->group));
     }
 
-  return list;
+  return g_list_reverse (list);
 }
 
 void
@@ -173,7 +184,8 @@ egg_print_backend_setting_set_foreach_in_group (EggPrintBackendSettingSet     *s
     {
       setting = g_ptr_array_index (set->array, i);
 
-      if (group == NULL || strcmp (group, setting->group) == 0)
+      if (group == NULL ||
+	  (setting->group != NULL && strcmp (group, setting->group) == 0))
 	func (setting, user_data);
     }
 }

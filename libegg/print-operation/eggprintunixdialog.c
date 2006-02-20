@@ -96,6 +96,14 @@ struct EggPrintUnixDialogPrivate
   EggPrintSettingWidget *output_tray;
 
   GtkWidget *conflicts_widget;
+
+  GtkWidget *finishing_table;
+  GtkWidget *finishing_page;
+  GtkWidget *image_quality_table;
+  GtkWidget *image_quality_page;
+  GtkWidget *color_table;
+  GtkWidget *color_page;
+
   GtkWidget *advanced_vbox;
   
   EggPrintBackend *print_backend;
@@ -527,54 +535,76 @@ wrap_in_frame (const char *label, GtkWidget *child)
 }
 
 static void
-foreach_setting_cb (EggPrintBackendSetting  *setting,
-		    gpointer                 user_data)
-{
-  EggPrintUnixDialog *dialog = user_data;
-  GtkWidget *widget, *hbox, *label;
-
-  if (g_str_has_prefix (setting->name, "gtk-"))
-    return;
-
-  widget = egg_print_setting_widget_new (setting);
-  gtk_widget_show (widget);
-
-  if (egg_print_setting_widget_has_external_label (EGG_PRINT_SETTING_WIDGET (widget)))
-    {
-      hbox = gtk_hbox_new (FALSE, 0);
-      gtk_widget_show (hbox);
-      gtk_box_pack_start (GTK_BOX (dialog->priv->advanced_vbox),
-			  hbox, FALSE, FALSE, 0);
-
-      label = egg_print_setting_widget_get_external_label (EGG_PRINT_SETTING_WIDGET (widget));
-      gtk_widget_show (label);
-      gtk_box_pack_start (GTK_BOX (hbox),
-			  label, FALSE, FALSE, 0);
-      gtk_box_pack_start (GTK_BOX (hbox),
-			  widget, FALSE, FALSE, 0);
-      
-    }
-  else
-    gtk_box_pack_start (GTK_BOX (dialog->priv->advanced_vbox),
-			widget, FALSE, FALSE, 0);
-
-}
-
-
-static void
 setup_setting (EggPrintUnixDialog *dialog,
 	       const char *setting_name,
 	       EggPrintSettingWidget *widget)
 {
   EggPrintBackendSetting *setting;
-  
+
   setting = egg_print_backend_setting_set_lookup (dialog->priv->settings, setting_name);
   egg_print_setting_widget_set_source (widget, setting);
 }
 
 static void
+add_setting_to_table (EggPrintBackendSetting  *setting,
+		      gpointer                 user_data)
+{
+  GtkTable *table;
+  GtkWidget *label, *widget;
+  int row;
+
+  table = GTK_TABLE (user_data);
+  
+  if (g_str_has_prefix (setting->name, "gtk-"))
+    return;
+  
+  widget = egg_print_setting_widget_new (setting);
+  gtk_widget_show (widget);
+
+  row = table->nrows;
+  gtk_table_resize (table, table->nrows + 1, table->ncols + 1);
+  
+  if (egg_print_setting_widget_has_external_label (EGG_PRINT_SETTING_WIDGET (widget)))
+    {
+      label = egg_print_setting_widget_get_external_label (EGG_PRINT_SETTING_WIDGET (widget));
+      gtk_widget_show (label);
+
+      gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+      
+      gtk_table_attach (table, label,
+			0, 1, row - 1 , row,  GTK_FILL, 0, 0, 0);
+      
+      gtk_table_attach (table, widget,
+			1, 2, row - 1, row,  GTK_FILL, 0, 0, 0);
+    }
+  else
+    gtk_table_attach (table, widget,
+		      0, 2, row - 1, row,  GTK_FILL, 0, 0, 0);
+}
+
+
+static void
+setup_page_table (EggPrintBackendSettingSet *settings,
+		  const char *group,
+		  GtkWidget *table,
+		  GtkWidget *page)
+{
+  egg_print_backend_setting_set_foreach_in_group (settings, group,
+						  add_setting_to_table,
+						  table);
+  if (GTK_TABLE (table)->nrows == 1)
+    gtk_widget_hide (page);
+  else
+    gtk_widget_show (page);
+}
+	     
+static void
 update_dialog_from_settings (EggPrintUnixDialog *dialog)
 {
+  GList *groups, *l;
+  char *group;
+  GtkWidget *table, *frame;
+  
   setup_setting (dialog, "gtk-n-up", dialog->priv->pages_per_sheet);
   setup_setting (dialog, "gtk-duplex", dialog->priv->duplex);
   setup_setting (dialog, "gtk-paper-size", dialog->priv->paper_size);
@@ -582,8 +612,57 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   setup_setting (dialog, "gtk-paper-source", dialog->priv->paper_source);
   setup_setting (dialog, "gtk-output-tray", dialog->priv->output_tray);
 
-  egg_print_backend_setting_set_foreach (dialog->priv->settings,
-					 foreach_setting_cb, dialog);
+  setup_page_table (dialog->priv->settings,
+		    "ImageQualityPage",
+		    dialog->priv->image_quality_table,
+		    dialog->priv->image_quality_page);
+  
+  setup_page_table (dialog->priv->settings,
+		    "FinishingPage",
+		    dialog->priv->finishing_table,
+		    dialog->priv->finishing_page);
+
+  setup_page_table (dialog->priv->settings,
+		    "ColorPage",
+		    dialog->priv->color_table,
+		    dialog->priv->color_page);
+
+  /* Put the rest of the groups in the advanced page */
+  groups = egg_print_backend_setting_set_get_groups (dialog->priv->settings);
+
+  for (l = groups; l != NULL; l = l->next)
+    {
+      group = l->data;
+
+      if (group == NULL)
+	continue;
+      
+      if (strcmp (group, "ImageQualityPage") == 0 ||
+	  strcmp (group, "ColorPage") == 0 ||
+	  strcmp (group, "FinishingPage") == 0)
+	continue;
+
+      table = gtk_table_new (1, 2, FALSE);
+      
+      egg_print_backend_setting_set_foreach_in_group (dialog->priv->settings,
+						      group,
+						      add_setting_to_table,
+						      table);
+      if (GTK_TABLE (table)->nrows == 1)
+	gtk_widget_destroy (table);
+      else
+	{
+	  frame = wrap_in_frame (group, table);
+	  gtk_widget_show (table);
+	  gtk_widget_show (frame);
+	  
+	  gtk_box_pack_start (GTK_BOX (dialog->priv->advanced_vbox),
+			      frame, FALSE, FALSE, 0);
+	}
+    }
+  
+  g_list_foreach (groups, (GFunc) g_free, NULL);
+  g_list_free (groups);
 }
 
 static void
@@ -656,7 +735,25 @@ schedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
   dialog->priv->mark_conflicts_id = g_idle_add (mark_conflicts_callback,
 						dialog);
 }
-  
+
+
+static void
+clear_per_printer_ui (EggPrintUnixDialog *dialog)
+{
+  gtk_container_foreach (GTK_CONTAINER (dialog->priv->finishing_table),
+			 gtk_widget_destroy,
+			 NULL);
+  gtk_container_foreach (GTK_CONTAINER (dialog->priv->image_quality_table),
+			 gtk_widget_destroy,
+			 NULL);
+  gtk_container_foreach (GTK_CONTAINER (dialog->priv->color_table),
+			 gtk_widget_destroy,
+			 NULL);
+  gtk_container_foreach (GTK_CONTAINER (dialog->priv->advanced_vbox),
+			 gtk_widget_destroy,
+			 NULL);
+}
+ 
 static void
 selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialog)
 {
@@ -669,6 +766,9 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
       g_signal_handler_disconnect (dialog->priv->settings,
 				   dialog->priv->settings_changed_handler);
       g_object_unref (dialog->priv->settings);
+
+      clear_per_printer_ui (dialog);
+      
     }
   
   dialog->priv->settings = NULL;  
@@ -1200,50 +1300,37 @@ create_job_page (EggPrintUnixDialog *dialog)
 			    main_table, label);
 }
 
-static void
-create_image_quality_page (EggPrintUnixDialog *dialog)
+static void 
+create_optional_page (EggPrintUnixDialog *dialog,
+		      const char *text,
+		      GtkWidget **table_out,
+		      GtkWidget **page_out)
 {
   EggPrintUnixDialogPrivate *priv;
-  GtkWidget *main_vbox, *label;
+  GtkWidget *table, *label, *scrolled;
   
   priv = dialog->priv;
 
-  main_vbox = gtk_vbox_new (FALSE, 8);
-  gtk_widget_show (main_vbox);
-
-  label = gtk_label_new ("Autogenerated image quality settings go here");
-  gtk_widget_show (label);
-
-  gtk_box_pack_start (GTK_BOX (main_vbox), label, TRUE, TRUE, 6);
+  scrolled = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
+				  GTK_POLICY_NEVER,
+				  GTK_POLICY_AUTOMATIC);
+  gtk_widget_show (scrolled);
   
-  label = gtk_label_new (_("Image Quality"));
-  gtk_widget_show (label);
+  table = gtk_table_new (1, 2, FALSE);
+  gtk_widget_show (table);
+
+  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled),
+					 table);
   
-  gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
-			    main_vbox, label);
-}
-
-static void
-create_finishing_page (EggPrintUnixDialog *dialog)
-{
-  EggPrintUnixDialogPrivate *priv;
-  GtkWidget *main_vbox, *label;
-  
-  priv = dialog->priv;
-
-  main_vbox = gtk_vbox_new (FALSE, 8);
-  gtk_widget_show (main_vbox);
-
-  label = gtk_label_new ("Autogenerated finishing settings go here");
-  gtk_widget_show (label);
-
-  gtk_box_pack_start (GTK_BOX (main_vbox), label, TRUE, TRUE, 6);
-  
-  label = gtk_label_new (_("Finishing"));
+  label = gtk_label_new (text);
   gtk_widget_show (label);
   
   gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
-			    main_vbox, label);
+			    scrolled, label);
+
+  *table_out = table;
+  *page_out = scrolled;
 }
 
 static void
@@ -1262,16 +1349,10 @@ create_advanced_page (EggPrintUnixDialog *dialog)
 
   main_vbox = gtk_vbox_new (FALSE, 8);
   gtk_widget_show (main_vbox);
-  
 
   gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled),
 					 main_vbox);
   
-  label = gtk_label_new ("Autogenerated settings that are not on other pages go here");
-  gtk_widget_show (label);
-
-  gtk_box_pack_start (GTK_BOX (main_vbox), label, TRUE, TRUE, 6);
-
   dialog->priv->advanced_vbox = main_vbox;
   
   label = gtk_label_new (_("Advanced"));
@@ -1303,8 +1384,15 @@ populate_dialog (EggPrintUnixDialog *dialog)
   create_main_page (dialog);
   create_page_setup_page (dialog);
   create_job_page (dialog);
-  create_image_quality_page (dialog);
-  create_finishing_page (dialog);
+  create_optional_page (dialog, _("Image Quality"),
+			&dialog->priv->image_quality_table,
+			&dialog->priv->image_quality_page);
+  create_optional_page (dialog, _("Color"),
+			&dialog->priv->color_table,
+			&dialog->priv->color_page);
+  create_optional_page (dialog, _("Finishing"),
+			&dialog->priv->finishing_table,
+			&dialog->priv->finishing_page);
   create_advanced_page (dialog);
 
   hbox = gtk_hbox_new (FALSE, 0);

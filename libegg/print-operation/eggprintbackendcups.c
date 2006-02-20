@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 #include <config.h>
 #include <cups/cups.h>
@@ -870,18 +871,127 @@ static const struct {
   { "Duplex", "None", N_("One Sided") },
 };
 
+static const struct {
+  const char *ppd_keyword;
+  const char *name;
+} setting_names[] = {
+  {"Duplex", "gtk-duplex"},
+  {"PageSize", "gtk-paper-size"},
+  {"MediaType", "gtk-paper-type"},
+  {"InputSlot", "gtk-paper-source"},
+  {"OutputBin", "gtk-output-tray"},
+};
+
+/* keep sorted when changing */
+static const char *color_option_whitelist[] = {
+  "BRColorEnhancement",
+  "BRColorMatching",
+  "BRColorMatching",
+  "BRColorMode",
+  "BRGammaValue",
+  "BRImprovedGray",
+  "BlackSubstitution",
+  "ColorModel",
+  "HPCMYKInks",
+  "HPCSGraphics",
+  "HPCSImages",
+  "HPCSText",
+  "HPColorSmart",
+  "RPSBlackMode",
+  "RPSBlackOverPrint",
+  "Rcmyksimulation",
+};
+
+/* keep sorted when changing */
+static const char *color_group_whitelist[] = {
+  "ColorPage",
+  "FPColorWise1",
+  "FPColorWise2",
+  "FPColorWise3",
+  "FPColorWise4",
+  "FPColorWise5",
+};
+  
+/* keep sorted when changing */
+static const char *image_quality_option_whitelist[] = {
+  "BRDocument",
+  "BRHalfTonePattern",
+  "BRNormalPrt",
+  "BRPrintQuality",
+  "BitsPerPixel",
+  "Darkness",
+  "EconoMode",
+  "HPEconoMode",
+  "HPEdgeControl",
+  "HPGraphicsHalftone",
+  "HPHalftone",
+  "HPPhotoHalftone",
+  "OutputMode",
+  "RPSBitsPerPixel",
+  "RPSDitherType",
+  "Resolution",
+  "ScreenLock",
+  "Smoothing",
+  "TonerSaveMode",
+  "UCRGCRForImage",
+};
+
+/* keep sorted when changing */
+static const char *image_quality_group_whitelist[] = {
+  "FPImageQuality1",
+  "FPImageQuality2",
+  "FPImageQuality3",
+  "ImageQualityPage",
+};
+
+/* keep sorted when changing */
+static const char * finishing_option_whitelist[] = {
+  "BindColor",
+  "BindEdge",
+  "BindType",
+  "BindWhen",
+  "Booklet",
+  "FoldType",
+  "FoldWhen",
+  "HPStaplerOptions",
+  "Jog",
+  "Slipsheet",
+  "Sorter",
+  "StapleLocation",
+  "StapleOrientation",
+  "StapleWhen",
+  "StapleX",
+  "StapleY",
+};
+
+/* keep sorted when changing */
+static const char *finishing_group_whitelist[] = {
+  "FPFinishing1",
+  "FPFinishing2",
+  "FPFinishing3",
+  "FPFinishing4",
+  "FinishingPage",
+};
+
+
 char *
 get_option_text (ppd_file_t *ppd_file, ppd_option_t *option)
 {
   int i;
+  char *utf8;
   
   for (i = 0; i < G_N_ELEMENTS (cups_option_translations); i++)
     {
       if (strcmp (cups_option_translations[i].keyword, option->keyword) == 0)
 	return g_strdup (_(cups_option_translations[i].translation));
     }
+
+  utf8 = ppd_text_to_utf8 (ppd_file, option->text);
+
+  /* Some ppd files have spaces in the text before the colon */
+  g_strchomp (utf8);
   
-  return ppd_text_to_utf8 (ppd_file, option->text);
+  return utf8;
 }
 
 char *
@@ -931,7 +1041,8 @@ value_is_off (const char *value)
 static int
 availible_choices (ppd_file_t *ppd,
 		   ppd_option_t *option,
-		   ppd_choice_t ***availible)
+		   ppd_choice_t ***availible,
+		   gboolean keep_if_only_one_option)
 {
   ppd_option_t *other_option;
   int i, j;
@@ -941,7 +1052,7 @@ availible_choices (ppd_file_t *ppd,
   ppd_option_t *option1, *option2;
   ppd_group_t *installed_options;
   int num_conflicts;
-  gboolean all_off;
+  gboolean all_default;
 
   if (availible)
     *availible = NULL;
@@ -1017,15 +1128,18 @@ availible_choices (ppd_file_t *ppd,
     }
 
   num_conflicts = 0;
-  all_off = TRUE;
+  all_default = TRUE;
   for (j = 0; j < option->num_choices; j++)
     {
       if (conflicts[j])
 	num_conflicts++;
-      else if (!value_is_off (option->choices[j].choice))
-	all_off = FALSE;
+      else if (strcmp (option->choices[j].choice, option->defchoice) != 0)
+	all_default = FALSE;
     }
 
+  if (all_default && !keep_if_only_one_option)
+    return 0;
+  
   if (num_conflicts == option->num_choices)
     return 0;
     
@@ -1060,7 +1174,7 @@ create_pickone_setting (ppd_file_t *ppd_file,
   
   setting = NULL;
 
-  n_choices = availible_choices (ppd_file, option, &availible);
+  n_choices = availible_choices (ppd_file, option, &availible, g_str_has_prefix (gtk_name, "gtk-"));
   if (n_choices > 0)
     {
       label = get_option_text (ppd_file, option);
@@ -1076,21 +1190,49 @@ create_pickone_setting (ppd_file_t *ppd_file,
 	}
       egg_print_backend_setting_set (setting, option->defchoice);
     }
+  else
+    g_warning ("Ignoring pickone %s\n", option->text);
   g_free (availible);
 
   return setting;
 }
 
-const struct {
-  const char *ppd_keyword;
-  const char *name;
-} setting_names[] = {
-  {"Duplex", "gtk-duplex"},
-  {"PageSize", "gtk-paper-size"},
-  {"MediaType", "gtk-paper-type"},
-  {"InputSlot", "gtk-paper-source"},
-  {"OutputBin", "gtk-output-tray"},
-};
+static EggPrintBackendSetting *
+create_boolean_setting (ppd_file_t *ppd_file,
+			ppd_option_t *option,
+			const char *gtk_name)
+{
+  EggPrintBackendSetting *setting;
+  ppd_choice_t **availible;
+  char *label;
+  int n_choices;
+
+  g_assert (option->ui == PPD_UI_BOOLEAN);
+  
+  setting = NULL;
+
+  n_choices = availible_choices (ppd_file, option, &availible, g_str_has_prefix (gtk_name, "gtk-"));
+  if (n_choices == 2)
+    {
+      label = get_option_text (ppd_file, option);
+      setting = egg_print_backend_setting_new (gtk_name, label,
+					       EGG_PRINT_BACKEND_SETTING_TYPE_BOOLEAN);
+      g_free (label);
+      
+      egg_print_backend_setting_allocate_choices (setting, 2);
+      setting->choices[0] = g_strdup ("True");
+      setting->choices_display[0] = g_strdup ("True");
+      setting->choices[1] = g_strdup ("True");
+      setting->choices_display[1] = g_strdup ("True");
+      
+      egg_print_backend_setting_set (setting, option->defchoice);
+    }
+  else
+    g_warning ("Ignoring boolean %s\n", option->text);
+  g_free (availible);
+
+  return setting;
+}
 
 char *
 get_setting_name (const char *keyword)
@@ -1103,6 +1245,23 @@ get_setting_name (const char *keyword)
 
   return g_strdup_printf ("cups-%s", keyword);
 }
+
+static int
+strptr_cmp(const void *a, const void *b)
+{
+  char **aa = (char **)a;
+  char **bb = (char **)b;
+  return strcmp(*aa, *bb);
+}
+
+
+static gboolean
+string_in_table (char *str, const char *table[], int table_len)
+{
+  return bsearch (&str, table, table_len, sizeof (char *), (void *)strptr_cmp) != NULL;
+}
+
+#define STRING_IN_TABLE(_str, _table) (string_in_table (_str, _table, G_N_ELEMENTS (_table)))
 
 static void
 handle_option (EggPrintBackendSettingSet *set,
@@ -1119,13 +1278,42 @@ handle_option (EggPrintBackendSettingSet *set,
   if (option->ui == PPD_UI_PICKONE)
     {
       setting = create_pickone_setting (ppd_file, option, name);
-      
     }
-
+  else if (option->ui == PPD_UI_BOOLEAN)
+    {
+      setting = create_boolean_setting (ppd_file, option, name);
+    }
+  else
+    g_warning ("Ignored pickmany setting %s\n", option->text);
+  
   
   if (setting)
     {
-      setting->group = g_strdup (toplevel_group->text);
+      if (STRING_IN_TABLE (toplevel_group->name,
+			   color_group_whitelist) ||
+	  STRING_IN_TABLE (option->keyword,
+			   color_option_whitelist))
+	{
+	  setting->group = g_strdup ("ColorPage");
+	}
+      else if (STRING_IN_TABLE (toplevel_group->name,
+				image_quality_group_whitelist) ||
+	       STRING_IN_TABLE (option->keyword,
+				image_quality_option_whitelist))
+	{
+	  setting->group = g_strdup ("ImageQualityPage");
+	}
+      else if (STRING_IN_TABLE (toplevel_group->name,
+				finishing_group_whitelist) ||
+	       STRING_IN_TABLE (option->keyword,
+				finishing_option_whitelist))
+	{
+	  setting->group = g_strdup ("FinishingPage");
+	}
+      else
+	{
+	  setting->group = g_strdup (toplevel_group->text);
+	}
       egg_print_backend_setting_set_add (set, setting);
     }
   
@@ -1233,7 +1421,6 @@ set_conflicts_from_option (EggPrintBackendSettingSet *set,
 
       if (setting)
 	{
-	  g_print ("setting %p(%s) as conflicted\n", setting, name);
 	  egg_print_backend_setting_set_has_conflict (setting, TRUE);
 	}
       else

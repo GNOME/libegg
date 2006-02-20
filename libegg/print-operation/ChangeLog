@@ -1,3 +1,22 @@
+2006-02-20  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintbackendcups.c:
+	Remove whitespace after option name
+	Remove settings with only one availible option if they are not
+	pre-defined gtk+ settings.
+	Handle boolean options.
+	Handle group whitelisting.
+	
+	* eggprintbackendsettingset.c:
+	Handle NULL group names.
+	Don't reorder group names.
+	
+	* eggprintsettingwidget.c:
+	Add colon after labels.
+	
+	* eggprintunixdialog.c:
+	Handle optional settings much better.
+
 2006-02-16  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintbackendcups.c (group_has_option):
