@@ -108,9 +108,11 @@ struct EggPrintUnixDialogPrivate
   
   EggPrintBackend *print_backend;
   
+  EggPrinter *current_printer;
   EggPrintBackendSettingSet *settings;
   gulong settings_changed_handler;
   gulong mark_conflicts_id;
+
 };
 
 G_DEFINE_TYPE (EggPrintUnixDialog, egg_print_unix_dialog, GTK_TYPE_DIALOG);
@@ -344,6 +346,18 @@ egg_print_unix_dialog_finalize (GObject *object)
   g_return_if_fail (object != NULL);
 
   unschedule_idle_mark_conflicts (dialog);
+
+  if (dialog->priv->current_printer)
+    {
+      g_object_unref (dialog->priv->current_printer);
+      dialog->priv->current_printer = NULL;
+    }
+	
+  if (dialog->priv->settings)
+    {
+      g_object_unref (dialog->priv->settings);
+      dialog->priv->settings = NULL;
+    }
   
   if (G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize)
     G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize (object);
@@ -670,32 +684,28 @@ mark_conflicts (EggPrintUnixDialog *dialog)
 {
   EggPrinter *printer;
   EggPrintBackend *backend;
-  GtkTreeIter iter;
-  GtkTreeSelection *selection;
   gboolean have_conflict;
 
   have_conflict = FALSE;
-  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
-  if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-    {
-      gtk_tree_model_get (dialog->priv->printer_list, &iter,
-			  PRINTER_LIST_COL_PRINTER_OBJ, &printer,
-			  -1);
 
-      backend = egg_printer_get_backend (printer);
+  printer = dialog->priv->current_printer;
+
+  if (printer)
+    {
 
       g_signal_handler_block (dialog->priv->settings,
 			      dialog->priv->settings_changed_handler);
       
       egg_print_backend_setting_set_clear_conflicts (dialog->priv->settings);
+      
+      backend = egg_printer_get_backend (printer);
       have_conflict = egg_print_backend_mark_conflicts (backend, printer,
 							dialog->priv->settings);
+      g_object_unref (backend);
       
       g_signal_handler_unblock (dialog->priv->settings,
 				dialog->priv->settings_changed_handler);
 
-      g_object_unref (backend);
-      g_object_unref (printer);
     }
 
   if (have_conflict)
@@ -741,16 +751,16 @@ static void
 clear_per_printer_ui (EggPrintUnixDialog *dialog)
 {
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->finishing_table),
-			 gtk_widget_destroy,
+			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->image_quality_table),
-			 gtk_widget_destroy,
+			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->color_table),
-			 gtk_widget_destroy,
+			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->advanced_vbox),
-			 gtk_widget_destroy,
+			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
 }
  
@@ -761,36 +771,42 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
   EggPrintBackend *backend;
   GtkTreeIter iter;
 
+  printer = NULL;
+  if (gtk_tree_selection_get_selected (selection, NULL, &iter))
+    gtk_tree_model_get (dialog->priv->printer_list, &iter,
+			PRINTER_LIST_COL_PRINTER_OBJ, &printer,
+			-1);
+
+  if (printer == dialog->priv->current_printer)
+    {
+      if (printer)
+	g_object_unref (printer);
+      return;
+    }
+
   if (dialog->priv->settings)
     {
       g_signal_handler_disconnect (dialog->priv->settings,
 				   dialog->priv->settings_changed_handler);
       g_object_unref (dialog->priv->settings);
+      dialog->priv->settings = NULL;  
 
       clear_per_printer_ui (dialog);
-      
     }
+
+  if (dialog->priv->current_printer)
+    g_object_unref (dialog->priv->current_printer);
+
+  dialog->priv->current_printer = printer;
   
-  dialog->priv->settings = NULL;  
-
-  if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-    {
-      gtk_tree_model_get (dialog->priv->printer_list, &iter,
-			  PRINTER_LIST_COL_PRINTER_OBJ, &printer,
-			  -1);
-
-      backend = egg_printer_get_backend (printer);
-
-      /* TODO: Shouldn't the call was on the printer, not the backend */
-      dialog->priv->settings =
-	egg_print_backend_create_settings (backend, printer);
-
-      dialog->priv->settings_changed_handler = 
-	g_signal_connect_swapped (dialog->priv->settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
-      
-      g_object_unref (backend);
-      g_object_unref (printer);
-    }
+  /* TODO: Shouldn't the call was on the printer, not the backend */
+  backend = egg_printer_get_backend (printer);
+  dialog->priv->settings =
+    egg_print_backend_create_settings (backend, printer);
+  g_object_unref (backend);
+  
+  dialog->priv->settings_changed_handler = 
+    g_signal_connect_swapped (dialog->priv->settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
   
   update_dialog_from_settings (dialog);
 }
@@ -1468,20 +1484,8 @@ egg_print_unix_dialog_new (const gchar *title,
 EggPrinter *
 egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog)
 {
-  EggPrinter *printer;
-  GtkTreeIter iter;
-  GtkTreeSelection *selection;
-  printer = NULL;
-
-  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
-
-  if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-    {
-      gtk_tree_model_get (dialog->priv->printer_list,
-                          &iter,
-                          PRINTER_LIST_COL_PRINTER_OBJ, &printer,
-                          -1); 
-    }
-
-  return printer; 
+  if (dialog->priv->current_printer)
+    return g_object_ref (dialog->priv->current_printer);
+  
+  return NULL; 
 }

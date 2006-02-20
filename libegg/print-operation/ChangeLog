@@ -1,5 +1,10 @@
 2006-02-20  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintunixdialog.c:
+	Keep current_printer around when selected
+
+2006-02-20  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintbackendcups.c:
 	Remove whitespace after option name
 	Remove settings with only one availible option if they are not
