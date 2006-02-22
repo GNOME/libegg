@@ -88,6 +88,7 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *copies_spin;
   GtkWidget *collate_check;
   GtkWidget *reverse_check;
+  GtkWidget *collate_image;
   EggPrintSettingWidget *pages_per_sheet;
   EggPrintSettingWidget *duplex;
   EggPrintSettingWidget *paper_size;
@@ -812,6 +813,36 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
 }
 
 static void
+update_collate_icon (GtkToggleButton *toggle_button, EggPrintUnixDialog *dialog)
+{
+  GdkPixbuf *pixbuf;
+  gboolean collate, reverse;
+  const char **xpm;
+
+  collate = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->collate_check));
+  reverse = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_check));
+
+  if (collate)
+    {
+      if (reverse)
+	xpm = collate_reverse_xpm;
+      else
+	xpm = collate_xpm;
+    }
+  else
+    {
+      if (reverse)
+	xpm = nocollate_reverse_xpm;
+      else
+	xpm = nocollate_xpm;
+    }
+  
+  pixbuf = gdk_pixbuf_new_from_xpm_data (xpm);
+  gtk_image_set_from_pixbuf (GTK_IMAGE (dialog->priv->collate_image), pixbuf);
+  g_object_unref (pixbuf);
+}
+
+static void
 create_main_page (EggPrintUnixDialog *dialog)
 {
   EggPrintUnixDialogPrivate *priv;
@@ -819,7 +850,6 @@ create_main_page (EggPrintUnixDialog *dialog)
   GtkWidget *scrolled, *treeview, *frame, *table;
   GtkWidget *entry, *spinbutton;
   GtkWidget *radio, *check, *image;
-  GdkPixbuf *pixbuf;
   GtkCellRenderer *renderer;
   GtkTreeViewColumn *column;
   GtkTreeSelection *selection;
@@ -937,11 +967,13 @@ create_main_page (EggPrintUnixDialog *dialog)
 
   check = gtk_check_button_new_with_mnemonic (_("_Collate"));
   priv->collate_check = check;
+  g_signal_connect (check, "toggled", G_CALLBACK (update_collate_icon), dialog);
   gtk_widget_show (check);
   gtk_table_attach (GTK_TABLE (table), check,
 		    0, 1, 1, 2,  GTK_FILL, 0,
 		    0, 0);
   check = gtk_check_button_new_with_mnemonic (_("_Reverse"));
+  g_signal_connect (check, "toggled", G_CALLBACK (update_collate_icon), dialog);
   priv->reverse_check = check;
   gtk_widget_show (check);
   gtk_table_attach (GTK_TABLE (table), check,
@@ -949,14 +981,13 @@ create_main_page (EggPrintUnixDialog *dialog)
 		    0, 0);
 
   image = gtk_image_new ();
+  dialog->priv->collate_image = image;
   gtk_widget_show (image);
   gtk_table_attach (GTK_TABLE (table), image,
 		    1, 2, 1, 3, GTK_FILL, 0,
 		    0, 0);
 
-  pixbuf = gdk_pixbuf_new_from_xpm_data (collate_xpm);
-  gtk_image_set_from_pixbuf (GTK_IMAGE (image), pixbuf);
-  g_object_unref (pixbuf);
+  update_collate_icon (NULL, dialog);
   
   label = gtk_label_new (_("General"));
   gtk_widget_show (label);
