@@ -1,3 +1,9 @@
+2006-02-22  Emmanuele Bassi  <ebassi@cvs.gnome.org>
+
+	* libegg/recentchooser/eggrecentmanager.c: some code style clean ups;
+	removed mention of the egg_recent_manager_get_uris() function from
+	the API documentation.
+
 2006-02-19  Emmanuele Bassi  <ebassi@cvs.gnome.org>
 
 	Re-sync with my development trunk.

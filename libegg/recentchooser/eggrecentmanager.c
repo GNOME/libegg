@@ -169,7 +169,6 @@ egg_recent_manager_class_init (EggRecentManagerClass *klass)
   
   gobject_class->set_property = egg_recent_manager_set_property;
   gobject_class->get_property = egg_recent_manager_get_property;
-  
   gobject_class->finalize = egg_recent_manager_finalize;
   
   /**
@@ -215,16 +214,17 @@ egg_recent_manager_class_init (EggRecentManagerClass *klass)
    *
    * Since: 2.10
    */
-  signal_changed = g_signal_new ("changed",
-  				 G_TYPE_FROM_CLASS (klass),
-  				 G_SIGNAL_RUN_LAST,
-  				 G_STRUCT_OFFSET (EggRecentManagerClass, changed),
-  				 NULL, NULL,
-  				 g_cclosure_marshal_VOID__VOID,
-  				 G_TYPE_NONE, 0);
+  signal_changed =
+    g_signal_new ("changed",
+		  G_TYPE_FROM_CLASS (klass),
+		  G_SIGNAL_RUN_LAST,
+		  G_STRUCT_OFFSET (EggRecentManagerClass, changed),
+		  NULL, NULL,
+		  g_cclosure_marshal_VOID__VOID,
+		  G_TYPE_NONE, 0);
   
   klass->changed = egg_recent_manager_real_changed;
-
+  
   g_type_class_add_private (klass, sizeof (EggRecentManagerPrivate));
 }
 
@@ -580,9 +580,9 @@ egg_recent_manager_new (void)
  * @recent_manager: a #EggRecentManager
  * @limit: the maximum number of items to return, or -1.
  *
- * Sets the maximum number of item that the egg_recent_manager_get_uris()
- * and egg_recent_manager_get_items() should return.  If @limit is set
- * to -1, then return all the items.
+ * Sets the maximum number of item that the egg_recent_manager_get_items()
+ * function should return.  If @limit is set to -1, then return all the
+ * items.
  *
  * Since: 2.10
  */
@@ -602,8 +602,8 @@ egg_recent_manager_set_limit (EggRecentManager *recent_manager,
  * egg_recent_manager_get_limit:
  * @recent_manager: a #EggRecentManager
  *
- * Gets the maximum number of items that the egg_recent_manager_get_uris()
- * and egg_recent_manager_get_items() functions should return.
+ * Gets the maximum number of items that the egg_recent_manager_get_items()
+ * function should return.
  *
  * Return value: the number of items to return, or -1 for every item.
  *
