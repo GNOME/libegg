@@ -71,20 +71,23 @@ on_more_activate (GtkWidget *menu_item,
   GtkWidget *chooser = NULL;
   GtkWidget *window;
   GtkWidget *label;
+  EggRecentManager *manager;
   EggRecentFilter *filter;
   
   window = GTK_WIDGET (user_data);
-  
+
+  manager = g_object_get_data (G_OBJECT (window), "recent-manager");
   chooser = g_object_get_data (G_OBJECT (window), "document-history");
   label = g_object_get_data (G_OBJECT (window), "display-label");
   
   if (!chooser)
     {
-      chooser = egg_recent_chooser_dialog_new ("Document History",
-                                               GTK_WINDOW (window),
-					       GTK_STOCK_CLOSE, GTK_RESPONSE_CANCEL,
-					       GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-					       NULL);
+      chooser = egg_recent_chooser_dialog_new_for_manager ("Document History",
+		      					   GTK_WINDOW (window),
+							   manager,
+							   GTK_STOCK_CLOSE, GTK_RESPONSE_CANCEL,
+							   GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+							   NULL);
       
       /* show the most recently used items first */  
       egg_recent_chooser_set_sort_type (EGG_RECENT_CHOOSER (chooser),
@@ -151,6 +154,42 @@ on_clear_activate (GtkWidget *menu_item,
   g_message ("in on_clear_activate");
 }
 
+enum {
+  TEXT_URI_LIST = 0
+};
+
+static void
+on_drag_data_received (GtkWidget        *widget,
+		       GdkDragContext   *context,
+		       gint              x,
+		       gint              y,
+		       GtkSelectionData *data,
+		       guint             info,
+		       guint             time_,
+		       gpointer          user_data)
+{
+  if (info == TEXT_URI_LIST)
+    {
+      gchar **uris = gtk_selection_data_get_uris (data);
+      gsize i;
+
+      for (i = 0; i < g_strv_length (uris); i++)
+        {
+          g_print ("Received URI := '%s'\n", uris[i]);
+	}
+
+      g_strfreev (uris);
+
+      gtk_drag_finish (context, TRUE, FALSE, time_);
+    }
+  else
+    gtk_drag_finish (context, FALSE, FALSE, time_);
+}
+
+static const GtkTargetEntry entries[] = {
+  { "text/uri-list", 0, TEXT_URI_LIST },
+};
+
 int
 main (int argc, char *argv[])
 {
@@ -161,14 +200,27 @@ main (int argc, char *argv[])
   GtkWidget *image;
   GtkWidget *label;
   GladeXML *xml;
+  EggRecentManager *manager;
   
   gtk_init (&argc, &argv);
+
+  manager = egg_recent_manager_new ();
   
   xml = glade_xml_new ("test-recent-menu.glade", "main_window", NULL);
   main_window = glade_xml_get_widget (xml, "main_window");
   open_recent = glade_xml_get_widget (xml, "open_recent1");
   label = glade_xml_get_widget (xml, "label1");
+
+  g_object_set_data (G_OBJECT (main_window), "recent-manager", manager);
+
+  gtk_drag_dest_set (label,
+		     GTK_DEST_DEFAULT_ALL,
+		     entries,
+		     G_N_ELEMENTS (entries),
+		     GDK_ACTION_COPY);
   
+  g_signal_connect (main_window, "drag-data-received",
+		    G_CALLBACK (on_drag_data_received), manager);
   g_signal_connect (main_window, "destroy",
   		    G_CALLBACK (gtk_main_quit), NULL);
   
@@ -176,12 +228,11 @@ main (int argc, char *argv[])
   g_object_set_data (G_OBJECT (main_window), "display-label", label);
 
   /* the recently used resources sub-menu */
-  recent_menu = egg_recent_chooser_menu_new ();
+  recent_menu = egg_recent_chooser_menu_new_for_manager (manager);
   egg_recent_chooser_set_limit (EGG_RECENT_CHOOSER (recent_menu), 4);
   egg_recent_chooser_set_sort_type (EGG_RECENT_CHOOSER (recent_menu),
 		                    EGG_RECENT_SORT_MRU);
-  egg_recent_chooser_set_show_tips (EGG_RECENT_CHOOSER (recent_menu),
-		  		    TRUE);
+  egg_recent_chooser_set_show_tips (EGG_RECENT_CHOOSER (recent_menu), TRUE);
   egg_recent_chooser_set_show_icons (EGG_RECENT_CHOOSER (recent_menu), TRUE);
   g_signal_connect (recent_menu, "item-activated",
   		    G_CALLBACK (on_item_activated), main_window);

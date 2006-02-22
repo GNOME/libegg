@@ -1,5 +1,15 @@
 2006-02-22  Emmanuele Bassi  <ebassi@cvs.gnome.org>
 
+	* libegg/recentchooser/eggrecentchooserdefault.c
+	(append_uri_to_urilist), (recent_view_drag_data_get_cb): use the
+	gtk_selection_data_set_uris() function instead of building our own
+	uri list string.
+
+	* libegg/recentchooser/test-recent-menu.c: add a drop target for
+	testing drag and drop from the EggRecentChooserDialog.
+
+2006-02-22  Emmanuele Bassi  <ebassi@cvs.gnome.org>
+
 	* libegg/recentchooser/eggrecentmanager.c: some code style clean ups;
 	removed mention of the egg_recent_manager_get_uris() function from
 	the API documentation.

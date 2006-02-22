@@ -1684,17 +1684,24 @@ recent_view_drag_begin_cb (GtkWidget      *widget,
     gtk_drag_set_icon_default (context);
 }
 
+typedef struct
+{
+  gchar **uri_list;
+  gsize next_pos;
+} DragData;
+
 static void
 append_uri_to_urilist (GtkTreeModel *model,
 		       GtkTreePath  *path,
 		       GtkTreeIter  *iter,
 		       gpointer      user_data)
 {
-  GString **uri_list = (GString **) user_data;
+  DragData *drag_data = (DragData *) user_data;
   GtkTreeModel *child_model;
   GtkTreeIter child_iter;
   gchar *uri = NULL;
-  
+  gsize pos;
+
   child_model = gtk_tree_model_filter_get_model (GTK_TREE_MODEL_FILTER (model));
   gtk_tree_model_filter_convert_iter_to_child_iter (GTK_TREE_MODEL_FILTER (model),
   						    &child_iter,
@@ -1703,11 +1710,10 @@ append_uri_to_urilist (GtkTreeModel *model,
   		      RECENT_URI_COLUMN, &uri,
   		      -1);
   g_assert (uri != NULL);
-  
-  if (*uri_list == NULL)
-    *uri_list = g_string_sized_new (strlen (uri) + 3);
-    
-  g_string_append_printf (*uri_list, "%s\r\n", uri);
+
+  pos = drag_data->next_pos;
+  drag_data->uri_list[pos] = g_strdup (uri);
+  drag_data->next_pos = pos + 1;
 }
 
 static void
@@ -1719,22 +1725,25 @@ recent_view_drag_data_get_cb (GtkWidget        *widget,
 			      gpointer          data)
 {
   EggRecentChooserDefault *impl = EGG_RECENT_CHOOSER_DEFAULT (data);
-  GString *uri_list = NULL;
-      
+  DragData *drag_data;
+  gsize n_uris;
+  
+  n_uris = gtk_tree_selection_count_selected_rows (impl->selection);
+  if (n_uris == 0)
+	  return;
+
+  drag_data = g_new (DragData, 1);
+  drag_data->uri_list = g_new0 (gchar *, n_uris + 1);
+  drag_data->next_pos = 0;
+  
   gtk_tree_selection_selected_foreach (impl->selection,
       				       append_uri_to_urilist,
-      				       &uri_list);
-      
-  if (!uri_list)
-    return;
-      
-  gtk_selection_data_set (selection_data,
-      			   selection_data->target,
-      			  8,
-      			  (guchar *) uri_list->str,
-      			  uri_list->len);
-      
-  g_string_free (uri_list, TRUE);
+      				       drag_data);
+  
+  gtk_selection_data_set_uris (selection_data, drag_data->uri_list);
+
+  g_strfreev (drag_data->uri_list);
+  g_free (drag_data);
 }
 
 
