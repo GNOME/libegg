@@ -1,5 +1,11 @@
 2006-02-22  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintunixdialog.c:
+	Pick smaller font size so portrait 16 pages per sheet doesn't
+	cause overruns of the text.
+
+2006-02-22  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintbackendsetting.c: (egg_print_backend_setting_class_init):
 	Fix signal setup.
 	

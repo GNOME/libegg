@@ -1114,7 +1114,7 @@ draw_page_cb (GtkWidget	     *widget,
 
   font = pango_font_description_new ();
   pango_font_description_set_family (font, "sans");
-  pango_font_description_set_absolute_size (font, page_height * 0.7 * PANGO_SCALE);
+  pango_font_description_set_absolute_size (font, page_height * 0.4 * PANGO_SCALE);
   pango_layout_set_font_description (layout, font);
   pango_font_description_free (font);
 
