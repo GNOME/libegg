@@ -72,7 +72,7 @@ egg_print_backend_setting_class_init (EggPrintBackendSettingClass *class)
 
   signals[CHANGED] =
     g_signal_new ("changed",
-		  G_TYPE_FROM_CLASS (gobject_class),
+		  G_TYPE_FROM_CLASS (class),
 		  G_SIGNAL_RUN_LAST,
 		  G_STRUCT_OFFSET (EggPrintBackendSettingClass, changed),
 		  NULL, NULL,

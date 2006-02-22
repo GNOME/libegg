@@ -1,5 +1,16 @@
 2006-02-22  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintbackendsetting.c: (egg_print_backend_setting_class_init):
+	Fix signal setup.
+	
+	* eggprintsettingwidget.[ch]:
+	Add changed signal and egg_print_setting_widget_get_value
+	
+	* eggprintunixdialog.c:
+	Implement page layout preview.
+
+2006-02-22  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintunixdialog.c:
 	Update collate/reverse icon when checkboxes change.
 

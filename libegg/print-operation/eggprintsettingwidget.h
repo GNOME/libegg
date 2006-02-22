@@ -46,16 +46,18 @@ struct _EggPrintSettingWidget
 struct _EggPrintSettingWidgetClass
 {
   GtkHBoxClass parent_class;
+
+  void (*changed) (EggPrintSettingWidget *setting);
 };
 
 GType		 egg_print_setting_widget_get_type   (void) G_GNUC_CONST;
 
-GtkWidget *egg_print_setting_widget_new                (EggPrintBackendSetting *source);
-void       egg_print_setting_widget_set_source         (EggPrintSettingWidget  *setting,
-							EggPrintBackendSetting *source);
-gboolean   egg_print_setting_widget_has_external_label (EggPrintSettingWidget  *setting);
-GtkWidget *egg_print_setting_widget_get_external_label (EggPrintSettingWidget  *setting);
-
+GtkWidget * egg_print_setting_widget_new                (EggPrintBackendSetting *source);
+void        egg_print_setting_widget_set_source         (EggPrintSettingWidget  *setting,
+							 EggPrintBackendSetting *source);
+gboolean    egg_print_setting_widget_has_external_label (EggPrintSettingWidget  *setting);
+GtkWidget * egg_print_setting_widget_get_external_label (EggPrintSettingWidget  *setting);
+const char *egg_print_setting_widget_get_value          (EggPrintSettingWidget  *setting);
 
 G_END_DECLS
 

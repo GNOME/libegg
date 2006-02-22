@@ -49,6 +49,13 @@ struct EggPrintSettingWidgetPrivate
   GtkWidget *label;
 };
 
+enum {
+  CHANGED,
+  LAST_SIGNAL
+};
+
+static guint signals[LAST_SIGNAL] = { 0 };
+
 G_DEFINE_TYPE (EggPrintSettingWidget, egg_print_setting_widget, GTK_TYPE_HBOX);
 
 
@@ -65,6 +72,14 @@ egg_print_setting_widget_class_init (EggPrintSettingWidgetClass *class)
 
   g_type_class_add_private (class, sizeof (EggPrintSettingWidgetPrivate));  
 
+  signals[CHANGED] =
+    g_signal_new ("changed",
+		  G_TYPE_FROM_CLASS (class),
+		  G_SIGNAL_RUN_LAST,
+		  G_STRUCT_OFFSET (EggPrintSettingWidgetClass, changed),
+		  NULL, NULL,
+		  g_cclosure_marshal_VOID__VOID,
+		  G_TYPE_NONE, 0);
 }
 
 static void
@@ -90,6 +105,12 @@ egg_print_setting_widget_finalize (GObject *object)
     G_OBJECT_CLASS (egg_print_setting_widget_parent_class)->finalize (object);
 }
 
+static void
+emit_changed (EggPrintSettingWidget *widget)
+{
+  g_signal_emit (widget, signals[CHANGED], 0);
+}
+
 GtkWidget *
 egg_print_setting_widget_new (EggPrintBackendSetting *source)
 {
@@ -111,6 +132,7 @@ source_changed_cb (EggPrintBackendSetting *source,
 		   EggPrintSettingWidget  *setting)
 {
   update_widgets (setting);
+  emit_changed (setting);
 }
 
 void
@@ -288,6 +310,7 @@ check_toggled_cb (GtkToggleButton *toggle_button,
   egg_print_backend_setting_set_boolean (setting->priv->source,
 					 gtk_toggle_button_get_active (toggle_button));
   g_signal_handler_unblock (setting->priv->source, setting->priv->source_changed_handler);
+  emit_changed (setting);
 }
 
 static void
@@ -302,6 +325,7 @@ combo_changed_cb (GtkWidget *combo,
     egg_print_backend_setting_set (setting->priv->source, value);
   g_free (value);
   g_signal_handler_unblock (setting->priv->source, setting->priv->source_changed_handler);
+  emit_changed (setting);
 }
 
 
@@ -404,4 +428,15 @@ GtkWidget *
 egg_print_setting_widget_get_external_label (EggPrintSettingWidget  *setting)
 {
   return setting->priv->label;
+}
+
+const char *
+egg_print_setting_widget_get_value (EggPrintSettingWidget  *setting)
+{
+  if (setting->priv->source)
+    {
+      return setting->priv->source->value;
+    }
+  
+  return "";
 }

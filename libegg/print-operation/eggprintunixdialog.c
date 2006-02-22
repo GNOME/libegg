@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "config.h"
 //#include <glib/gi18n-lib.h>
@@ -89,6 +90,8 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *collate_check;
   GtkWidget *reverse_check;
   GtkWidget *collate_image;
+  GtkWidget *orientation_combo;
+  GtkWidget *page_layout_preview;
   EggPrintSettingWidget *pages_per_sheet;
   EggPrintSettingWidget *duplex;
   EggPrintSettingWidget *paper_size;
@@ -997,6 +1000,33 @@ create_main_page (EggPrintUnixDialog *dialog)
   
 }
 
+static EggPageOrientation
+dialog_get_orientation (EggPrintUnixDialog *dialog)
+{
+  return (EggPageOrientation)gtk_combo_box_get_active (GTK_COMBO_BOX (dialog->priv->orientation_combo));
+}
+
+static int 
+dialog_get_pages_per_sheet (EggPrintUnixDialog *dialog)
+{
+  const char *val;
+  int num;
+
+  val = egg_print_setting_widget_get_value (dialog->priv->pages_per_sheet);
+
+  num = 1;
+  
+  if (val)
+    {
+      num = atoi(val);
+      if (num < 1)
+	num = 1;
+    }
+  
+  return num;
+}
+
+
 static gboolean
 draw_page_cb (GtkWidget	     *widget,
 	      GdkEventExpose      *event,
@@ -1004,16 +1034,62 @@ draw_page_cb (GtkWidget	     *widget,
 {
   cairo_t *cr;
   double ratio;
-  int w, h, shadow_offset;
+  int w, h, tmp, shadow_offset;
+  int pages_x, pages_y, i, x, y, layout_w, layout_h;
+  double page_width, page_height;
+  EggPageOrientation orientation;
+  gboolean landscape;
+  PangoLayout *layout;
+  PangoFontDescription *font;
+  char *text;
   
+  orientation = dialog_get_orientation (dialog);
+  landscape =
+    (orientation == EGG_PAGE_ORIENTATION_LANDSCAPE) ||
+    (orientation == EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE);
   
   cr = gdk_cairo_create (widget->window);
-
+  
   ratio = 1.4142;
 
   w = (EXAMPLE_PAGE_AREA_SIZE - 3) / ratio;
   h = w * ratio;
 
+  switch (dialog_get_pages_per_sheet (dialog)) {
+  default:
+  case 1:
+    pages_x = 1; pages_y = 1;
+    break;
+  case 2:
+    landscape = !landscape;
+    pages_x = 1; pages_y = 2;
+    break;
+  case 4:
+    pages_x = 2; pages_y = 2;
+    break;
+  case 6:
+    landscape = !landscape;
+    pages_x = 2; pages_y = 3;
+    break;
+  case 9:
+    pages_x = 3; pages_y = 3;
+    break;
+  case 16:
+    pages_x = 4; pages_y = 4;
+    break;
+  }
+
+  if (landscape)
+    {
+      tmp = w;
+      w = h;
+      h = tmp;
+
+      tmp = pages_x;
+      pages_x = pages_y;
+      pages_y = tmp;
+    }
+  
   shadow_offset = 3;
   
   cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 0.5);
@@ -1029,7 +1105,52 @@ draw_page_cb (GtkWidget	     *widget,
   cairo_set_source_rgb (cr, 0.0, 0.0, 0.0);
   cairo_stroke (cr);
 
+  i = 1;
+
+  page_width = (double)w / pages_x;
+  page_height = (double)h / pages_y;
+
+  layout  = pango_cairo_create_layout (cr);
+
+  font = pango_font_description_new ();
+  pango_font_description_set_family (font, "sans");
+  pango_font_description_set_absolute_size (font, page_height * 0.7 * PANGO_SCALE);
+  pango_layout_set_font_description (layout, font);
+  pango_font_description_free (font);
+
+  pango_layout_set_width (layout, page_width * PANGO_SCALE);
+  pango_layout_set_alignment (layout, PANGO_ALIGN_CENTER);
+  
+  for (y = 0; y < pages_y; y++)
+    {
+      for (x = 0; x < pages_x; x++)
+	{
+	  text = g_strdup_printf ("%d", i++);
+	  pango_layout_set_text (layout, text, -1);
+	  g_free (text);
+	  pango_layout_get_size (layout, &layout_w, &layout_h);
+	  cairo_save (cr);
+	  cairo_translate (cr,
+			   x * page_width,
+			   y * page_height + (page_height - layout_h / 1024.0) / 2
+			   );
+	  
+	  pango_cairo_show_layout (cr, layout);
+	  cairo_restore (cr);
+	}
+    }
+  
+  
+
+  
   return TRUE;
+}
+
+static void
+redraw_page_layout_preview (EggPrintUnixDialog *dialog)
+{
+  if (dialog->priv->page_layout_preview)
+    gtk_widget_queue_draw (dialog->priv->page_layout_preview);
 }
 
 static void
@@ -1062,6 +1183,7 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 0);
 
   widget = egg_print_setting_widget_new (NULL);
+  g_signal_connect_swapped (widget, "changed", G_CALLBACK (redraw_page_layout_preview), dialog);
   priv->pages_per_sheet = EGG_PRINT_SETTING_WIDGET (widget);
   gtk_widget_show (widget);
   gtk_table_attach (GTK_TABLE (table), widget,
@@ -1112,10 +1234,13 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 0);
 
   combo = gtk_combo_box_new_text ();
+  g_signal_connect_swapped (combo, "changed", G_CALLBACK (redraw_page_layout_preview), dialog);
+  priv->orientation_combo = combo;
   gtk_widget_show (combo);
   gtk_table_attach (GTK_TABLE (table), combo,
 		    1, 2, 3, 4,  GTK_FILL, 0,
 		    0, 0);
+  /* In enum order: */
   gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Portrait"));  
   gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Landscape"));  
   gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Reverse Portrait"));  
@@ -1205,6 +1330,7 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
   gtk_box_pack_start (GTK_BOX (main_vbox), hbox2, TRUE, TRUE, 6);
 
   draw = gtk_drawing_area_new ();
+  dialog->priv->page_layout_preview = draw;
   gtk_widget_set_size_request (draw, 200, 200);
   g_signal_connect (draw, "expose_event", G_CALLBACK (draw_page_cb), dialog);
   gtk_widget_show (draw);
