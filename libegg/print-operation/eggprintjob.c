@@ -216,12 +216,10 @@ egg_print_job_prep (EggPrintJob *job,
   if (error != NULL && *error != NULL)
     return FALSE;
 
-  job->priv->surface = egg_print_backend_printer_create_cairo_surface (
-                       job->priv->backend,
-       		       job->priv->printer,
-		       job->priv->width,
-		       job->priv->height,
-		       job->priv->cache_fd);
+  job->priv->surface = _egg_printer_create_cairo_surface (job->priv->printer,
+							  job->priv->width,
+							  job->priv->height,
+							  job->priv->cache_fd);
 
   return TRUE;
 }

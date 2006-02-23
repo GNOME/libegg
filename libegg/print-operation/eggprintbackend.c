@@ -142,18 +142,6 @@ _egg_print_backend_create (const char *backend_name)
   return NULL;
 }
 
-cairo_surface_t *
-egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
-                                                EggPrinter *printer,
-                                                gdouble width, 
-                                                gdouble height,
-						gint cache_fd)
-{
-  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->printer_create_cairo_surface (print_backend, printer, width, height, cache_fd);
-}
-
 EggPrinter *
 egg_print_backend_find_printer (EggPrintBackend *print_backend,
                                 const gchar *printer_name)
@@ -180,26 +168,4 @@ egg_print_backend_print_stream (EggPrintBackend *print_backend,
                                                                     data_fd,
                                                                     callback,
                                                                     user_data);
-}
-
-EggPrintBackendSettingSet *
-egg_print_backend_create_settings (EggPrintBackend *print_backend,
-				   EggPrinter *printer)
-{
-  g_return_if_fail (EGG_IS_PRINT_BACKEND (print_backend));
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->create_settings (print_backend,
-								       printer);
-}
-
-gboolean 
-egg_print_backend_mark_conflicts  (EggPrintBackend           *print_backend,
-				   EggPrinter                *printer,
-				   EggPrintBackendSettingSet *settings)
-{
-  g_return_if_fail (EGG_IS_PRINT_BACKEND (print_backend));
-
-  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->mark_conflicts (print_backend,
-								      printer,
-								      settings);
 }

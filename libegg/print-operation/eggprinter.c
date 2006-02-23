@@ -190,3 +190,40 @@ egg_printer_prep_job (EggPrinter *printer,
   return job;
 }
 
+EggPrintBackendSettingSet *
+_egg_printer_get_backend_settings (EggPrinter *printer)
+{
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
+  return backend_iface->printer_get_backend_settings (printer);
+}
+
+gboolean
+_egg_printer_mark_conflicts (EggPrinter                *printer,
+			     EggPrintBackendSettingSet *settings)
+{
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
+  return backend_iface->printer_mark_conflicts (printer, settings);
+}
+  
+void
+_egg_printer_add_backend_settings (EggPrinter                *printer,
+				   EggPrintBackendSettingSet *backend_settings,
+				   EggPrinterSettings        *settings)
+{
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
+  return backend_iface->printer_add_backend_settings (printer, backend_settings, settings);
+}
+
+cairo_surface_t *
+_egg_printer_create_cairo_surface (EggPrinter *printer,
+				   gdouble width, 
+				   gdouble height,
+				   gint cache_fd)
+{
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
+
+  return backend_iface->printer_create_cairo_surface (printer, width, height, cache_fd);
+}
+
+
+

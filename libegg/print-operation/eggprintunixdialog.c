@@ -115,8 +115,8 @@ struct EggPrintUnixDialogPrivate
   EggPrintBackend *print_backend;
   
   EggPrinter *current_printer;
-  EggPrintBackendSettingSet *settings;
-  gulong settings_changed_handler;
+  EggPrintBackendSettingSet *backend_settings;
+  gulong backend_settings_changed_handler;
   gulong mark_conflicts_id;
 
   gint current_page;
@@ -361,10 +361,10 @@ egg_print_unix_dialog_finalize (GObject *object)
       dialog->priv->current_printer = NULL;
     }
 	
-  if (dialog->priv->settings)
+  if (dialog->priv->backend_settings)
     {
-      g_object_unref (dialog->priv->settings);
-      dialog->priv->settings = NULL;
+      g_object_unref (dialog->priv->backend_settings);
+      dialog->priv->backend_settings = NULL;
     }
   
   if (G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize)
@@ -563,7 +563,7 @@ setup_setting (EggPrintUnixDialog *dialog,
 {
   EggPrintBackendSetting *setting;
 
-  setting = egg_print_backend_setting_set_lookup (dialog->priv->settings, setting_name);
+  setting = egg_print_backend_setting_set_lookup (dialog->priv->backend_settings, setting_name);
   egg_print_setting_widget_set_source (widget, setting);
 }
 
@@ -634,23 +634,23 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   setup_setting (dialog, "gtk-paper-source", dialog->priv->paper_source);
   setup_setting (dialog, "gtk-output-tray", dialog->priv->output_tray);
 
-  setup_page_table (dialog->priv->settings,
+  setup_page_table (dialog->priv->backend_settings,
 		    "ImageQualityPage",
 		    dialog->priv->image_quality_table,
 		    dialog->priv->image_quality_page);
   
-  setup_page_table (dialog->priv->settings,
+  setup_page_table (dialog->priv->backend_settings,
 		    "FinishingPage",
 		    dialog->priv->finishing_table,
 		    dialog->priv->finishing_page);
 
-  setup_page_table (dialog->priv->settings,
+  setup_page_table (dialog->priv->backend_settings,
 		    "ColorPage",
 		    dialog->priv->color_table,
 		    dialog->priv->color_page);
 
   /* Put the rest of the groups in the advanced page */
-  groups = egg_print_backend_setting_set_get_groups (dialog->priv->settings);
+  groups = egg_print_backend_setting_set_get_groups (dialog->priv->backend_settings);
 
   for (l = groups; l != NULL; l = l->next)
     {
@@ -666,7 +666,7 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
 
       table = gtk_table_new (1, 2, FALSE);
       
-      egg_print_backend_setting_set_foreach_in_group (dialog->priv->settings,
+      egg_print_backend_setting_set_foreach_in_group (dialog->priv->backend_settings,
 						      group,
 						      add_setting_to_table,
 						      table);
@@ -691,7 +691,6 @@ static void
 mark_conflicts (EggPrintUnixDialog *dialog)
 {
   EggPrinter *printer;
-  EggPrintBackend *backend;
   gboolean have_conflict;
 
   have_conflict = FALSE;
@@ -701,18 +700,16 @@ mark_conflicts (EggPrintUnixDialog *dialog)
   if (printer)
     {
 
-      g_signal_handler_block (dialog->priv->settings,
-			      dialog->priv->settings_changed_handler);
+      g_signal_handler_block (dialog->priv->backend_settings,
+			      dialog->priv->backend_settings_changed_handler);
       
-      egg_print_backend_setting_set_clear_conflicts (dialog->priv->settings);
+      egg_print_backend_setting_set_clear_conflicts (dialog->priv->backend_settings);
       
-      backend = egg_printer_get_backend (printer);
-      have_conflict = egg_print_backend_mark_conflicts (backend, printer,
-							dialog->priv->settings);
-      g_object_unref (backend);
+      have_conflict = _egg_printer_mark_conflicts (printer,
+						   dialog->priv->backend_settings);
       
-      g_signal_handler_unblock (dialog->priv->settings,
-				dialog->priv->settings_changed_handler);
+      g_signal_handler_unblock (dialog->priv->backend_settings,
+				dialog->priv->backend_settings_changed_handler);
 
     }
 
@@ -776,7 +773,6 @@ static void
 selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialog)
 {
   EggPrinter *printer;
-  EggPrintBackend *backend;
   GtkTreeIter iter;
 
   printer = NULL;
@@ -792,12 +788,12 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
       return;
     }
 
-  if (dialog->priv->settings)
+  if (dialog->priv->backend_settings)
     {
-      g_signal_handler_disconnect (dialog->priv->settings,
-				   dialog->priv->settings_changed_handler);
-      g_object_unref (dialog->priv->settings);
-      dialog->priv->settings = NULL;  
+      g_signal_handler_disconnect (dialog->priv->backend_settings,
+				   dialog->priv->backend_settings_changed_handler);
+      g_object_unref (dialog->priv->backend_settings);
+      dialog->priv->backend_settings = NULL;  
 
       clear_per_printer_ui (dialog);
     }
@@ -807,14 +803,10 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
 
   dialog->priv->current_printer = printer;
   
-  /* TODO: Shouldn't the call was on the printer, not the backend */
-  backend = egg_printer_get_backend (printer);
-  dialog->priv->settings =
-    egg_print_backend_create_settings (backend, printer);
-  g_object_unref (backend);
+  dialog->priv->backend_settings = _egg_printer_get_backend_settings (printer);
   
-  dialog->priv->settings_changed_handler = 
-    g_signal_connect_swapped (dialog->priv->settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
+  dialog->priv->backend_settings_changed_handler = 
+    g_signal_connect_swapped (dialog->priv->backend_settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
   
   update_dialog_from_settings (dialog);
 }

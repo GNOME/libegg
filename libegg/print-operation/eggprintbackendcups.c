@@ -99,23 +99,23 @@ struct _EggPrintBackendCups
 
 static GObjectClass *backend_parent_class;
 
-static void egg_print_backend_cups_class_init   (EggPrintBackendCupsClass *class);
-static void egg_print_backend_cups_iface_init   (EggPrintBackendIface     *iface);
-static void egg_print_backend_cups_init         (EggPrintBackendCups      *impl);
-static void egg_print_backend_cups_finalize     (GObject                  *object);
-static EggPrintBackendSettingSet * egg_print_backend_cups_create_settings (EggPrintBackend *print_backend,
-									   EggPrinter *printer);
-static gboolean egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend,
-							EggPrinter                *printer,
-							EggPrintBackendSettingSet *settings);
-static void _cups_request_printer_list (EggPrintBackendCups *print_backend);
-static void    _cups_request_execute (EggPrintBackendCups *print_backend,
-                                      EggCupsRequest      *request,
-                                      EggPrintCupsResponseCallbackFunc callback,
-                                      gpointer             user_data,
-                                      GDestroyNotify       notify,
-                                      GError             **err);
-
+static void                       egg_print_backend_cups_class_init (EggPrintBackendCupsClass          *class);
+static void                       egg_print_backend_cups_iface_init (EggPrintBackendIface              *iface);
+static void                       egg_print_backend_cups_init       (EggPrintBackendCups               *impl);
+static void                       egg_print_backend_cups_finalize   (GObject                           *object);
+static void                       _cups_request_printer_list        (EggPrintBackendCups               *print_backend);
+static void                       _cups_request_execute             (EggPrintBackendCups               *print_backend,
+								     EggCupsRequest                    *request,
+								     EggPrintCupsResponseCallbackFunc   callback,
+								     gpointer                           user_data,
+								     GDestroyNotify                     notify,
+								     GError                           **err);
+static void                       cups_printer_add_backend_settings (EggPrinter                        *printer,
+								     EggPrintBackendSettingSet         *backend_settings,
+								     EggPrinterSettings                *settings);
+static gboolean                   cups_printer_mark_conflicts       (EggPrinter                        *printer,
+								     EggPrintBackendSettingSet         *settings);
+static EggPrintBackendSettingSet *cups_printer_get_backend_settings (EggPrinter                        *printer);
 
 /*
  * EggPrintBackendCups
@@ -203,18 +203,15 @@ _cairo_write_to_cups (void *cache_fd_as_pointer,
 
 
 static cairo_surface_t *
-egg_print_backend_cups_printer_create_cairo_surface (EggPrintBackend *backend, 
-                                                     EggPrinter *printer,
-                                                     gdouble width, 
-                                                     gdouble height,
-						     gint cache_fd)
+cups_printer_create_cairo_surface (EggPrinter *printer,
+				   gdouble width, 
+				   gdouble height,
+				   gint cache_fd)
 {
   cairo_surface_t *surface;
-  EggPrintBackendCups *cups_backend;
   
   /* TODO: check if it is a ps or pdf printer */
   
-  cups_backend = EGG_PRINT_BACKEND_CUPS (backend);
   surface = cairo_pdf_surface_create_for_stream  (_cairo_write_to_cups, GINT_TO_POINTER (cache_fd), width, height);
 
 
@@ -312,11 +309,12 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
 static void
 egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
 {
-  iface->printer_create_cairo_surface = egg_print_backend_cups_printer_create_cairo_surface;
   iface->find_printer = egg_print_backend_cups_find_printer;
   iface->print_stream = egg_print_backend_cups_print_stream;
-  iface->create_settings = egg_print_backend_cups_create_settings;
-  iface->mark_conflicts = egg_print_backend_cups_mark_conflicts;
+  iface->printer_create_cairo_surface = cups_printer_create_cairo_surface;
+  iface->printer_get_backend_settings = cups_printer_get_backend_settings;
+  iface->printer_mark_conflicts = cups_printer_mark_conflicts;
+  iface->printer_add_backend_settings = cups_printer_add_backend_settings;
 }
 
 static void
@@ -1112,8 +1110,7 @@ handle_group (EggPrintBackendSettingSet *set,
 }
 
 static EggPrintBackendSettingSet *
-egg_print_backend_cups_create_settings (EggPrintBackend *print_backend,
-					EggPrinter *printer)
+cups_printer_get_backend_settings (EggPrinter *printer)
 {
   EggPrintBackendSettingSet *set;
   EggPrintBackendSetting *setting;
@@ -1216,9 +1213,8 @@ set_conflicts_from_group (EggPrintBackendSettingSet *set,
 }
 
 static gboolean
-egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend,
-					EggPrinter                *printer,
-					EggPrintBackendSettingSet *settings)
+cups_printer_mark_conflicts  (EggPrinter                *printer,
+			      EggPrintBackendSettingSet *settings)
 {
   ppd_file_t *ppd_file;
   int num_conflicts;
@@ -1243,3 +1239,11 @@ egg_print_backend_cups_mark_conflicts  (EggPrintBackend           *print_backend
 
   return num_conflicts > 0;
 }
+
+static void
+cups_printer_add_backend_settings (EggPrinter *printer,
+				   EggPrintBackendSettingSet *backend_settings,
+				   EggPrinterSettings *settings)
+{
+}
+

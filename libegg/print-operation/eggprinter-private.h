@@ -22,6 +22,9 @@
 #define __EGG_PRINTER_PRIVATE_H__
 
 #include <glib.h>
+#include "eggprinter.h"
+#include "eggprintersettings.h"
+#include "eggprintbackendsettingset.h"
 
 G_BEGIN_DECLS
 struct _EggPrinterPrivate
@@ -41,6 +44,18 @@ struct _EggPrinterPrivate
   GFreeFunc backend_data_destroy_notify;
   struct _EggPrintBackend *backend;
 };
+
+
+EggPrintBackendSettingSet *_egg_printer_get_backend_settings (EggPrinter                *printer);
+gboolean                   _egg_printer_mark_conflicts       (EggPrinter                *printer,
+							      EggPrintBackendSettingSet *settings);
+void                       _egg_printer_add_backend_settings (EggPrinter                *printer,
+							      EggPrintBackendSettingSet *backend_settings,
+							      EggPrinterSettings        *settings);
+cairo_surface_t *          _egg_printer_create_cairo_surface (EggPrinter                *printer,
+							      gdouble                    width,
+							      gdouble                    height,
+							      gint                       cache_fd);
 
 G_END_DECLS
 #endif /* __EGG_PRINT_OPERATION_PRIVATE_H__ */

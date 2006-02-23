@@ -33,7 +33,8 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#include "eggprinter.h"
+#include "eggprinter-private.h"
+#include "eggprintersettings.h"
 #include "eggprintbackendsettingset.h"
 #include "eggprintjob.h"
 
@@ -62,17 +63,10 @@ struct _EggPrintBackendIface
 {
   GTypeInterface base_iface;
 
-  /* Methods
-   */
-  cairo_surface_t * (*printer_create_cairo_surface) (EggPrintBackend *print_backend,
-                                                     EggPrinter *printer,
-                                                     gdouble height,
-                                                     gdouble width,
-						     gint cache_fd);
+  /* Global backend methods: */
 
   EggPrinter * (*find_printer) (EggPrintBackend *print_backend,
                                 const gchar *printer_name);
-
   void         (*print_stream) (EggPrintBackend *print_backend,
                                 EggPrintJob *job,
 				const gchar *title,
@@ -80,14 +74,17 @@ struct _EggPrintBackendIface
 				EggPrintJobCompleteFunc callback,
 				gpointer user_data);
 
-  EggPrintBackendSettingSet * (*create_settings) (EggPrintBackend *print_backend,
-						  EggPrinter *printer);
-  gboolean (*mark_conflicts)                     (EggPrintBackend *print_backend,
-						  EggPrinter *printer,
-						  EggPrintBackendSettingSet *settings);
-
-  //GtkWidget * (*
-  
+  /* Printer methods: */
+  cairo_surface_t *           (*printer_create_cairo_surface) (EggPrinter *printer,
+							       gdouble height,
+							       gdouble width,
+							       gint cache_fd);
+  EggPrintBackendSettingSet * (*printer_get_backend_settings) (EggPrinter *printer);
+  gboolean                    (*printer_mark_conflicts)       (EggPrinter *printer,
+							       EggPrintBackendSettingSet *settings);
+  void                        (*printer_add_backend_settings) (EggPrinter *printer,
+							       EggPrintBackendSettingSet *backend_settings,
+							       EggPrinterSettings *settings);
 
   /* Signals 
    */
@@ -97,12 +94,6 @@ struct _EggPrintBackendIface
 };
 
 GType   egg_print_backend_get_type       (void) G_GNUC_CONST;
-
-cairo_surface_t *egg_print_backend_printer_create_cairo_surface (EggPrintBackend *print_backend,
-                                                                 EggPrinter *printer,
-                                                                 gdouble width, 
-                                                                 gdouble height,
-								 gint cache_fd);
 
 EggPrinter *egg_print_backend_find_printer                      (EggPrintBackend *print_backend,
                                                                  const gchar *printer_name);
@@ -114,15 +105,6 @@ void egg_print_backend_print_stream                             (EggPrintBackend
 				                                 EggPrintJobCompleteFunc callback,
 				                                 gpointer user_data);
 
-EggPrintBackendSettingSet *egg_print_backend_create_settings (EggPrintBackend           *print_backend,
-							      EggPrinter                *printer);
-gboolean                   egg_print_backend_mark_conflicts  (EggPrintBackend           *print_backend,
-							      EggPrinter                *printer,
-							      EggPrintBackendSettingSet *settings);
-
-
 G_END_DECLS
 
 #endif /* __EGG_PRINT_BACKEND_H__ */
-
-

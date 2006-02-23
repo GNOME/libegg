@@ -1,5 +1,19 @@
 2006-02-23  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintbackend.[ch]
+	* eggprinter-private.h:
+	* eggprinter.c:
+	Move printer-only operations to _egg_printer_*() which don't need to take
+	a backend argument. (The printer knows its backend)
+	Add new printer operation agg_backend_settings.
+	
+	* eggprintbackendcups.c:
+	* eggprintjob.c:
+	* eggprintunixdialog.c:
+	Update due to above changes.
+
+2006-02-23  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintenums.h:
 	Add EggPageSet.
 	
