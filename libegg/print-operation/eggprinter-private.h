@@ -40,8 +40,6 @@ struct _EggPrinterPrivate
   gchar *state_message;  
   gint job_count;
 
-  void *backend_data;
-  GFreeFunc backend_data_destroy_notify;
   struct _EggPrintBackend *backend;
 };
 
@@ -57,5 +55,6 @@ cairo_surface_t *          _egg_printer_create_cairo_surface (EggPrinter        
 							      gdouble                    height,
 							      gint                       cache_fd);
 
+void                       _egg_printer_emit_settings_retrieved (EggPrinter *printer);
 G_END_DECLS
 #endif /* __EGG_PRINT_OPERATION_PRIVATE_H__ */

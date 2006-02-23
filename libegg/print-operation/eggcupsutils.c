@@ -214,7 +214,7 @@ egg_cups_request_free (EggCupsRequest *request)
 }
 
 gboolean 
-egg_cups_request_read_write_dispatch (EggCupsRequest *request)
+egg_cups_request_read_write (EggCupsRequest *request)
 {
   if (request->type == EGG_CUPS_POST)
     post_states[request->state](request);

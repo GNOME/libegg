@@ -117,6 +117,11 @@ static gboolean                   cups_printer_mark_conflicts       (EggPrinter 
 								     EggPrintBackendSettingSet         *settings);
 static EggPrintBackendSettingSet *cups_printer_get_backend_settings (EggPrinter                        *printer);
 
+static void
+_cups_request_ppd (EggPrintBackend *print_backend,
+                   EggPrinter      *printer);
+
+
 /*
  * EggPrintBackendCups
  */
@@ -348,7 +353,7 @@ _cups_dispatch_watch_check (GSource *source)
 
   dispatch = (EggPrintCupsDispatchWatch *) source;
 
-  return egg_cups_request_read_write_dispatch (dispatch->request);
+  return egg_cups_request_read_write (dispatch->request);
 }
 
 static gboolean
@@ -362,7 +367,7 @@ _cups_dispatch_watch_prepare (GSource *source,
 
   *timeout_ = 250;
   
-  return egg_cups_request_read_write_dispatch (dispatch->request);
+  return egg_cups_request_read_write (dispatch->request);
 }
 
 static gboolean
@@ -439,6 +444,14 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   EggPrinterCups *cups_printer;
   EggPrinter *printer;
 
+  char uri[HTTP_MAX_URI],	/* Printer URI */
+       method[HTTP_MAX_URI],	/* Method/scheme name */
+       username[HTTP_MAX_URI],	/* Username:password */
+       hostname[HTTP_MAX_URI],	/* Hostname */
+       resource[HTTP_MAX_URI];	/* Resource name */
+  int  port;			/* Port number */
+
+
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
 
   printer_name = (gchar *)user_data;
@@ -467,6 +480,17 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
     _CUPS_MAP_ATTR_INT (attr, printer->priv->job_count, "queued-job-count");
 
   }
+
+  httpSeparate(cups_printer->priv->printer_uri, method, username, hostname,
+	       &port, resource);
+
+  gethostname(uri, sizeof(uri));
+
+  if (strcasecmp(uri, hostname) == 0)
+    strcpy(hostname, "localhost");
+
+  cups_printer->priv->hostname = g_strdup (hostname);
+  cups_printer->priv->port = port;
 
   if (printer->priv->is_new)
     {
@@ -567,10 +591,89 @@ _cups_request_printer_list (EggPrintBackendCups *print_backend)
   _cups_request_execute (print_backend,
                          request,
                          (EggPrintCupsResponseCallbackFunc) _cups_request_printer_list_cb,
-			 NULL,
+			 request,
 			 NULL,
                          &error);
 
+}
+
+typedef struct 
+{
+  EggPrinterCups *printer;
+  gint ppd_fd;
+  gchar *ppd_filename;
+} GetPPDData;
+
+static void
+_cups_request_ppd_cb (EggPrintBackendCups *print_backend,
+                      ipp_t *response,
+                      GetPPDData *data)
+{
+  close (data->ppd_fd);
+  data->printer->priv->ppd_filename = data->ppd_filename;
+  data->printer->priv->ppd_file = ppdOpenFile (data->ppd_filename);
+
+  _egg_printer_emit_settings_retrieved (EGG_PRINTER (data->printer));
+
+  g_object_unref (G_OBJECT (data->printer));
+}
+
+static void
+_cups_request_ppd (EggPrintBackend *print_backend,
+                   EggPrinter      *printer)
+{
+  GError *error;
+  EggPrinterCups *cups_printer;
+  EggCupsRequest *request;
+  gchar *resource;
+  http_t *http;
+  GetPPDData *data;
+  
+  cups_printer = EGG_PRINTER_CUPS (printer);
+
+  error = NULL;
+
+  http = httpConnectEncrypt(cups_printer->priv->hostname, 
+                            cups_printer->priv->port,
+                            cupsEncryption());
+
+  data = g_new0 (GetPPDData, 1);
+
+  data->ppd_fd = g_file_open_tmp ("eggprint_ppd_XXXXXX", 
+                                  &data->ppd_filename, 
+                                  &error);
+
+  if (error != NULL)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      httpClose (http);
+      g_free (data);
+      return;
+    }
+    
+  fchmod (data->ppd_fd, S_IRUSR | S_IWUSR);
+
+  data->printer = g_object_ref (G_OBJECT (printer));
+
+  resource = g_strdup_printf ("/printers/%s.ppd", printer->priv->name);
+  request = egg_cups_request_new (http,
+                                  EGG_CUPS_GET,
+				  0,
+                                  data->ppd_fd,
+				  cups_printer->priv->hostname,
+				  resource);
+
+  g_free (resource);
+  
+  /* TODO: encode options here */
+
+  _cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
+                         request,
+                         (EggPrintCupsResponseCallbackFunc) _cups_request_ppd_cb,
+                         data,
+                         g_free,
+                         &error);
 }
 
 char *
@@ -1133,11 +1236,19 @@ cups_printer_get_backend_settings (EggPrinter *printer)
   /* Printer (ppd) specific settings */
   
   ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
-  ppdMarkDefaults (ppd_file);
 
-  for (i = 0; i < ppd_file->num_groups; i++)
-    handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
-  
+  if (ppd_file)
+    {
+      ppdMarkDefaults (ppd_file);
+
+      for (i = 0; i < ppd_file->num_groups; i++)
+        handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
+    }
+  else
+    { 
+       _cups_request_ppd (printer->priv->backend, printer);
+    }
+
   return set;
 }
 

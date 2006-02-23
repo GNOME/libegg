@@ -1,3 +1,22 @@
+2006-02-23  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggcupsutils.c:
+	Fix mismatch in the egg_cups_request_read_write 
+	function and prototype name
+
+	* eggprintbackendcups.c:
+	implement getting of PPD files
+	(cups_printer_get_backend_settings):
+	kick off getting PPD if we don't have one yet
+
+	* eggprinter.c:
+	Add settings-retrieved signal for async settings retrieval
+
+	* eggprintunixdialog.c:
+	Hook up to settings-retrieved signal and update the UI
+	when the settings (PPD file for the cups backend) is 
+	retrieved
+
 2006-02-23  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintercups.[ch]:

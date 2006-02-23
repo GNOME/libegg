@@ -47,7 +47,10 @@ egg_printer_cups_init (EggPrinterCups *printer)
   printer->priv->device_uri = NULL;
   printer->priv->printer_uri = NULL;
   printer->priv->state = 0;
-  printer->priv->ppd_file = ppdOpenFile("test.ppd");
+  printer->priv->hostname = NULL;
+  printer->priv->port = 0;
+  printer->priv->ppd_file = NULL;
+  printer->priv->ppd_filename = NULL;
 }
 
 static void
@@ -59,9 +62,16 @@ egg_printer_cups_finalize (GObject *object)
 
   g_free (printer->priv->device_uri);
   g_free (printer->priv->printer_uri);
+  g_free (printer->priv->hostname);
 
   if (printer->priv->ppd_file)
     ppdClose (printer->priv->ppd_file);
+
+  if (printer->priv->ppd_filename)
+    {
+      unlink (printer->priv->ppd_filename);
+      g_free (printer->priv->ppd_filename);
+    }
   
   if (G_OBJECT_CLASS (egg_printer_cups_parent_class)->finalize)
     G_OBJECT_CLASS (egg_printer_cups_parent_class)->finalize (object);

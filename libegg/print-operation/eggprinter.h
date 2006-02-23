@@ -50,6 +50,8 @@ struct _EggPrinterClass
 {
   GObjectClass parent_class;
 
+  void (*settings_retrieved) (EggPrinter *printer);
+
 };
 
 GType                    egg_printer_get_type             (void) G_GNUC_CONST;

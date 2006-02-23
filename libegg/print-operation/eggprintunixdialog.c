@@ -115,6 +115,7 @@ struct EggPrintUnixDialogPrivate
   EggPrintBackend *print_backend;
   
   EggPrinter *current_printer;
+  gulong current_printer_settings_retrieved_handler;
   EggPrintBackendSettingSet *backend_settings;
   gulong backend_settings_changed_handler;
   gulong mark_conflicts_id;
@@ -751,6 +752,12 @@ schedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
 						dialog);
 }
 
+static void
+update_dialog_with_new_settings (EggPrintUnixDialog *dialog)
+{
+  dialog->priv->backend_settings = _egg_printer_get_backend_settings (dialog->priv->current_printer);
+  update_dialog_from_settings (dialog);
+}
 
 static void
 clear_per_printer_ui (EggPrintUnixDialog *dialog)
@@ -799,10 +806,17 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
     }
 
   if (dialog->priv->current_printer)
-    g_object_unref (dialog->priv->current_printer);
+    {
+      g_signal_handler_disconnect (dialog->priv->current_printer,
+                                   dialog->priv->current_printer_settings_retrieved_handler);
+      g_object_unref (dialog->priv->current_printer);
+    }
 
   dialog->priv->current_printer = printer;
-  
+  dialog->priv->current_printer_settings_retrieved_handler =
+     g_signal_connect_swapped (dialog->priv->current_printer, "settings_retrieved", G_CALLBACK (update_dialog_with_new_settings), dialog);
+
+
   dialog->priv->backend_settings = _egg_printer_get_backend_settings (printer);
   
   dialog->priv->backend_settings_changed_handler = 

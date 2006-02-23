@@ -36,6 +36,14 @@
 
 static void egg_printer_finalize     (GObject *object);
 
+enum {
+  SETTINGS_RETRIEVED,
+  LAST_SIGNAL
+};
+
+static guint signals[LAST_SIGNAL] = { 0 };
+
+
 G_DEFINE_TYPE (EggPrinter, egg_printer, G_TYPE_OBJECT);
 
 static void
@@ -46,6 +54,16 @@ egg_printer_class_init (EggPrinterClass *class)
 
   object_class->finalize = egg_printer_finalize;
 
+  signals[SETTINGS_RETRIEVED] =
+    g_signal_new ("settings-retrieved",
+		  G_TYPE_FROM_CLASS (class),
+		  G_SIGNAL_RUN_LAST,
+		  G_STRUCT_OFFSET (EggPrinterClass, settings_retrieved),
+		  NULL, NULL,
+		  g_cclosure_marshal_VOID__VOID,
+		  G_TYPE_NONE, 0);
+
+
   g_type_class_add_private (class, sizeof (EggPrinterPrivate));  
 }
 
@@ -53,8 +71,6 @@ static void
 egg_printer_init (EggPrinter *printer)
 {
   printer->priv = EGG_PRINTER_GET_PRIVATE (printer); 
-  printer->priv->backend_data = NULL;
-  printer->priv->backend_data_destroy_notify = NULL;
 
   printer->priv->name = NULL;
   printer->priv->location = NULL;
@@ -81,9 +97,6 @@ egg_printer_finalize (GObject *object)
   g_free (printer->priv->state_message);
   g_free (printer->priv->icon_name);
 
-  if (printer->priv->backend_data_destroy_notify)
-    printer->priv->backend_data_destroy_notify (printer->priv->backend_data);
-
   if (G_OBJECT_CLASS (egg_printer_parent_class)->finalize)
     G_OBJECT_CLASS (egg_printer_parent_class)->finalize (object);
 }
@@ -106,17 +119,6 @@ egg_printer_new (void)
                          NULL);
 
   return (EggPrinter *) result;
-}
-
-void
-egg_printer_set_backend_data (EggPrinter *printer,
-                              void *data,
-                              GFreeFunc destroy_notify)
-{
-  EGG_IS_PRINTER (printer);
-
-  printer->priv->backend_data = data;
-  printer->priv->backend_data_destroy_notify = destroy_notify;
 }
 
 EggPrintBackend *
@@ -226,4 +228,9 @@ _egg_printer_create_cairo_surface (EggPrinter *printer,
 }
 
 
+void 
+_egg_printer_emit_settings_retrieved (EggPrinter *printer)
+{
+  g_signal_emit (printer, signals[SETTINGS_RETRIEVED], 0);
 
+}
