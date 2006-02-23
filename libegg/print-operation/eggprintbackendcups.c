@@ -43,6 +43,8 @@
 #include "eggprintercups.h"
 #include "eggprintercups-private.h"
 
+#include "eggcupsutils.h"
+
 #define N_(x) (x)
 #define _(x) (x)
 
@@ -78,15 +80,9 @@ typedef struct
   GSource source;
 
   http_t *http;
-  ipp_t *request;
-  ipp_t *response;
-  gchar *resource;
+  EggCupsRequest *request;
   EggPrintBackendCups *backend;
 
-  gint attempts;
-  EggPrintCupsDispatchState state;
-
-  gint data_fd;                    /* Open file descriptor of the data we wish to send */
 } EggPrintCupsDispatchWatch;
 
 struct _EggPrintBackendCupsClass
@@ -113,12 +109,8 @@ static gboolean egg_print_backend_cups_mark_conflicts  (EggPrintBackend         
 							EggPrinter                *printer,
 							EggPrintBackendSettingSet *settings);
 static void _cups_request_printer_list (EggPrintBackendCups *print_backend);
-static ipp_t * _cups_request_new     (int operation_id);
 static void    _cups_request_execute (EggPrintBackendCups *print_backend,
-                                      ipp_t               *request,
-		                      gint                 data_fd,
-                                      const char          *server, 
-                                      const char          *path,
+                                      EggCupsRequest      *request,
                                       EggPrintCupsResponseCallbackFunc callback,
                                       gpointer             user_data,
                                       GDestroyNotify       notify,
@@ -252,7 +244,7 @@ typedef struct {
 
 void
 _cups_print_cb (EggPrintBackendCups *print_backend,
-                ipp_t *response,
+                ipp_t *request,
                 gpointer user_data)
 {
   GError *error = NULL;
@@ -274,25 +266,30 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
 				     gpointer user_data)
 {
   GError *error;
-  ipp_t *request;
   EggPrinterCups *cups_printer;
   _PrintStreamData *ps;
+  EggCupsRequest *request;
   
   cups_printer = EGG_PRINTER_CUPS (egg_print_job_get_printer (job));
 
   error = NULL;
 
-  request = _cups_request_new (IPP_PRINT_JOB);
+  request = egg_cups_request_new (NULL,
+                                  EGG_CUPS_POST,
+                                  IPP_PRINT_JOB,
+				  data_fd,
+				  NULL,
+				  cups_printer->priv->device_uri);
 
-  ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri",
-               NULL, cups_printer->priv->printer_uri);
+  egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri",
+                                   NULL, cups_printer->priv->printer_uri);
 
-  ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-               NULL, cupsUser());
+  egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
+                                   NULL, cupsUser());
 
   if (title)
-    ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
-                 title);
+    egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
+                                     title);
 
   /* TODO: encode options here */
 
@@ -303,9 +300,6 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
 
   _cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
                          request,
-			 data_fd,
-                         NULL, 
-                         cups_printer->priv->device_uri,
                          (EggPrintCupsResponseCallbackFunc) _cups_print_cb,
                          ps,
                          NULL,
@@ -349,29 +343,6 @@ egg_print_backend_cups_finalize (GObject *object)
   backend_parent_class->finalize (object);
 }
 
-static ipp_t *
-_cups_request_new (int operation_id)
-{
-	ipp_t *request;
-	cups_lang_t *language;
-	
-	language = cupsLangDefault ();
-	request = ippNew ();
-	request->request.op.operation_id = operation_id;
-	request->request.op.request_id = 1;
-	
-	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-		     "attributes-charset", 
-		     NULL, "utf-8");
-	
-	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
-		     "attributes-natural-language", 
-		     NULL, language->language);
-	cupsLangFree (language);
-
-	return request;
-}
-
 static gboolean
 _cups_dispatch_watch_check (GSource *source)
 {
@@ -379,197 +350,7 @@ _cups_dispatch_watch_check (GSource *source)
 
   dispatch = (EggPrintCupsDispatchWatch *) source;
 
-  dispatch->attempts++;
-  if (dispatch->attempts > _CUPS_MAX_ATTEMPTS)
-    {
-      g_warning ("Max attempts reached");
-      goto fail;
-    }
-
-  switch (dispatch->state) 
-    {
-    gchar length[255];
-    http_status_t http_status;
-    ipp_state_t ipp_status;
-    struct stat data_info;
-
-    case DISPATCH_SETUP:
-      if (dispatch->data_fd != 0)
-        {
-          fstat (dispatch->data_fd, &data_info);
-	  sprintf (length, "%lu", (unsigned long)ippLength(dispatch->request) + data_info.st_size);
-
-	}
-      else
-	{
-          sprintf (length, "%lu", (unsigned long)ippLength(dispatch->request));
-        }
-	
-      httpClearFields(dispatch->http);
-      httpSetField(dispatch->http, HTTP_FIELD_CONTENT_LENGTH, length);
-      httpSetField(dispatch->http, HTTP_FIELD_CONTENT_TYPE, "application/ipp");
-      httpSetField(dispatch->http, HTTP_FIELD_AUTHORIZATION, dispatch->http->authstring);
-
-      if (httpPost(dispatch->http, dispatch->resource))
-        {
-          if (httpReconnect(dispatch->http))
-            {
-              g_warning ("failed to reconnect");
-              goto fail;
-            }
-          break;
-        }
-        
-      dispatch->attempts = 0;
-
-      dispatch->state = DISPATCH_REQUEST;
-      dispatch->request->state = IPP_IDLE;
-
-    case DISPATCH_REQUEST:
-      ipp_status = ippWrite(dispatch->http, dispatch->request);
-
-      if (ipp_status == IPP_ERROR)
-        {
-          g_warning ("We got an error writting to the socket");
-          goto fail;
-        }
- 
-     if (ipp_status != IPP_DATA)
-        {
-          /* write attempts don't count
-             since we will get an error
-             if anything goes wrong */
-          dispatch->attempts--;
-          break;
-        } 
-
-    case DISPATCH_SEND:
-      dispatch->state = DISPATCH_SEND;
-      http_status = HTTP_CONTINUE;
-      if (dispatch->data_fd != 0)
-        {
-	  ssize_t bytes;
-	  char buffer[_CUPS_MAX_CHUNK_SIZE];
-
-          if (httpCheck (dispatch->http))
-            http_status = httpUpdate(dispatch->http);
-
-          if (http_status == HTTP_CONTINUE || http_status == HTTP_OK)
-            {
-	      /* send data */
-              bytes = read(dispatch->data_fd, buffer, _CUPS_MAX_CHUNK_SIZE);
-              
-	      if (bytes == 0)
-	        {
-                  dispatch->state = DISPATCH_CHECK;
-		  dispatch->attempts--;
-		  goto check;
-		}
-	  
-	      if (httpWrite(dispatch->http, buffer, (int)bytes) < bytes)
-	        goto fail;
-	  
-              
-	  
-              /* only count an attempt on recoverable errors */
-              dispatch->attempts--;
-              break;
-            }
-	  break;
-        }
-   
-    case DISPATCH_CHECK:
-
-      dispatch->state = DISPATCH_CHECK;
-      http_status = HTTP_CONTINUE;
-
-      if (httpCheck (dispatch->http))
-            http_status = httpUpdate(dispatch->http);
-
-check:
-      if (http_status == HTTP_CONTINUE)
-        {
-	  /* only count an attempt on recoverable errors */
-          dispatch->attempts--;
-          break;
-        }
-      else if (http_status == HTTP_UNAUTHORIZED)
-        {
-          /* TODO: prompt for auth */
-          goto fail;
-        }
-      else if (http_status == HTTP_ERROR)
-        {
-#ifdef G_OS_WIN32
-          if (dispatch->http->error != WSAENETDOWN && 
-              dispatch->http->error != WSAENETUNREACH)
-#else
-          if (dispatch->http->error != ENETDOWN && 
-              dispatch->http->error != ENETUNREACH)
-#endif /* G_OS_WIN32 */
-            break; 
-          else
-            {
-              goto fail;
-            }
-        }
-/* TODO: detect ssl in configure.ac */
-#if HAVE_SSL
-      else if (http_status == HTTP_UPGRADE_REQUIRED)
-        {
-          /* Flush any error message... */
-          httpFlush(dispatch->http);
-
-          /* Reconnect... */
-          httpReconnect(dispatch->http);
-
-          /* Upgrade with encryption... */
-          httpEncryption(dispatch->http, HTTP_ENCRYPT_REQUIRED);
-
-          break;
-        }
-#endif 
-      else if (http_status != HTTP_OK)
-        {
-          goto fail;
-        }
-    case DISPATCH_READ:
-      /* We do as many reads as needed
-         until we get an error or success */
-      dispatch->attempts = 0;
-      dispatch->state = DISPATCH_READ;
-
-      if (dispatch->response == NULL)
-        dispatch->response = ippNew();
-
-      ipp_status = ippRead(dispatch->http, 
-                           dispatch->response);
-
-      if (ipp_status == IPP_ERROR)
-        {
-          ippDelete(dispatch->response);
-          dispatch->response = NULL;
-          
-          goto fail;
-        }
-      else if (ipp_status == IPP_DATA)
-        goto success;
-
-    case DISPATCH_ERROR:
-      break;
-    }
-    
-  /* continue to next iteration */
-  return FALSE;
-
- fail:
-   dispatch->state = DISPATCH_ERROR;
- success:
-   //httpFlush(dispatch->http);
-   ippDelete(dispatch->request);
-   dispatch->request = NULL;
-
-   return TRUE;
+  return egg_cups_request_read_write_dispatch (dispatch->request);
 }
 
 static gboolean
@@ -582,9 +363,8 @@ _cups_dispatch_watch_prepare (GSource *source,
  
 
   *timeout_ = 250;
-  /* TODO: Add the ability to send a file */
   
-  return FALSE;
+  return egg_cups_request_read_write_dispatch (dispatch->request);
 }
 
 static gboolean
@@ -594,18 +374,20 @@ _cups_dispatch_watch_dispatch (GSource *source,
 {
   EggPrintCupsDispatchWatch *dispatch;
   EggPrintCupsResponseCallbackFunc ep_callback;  
-
+  EggCupsResult *result;
+  
   g_assert (callback != NULL);
 
   ep_callback = (EggPrintCupsResponseCallbackFunc) callback;
   
   dispatch = (EggPrintCupsDispatchWatch *) source;
 
-  /* TODO: send in an error */
-  if (dispatch->state == DISPATCH_ERROR)
-    g_warning ("error in dispatch");
+  result = egg_cups_request_get_result (dispatch->request);
 
-  ep_callback (EGG_PRINT_BACKEND (dispatch->backend), dispatch->response, user_data);
+  if (egg_cups_result_is_error (result))
+    g_warning (egg_cups_result_get_error_string (result));
+
+  ep_callback (EGG_PRINT_BACKEND (dispatch->backend), egg_cups_result_get_response (result), user_data);
 
   g_source_unref (source); 
   return FALSE;
@@ -618,11 +400,7 @@ _cups_dispatch_watch_finalize (GSource *source)
 
   dispatch = (EggPrintCupsDispatchWatch *) source;
 
-  g_free (dispatch->resource);
-
-  if (dispatch->response)
-    ippDelete (dispatch->response);
-  httpClose (dispatch->http);
+  egg_cups_request_free (dispatch->request);
 }
 
 static GSourceFuncs _cups_dispatch_watch_funcs = 
@@ -634,38 +412,19 @@ static GSourceFuncs _cups_dispatch_watch_funcs =
 
 static void
 _cups_request_execute (EggPrintBackendCups *print_backend,
-                       ipp_t *request,
-		       gint data_fd,
-                       const char *server, 
-                       const char *path,
+                       EggCupsRequest *request,
                        EggPrintCupsResponseCallbackFunc callback,
                        gpointer user_data,
                        GDestroyNotify notify,
                        GError **err)
 {
-  http_t *http;
   EggPrintCupsDispatchWatch *dispatch;
   
-  if (!server)
-    server = cupsServer();
-
-  if (!path)
-    path = "/";
-
-  http = httpConnectEncrypt (server, ippPort(), cupsEncryption());
-  httpBlocking (http, 0);
-
   dispatch = (EggPrintCupsDispatchWatch *) g_source_new (&_cups_dispatch_watch_funcs, 
                                                          sizeof (EggPrintCupsDispatchWatch));
 
-  dispatch->http = http;
   dispatch->request = request;
   dispatch->backend = print_backend;
-  dispatch->resource = strdup (path);
-  dispatch->attempts = 0;
-  dispatch->state = DISPATCH_SETUP;
-  dispatch->response = NULL;
-  dispatch->data_fd = data_fd;
 
   g_source_set_callback ((GSource *) dispatch, (GSourceFunc) callback, user_data, notify);
 
@@ -724,25 +483,27 @@ _cups_request_printer_info (EggPrintBackendCups *print_backend,
                             const gchar *printer_name)
 {
   GError *error;
-  ipp_t *request;
+  EggCupsRequest *request;
   gchar *printer_uri;
 
   error = NULL;
 
-  request = _cups_request_new (IPP_GET_PRINTER_ATTRIBUTES);
+  request = egg_cups_request_new (NULL,
+                                  EGG_CUPS_POST,
+                                  IPP_GET_PRINTER_ATTRIBUTES,
+				  0,
+				  NULL,
+				  NULL);
 
   printer_uri = g_strdup_printf ("ipp://localhost/printers/%s",
                                   printer_name);
-  ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
-                "printer-uri", NULL, printer_uri);
+  egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_URI,
+                                   "printer-uri", NULL, printer_uri);
 
   g_free (printer_uri);
 
   _cups_request_execute (print_backend,
                          request,
-			 0,
-                         NULL, 
-                         NULL,
                          (EggPrintCupsResponseCallbackFunc) _cups_request_printer_info_cb,
                          g_strdup (printer_name),
                          (GDestroyNotify) g_free,
@@ -794,20 +555,22 @@ static void
 _cups_request_printer_list (EggPrintBackendCups *print_backend)
 {
   GError *error;
-  ipp_t *request;
+  EggCupsRequest *request;
 
   error = NULL;
 
-  request = _cups_request_new (CUPS_GET_PRINTERS);
+  request = egg_cups_request_new (NULL,
+                                  EGG_CUPS_POST,
+                                  CUPS_GET_PRINTERS,
+				  0,
+				  NULL,
+				  NULL);
 
   _cups_request_execute (print_backend,
                          request,
-			 0,
-                         NULL, 
-                         NULL,
                          (EggPrintCupsResponseCallbackFunc) _cups_request_printer_list_cb,
-                         NULL,
-                         NULL,
+			 NULL,
+			 NULL,
                          &error);
 
 }

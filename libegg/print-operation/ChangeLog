@@ -1,3 +1,13 @@
+2006-02-22  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprintbackendcups.c:
+	Remove code for sending commands to cups
+
+	* eggcupsutils.[ch]:
+	Cleanup and reimplement a more robust cups communications library
+	that is not tied to gtk
+	Implement the GET protocol so we can get PPDs 
+
 2006-02-22  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintunixdialog.c:
