@@ -1,3 +1,16 @@
+2006-02-23  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintenums.h:
+	Add EggPageSet.
+	
+	* eggprintersettings.[ch]:
+	Add reverse & page_set
+	
+	* eggprintunixdialog.[ch]:
+	Implement egg_print_unix_dialog_set_current_page.
+	Initial cut at egg_print_unix_dialog_get_settings, handling
+	only backend-independent settings.
+
 2006-02-22  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggprintbackendcups.c:

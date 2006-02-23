@@ -67,10 +67,6 @@ void egg_print_unix_dialog_set_current_page   (EggPrintUnixDialog *dialog,
 EggPrinter *egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog);
 
 EggPrinterSettings *egg_print_unix_dialog_get_settings       (EggPrintUnixDialog *dialog);
-int                 egg_print_unix_dialog_get_manual_copies  (EggPrintUnixDialog *dialog);
-double              egg_print_unix_dialog_get_manual_scale   (EggPrintUnixDialog *dialog);
-gboolean            egg_print_unix_dialog_get_manual_collate (EggPrintUnixDialog *dialog);
-gboolean            egg_print_unix_dialog_get_manual_reverse (EggPrintUnixDialog *dialog);
 
 G_END_DECLS
 

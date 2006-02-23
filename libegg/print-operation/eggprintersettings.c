@@ -448,6 +448,22 @@ egg_printer_settings_set_collate (EggPrinterSettings *settings,
 				 collate);
 }
 
+gboolean
+egg_printer_settings_get_reverse (EggPrinterSettings *settings)
+{
+  return egg_printer_settings_get_bool (settings, 
+					EGG_PRINTER_SETTINGS_REVERSE);
+}
+
+void
+egg_printer_settings_set_reverse (EggPrinterSettings *settings,
+				  gboolean reverse)
+{
+  egg_printer_settings_set_bool (settings,
+				 EGG_PRINTER_SETTINGS_REVERSE, 
+				 reverse);
+}
+
 EggPrintDuplex
 egg_printer_settings_get_duplex (EggPrinterSettings *settings)
 {
@@ -536,6 +552,48 @@ egg_printer_settings_set_quality (EggPrinterSettings *settings,
     }
   
   egg_printer_settings_set (settings, EGG_PRINTER_SETTINGS_QUALITY, str);
+}
+
+EggPageSet
+egg_printer_settings_get_page_set (EggPrinterSettings *settings)
+{
+  const char *val;
+
+  val = egg_printer_settings_get (settings, EGG_PRINTER_SETTINGS_PAGE_SET);
+
+  if (val == NULL || (strcmp (val, "all") == 0))
+    return EGG_PAGE_SET_ALL;
+
+  if (strcmp (val, "even") == 0)
+    return EGG_PAGE_SET_EVEN;
+  
+  if (strcmp (val, "odd") == 0)
+    return EGG_PAGE_SET_ODD;
+  
+  return EGG_PAGE_SET_ALL;
+}
+
+void
+egg_printer_settings_set_page_set (EggPrinterSettings *settings,
+				   EggPageSet          page_set)
+{
+  const char *str;
+
+  switch (page_set)
+    {
+    default:
+    case EGG_PAGE_SET_ALL:
+      str = "all";
+      break;
+    case EGG_PAGE_SET_EVEN:
+      str = "even";
+      break;
+    case EGG_PAGE_SET_ODD:
+      str = "odd";
+      break;
+    }
+  
+  egg_printer_settings_set (settings, EGG_PRINTER_SETTINGS_PAGE_SET, str);
 }
 
 int

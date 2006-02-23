@@ -92,6 +92,8 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *collate_image;
   GtkWidget *orientation_combo;
   GtkWidget *page_layout_preview;
+  GtkWidget *scale_spin;
+  GtkWidget *page_set_combo;
   EggPrintSettingWidget *pages_per_sheet;
   EggPrintSettingWidget *duplex;
   EggPrintSettingWidget *paper_size;
@@ -117,6 +119,7 @@ struct EggPrintUnixDialogPrivate
   gulong settings_changed_handler;
   gulong mark_conflicts_id;
 
+  gint current_page;
 };
 
 G_DEFINE_TYPE (EggPrintUnixDialog, egg_print_unix_dialog, GTK_TYPE_DIALOG);
@@ -339,6 +342,7 @@ egg_print_unix_dialog_init (EggPrintUnixDialog *dialog)
 {
   dialog->priv = EGG_PRINT_UNIX_DIALOG_GET_PRIVATE (dialog); 
   dialog->priv->print_backend = NULL;
+  dialog->priv->current_page = -1;
   populate_dialog (dialog);
 }
 
@@ -938,6 +942,8 @@ create_main_page (EggPrintUnixDialog *dialog)
 		    0, 0);
   radio = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio)),
 					   _("Range: "));
+  if (dialog->priv->current_page == -1)
+    gtk_widget_set_sensitive (radio, FALSE);    
   priv->page_range_radio = radio;
   gtk_widget_show (radio);
   gtk_table_attach (GTK_TABLE (table), radio,
@@ -999,6 +1005,113 @@ create_main_page (EggPrintUnixDialog *dialog)
 			    main_vbox, label);
   
 }
+
+static gboolean
+is_range_separator (char c)
+{
+  return (c == ',' || c == ';' || c == ':');
+}
+
+static EggPageRange *
+dialog_get_page_ranges (EggPrintUnixDialog *dialog, int *n_ranges_out)
+{
+  int i, n_ranges;
+  const char *text, *p;
+  char *next;
+  EggPageRange *ranges;
+  int start, end;
+  
+  text = gtk_entry_get_text (GTK_ENTRY (dialog->priv->page_range_entry));
+
+  n_ranges = 1;
+  p = text;
+  while (*p)
+    {
+      if (is_range_separator (*p))
+	n_ranges++;
+      p++;
+    }
+
+  ranges = g_new0 (EggPageRange, n_ranges);
+
+  i = 0;
+  p = text;
+  while (*p)
+    {
+      start = (int)strtol (p, &next, 10);
+      if (start < 1)
+	start = 1;
+      end = start;
+      
+      if (next != p)
+	{
+	  p = next;
+
+	  if (*p == '-')
+	    {
+	      p++;
+	      end = (int)strtol (p, NULL, 10);
+	      if (end < start)
+		end = start;
+	    }
+	}
+	  
+      ranges[i].start = start;
+      ranges[i].end = end;
+      i++;
+
+      while (*p && !is_range_separator (*p))
+	p++;
+    }
+
+  *n_ranges_out = i;
+  
+  return ranges;
+}
+
+static EggPrintPages
+dialog_get_print_pages (EggPrintUnixDialog *dialog)
+{
+  EggPrintUnixDialogPrivate *priv = dialog->priv;
+  
+  if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (priv->all_pages_radio)))
+    return EGG_PRINT_PAGES_ALL;
+  else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (priv->current_page_radio)))
+    return EGG_PRINT_PAGES_CURRENT;
+  else
+    return EGG_PRINT_PAGES_RANGES;
+}
+
+static double
+dialog_get_scale (EggPrintUnixDialog *dialog)
+{
+  return gtk_spin_button_get_value (GTK_SPIN_BUTTON (dialog->priv->scale_spin));
+}
+
+static EggPageSet
+dialog_get_page_set (EggPrintUnixDialog *dialog)
+{
+  return (EggPageOrientation)gtk_combo_box_get_active (GTK_COMBO_BOX (dialog->priv->page_set_combo));
+}
+
+static int
+dialog_get_n_copies (EggPrintUnixDialog *dialog)
+{
+  return gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (dialog->priv->copies_spin));
+}
+
+static gboolean
+dialog_get_collate (EggPrintUnixDialog *dialog)
+{
+  return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->collate_check));
+}
+
+static gboolean
+dialog_get_reverse (EggPrintUnixDialog *dialog)
+{
+  return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_check));
+}
+
 
 static EggPageOrientation
 dialog_get_orientation (EggPrintUnixDialog *dialog)
@@ -1218,6 +1331,7 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 0);
   
   spinbutton = gtk_spin_button_new_with_range (1.0, 1000.0, 1.0);
+  priv->scale_spin = spinbutton;
   gtk_spin_button_set_digits (GTK_SPIN_BUTTON (spinbutton), 1);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (spinbutton), 100.0);
   gtk_widget_show (spinbutton);
@@ -1255,10 +1369,12 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 0);
 
   combo = gtk_combo_box_new_text ();
+  priv->page_set_combo = combo;
   gtk_widget_show (combo);
   gtk_table_attach (GTK_TABLE (table), combo,
 		    1, 2, 4, 5,  GTK_FILL, 0,
 		    0, 0);
+  /* In enum order */
   gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("All pages"));  
   gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Even pages"));  
   gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Odd pages"));  
@@ -1654,4 +1770,68 @@ egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog)
     return g_object_ref (dialog->priv->current_printer);
   
   return NULL; 
+}
+
+void
+egg_print_unix_dialog_set_current_page (EggPrintUnixDialog *dialog,
+					int                 current_page)
+{
+  dialog->priv->current_page = current_page;
+
+  if (dialog->priv->current_page_radio)
+    gtk_widget_set_sensitive (dialog->priv->current_page_radio, current_page != -1);
+}
+
+
+EggPrinterSettings *
+egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
+{
+  EggPrinterSettings *settings;
+  EggPrintPages print_pages;
+
+  settings = egg_printer_settings_new ();
+
+  if (dialog->priv->current_printer)
+    egg_printer_settings_set_printer (settings,
+				      egg_printer_get_name (dialog->priv->current_printer));
+  else
+    egg_printer_settings_set_printer (settings, "default");
+  
+
+  egg_printer_settings_set_orientation (settings,
+					dialog_get_orientation (dialog));
+
+  egg_printer_settings_set_collate (settings,
+				    dialog_get_collate (dialog));
+
+  egg_printer_settings_set_reverse (settings,
+				    dialog_get_reverse (dialog));
+
+  egg_printer_settings_set_num_copies (settings,
+				       dialog_get_n_copies (dialog));
+
+
+  egg_printer_settings_set_scale (settings,
+				  dialog_get_scale (dialog));
+
+  egg_printer_settings_set_page_set (settings,
+				     dialog_get_page_set (dialog));
+
+  print_pages = dialog_get_print_pages (dialog);
+  egg_printer_settings_set_print_pages (settings, print_pages);
+
+  if (print_pages == EGG_PRINT_PAGES_RANGES)
+    {
+      EggPageRange *ranges;
+      int n_ranges;
+
+      ranges = dialog_get_page_ranges (dialog, &n_ranges);
+
+      egg_printer_settings_set_page_ranges  (settings, ranges, n_ranges);
+      g_free (ranges);
+    }
+
+  /* TODO: prio, billing, print when, cover page (before/after) */
+  
+  return settings;
 }

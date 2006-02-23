@@ -90,11 +90,13 @@ void                egg_printer_settings_set_int    (EggPrinterSettings *setting
 #define EGG_PRINTER_SETTINGS_USE_COLOR "use-color"
 #define EGG_PRINTER_SETTINGS_DUPLEX "duplex"
 #define EGG_PRINTER_SETTINGS_COLLATE "collate"
+#define EGG_PRINTER_SETTINGS_REVERSE "reverse"
 #define EGG_PRINTER_SETTINGS_MEDIA_TYPE "media-type"
 #define EGG_PRINTER_SETTINGS_DITHER "dither"
 #define EGG_PRINTER_SETTINGS_SCALE "scale"
 #define EGG_PRINTER_SETTINGS_PRINT_PAGES "print-pages"
 #define EGG_PRINTER_SETTINGS_PAGE_RANGES "page-ranges"
+#define EGG_PRINTER_SETTINGS_PAGE_SET "page-set"
 #define EGG_PRINTER_SETTINGS_PRINT_TO_FILE "print-to-file"
 #define EGG_PRINTER_SETTINGS_FINISHINGS "finishings"
 #define EGG_PRINTER_SETTINGS_NUMBER_UP "number-up"
@@ -130,6 +132,9 @@ void               egg_printer_settings_set_use_color    (EggPrinterSettings *se
 gboolean           egg_printer_settings_get_collate      (EggPrinterSettings *settings);
 void               egg_printer_settings_set_collate      (EggPrinterSettings *settings,
 							  gboolean            collate);
+gboolean           egg_printer_settings_get_reverse      (EggPrinterSettings *settings);
+void               egg_printer_settings_set_reverse      (EggPrinterSettings *settings,
+							  gboolean            reverse);
 EggPrintDuplex     egg_printer_settings_get_duplex       (EggPrinterSettings *settings);
 void               egg_printer_settings_set_duplex       (EggPrinterSettings *settings,
 							  EggPrintDuplex      duplex);
@@ -159,6 +164,9 @@ EggPageRange *     egg_printer_settings_get_page_ranges  (EggPrinterSettings *se
 void               egg_printer_settings_set_page_ranges  (EggPrinterSettings *settings,
 							  EggPageRange       *page_ranges,
 							  int                 num_ranges);
+EggPageSet         egg_printer_settings_get_page_set     (EggPrinterSettings *settings);
+void               egg_printer_settings_set_page_set     (EggPrinterSettings *settings,
+							  EggPageSet          page_set);
 const char *       egg_printer_settings_get_default_source(EggPrinterSettings *settings);
 void               egg_printer_settings_set_default_source(EggPrinterSettings *settings,
 							   const char *default_source);
