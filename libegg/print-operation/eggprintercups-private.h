@@ -31,6 +31,7 @@ struct _EggPrinterCupsPrivate
   gchar *device_uri;
   gchar *printer_uri;
   ipp_pstate_t state;
+  ppd_file_t *ppd_file;
 };
 
 G_END_DECLS

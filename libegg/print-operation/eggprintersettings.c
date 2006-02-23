@@ -181,6 +181,23 @@ egg_printer_settings_get_bool (EggPrinterSettings *settings,
   return FALSE;
 }
 
+static gboolean
+egg_printer_settings_get_bool_with_default (EggPrinterSettings *settings,
+					    const char *key,
+					    gboolean default_val)
+{
+  const char *val;
+
+  val = egg_printer_settings_get (settings, key);
+  if (val != NULL && strcmp (val, "true") == 0)
+    return TRUE;
+
+  if (val != NULL && strcmp (val, "false") == 0)
+    return FALSE;
+  
+  return default_val;
+}
+
 void
 egg_printer_settings_set_bool (EggPrinterSettings *settings,
 			       const char *key,
@@ -419,8 +436,9 @@ egg_printer_settings_set_paper_height (EggPrinterSettings *settings,
 gboolean
 egg_printer_settings_get_use_color (EggPrinterSettings *settings)
 {
-  return egg_printer_settings_get_bool (settings, 
-					EGG_PRINTER_SETTINGS_USE_COLOR);
+  return egg_printer_settings_get_bool_with_default (settings, 
+						     EGG_PRINTER_SETTINGS_USE_COLOR,
+						     TRUE);
 }
 
 void
@@ -477,7 +495,7 @@ egg_printer_settings_get_duplex (EggPrinterSettings *settings)
   if (strcmp (val, "horizontal") == 0)
     return EGG_PRINT_DUPLEX_HORIZONTAL;
   
-  if (strcmp (val, "vertival") == 0)
+  if (strcmp (val, "vertical") == 0)
     return EGG_PRINT_DUPLEX_HORIZONTAL;
   
   return EGG_PRINT_DUPLEX_SIMPLEX;

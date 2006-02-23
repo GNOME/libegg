@@ -1132,13 +1132,11 @@ cups_printer_get_backend_settings (EggPrinter *printer)
 
   /* Printer (ppd) specific settings */
   
-  ppd_file = ppdOpenFile ("test.ppd");
+  ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
   ppdMarkDefaults (ppd_file);
 
   for (i = 0; i < ppd_file->num_groups; i++)
     handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
-
-  ppdClose (ppd_file);
   
   return set;
 }
@@ -1220,7 +1218,7 @@ cups_printer_mark_conflicts  (EggPrinter                *printer,
   int num_conflicts;
   int i;
   
-  ppd_file = ppdOpenFile("test.ppd");
+  ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
   ppdMarkDefaults (ppd_file);
 
   for (i = 0; i < ppd_file->num_groups; i++)
@@ -1233,17 +1231,171 @@ cups_printer_mark_conflicts  (EggPrinter                *printer,
       for (i = 0; i < ppd_file->num_groups; i++)
 	set_conflicts_from_group (settings, ppd_file, &ppd_file->groups[i]);
     }
-
-  
-  ppdClose (ppd_file);
-
+ 
   return num_conflicts > 0;
 }
+
+struct BackendSettingData {
+  EggPrinter *printer;
+  EggPrintBackendSettingSet *backend_settings;
+  EggPrinterSettings *settings;
+  ppd_file_t *ppd_file;
+};
+
+typedef struct {
+  const char *cups;
+  const char *standard;
+} NameMapping;
+
+static void
+map_cups_settings (const char *value,
+		   NameMapping table[],
+		   int n_elements,
+		   EggPrinterSettings *settings,
+		   const char *standard_name,
+		   const char *cups_name)
+{
+  int i;
+  char *name;
+
+  for (i = 0; i < n_elements; i++)
+    {
+      if (table[i].cups == NULL && table[i].standard == NULL)
+	{
+	  egg_printer_settings_set (settings,
+				    standard_name,
+				    value);
+	  break;
+	}
+      else if (table[i].cups == NULL && table[i].standard != NULL)
+	{
+	  if (value_is_off (value))
+	    {
+	      egg_printer_settings_set (settings,
+					standard_name,
+					table[i].standard);
+	      break;
+	    }
+	}
+      else if (strcmp (table[i].cups, value) == 0)
+	{
+	  egg_printer_settings_set (settings,
+				    standard_name,
+				    table[i].standard);
+	  break;
+	}
+    }
+
+  /* Always set the corresponding cups-specific setting */
+  name = g_strdup_printf ("cups-%s", cups_name);
+  egg_printer_settings_set (settings, name, value);
+  g_free (name);
+}
+      
+
+static void
+foreach_backend_setting (EggPrintBackendSetting  *setting,
+			 gpointer                 user_data)
+{
+  struct BackendSettingData *data = user_data;
+  EggPrinterSettings *settings = data->settings;
+  const char *value;
+
+  value = setting->value;
+
+  /* TODO: paper size, margin */
+  
+  if (strcmp (setting->name, "gtk-paper-source") == 0)
+    {
+      NameMapping map[] = {
+	{ "Lower", "lower"},
+	{ "Middle", "middle"},
+	{ "Upper", "upper"},
+	{ "Rear", "rear"},
+	{ "Envelope", "envelope"},
+	{ "Cassette", "cassette"},
+	{ "LargeCapacity", "large-capacity"},
+	{ "AnySmallFormat", "small-format"},
+	{ "AnyLargeFormat", "large-format"},
+	{ NULL, NULL}
+      };
+      map_cups_settings (value, map, G_N_ELEMENTS (map),
+			 settings, EGG_PRINTER_SETTINGS_DEFAULT_SOURCE, "InputSlot");
+    }
+  else if (strcmp (setting->name, "gtk-output-tray") == 0)
+    {
+      NameMapping map[] = {
+	{ "Upper", "upper"},
+	{ "Lower", "lower"},
+	{ "Rear", "rear"},
+	{ NULL, NULL}
+      };
+      map_cups_settings (value, map, G_N_ELEMENTS (map),
+			 settings, EGG_PRINTER_SETTINGS_OUTPUT_BIN, "OutputBin");
+    }
+  else if (strcmp (setting->name, "gtk-duplex") == 0)
+    {
+      NameMapping map[] = {
+	{ "DuplexTumble", "vertical" },
+	{ "DuplexNoTumble", "horizontal" },
+	{ NULL, "simplex" }
+      };
+      map_cups_settings (value, map, G_N_ELEMENTS (map),
+			 settings, EGG_PRINTER_SETTINGS_DUPLEX, "Duplex");
+    }
+  else if (strcmp (setting->name, "cups-OutputMode") == 0)
+    {
+      NameMapping map[] = {
+	{ "Standard", "normal" },
+	{ "Normal", "normal" },
+	{ "Draft", "draft" },
+	{ "Fast", "draft" },
+      };
+      map_cups_settings (value, map, G_N_ELEMENTS (map),
+			 settings, EGG_PRINTER_SETTINGS_QUALITY, "OutputMode");
+    }
+  else if (strcmp (setting->name, "cups-Resolution") == 0)
+    {
+      int res = atoi (value);
+      /* TODO: What if resolution is on XXXxYYYdpi form? */
+      if (res != 0)
+	egg_printer_settings_set_resolution (settings, res);
+      egg_printer_settings_set (settings, setting->name, value);
+    }
+  else if (strcmp (setting->name, "cups-MediaType") == 0)
+    {
+      NameMapping map[] = {
+	{ "Transparency", "transparency"},
+	{ "Standard", "stationery"},
+	{ NULL, NULL}
+      };
+      map_cups_settings (value, map, G_N_ELEMENTS (map),
+			 settings, EGG_PRINTER_SETTINGS_MEDIA_TYPE, "MediaType");
+    }
+  else if (strcmp (setting->name, "gtk-n-up") == 0)
+    {
+      egg_printer_settings_set (settings, "cups-number-up", value);
+    }
+  else if (g_str_has_prefix (setting->name, "cups-"))
+    {
+      egg_printer_settings_set (settings, setting->name, value);
+    }
+}
+
 
 static void
 cups_printer_add_backend_settings (EggPrinter *printer,
 				   EggPrintBackendSettingSet *backend_settings,
 				   EggPrinterSettings *settings)
 {
+  struct BackendSettingData data;
+
+  data.printer = printer;
+  data.backend_settings = backend_settings;
+  data.settings = settings;
+  data.ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
+  
+  egg_print_backend_setting_set_foreach (backend_settings, 
+					 foreach_backend_setting, &data);
 }
 

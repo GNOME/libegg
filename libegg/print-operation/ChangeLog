@@ -1,5 +1,22 @@
 2006-02-23  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintercups.[ch]:
+	* eggprintercups-private.h:
+	Add ppd_file to EggPrinterCups (just loads test.ppd for now)
+	
+	* eggprintbackendcups.c:
+	Implement printer_add_backend_settings
+	
+	* eggprintersettings.c:
+	Use color returns TRUE if not specified.
+	
+	* eggprintunixdialog.c:
+	Fix current_page insensitivity
+	Fix page ranges parser
+	Call backend printer_add_backend_settings
+
+2006-02-23  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintbackend.[ch]
 	* eggprinter-private.h:
 	* eggprinter.c:

@@ -927,6 +927,8 @@ create_main_page (EggPrintUnixDialog *dialog)
 		    0, 0);
   radio = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio)),
 					   _("Current"));
+  if (dialog->priv->current_page == -1)
+    gtk_widget_set_sensitive (radio, FALSE);    
   priv->current_page_radio = radio;
   gtk_widget_show (radio);
   gtk_table_attach (GTK_TABLE (table), radio,
@@ -934,8 +936,6 @@ create_main_page (EggPrintUnixDialog *dialog)
 		    0, 0);
   radio = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio)),
 					   _("Range: "));
-  if (dialog->priv->current_page == -1)
-    gtk_widget_set_sensitive (radio, FALSE);    
   priv->page_range_radio = radio;
   gtk_widget_show (radio);
   gtk_table_attach (GTK_TABLE (table), radio,
@@ -1025,7 +1025,7 @@ dialog_get_page_ranges (EggPrintUnixDialog *dialog, int *n_ranges_out)
     }
 
   ranges = g_new0 (EggPageRange, n_ranges);
-
+  
   i = 0;
   p = text;
   while (*p)
@@ -1034,7 +1034,7 @@ dialog_get_page_ranges (EggPrintUnixDialog *dialog, int *n_ranges_out)
       if (start < 1)
 	start = 1;
       end = start;
-      
+
       if (next != p)
 	{
 	  p = next;
@@ -1047,12 +1047,17 @@ dialog_get_page_ranges (EggPrintUnixDialog *dialog, int *n_ranges_out)
 		end = start;
 	    }
 	}
-	  
+
       ranges[i].start = start;
       ranges[i].end = end;
       i++;
 
+      /* Skip until end or separator */
       while (*p && !is_range_separator (*p))
+	p++;
+
+      /* if not at end, skip separator */
+      if (*p)
 	p++;
     }
 
@@ -1823,7 +1828,13 @@ egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
       g_free (ranges);
     }
 
-  /* TODO: prio, billing, print when, cover page (before/after) */
+  /* TODO: prio, billing, print when, cover page (before/after)
+     How to handle? */
+
+  if (dialog->priv->current_printer)
+    _egg_printer_add_backend_settings (dialog->priv->current_printer,
+				       dialog->priv->backend_settings,
+				       settings);
   
   return settings;
 }

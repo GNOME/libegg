@@ -20,6 +20,7 @@
 #define __EGG_PRINTER_CUPS_H__
 
 #include <glib-object.h>
+#include <cups/ppd.h>
 
 #include "eggprinter.h"
 
@@ -51,6 +52,7 @@ struct _EggPrinterCupsClass
 
 GType                    egg_printer_cups_get_type             (void) G_GNUC_CONST;
 EggPrinterCups          *egg_printer_cups_new                  (void);
+ppd_file_t *             egg_printer_cups_get_ppd              (EggPrinterCups *printer);
 
 G_END_DECLS
 
