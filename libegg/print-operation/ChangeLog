@@ -1,3 +1,12 @@
+2006-02-24  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintunixdialog.c
+	(update_dialog_with_new_settings):
+	unref and disconnect old settings handler.
+	Connect to new settings.
+	(clear_per_printer_ui):
+	Clear table size after removing children.
+
 2006-02-23  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggcupsutils.c:

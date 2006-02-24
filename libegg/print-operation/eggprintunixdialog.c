@@ -755,7 +755,18 @@ schedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
 static void
 update_dialog_with_new_settings (EggPrintUnixDialog *dialog)
 {
+  if (dialog->priv->backend_settings)
+    {
+      g_signal_handler_disconnect (dialog->priv->backend_settings,
+				   dialog->priv->backend_settings_changed_handler);
+      g_object_unref (dialog->priv->backend_settings);
+    }
+  
   dialog->priv->backend_settings = _egg_printer_get_backend_settings (dialog->priv->current_printer);
+
+  dialog->priv->backend_settings_changed_handler = 
+    g_signal_connect_swapped (dialog->priv->backend_settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
+  
   update_dialog_from_settings (dialog);
 }
 
@@ -765,12 +776,15 @@ clear_per_printer_ui (EggPrintUnixDialog *dialog)
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->finishing_table),
 			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
+  gtk_table_resize (GTK_TABLE (dialog->priv->finishing_table), 1, 2);
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->image_quality_table),
 			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
+  gtk_table_resize (GTK_TABLE (dialog->priv->image_quality_table), 1, 2);
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->color_table),
 			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
+  gtk_table_resize (GTK_TABLE (dialog->priv->color_table), 1, 2);
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->advanced_vbox),
 			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
