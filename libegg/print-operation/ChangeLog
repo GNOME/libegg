@@ -1,5 +1,21 @@
 2006-02-24  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintbackendcups.c:
+	No need to keep the ppd file around, unlink it after parsing.
+	This means we don't leave the file around after e.g. ctrl-c.
+	Add more ImageQualityPage whitelisting options
+	Add blacklist for cups options (mainly for options that are handled
+	independent of the backend).
+	
+	* eggprintercups-private.h:
+	* eggprintercups.c:
+	Remove ppd_filename member	
+	
+	* eggprintunixdialog.c:
+	Hide advanced tab if empty.
+
+2006-02-24  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintunixdialog.c
 	(update_dialog_with_new_settings):
 	unref and disconnect old settings handler.

@@ -605,17 +605,22 @@ typedef struct
 } GetPPDData;
 
 static void
+get_ppd_data_free (GetPPDData *data)
+{
+  close (data->ppd_fd);
+  unlink (data->ppd_filename);
+  g_free (data->ppd_filename);
+  g_object_unref (data->printer);
+  g_free (data);
+}
+
+static void
 _cups_request_ppd_cb (EggPrintBackendCups *print_backend,
                       ipp_t *response,
                       GetPPDData *data)
 {
-  close (data->ppd_fd);
-  data->printer->priv->ppd_filename = data->ppd_filename;
   data->printer->priv->ppd_file = ppdOpenFile (data->ppd_filename);
-
   _egg_printer_emit_settings_retrieved (EGG_PRINTER (data->printer));
-
-  g_object_unref (G_OBJECT (data->printer));
 }
 
 static void
@@ -654,7 +659,7 @@ _cups_request_ppd (EggPrintBackend *print_backend,
     
   fchmod (data->ppd_fd, S_IRUSR | S_IWUSR);
 
-  data->printer = g_object_ref (G_OBJECT (printer));
+  data->printer = g_object_ref (printer);
 
   resource = g_strdup_printf ("/printers/%s.ppd", printer->priv->name);
   request = egg_cups_request_new (http,
@@ -672,7 +677,7 @@ _cups_request_ppd (EggPrintBackend *print_backend,
                          request,
                          (EggPrintCupsResponseCallbackFunc) _cups_request_ppd_cb,
                          data,
-                         g_free,
+                         (GDestroyNotify)get_ppd_data_free,
                          &error);
 }
 
@@ -792,13 +797,17 @@ static const char *image_quality_option_whitelist[] = {
   "BRPrintQuality",
   "BitsPerPixel",
   "Darkness",
+  "Dithering",
   "EconoMode",
+  "Economode",
   "HPEconoMode",
   "HPEdgeControl",
   "HPGraphicsHalftone",
   "HPHalftone",
+  "HPLJDensity",
   "HPPhotoHalftone",
   "OutputMode",
+  "REt",
   "RPSBitsPerPixel",
   "RPSDitherType",
   "Resolution",
@@ -845,6 +854,13 @@ static const char *finishing_group_whitelist[] = {
   "FinishingPage",
 };
 
+/* keep sorted when changing */
+static const char *cups_option_blacklist[] = {
+  "Collate",
+  "Copies", 
+  "OutputOrder",
+  "PageRegion",
+};
 
 char *
 get_option_text (ppd_file_t *ppd_file, ppd_option_t *option)
@@ -1144,6 +1160,9 @@ handle_option (EggPrintBackendSettingSet *set,
   EggPrintBackendSetting *setting;
   char *name;
 
+  if (STRING_IN_TABLE (option->keyword, cups_option_blacklist))
+    return;
+  
   name = get_setting_name (option->keyword);
 
   setting = NULL;

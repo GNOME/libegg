@@ -111,6 +111,7 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *color_page;
 
   GtkWidget *advanced_vbox;
+  GtkWidget *advanced_page;
   
   EggPrintBackend *print_backend;
   
@@ -627,6 +628,7 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   GList *groups, *l;
   char *group;
   GtkWidget *table, *frame;
+  gboolean has_advanced;
   
   setup_setting (dialog, "gtk-n-up", dialog->priv->pages_per_sheet);
   setup_setting (dialog, "gtk-duplex", dialog->priv->duplex);
@@ -653,6 +655,7 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   /* Put the rest of the groups in the advanced page */
   groups = egg_print_backend_setting_set_get_groups (dialog->priv->backend_settings);
 
+  has_advanced = FALSE;
   for (l = groups; l != NULL; l = l->next)
     {
       group = l->data;
@@ -675,6 +678,7 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
 	gtk_widget_destroy (table);
       else
 	{
+	  has_advanced = TRUE;
 	  frame = wrap_in_frame (group, table);
 	  gtk_widget_show (table);
 	  gtk_widget_show (frame);
@@ -683,6 +687,12 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
 			      frame, FALSE, FALSE, 0);
 	}
     }
+
+  if (has_advanced)
+    gtk_widget_show (dialog->priv->advanced_page);
+  else
+    gtk_widget_hide (dialog->priv->advanced_page);
+
   
   g_list_foreach (groups, (GFunc) g_free, NULL);
   g_list_free (groups);
@@ -1665,6 +1675,7 @@ create_advanced_page (EggPrintUnixDialog *dialog)
   priv = dialog->priv;
 
   scrolled = gtk_scrolled_window_new (NULL, NULL);
+  priv->advanced_page = scrolled;
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
 				  GTK_POLICY_NEVER,
 				  GTK_POLICY_AUTOMATIC);
