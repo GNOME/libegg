@@ -116,6 +116,8 @@ static void                       cups_printer_add_backend_settings (EggPrinter 
 static gboolean                   cups_printer_mark_conflicts       (EggPrinter                        *printer,
 								     EggPrintBackendSettingSet         *settings);
 static EggPrintBackendSettingSet *cups_printer_get_backend_settings (EggPrinter                        *printer);
+static void                       cups_printer_prepare_for_print    (EggPrinter                        *printer,
+								     EggPrinterSettings                *settings);
 
 static void
 _cups_request_ppd (EggPrintBackend *print_backend,
@@ -260,6 +262,22 @@ _cups_print_cb (EggPrintBackendCups *print_backend,
 }
 
 static void
+add_cups_options (const char *key,
+		  const char *value,
+		  gpointer  user_data)
+{
+  EggCupsRequest *request = user_data;
+  
+  if (!g_str_has_prefix (key, "cups-"))
+    return;
+
+  key = key + strlen("cups-");
+
+  egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+				   key, NULL, value);
+}
+
+static void
 egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
                                      EggPrintJob *job,
 				     const gchar *title,
@@ -271,8 +289,10 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
   EggPrinterCups *cups_printer;
   _PrintStreamData *ps;
   EggCupsRequest *request;
+  EggPrinterSettings *settings;
   
   cups_printer = EGG_PRINTER_CUPS (egg_print_job_get_printer (job));
+  settings = egg_print_job_get_settings (job);
 
   error = NULL;
 
@@ -293,8 +313,8 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
     egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
                                      title);
 
-  /* TODO: encode options here */
-
+  egg_printer_settings_foreach (settings, add_cups_options, request);
+  
   ps = g_new0 (_PrintStreamData, 1);
   ps->callback = callback;
   ps->user_data = user_data;
@@ -307,7 +327,8 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
                          NULL,
                          &error);
 
-  g_object_unref (G_OBJECT (cups_printer));
+  g_object_unref (settings);
+  g_object_unref (cups_printer);
 }
 
 
@@ -320,6 +341,7 @@ egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
   iface->printer_get_backend_settings = cups_printer_get_backend_settings;
   iface->printer_mark_conflicts = cups_printer_mark_conflicts;
   iface->printer_add_backend_settings = cups_printer_add_backend_settings;
+  iface->printer_prepare_for_print = cups_printer_prepare_for_print;
 }
 
 static void
@@ -1527,5 +1549,12 @@ cups_printer_add_backend_settings (EggPrinter *printer,
   
   egg_print_backend_setting_set_foreach (backend_settings, 
 					 foreach_backend_setting, &data);
+}
+
+static void
+cups_printer_prepare_for_print (EggPrinter *printer,
+				EggPrinterSettings *settings)
+{
+  /* TODO: Convert standard settings to cups specific ones + manual settings */
 }
 

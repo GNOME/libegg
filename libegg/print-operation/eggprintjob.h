@@ -22,6 +22,8 @@
 #include <glib-object.h>
 #include <cairo.h>
 
+#include "eggprintersettings.h"
+
 G_BEGIN_DECLS
 
 #define EGG_TYPE_PRINT_JOB                  (egg_print_job_get_type ())
@@ -57,10 +59,12 @@ struct _EggPrintJobClass
 
 GType                    egg_print_job_get_type             (void) G_GNUC_CONST;
 EggPrintJob             *egg_print_job_new                  (const gchar *title,
+							     EggPrinterSettings *settings,
                                                              struct _EggPrinter *printer,
                                                              gdouble width,
 		                                             gdouble height);
 
+EggPrinterSettings      *egg_print_job_get_settings         (EggPrintJob *print_job);
 struct _EggPrinter      *egg_print_job_get_printer          (EggPrintJob *print_job);
 cairo_surface_t         *egg_print_job_get_surface          (EggPrintJob *print_job);
 gboolean                 egg_print_job_send                 (EggPrintJob *print_job,

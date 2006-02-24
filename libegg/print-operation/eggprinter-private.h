@@ -50,6 +50,8 @@ gboolean                   _egg_printer_mark_conflicts       (EggPrinter        
 void                       _egg_printer_add_backend_settings (EggPrinter                *printer,
 							      EggPrintBackendSettingSet *backend_settings,
 							      EggPrinterSettings        *settings);
+void                       _egg_printer_prepare_for_print    (EggPrinter                *printer,
+							      EggPrinterSettings        *settings);
 cairo_surface_t *          _egg_printer_create_cairo_surface (EggPrinter                *printer,
 							      gdouble                    width,
 							      gdouble                    height,

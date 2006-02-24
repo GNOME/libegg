@@ -171,6 +171,7 @@ egg_printer_get_job_count (EggPrinter *printer)
 
 EggPrintJob *
 egg_printer_prep_job (EggPrinter *printer,
+		      EggPrinterSettings *settings,
 		      const gchar *title,
                       double width, 
                       double height,
@@ -179,6 +180,7 @@ egg_printer_prep_job (EggPrinter *printer,
   EggPrintJob *job;
 
   job = egg_print_job_new (title,
+			   settings,
                            printer,
                            width,
                            height);
@@ -188,7 +190,7 @@ egg_printer_prep_job (EggPrinter *printer,
       g_object_unref (G_OBJECT (job));
       job = NULL;
     }
-
+  
   return job;
 }
 
@@ -214,6 +216,14 @@ _egg_printer_add_backend_settings (EggPrinter                *printer,
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
   return backend_iface->printer_add_backend_settings (printer, backend_settings, settings);
+}
+
+void
+_egg_printer_prepare_for_print    (EggPrinter                *printer,
+				   EggPrinterSettings        *settings)
+{
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
+  return backend_iface->printer_prepare_for_print (printer, settings);
 }
 
 cairo_surface_t *

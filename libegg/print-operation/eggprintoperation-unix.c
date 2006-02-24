@@ -125,6 +125,7 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
     {
       EggPrintOperationUnix *op_unix;
       EggPrinter *printer;
+      EggPrinterSettings *settings;
       EggPageSetup *page_setup;
       double width, height;
  
@@ -142,12 +143,18 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
       height = egg_page_setup_get_paper_height (page_setup, EGG_UNIT_POINTS);
       g_object_unref (page_setup); 
 
+
+      settings = egg_print_unix_dialog_get_settings (EGG_PRINT_UNIX_DIALOG (pd));
+      
       op_unix = g_new (EggPrintOperationUnix, 1);
       op_unix->job = egg_printer_prep_job (printer,
+					   settings,
                                            "Title",
                                            width, 
                                            height,
 					   error);
+
+      g_object_unref (settings);
     
       if (error != NULL && *error != NULL)
         {

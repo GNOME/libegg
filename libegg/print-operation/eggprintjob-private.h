@@ -36,12 +36,14 @@ struct _EggPrintJobPrivate
   gdouble width;
   gdouble height;
 
+  EggPrinterSettings *settings;
   struct _EggPrintBackend *backend;  
   struct _EggPrinter *printer;
 
   gint printer_set : 1;
   gint width_set   : 1;
   gint height_set  : 1;
+  gint settings_set  : 1;
   gint prepped     : 1;
 };
 

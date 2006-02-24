@@ -85,6 +85,8 @@ struct _EggPrintBackendIface
   void                        (*printer_add_backend_settings) (EggPrinter *printer,
 							       EggPrintBackendSettingSet *backend_settings,
 							       EggPrinterSettings *settings);
+  void                        (*printer_prepare_for_print)    (EggPrinter *printer,
+							       EggPrinterSettings *settings);
 
   /* Signals 
    */

@@ -1,5 +1,30 @@
 2006-02-24  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	* eggprinter.[ch]:
+	Add printer_prepare_for_print to printer backend.
+	This is where a backend can convert generic options to
+	backend-specific options.
+	Add settings argument to egg_printer_prep_job.
+	
+	* eggprintbackendcups.c:
+	Add empty (for now) prepare_for_print
+	In egg_print_backend_cups_print_stream, send cups settings.
+	
+	
+	* eggprintjob-private.h:
+	* eggprintjob.[ch]:
+	Add setting memeber.
+	Fix refcounting bug with printer.
+	Call backend prepare_for_print in egg_print_job_prep(). 
+	
+	* eggprintoperation-unix.c:
+	(egg_print_operation_platform_backend_run_dialog):
+	Get settings from dialog and pass to job.
+
+2006-02-24  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintbackendcups.c:
 	No need to keep the ppd file around, unlink it after parsing.
 	This means we don't leave the file around after e.g. ctrl-c.
