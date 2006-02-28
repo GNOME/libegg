@@ -59,6 +59,9 @@ EggCupsResult  *egg_cups_request_get_result (EggCupsRequest *request);
 
 gboolean        egg_cups_request_is_done (EggCupsRequest *request);
 
+void            egg_cups_request_encode_option (EggCupsRequest *request,
+                                                const gchar *option,
+				                const gchar *value);
 
 gboolean        egg_cups_result_is_error (EggCupsResult *result);
 

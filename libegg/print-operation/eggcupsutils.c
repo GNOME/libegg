@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+
 typedef void (*EggCupsRequestStateFunc) (EggCupsRequest *request);
 
 static void _post_send          (EggCupsRequest *request);
@@ -253,6 +254,219 @@ egg_cups_request_ipp_add_string (EggCupsRequest *request,
                 value);
 }
 
+typedef struct
+{
+  const char	*name;
+  ipp_tag_t	value_tag;
+} ipp_option_t;
+
+static const ipp_option_t ipp_options[] =
+			{
+			  { "blackplot",		IPP_TAG_BOOLEAN },
+			  { "brightness",		IPP_TAG_INTEGER },
+			  { "columns",			IPP_TAG_INTEGER },
+			  { "copies",			IPP_TAG_INTEGER },
+			  { "finishings",		IPP_TAG_ENUM },
+			  { "fitplot",			IPP_TAG_BOOLEAN },
+			  { "gamma",			IPP_TAG_INTEGER },
+			  { "hue",			IPP_TAG_INTEGER },
+			  { "job-k-limit",		IPP_TAG_INTEGER },
+			  { "job-page-limit",		IPP_TAG_INTEGER },
+			  { "job-priority",		IPP_TAG_INTEGER },
+			  { "job-quota-period",		IPP_TAG_INTEGER },
+			  { "landscape",		IPP_TAG_BOOLEAN },
+			  { "media",			IPP_TAG_KEYWORD },
+			  { "mirror",			IPP_TAG_BOOLEAN },
+			  { "natural-scaling",		IPP_TAG_INTEGER },
+			  { "number-up",		IPP_TAG_INTEGER },
+			  { "orientation-requested",	IPP_TAG_ENUM },
+			  { "page-bottom",		IPP_TAG_INTEGER },
+			  { "page-left",		IPP_TAG_INTEGER },
+			  { "page-ranges",		IPP_TAG_RANGE },
+			  { "page-right",		IPP_TAG_INTEGER },
+			  { "page-top",			IPP_TAG_INTEGER },
+			  { "penwidth",			IPP_TAG_INTEGER },
+			  { "ppi",			IPP_TAG_INTEGER },
+			  { "prettyprint",		IPP_TAG_BOOLEAN },
+			  { "printer-resolution",	IPP_TAG_RESOLUTION },
+			  { "print-quality",		IPP_TAG_ENUM },
+			  { "saturation",		IPP_TAG_INTEGER },
+			  { "scaling",			IPP_TAG_INTEGER },
+			  { "sides",			IPP_TAG_KEYWORD },
+			  { "wrap",			IPP_TAG_BOOLEAN }
+			};
+
+
+static ipp_tag_t
+_find_option_tag (const gchar *option)
+{
+  int lower_bound, upper_bound, num_options;
+  int current_option;
+  ipp_tag_t result;
+
+  result = IPP_TAG_ZERO;
+
+  lower_bound = 0;
+  upper_bound = num_options = (int)(sizeof(ipp_options) / sizeof(ipp_options[0])) - 1;
+  
+  while (1)
+    {
+      int match;
+      current_option = (int) (((upper_bound - lower_bound) / 2) + lower_bound);
+
+      match = strcasecmp(option, ipp_options[current_option].name);
+      if (match == 0)
+        {
+	  result = ipp_options[current_option].value_tag;
+	  return result;
+	}
+      else if (match < 0)
+        {
+          upper_bound = current_option - 1;
+	}
+      else
+        {
+          lower_bound = current_option + 1;
+	}
+
+      if (upper_bound == lower_bound && upper_bound == current_option)
+        return result;
+
+      if (upper_bound < 0)
+        return result;
+
+      if (lower_bound > num_options)
+        return result;
+
+      if (upper_bound < lower_bound)
+        return result;
+    }
+}
+
+void
+egg_cups_request_encode_option (EggCupsRequest *request,
+                                const gchar *option,
+				const gchar *value)
+{
+  ipp_tag_t option_tag;
+
+  g_assert (option != NULL);
+  g_assert (value != NULL);
+
+  option_tag = _find_option_tag (option);
+
+  if (option_tag == IPP_TAG_ZERO)
+    {
+      option_tag = IPP_TAG_NAME;
+      if (strcasecmp (value, "true") == 0 ||
+          strcasecmp (value, "false") == 0)
+        {
+          option_tag = IPP_TAG_BOOLEAN;
+        }
+    }
+        
+  switch (option_tag)
+    {
+      case IPP_TAG_INTEGER:
+      case IPP_TAG_ENUM:
+        ippAddInteger (request->ipp_request,
+                       IPP_TAG_OPERATION,
+                       option_tag,
+                       option,
+                       strtol (value, NULL, 0));
+        break;
+
+      case IPP_TAG_BOOLEAN:
+        {
+          char b;
+          b = 0;
+          if (!strcasecmp(value, "true") ||
+	      !strcasecmp(value, "on") ||
+	      !strcasecmp(value, "yes")) 
+	    b = 1;
+	  
+          ippAddBoolean(request->ipp_request,
+                        IPP_TAG_OPERATION,
+                        option,
+                        b);
+        
+          break;
+        }
+        
+      case IPP_TAG_RANGE:
+        {
+          char	*s;
+          int lower;
+          int upper;
+          
+          if (*value == '-')
+	    {
+	      lower = 1;
+	      s = value;
+	    }
+	  else
+	    lower = strtol(value, &s, 0);
+
+	  if (*s == '-')
+	    {
+	      if (s[1])
+		upper = strtol(s + 1, NULL, 0);
+	      else
+		upper = 2147483647;
+            }
+	  else
+	    upper = lower;
+         
+          ippAddRange (request->ipp_request,
+                       IPP_TAG_OPERATION,
+                       option,
+                       lower,
+                       upper);
+
+          break;
+        }
+
+      case IPP_TAG_RESOLUTION:
+        {
+          char *s;
+          int xres;
+          int yres;
+          ipp_res_t units;
+          
+          xres = strtol(value, &s, 0);
+
+	  if (*s == 'x')
+	    yres = strtol(s + 1, &s, 0);
+	  else
+	    yres = xres;
+
+	  if (strcasecmp(s, "dpc") == 0)
+            units = IPP_RES_PER_CM;
+          else
+            units = IPP_RES_PER_INCH;
+          
+          ippAddResolution (request->ipp_request,
+                            IPP_TAG_OPERATION,
+                            option,
+                            units,
+                            xres,
+                            yres);
+
+          break;
+        }
+
+      default:
+        ippAddString (request->ipp_request,
+                      IPP_TAG_OPERATION,
+                      option_tag,
+                      option,
+                      NULL,
+                      value);
+
+        break;
+    }
+}
+				
 
 static void 
 _post_send (EggCupsRequest *request)

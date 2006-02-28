@@ -272,8 +272,7 @@ add_cups_options (const char *key,
 
   key = key + strlen("cups-");
 
-  egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_NAME,
-				   key, NULL, value);
+  egg_cups_request_encode_option (request, key, value);
 }
 
 static void

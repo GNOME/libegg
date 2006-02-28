@@ -1,3 +1,11 @@
+2006-02-28  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggcupsutils.c (egg_cups_request_encode_option):
+	Properly encode print options
+
+	* eggprintbackendcups.c (add_cups_options):
+	use egg_cups_request_encode_option to encode the option
+
 2006-02-28  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintbackendcups.c:
