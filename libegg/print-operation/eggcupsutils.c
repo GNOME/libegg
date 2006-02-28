@@ -30,6 +30,7 @@
 
 typedef void (*EggCupsRequestStateFunc) (EggCupsRequest *request);
 
+static void _connect            (EggCupsRequest *request);
 static void _post_send          (EggCupsRequest *request);
 static void _post_write_request (EggCupsRequest *request);
 static void _post_write_data    (EggCupsRequest *request);
@@ -78,7 +79,8 @@ struct _EggCupsResult
 /* POST states */
 enum 
 {
-  POST_SEND = REQUEST_START,
+  POST_CONNECT = REQUEST_START,
+  POST_SEND,
   POST_WRITE_REQUEST,
   POST_WRITE_DATA,
   POST_CHECK,
@@ -86,7 +88,8 @@ enum
   POST_DONE = REQUEST_DONE
 };
 
-EggCupsRequestStateFunc post_states[] = {_post_send,
+EggCupsRequestStateFunc post_states[] = {_connect,
+                                         _post_send,
                                          _post_write_request,
                                          _post_write_data,
                                          _post_check,
@@ -95,13 +98,15 @@ EggCupsRequestStateFunc post_states[] = {_post_send,
 /* GET states */
 enum
 {
-  GET_SEND = REQUEST_START,
+  GET_CONNECT = REQUEST_START,
+  GET_SEND,
   GET_CHECK,
   GET_READ_DATA,
   GET_DONE = REQUEST_DONE
 };
 
-EggCupsRequestStateFunc get_states[] = {_get_send,
+EggCupsRequestStateFunc get_states[] = {_connect,
+                                        _get_send,
                                         _get_check,
                                         _get_read_data};
                                         
@@ -156,8 +161,12 @@ egg_cups_request_new (http_t *connection,
     }
   else
     {
+      request->http = NULL;
       request->http = httpConnectEncrypt (request->server, ippPort(), cupsEncryption());
-      httpBlocking (request->http, 0);
+
+      if (request->http)
+        httpBlocking (request->http, 0);
+        
       request->own_http = TRUE;
     }
 
@@ -222,6 +231,13 @@ egg_cups_request_read_write (EggCupsRequest *request)
   else if (request->type == EGG_CUPS_GET)
     get_states[request->state](request);
 
+  if (request->attempts > _EGG_CUPS_MAX_ATTEMPTS && 
+      request->state != REQUEST_DONE)
+    {
+      egg_cups_result_set_error (request->result, "Too many failed attempts");
+      request->state = REQUEST_DONE;
+    }
+    
   if (request->state == REQUEST_DONE)
     {
       return TRUE;
@@ -468,6 +484,28 @@ egg_cups_request_encode_option (EggCupsRequest *request,
 }
 				
 
+static void
+_connect (EggCupsRequest *request)
+{
+  if (request->http == NULL)
+    {
+      request->http = httpConnectEncrypt (request->server, ippPort(), cupsEncryption());
+
+      if (request->http == NULL)
+        request->attempts++;
+
+      if (request->http)
+        httpBlocking (request->http, 0);
+        
+      request->own_http = TRUE;
+    }
+  else
+    {
+      request->attempts = 0;
+      request->state++;
+    }
+}
+
 static void 
 _post_send (EggCupsRequest *request)
 {
@@ -604,6 +642,7 @@ _post_check (EggCupsRequest *request)
           request->http->error != ENETUNREACH)
 #endif /* G_OS_WIN32 */
         {
+          request->attempts++;
           goto again;
         }
       else
@@ -627,7 +666,8 @@ _post_check (EggCupsRequest *request)
 
       /* Upgrade with encryption... */
       httpEncryption(request->http, HTTP_ENCRYPT_REQUIRED);
-  
+ 
+      request->attempts++;
       goto again;
     }
 #endif 
@@ -646,7 +686,6 @@ _post_check (EggCupsRequest *request)
     }
 
  again:
-  request->attempts++;
   http_status = HTTP_CONTINUE;
 
   if (httpCheck (request->http))
@@ -748,7 +787,8 @@ _get_check (EggCupsRequest *request)
 
       /* Upgrade with encryption... */
       httpEncryption(request->http, HTTP_ENCRYPT_REQUIRED);
-  
+ 
+      request->attempts++;
       goto again;
     }
 #endif 
@@ -770,7 +810,6 @@ _get_check (EggCupsRequest *request)
     }
 
  again:
-  request->attempts++;
   http_status = HTTP_CONTINUE;
 
   if (httpCheck (request->http))

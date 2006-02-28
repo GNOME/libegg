@@ -1,5 +1,13 @@
 2006-02-28  John (J5) Palmieri  <johnp@redhat.com>
 
+	* eggcupsutils.c:
+	Add a connection state where we keep trying when cups goes away 
+	for a bit
+	(egg_cups_request_read_write):
+	Check to see if we exceeded our max attempts
+
+2006-02-28  John (J5) Palmieri  <johnp@redhat.com>
+
 	* eggcupsutils.c (egg_cups_request_encode_option):
 	Properly encode print options
 
