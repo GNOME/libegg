@@ -751,6 +751,8 @@ ppd_text_to_utf8 (ppd_file_t *ppd_file, const char *text)
   return res;
 }
 
+/* TODO: Add more translations for common settings here */
+
 static const struct {
   const char *keyword;
   const char *translation;
