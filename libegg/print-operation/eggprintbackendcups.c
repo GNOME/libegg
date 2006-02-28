@@ -221,7 +221,6 @@ cups_printer_create_cairo_surface (EggPrinter *printer,
   
   surface = cairo_pdf_surface_create_for_stream  (_cairo_write_to_cups, GINT_TO_POINTER (cache_fd), width, height);
 
-
   /* TODO: DPI from settings object? */
   cairo_pdf_surface_set_dpi (surface, 300, 300);
 
@@ -693,8 +692,6 @@ _cups_request_ppd (EggPrintBackend *print_backend,
 
   g_free (resource);
   
-  /* TODO: encode options here */
-
   _cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
                          request,
                          (EggPrintCupsResponseCallbackFunc) _cups_request_ppd_cb,
@@ -1555,6 +1552,29 @@ static void
 cups_printer_prepare_for_print (EggPrinter *printer,
 				EggPrinterSettings *settings)
 {
-  /* TODO: Convert standard settings to cups specific ones + manual settings */
+  EggPageSet page_set;
+  double scale;
+  
+  /* TODO: paper size & orientation */
+
+  if (egg_printer_settings_get_collate (settings))
+    egg_printer_settings_set (settings, "cups-Collate", "True");
+
+  if (egg_printer_settings_get_reverse (settings))
+    egg_printer_settings_set (settings, "cups-OutputOrder", "Reverse");
+
+  if (egg_printer_settings_get_num_copies (settings) > 1)
+    egg_printer_settings_set_int (settings, "cups-copies",
+				  egg_printer_settings_get_num_copies (settings));
+
+  scale = egg_printer_settings_get_scale (settings);
+  if (scale != 100.0)
+    egg_printer_settings_set_double (settings, "manual-scale", scale);
+
+  page_set = egg_printer_settings_get_page_set (settings);
+  if (page_set == EGG_PAGE_SET_EVEN)
+    egg_printer_settings_set (settings, "cups-page-set", "even");
+  else if (page_set == EGG_PAGE_SET_ODD)
+    egg_printer_settings_set (settings, "cups-page-set", "odd");
 }
 

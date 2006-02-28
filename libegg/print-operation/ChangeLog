@@ -1,3 +1,8 @@
+2006-02-28  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintbackendcups.c:
+	Handle some standard options (copies, collate, etc)
+
 2006-02-24  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintbackend.h:
