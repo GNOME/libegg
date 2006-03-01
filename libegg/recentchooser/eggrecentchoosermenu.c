@@ -947,7 +947,9 @@ egg_recent_chooser_menu_map (GtkWidget *widget)
   items = egg_recent_chooser_get_items (EGG_RECENT_CHOOSER (menu));
   
   count = g_list_length (items);
-  for (l = items; l != NULL; l = l->prev)
+  items = g_list_reverse (items);
+
+  for (l = items; l != NULL; l = l->next)
     {
       EggRecentInfo *info = (EggRecentInfo *) l->data;
       GtkWidget *item;

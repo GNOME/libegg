@@ -1,3 +1,9 @@
+2006-03-01  Emmanuele Bassi  <ebassi@cvs.gnome.org>
+
+	* libegg/recentchooser/eggrecentchoosermenu.c
+	(egg_recent_chooser_menu_map): reverse the list since we are walking it
+	backwards.
+
 2006-02-22  Emmanuele Bassi  <ebassi@cvs.gnome.org>
 
 	* libegg/recentchooser/eggrecentchooserdefault.c
