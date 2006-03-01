@@ -81,6 +81,7 @@ typedef struct
 
   http_t *http;
   EggCupsRequest *request;
+  GPollFD *data_poll;
   EggPrintBackendCups *backend;
 
 } EggPrintCupsDispatchWatch;
@@ -219,10 +220,10 @@ cups_printer_create_cairo_surface (EggPrinter *printer,
   
   /* TODO: check if it is a ps or pdf printer */
   
-  surface = cairo_pdf_surface_create_for_stream  (_cairo_write_to_cups, GINT_TO_POINTER (cache_fd), width, height);
+  surface = cairo_ps_surface_create_for_stream  (_cairo_write_to_cups, GINT_TO_POINTER (cache_fd), width, height);
 
   /* TODO: DPI from settings object? */
-  cairo_pdf_surface_set_dpi (surface, 300, 300);
+  cairo_ps_surface_set_dpi (surface, 300, 300);
 
   return surface;
 }
@@ -373,6 +374,62 @@ _cups_dispatch_watch_check (GSource *source)
 
   dispatch = (EggPrintCupsDispatchWatch *) source;
 
+  if (dispatch->request->type == EGG_CUPS_POST)
+    {
+      if (dispatch->request->state == EGG_CUPS_POST_WRITE_DATA)
+        {
+          if (dispatch->data_poll == NULL)
+            {
+	      dispatch->data_poll = g_new0 (GPollFD, 1);
+	      dispatch->data_poll->fd = dispatch->request->http->fd;
+	      dispatch->data_poll->events = G_IO_OUT | G_IO_ERR;
+
+              g_source_add_poll (source, dispatch->data_poll);
+	    }
+          else
+            {
+              if (!(dispatch->data_poll->revents & dispatch->data_poll->events))
+                return FALSE;
+            }
+	}
+      else
+        {
+          if (dispatch->data_poll != NULL)
+            {
+              g_source_remove_poll (source, dispatch->data_poll);
+              g_free (dispatch->data_poll);
+              dispatch->data_poll = NULL;
+            }
+	}
+    }
+  else if (dispatch->request->type == EGG_CUPS_GET)
+    {
+      if (dispatch->request->state == EGG_CUPS_GET_READ_DATA)
+        {
+          if (dispatch->data_poll == NULL)
+            {
+	      dispatch->data_poll = g_new0 (GPollFD, 1);
+	      dispatch->data_poll->fd = dispatch->request->http->fd;
+	      dispatch->data_poll->events = G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_PRI;
+              g_source_add_poll (source, dispatch->data_poll);
+	    }
+          else
+            {
+              if (!(dispatch->data_poll->revents & dispatch->data_poll->events))
+                return FALSE;
+            }
+	}
+      else
+        {
+          if (dispatch->data_poll != NULL)
+            {
+              g_source_remove_poll (source, dispatch->data_poll);
+              g_free (dispatch->data_poll);
+              dispatch->data_poll = NULL;
+            }
+	}
+    }
+    
   return egg_cups_request_read_write (dispatch->request);
 }
 
@@ -385,7 +442,7 @@ _cups_dispatch_watch_prepare (GSource *source,
   dispatch = (EggPrintCupsDispatchWatch *) source;
  
 
-  *timeout_ = 250;
+  *timeout_ = -1;
   
   return egg_cups_request_read_write (dispatch->request);
 }
@@ -424,6 +481,9 @@ _cups_dispatch_watch_finalize (GSource *source)
   dispatch = (EggPrintCupsDispatchWatch *) source;
 
   egg_cups_request_free (dispatch->request);
+
+  if (dispatch->data_poll != NULL)
+    g_free (dispatch->data_poll);
 }
 
 static GSourceFuncs _cups_dispatch_watch_funcs = 
@@ -448,6 +508,7 @@ _cups_request_execute (EggPrintBackendCups *print_backend,
 
   dispatch->request = request;
   dispatch->backend = print_backend;
+  dispatch->data_poll = NULL;
 
   g_source_set_callback ((GSource *) dispatch, (GSourceFunc) callback, user_data, notify);
 

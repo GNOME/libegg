@@ -37,6 +37,52 @@ typedef enum
   EGG_CUPS_GET
 } EggCupsRequestType;
 
+
+struct _EggCupsRequest 
+{
+  EggCupsRequestType type;
+
+  http_t *http;
+  http_status_t last_status;
+  ipp_t *ipp_request;
+
+  gchar *server;
+  gchar *resource;
+  gint data_fd;
+  gint attempts;
+
+  EggCupsResult *result;
+
+  gint state;
+
+  gint own_http : 1; 
+};
+
+#define EGG_CUPS_REQUEST_START 0
+#define EGG_CUPS_REQUEST_DONE 500
+
+/* POST states */
+enum 
+{
+  EGG_CUPS_POST_CONNECT = EGG_CUPS_REQUEST_START,
+  EGG_CUPS_POST_SEND,
+  EGG_CUPS_POST_WRITE_REQUEST,
+  EGG_CUPS_POST_WRITE_DATA,
+  EGG_CUPS_POST_CHECK,
+  EGG_CUPS_POST_READ_RESPONSE,
+  EGG_CUPS_POST_DONE = EGG_CUPS_REQUEST_DONE
+};
+
+/* GET states */
+enum
+{
+  EGG_CUPS_GET_CONNECT = EGG_CUPS_REQUEST_START,
+  EGG_CUPS_GET_SEND,
+  EGG_CUPS_GET_CHECK,
+  EGG_CUPS_GET_READ_DATA,
+  EGG_CUPS_GET_DONE = EGG_CUPS_REQUEST_DONE
+};
+
 EggCupsRequest *egg_cups_request_new (http_t *connection,
                                       EggCupsRequestType req_type, 
                                       gint operation_id,

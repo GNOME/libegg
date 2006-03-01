@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-
+#include <time.h>
 
 typedef void (*EggCupsRequestStateFunc) (EggCupsRequest *request);
 
@@ -41,26 +41,6 @@ static void _get_send           (EggCupsRequest *request);
 static void _get_check          (EggCupsRequest *request);
 static void _get_read_data      (EggCupsRequest *request);
 
-struct _EggCupsRequest 
-{
-  EggCupsRequestType type;
-
-  http_t *http;
-  http_status_t last_status;
-  ipp_t *ipp_request;
-
-  gchar *server;
-  gchar *resource;
-  gint data_fd;
-  gint attempts;
-
-  EggCupsResult *result;
-
-  gint state;
-
-  gint own_http : 1; 
-};
-
 struct _EggCupsResult
 {
   gchar *error_msg;
@@ -70,23 +50,9 @@ struct _EggCupsResult
   gint is_ipp_response : 1;
 };
 
-#define REQUEST_START 0
-#define REQUEST_DONE 500
 
 #define _EGG_CUPS_MAX_ATTEMPTS 10 
 #define _EGG_CUPS_MAX_CHUNK_SIZE 8192
-
-/* POST states */
-enum 
-{
-  POST_CONNECT = REQUEST_START,
-  POST_SEND,
-  POST_WRITE_REQUEST,
-  POST_WRITE_DATA,
-  POST_CHECK,
-  POST_READ_RESPONSE,
-  POST_DONE = REQUEST_DONE
-};
 
 EggCupsRequestStateFunc post_states[] = {_connect,
                                          _post_send,
@@ -94,16 +60,6 @@ EggCupsRequestStateFunc post_states[] = {_connect,
                                          _post_write_data,
                                          _post_check,
                                          _post_read_response};
-
-/* GET states */
-enum
-{
-  GET_CONNECT = REQUEST_START,
-  GET_SEND,
-  GET_CHECK,
-  GET_READ_DATA,
-  GET_DONE = REQUEST_DONE
-};
 
 EggCupsRequestStateFunc get_states[] = {_connect,
                                         _get_send,
@@ -141,7 +97,7 @@ egg_cups_request_new (http_t *connection,
   request->result->is_ipp_response = FALSE;
 
   request->type = req_type;
-  request->state = REQUEST_START;
+  request->state = EGG_CUPS_REQUEST_START;
 
    if (server)
     request->server = g_strdup (server);
@@ -232,13 +188,13 @@ egg_cups_request_read_write (EggCupsRequest *request)
     get_states[request->state](request);
 
   if (request->attempts > _EGG_CUPS_MAX_ATTEMPTS && 
-      request->state != REQUEST_DONE)
+      request->state != EGG_CUPS_REQUEST_DONE)
     {
       egg_cups_result_set_error (request->result, "Too many failed attempts");
-      request->state = REQUEST_DONE;
+      request->state = EGG_CUPS_REQUEST_DONE;
     }
     
-  if (request->state == REQUEST_DONE)
+  if (request->state == EGG_CUPS_REQUEST_DONE)
     {
       return TRUE;
     }
@@ -532,7 +488,7 @@ _post_send (EggCupsRequest *request)
       if (httpReconnect(request->http))
         {
           g_warning ("failed Post");
-          request->state = POST_DONE;
+          request->state = EGG_CUPS_POST_DONE;
 
           egg_cups_result_set_error (request->result, "Failed Post");
         }
@@ -543,7 +499,7 @@ _post_send (EggCupsRequest *request)
         
     request->attempts = 0;
 
-    request->state = POST_WRITE_REQUEST;
+    request->state = EGG_CUPS_POST_WRITE_REQUEST;
     request->ipp_request->state = IPP_IDLE;
 }
 
@@ -556,7 +512,7 @@ _post_write_request (EggCupsRequest *request)
   if (ipp_status == IPP_ERROR)
     {
       g_warning ("We got an error writting to the socket");
-      request->state = POST_DONE;
+      request->state = EGG_CUPS_POST_DONE;
      
       egg_cups_result_set_error (request->result, ippErrorString (cupsLastError ()));
       return;
@@ -565,9 +521,9 @@ _post_write_request (EggCupsRequest *request)
   if (ipp_status == IPP_DATA)
     {
       if (request->data_fd != 0)
-        request->state = POST_WRITE_DATA;
+        request->state = EGG_CUPS_POST_WRITE_DATA;
       else
-        request->state = POST_CHECK;
+        request->state = EGG_CUPS_POST_CHECK;
     }
 }
 
@@ -592,7 +548,7 @@ _post_write_data (EggCupsRequest *request)
           
       if (bytes == 0)
         {
-          request->state = POST_CHECK;
+          request->state = EGG_CUPS_POST_CHECK;
           request->attempts = 0;
           return;
         }
@@ -600,7 +556,7 @@ _post_write_data (EggCupsRequest *request)
       if (httpWrite(request->http, buffer, (int)bytes) < bytes)
         {
           g_warning ("We got an error writting to the socket");
-          request->state = POST_DONE;
+          request->state = EGG_CUPS_POST_DONE;
      
           egg_cups_result_set_error (request->result, "Error writting to socket in Post");
           return;
@@ -627,7 +583,7 @@ _post_check (EggCupsRequest *request)
     {
       /* TODO: callout for auth */
       g_warning ("NOT IMPLEMENTED: We need to prompt for authorization");
-      request->state = POST_DONE;
+      request->state = EGG_CUPS_POST_DONE;
      
       egg_cups_result_set_error (request->result, "Can't prompt for authorization");
       return;
@@ -648,7 +604,7 @@ _post_check (EggCupsRequest *request)
       else
         {
           g_warning ("Error status");
-          request->state = POST_DONE;
+          request->state = EGG_CUPS_POST_DONE;
      
           egg_cups_result_set_error (request->result, "Unknown HTTP error");
           return;
@@ -674,14 +630,14 @@ _post_check (EggCupsRequest *request)
   else if (http_status != HTTP_OK)
     {
       g_warning ("Error status");
-      request->state = POST_DONE;
+      request->state = EGG_CUPS_POST_DONE;
      
       egg_cups_result_set_error (request->result, "HTTP Error");
       return;
     }
   else
     {
-      request->state = POST_READ_RESPONSE;
+      request->state = EGG_CUPS_POST_READ_RESPONSE;
       return;
     }
 
@@ -713,11 +669,11 @@ _post_read_response (EggCupsRequest *request)
       ippDelete (request->result->ipp_response);
       request->result->ipp_response = NULL;
 
-      request->state = POST_DONE; 
+      request->state = EGG_CUPS_POST_DONE; 
     }
   else if (ipp_status == IPP_DATA)
     {
-      request->state = POST_DONE;
+      request->state = EGG_CUPS_POST_DONE;
     }
 }
 
@@ -727,7 +683,7 @@ _get_send (EggCupsRequest *request)
   if (request->data_fd == 0)
     {
       egg_cups_result_set_error (request->result, "Get requires an open file descriptor");
-      request->state = GET_DONE;
+      request->state = EGG_CUPS_GET_DONE;
 
       return;
     }
@@ -740,7 +696,7 @@ _get_send (EggCupsRequest *request)
       if (httpReconnect(request->http))
         {
           g_warning ("failed Get");
-          request->state = GET_DONE;
+          request->state = EGG_CUPS_GET_DONE;
 
           egg_cups_result_set_error (request->result, "Failed Get");
         }
@@ -751,7 +707,7 @@ _get_send (EggCupsRequest *request)
         
   request->attempts = 0;
 
-  request->state = GET_CHECK;
+  request->state = EGG_CUPS_GET_CHECK;
   request->ipp_request->state = IPP_IDLE;
 }
 
@@ -770,7 +726,7 @@ _get_check (EggCupsRequest *request)
     {
       /* TODO: callout for auth */
       g_warning ("NOT IMPLEMENTED: We need to prompt for authorization in a non blocking manner");
-      request->state = GET_DONE;
+      request->state = EGG_CUPS_GET_DONE;
      
       egg_cups_result_set_error (request->result, "Can't prompt for authorization");
       return;
@@ -795,7 +751,7 @@ _get_check (EggCupsRequest *request)
   else if (http_status != HTTP_OK)
     {
       g_warning ("Error status");
-      request->state = POST_DONE;
+      request->state = EGG_CUPS_POST_DONE;
      
       egg_cups_result_set_error (request->result, "HTTP Error");
 
@@ -805,7 +761,7 @@ _get_check (EggCupsRequest *request)
     }
   else
     {
-      request->state = GET_READ_DATA;
+      request->state = EGG_CUPS_GET_READ_DATA;
       return;
     }
 
@@ -829,7 +785,7 @@ _get_read_data (EggCupsRequest *request)
 
   if (bytes == 0)
     {
-      request->state = GET_DONE;
+      request->state = EGG_CUPS_GET_DONE;
       return;
     }
     
@@ -837,7 +793,7 @@ _get_read_data (EggCupsRequest *request)
     {
       char *error_msg;
 
-      request->state = POST_DONE;
+      request->state = EGG_CUPS_POST_DONE;
     
       error_msg = strerror (errno);
       egg_cups_result_set_error (request->result, error_msg ? error_msg:""); 
@@ -847,7 +803,7 @@ _get_read_data (EggCupsRequest *request)
 gboolean
 egg_cups_request_is_done (EggCupsRequest *request)
 {
-  return (request->state == REQUEST_DONE);
+  return (request->state == EGG_CUPS_REQUEST_DONE);
 }
 
 gboolean
