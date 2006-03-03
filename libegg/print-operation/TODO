@@ -7,5 +7,13 @@ Highlevel API:
   print dialog. We can hopefully implement this on osx & win32.
 * Finish all the tables in paper_names.c
 
+Cups/Unix:
+* Add custom translations for a lot of standard PPD options
+* Hook up the settings in the "Job" tab
+* Figure out the details in handling page size, orientation and margins
+* Use GPollFD in cups GSource
+* General UI review and polish
+* fix UI padding according to HIG
+
 Win32:
 * Use threads for the dialog, to allow repaints of other windows while they are up
