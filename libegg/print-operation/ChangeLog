@@ -1,3 +1,10 @@
+2006-03-03  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintjob-private.h:
+	* eggprintjob.c:
+	Unlink the tmp file immediately (we keep the fd around).
+	Close the fd as soon as possible
+
 2006-02-28  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggcupsutils.c:

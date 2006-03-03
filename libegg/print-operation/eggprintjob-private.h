@@ -30,7 +30,6 @@ struct _EggPrintJobPrivate
   gchar *title;
 
   gint cache_fd;
-  gchar *cache_filename;
   cairo_surface_t *surface;
 
   gdouble width;

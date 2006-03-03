@@ -123,7 +123,6 @@ egg_print_job_init (EggPrintJob *print_job)
 {
   print_job->priv = EGG_PRINT_JOB_GET_PRIVATE (print_job); 
   print_job->priv->cache_fd = 0;
-  print_job->priv->cache_filename = NULL;
 
   print_job->priv->title = NULL;
   print_job->priv->surface = NULL;
@@ -143,12 +142,7 @@ egg_print_job_finalize (GObject *object)
   EggPrintJob *print_job = EGG_PRINT_JOB (object);
 
   if (print_job->priv->cache_fd != 0)
-    {
-      unlink (print_job->priv->cache_filename);
-      close (print_job->priv->cache_fd);
-    }
-
-  g_free (print_job->priv->cache_filename);
+    close (print_job->priv->cache_fd);
   
   if (print_job->priv->backend)
     g_object_unref (G_OBJECT (print_job->priv->backend));
@@ -224,6 +218,8 @@ gboolean
 egg_print_job_prep (EggPrintJob *job, 
                     GError **error)
 {
+  char *filename;
+  
   /* TODO: populate GError */
   if (!(job->priv->printer_set &&
 	job->priv->settings_set &&
@@ -233,9 +229,10 @@ egg_print_job_prep (EggPrintJob *job,
 
   job->priv->prepped = TRUE;
   job->priv->cache_fd = g_file_open_tmp ("eggprint_XXXXXX", 
-                                         &job->priv->cache_filename, 
+                                         &filename, 
 					 error);
   fchmod (job->priv->cache_fd, S_IRUSR | S_IWUSR);
+  unlink (filename);
 
   if (error != NULL && *error != NULL)
     return FALSE;
@@ -312,6 +309,8 @@ egg_print_job_send (EggPrintJob *print_job,
 				  print_job->priv->cache_fd,
                                   callback,
                                   user_data);
+  close (print_job->priv->cache_fd);
+  print_job->priv->cache_fd = 0;
   
   return TRUE;
 }
