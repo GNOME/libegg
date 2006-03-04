@@ -1,3 +1,14 @@
+Sat Mar  4 17:33:21 2006  Soeren Sandmann  <sandmann@redhat.com>
+
+	* libegg/sequence/testsequence.c (main): Implement tests for
+	GET_POSITION/ITER_MOVE/ITER_GET_SEQUENCE/ITER_COMPARE/RANGE_GET_MIDPOINT
+
+	* libegg/sequence/eggsequence.c: Remove unused struct
+	EggSequenceTree,
+
+	* libegg/sequence/eggsequence.c (egg_sequence_range_get_midpoint):
+	Implement using positions instead of splaytree invariants.
+
 2006-03-01  Emmanuele Bassi  <ebassi@cvs.gnome.org>
 
 	* libegg/recentchooser/eggrecentchoosermenu.c

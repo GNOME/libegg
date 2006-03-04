@@ -326,7 +326,7 @@ main (int argc,
 	{
 	    int slen = egg_sequence_get_length (seq->sequence);
 	    int qlen = g_queue_get_length (seq->queue);
-
+ 
 	    g_assert (slen == qlen);
 	}
 	break;
@@ -750,14 +750,21 @@ main (int argc,
 	    if (!egg_sequence_iter_is_end (iter))
 	    {
 		Item *item;
-
-		/* Test assignment of the same item */
-		item = egg_sequence_get (iter);
-		egg_sequence_set (iter, item);
+		int i;
 
 		check_integrity (seq);
 
 		/* Test basic functionality */
+		item = new_item (seq);
+		egg_sequence_set (iter, item);
+		g_assert (egg_sequence_get (iter) == item);
+
+		/* Make sure that existing items are freed */
+		for (i = 0; i < 15; ++i)
+		    egg_sequence_set (iter, new_item (seq));
+		
+		check_integrity (seq);
+
 		egg_sequence_set (iter, new_item (seq));
 	    }
 	}
@@ -854,33 +861,107 @@ main (int argc,
 	break;
 	case ITER_GET_POSITION:
 	{
-	    
+	    GList *link;
+	    EggSequenceIter *iter = get_random_iter (seq, &link);
+
+	    g_assert (egg_sequence_iter_get_position (iter) ==
+		      queue_link_index (seq, link));
 	}
 	break;
 	case ITER_MOVE:
 	{
-	    
+	    int len = egg_sequence_get_length (seq->sequence);
+	    EggSequenceIter *iter;
+	    int pos;
+
+	    iter = get_random_iter (seq, NULL);
+	    pos = egg_sequence_iter_get_position (iter);
+	    iter = egg_sequence_iter_move (iter, len - pos);
+	    g_assert (egg_sequence_iter_is_end (iter));
+
+
+	    iter = get_random_iter (seq, NULL);
+	    pos = egg_sequence_iter_get_position (iter);
+	    while (pos < len)
+	    {
+		g_assert (!egg_sequence_iter_is_end (iter));
+		pos++;
+		iter = egg_sequence_iter_move (iter, 1);
+	    }
+	    g_assert (egg_sequence_iter_is_end (iter));
 	}
 	break;
 	case ITER_GET_SEQUENCE:
 	{
+	    EggSequenceIter *iter = get_random_iter (seq, NULL);
+
+	    g_assert (egg_sequence_iter_get_sequence (iter) == seq->sequence);
 	}
 	break;
 	
 /* search */
 	case ITER_COMPARE:
 	{
+	    GList *link1, *link2;
+	    EggSequenceIter *iter1 = get_random_iter (seq, &link1);
+	    EggSequenceIter *iter2 = get_random_iter (seq, &link2);
+
+	    int cmp = egg_sequence_iter_compare (iter1, iter2);
+	    int pos1 = queue_link_index (seq, link1);
+	    int pos2 = queue_link_index (seq, link2);
+
+	    if (cmp == 0)
+	    {
+		g_assert (pos1 == pos2);
+	    }
+	    else if (cmp < 0)
+	    {
+		g_assert (pos1 < pos2);
+	    }
+	    else
+	    {
+		g_assert (pos1 > pos2);
+	    }
 	}
 	break;
 	case RANGE_GET_MIDPOINT:
 	{
+	    EggSequenceIter *iter1 = get_random_iter (seq, NULL);
+	    EggSequenceIter *iter2 = get_random_iter (seq, NULL);
+	    EggSequenceIter *iter3;
+	    int cmp;
+
+	    cmp = egg_sequence_iter_compare (iter1, iter2);
+	    
+	    if (cmp > 0)
+	    {
+		EggSequenceIter *tmp;
+
+		tmp = iter1;
+		iter1 = iter2;
+		iter2 = tmp;
+	    }
+	    
+	    iter3 = egg_sequence_range_get_midpoint (iter1, iter2);
+
+	    if (cmp == 0)
+	    {
+		g_assert (iter3 == iter1);
+		g_assert (iter3 == iter2);
+	    }
+
+	    g_assert (egg_sequence_iter_get_position (iter3) >= 
+		      egg_sequence_iter_get_position (iter1));
+	    g_assert (egg_sequence_iter_get_position (iter2) >= 
+		      egg_sequence_iter_get_position (iter3));
 	}
 	break;
-	}
 
+	}
+	
 	check_integrity (seq);
     }
-
+    
     return 0;
 }
 

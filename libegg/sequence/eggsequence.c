@@ -41,11 +41,6 @@ struct _EggSequenceNode
 				 */
 };
 
-struct _EggSequenceTree
-{
-    EggSequenceNode node;
-};
-
 static EggSequenceNode *node_new           (gpointer           data);
 static EggSequenceNode *node_get_first     (EggSequenceNode   *node);
 static EggSequenceNode *node_get_last      (EggSequenceNode   *node);
@@ -71,8 +66,6 @@ static void             node_insert_sorted (EggSequenceNode   *node,
 					    EggSequenceNode   *new,
 					    EggSequenceIterCompareFunc cmp_func,
 					    gpointer           cmp_data);
-static EggSequenceNode *node_range_get_midpoint (EggSequenceNode *begin,
-						 EggSequenceNode *end);
 
 static EggSequence *
 get_sequence (EggSequenceNode *node)
@@ -183,14 +176,20 @@ EggSequenceIter *
 egg_sequence_range_get_midpoint (EggSequenceIter *begin,
 				 EggSequenceIter *end)
 {
+    int begin_pos, end_pos, mid_pos;
+    
     g_return_val_if_fail (begin != NULL, NULL);
     g_return_val_if_fail (end != NULL, NULL);
     g_return_val_if_fail (get_sequence (begin) == get_sequence (end), NULL);
+
+    begin_pos = node_get_pos (begin);
+    end_pos = node_get_pos (end);
+
+    g_return_val_if_fail (end_pos >= begin_pos, NULL);
     
-    check_iter_access (begin);
-    check_iter_access (end);
-    
-    return node_range_get_midpoint (begin, end);
+    mid_pos = begin_pos + (end_pos - begin_pos) / 2;
+
+    return node_get_by_pos (begin, mid_pos);
 }
 
 gint
@@ -662,11 +661,13 @@ egg_sequence_set (EggSequenceIter *iter,
     
     seq = get_sequence (iter);
 
-    /* FIXME: If @data is identical to iter->data, it is destroyed
+    /* If @data is identical to iter->data, it is destroyed
      * here. This will work right in case of ref-counted objects. Also
      * it is similar to what ghashtables do.
      *
-     * For non-refcounted data it's a little less convenient
+     * For non-refcounted data it's a little less convenient, but
+     * code relying on self-setting not destroying would be
+     * pretty dubious anyway ...
      */
     
     if (seq->data_destroy_notify)
@@ -1315,24 +1316,6 @@ node_calc_height (EggSequenceNode *node)
     }
     
     return 0;
-}
-
-static EggSequenceNode *
-node_range_get_midpoint (EggSequenceNode *begin,
-			 EggSequenceNode *end)
-{
-    if (begin == end)
-	return begin;
-    
-    splay (begin);
-    splay (end);
-    
-    g_assert (end->left == begin);
-    
-    if (begin->right)
-	return splay (begin->right);
-    else
-	return end;
 }
 
 gint
