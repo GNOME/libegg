@@ -309,9 +309,7 @@ egg_print_job_send (EggPrintJob *print_job,
 				  print_job->priv->cache_fd,
                                   callback,
                                   user_data);
-  close (print_job->priv->cache_fd);
-  print_job->priv->cache_fd = 0;
-  
+
   return TRUE;
 }
 

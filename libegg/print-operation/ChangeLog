@@ -1,3 +1,24 @@
+2006-03-07  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggcupsutils.c:
+	(egg_cups_result_set_error):
+	Make it handle printf like formating
+	(egg_cups_request_get_poll_state):
+	Indicates if we are in a state where we are reading or writting from
+	the http socket
+	
+	* eggprintbackendcups.c:
+	Improve error handling
+	(_cups_dispatch_watch_check): 
+	Use egg_cups_request_get_poll_state and sets the poll events to
+	watch for accordingly
+
+	* eggprintjob.c:
+	Revert closing the fd as soon as possible. Calling 
+	egg_print_backend_print_stream just sets up a GSource
+	which does the heavy lifting.  We need to wait until
+	the cache is streamed to CUPS before we can close it.
+
 2006-03-03  Alexander Larsson  <alexl@redhat.com>
 
 	* TODO:

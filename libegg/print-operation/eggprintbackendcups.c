@@ -34,6 +34,8 @@
 #include <cairo-pdf.h>
 #include <cairo-ps.h>
 
+#include "eggprintoperation.h"
+
 #include "eggprintbackend.h"
 #include "eggprintbackendcups.h"
 
@@ -44,6 +46,7 @@
 #include "eggprintercups-private.h"
 
 #include "eggcupsutils.h"
+
 
 #define N_(x) (x)
 #define _(x) (x)
@@ -62,7 +65,7 @@ typedef struct _EggPrintBackendCupsClass EggPrintBackendCupsClass;
 
 
 typedef void (* EggPrintCupsResponseCallbackFunc) (EggPrintBackend *print_backend,
-                                                   ipp_t *response, 
+                                                   EggCupsResult *result, 
                                                    gpointer user_data);
 
 typedef enum 
@@ -248,12 +251,17 @@ typedef struct {
 
 void
 _cups_print_cb (EggPrintBackendCups *print_backend,
-                ipp_t *request,
+                EggCupsResult *result,
                 gpointer user_data)
 {
   GError *error = NULL;
 
   _PrintStreamData *ps = (_PrintStreamData *) user_data;
+
+  if (egg_cups_result_is_error (result))
+    error = g_error_new_literal (egg_print_error_quark (),
+                                 EGG_PRINT_ERROR_INTERNAL_ERROR,
+                                 egg_cups_result_get_error_string (result));
 
   if (ps->callback)
     ps->callback (ps->job, ps->user_data, &error);
@@ -371,66 +379,48 @@ static gboolean
 _cups_dispatch_watch_check (GSource *source)
 {
   EggPrintCupsDispatchWatch *dispatch;
+  EggCupsPollState poll_state;
+  gboolean result;
 
   dispatch = (EggPrintCupsDispatchWatch *) source;
 
-  if (dispatch->request->type == EGG_CUPS_POST)
+  poll_state = egg_cups_request_get_poll_state (dispatch->request);
+  
+  if (dispatch->data_poll == NULL && 
+      dispatch->request->http != NULL)
     {
-      if (dispatch->request->state == EGG_CUPS_POST_WRITE_DATA)
-        {
-          if (dispatch->data_poll == NULL)
-            {
-	      dispatch->data_poll = g_new0 (GPollFD, 1);
-	      dispatch->data_poll->fd = dispatch->request->http->fd;
-	      dispatch->data_poll->events = G_IO_OUT | G_IO_ERR;
+      dispatch->data_poll = g_new0 (GPollFD, 1);
+      dispatch->data_poll->fd = dispatch->request->http->fd;
 
-              g_source_add_poll (source, dispatch->data_poll);
-	    }
-          else
-            {
-              if (!(dispatch->data_poll->revents & dispatch->data_poll->events))
-                return FALSE;
-            }
-	}
-      else
-        {
-          if (dispatch->data_poll != NULL)
-            {
-              g_source_remove_poll (source, dispatch->data_poll);
-              g_free (dispatch->data_poll);
-              dispatch->data_poll = NULL;
-            }
-	}
+      g_source_add_poll (source, dispatch->data_poll);
     }
-  else if (dispatch->request->type == EGG_CUPS_GET)
+            
+  if (dispatch->data_poll != NULL)
     {
-      if (dispatch->request->state == EGG_CUPS_GET_READ_DATA)
-        {
-          if (dispatch->data_poll == NULL)
-            {
-	      dispatch->data_poll = g_new0 (GPollFD, 1);
-	      dispatch->data_poll->fd = dispatch->request->http->fd;
-	      dispatch->data_poll->events = G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_PRI;
-              g_source_add_poll (source, dispatch->data_poll);
-	    }
-          else
-            {
-              if (!(dispatch->data_poll->revents & dispatch->data_poll->events))
-                return FALSE;
-            }
-	}
+      if (dispatch->data_poll->fd != dispatch->request->http->fd)
+        dispatch->data_poll->fd = dispatch->request->http->fd;
+
+      if (poll_state == EGG_CUPS_HTTP_READ)
+        dispatch->data_poll->events = G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_PRI;
+      else if (poll_state == EGG_CUPS_HTTP_WRITE)
+        dispatch->data_poll->events = G_IO_OUT | G_IO_ERR;
       else
-        {
-          if (dispatch->data_poll != NULL)
-            {
-              g_source_remove_poll (source, dispatch->data_poll);
-              g_free (dispatch->data_poll);
-              dispatch->data_poll = NULL;
-            }
-	}
+        dispatch->data_poll->events = 0;
     }
     
-  return egg_cups_request_read_write (dispatch->request);
+  if (poll_state != EGG_CUPS_HTTP_IDLE)  
+    if (!(dispatch->data_poll->revents & dispatch->data_poll->events)) 
+       return FALSE;
+  
+  result = egg_cups_request_read_write (dispatch->request);
+  if (result && dispatch->data_poll != NULL)
+    {
+      g_source_remove_poll (source, dispatch->data_poll);
+      g_free (dispatch->data_poll);
+      dispatch->data_poll = NULL;
+    }
+  
+  return result;
 }
 
 static gboolean
@@ -467,7 +457,7 @@ _cups_dispatch_watch_dispatch (GSource *source,
   if (egg_cups_result_is_error (result))
     g_warning (egg_cups_result_get_error_string (result));
 
-  ep_callback (EGG_PRINT_BACKEND (dispatch->backend), egg_cups_result_get_response (result), user_data);
+  ep_callback (EGG_PRINT_BACKEND (dispatch->backend), result, user_data);
 
   g_source_unref (source); 
   return FALSE;
@@ -517,10 +507,11 @@ _cups_request_execute (EggPrintBackendCups *print_backend,
 
 void
 _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
-                               ipp_t *response,
+                               EggCupsResult *result,
                                gpointer user_data)
 {
   ipp_attribute_t *attr;
+  ipp_t *response;
   gchar *printer_name;
   EggPrinterCups *cups_printer;
   EggPrinter *printer;
@@ -534,6 +525,13 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
 
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
+
+
+  /* TODO: mark as inactive printer */
+  if (egg_cups_result_is_error (result))
+    return;
+
+  response = egg_cups_result_get_response (result);
 
   printer_name = (gchar *)user_data;
   cups_printer = (EggPrinterCups *) g_hash_table_lookup (print_backend->printers, printer_name);
@@ -616,12 +614,19 @@ _cups_request_printer_info (EggPrintBackendCups *print_backend,
 
 void
 _cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
-                               ipp_t *response,
+                               EggCupsResult *result,
                                gpointer user_data)
 {
   ipp_attribute_t *attr;
+  ipp_t *response;
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
+
+  /* TODO: Throw up error dialog? */
+  if (egg_cups_result_is_error (result))
+    return;
+
+  response = egg_cups_result_get_response (result);
 
   attr = ippFindAttribute (response, "printer-name", IPP_TAG_NAME);
   while (attr) 
@@ -697,9 +702,17 @@ get_ppd_data_free (GetPPDData *data)
 
 static void
 _cups_request_ppd_cb (EggPrintBackendCups *print_backend,
-                      ipp_t *response,
+                      EggCupsResult *result,
                       GetPPDData *data)
 {
+  ipp_t *response;
+
+  /* TODO: Perhaps mark printer as inactive? */
+  if (egg_cups_result_is_error (result))
+    return;
+
+  response = egg_cups_result_get_response (result);
+
   data->printer->priv->ppd_file = ppdOpenFile (data->ppd_filename);
   _egg_printer_emit_settings_retrieved (EGG_PRINTER (data->printer));
 }

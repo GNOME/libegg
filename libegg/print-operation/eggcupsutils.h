@@ -38,6 +38,19 @@ typedef enum
 } EggCupsRequestType;
 
 
+/** 
+ * Direction we should be polling the http socket on.
+ * We are either reading or writting at each state.
+ * This makes it easy for mainloops to connect to poll.
+ */
+typedef enum
+{
+  EGG_CUPS_HTTP_IDLE,
+  EGG_CUPS_HTTP_READ,
+  EGG_CUPS_HTTP_WRITE
+} EggCupsPollState;
+
+
 struct _EggCupsRequest 
 {
   EggCupsRequestType type;
@@ -54,6 +67,7 @@ struct _EggCupsRequest
   EggCupsResult *result;
 
   gint state;
+  EggCupsPollState poll_state;
 
   gint own_http : 1; 
 };
@@ -98,6 +112,8 @@ void            egg_cups_request_ipp_add_string (EggCupsRequest *request,
                                                  const char *value);
                                              
 gboolean        egg_cups_request_read_write (EggCupsRequest *request);
+
+EggCupsPollState egg_cups_request_get_poll_state (EggCupsRequest *request);
 
 void            egg_cups_request_free (EggCupsRequest *request);
 

@@ -65,15 +65,21 @@ EggCupsRequestStateFunc get_states[] = {_connect,
                                         _get_send,
                                         _get_check,
                                         _get_read_data};
-                                        
+
 static void
 egg_cups_result_set_error (EggCupsResult *result, 
-                           const char *error_msg)
+                           const char *error_msg,
+			   ...)
 {
+  va_list args;
+
   result->is_ipp_response = FALSE;
 
   result->is_error = TRUE;
-  result->error_msg = g_strdup (error_msg);
+
+  va_start (args, error_msg);
+  result->error_msg = g_strdup_vprintf (error_msg, args);
+  va_end (args);
 }
 
 EggCupsRequest *
@@ -192,10 +198,12 @@ egg_cups_request_read_write (EggCupsRequest *request)
     {
       egg_cups_result_set_error (request->result, "Too many failed attempts");
       request->state = EGG_CUPS_REQUEST_DONE;
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
     }
     
   if (request->state == EGG_CUPS_REQUEST_DONE)
     {
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
       return TRUE;
     }
   else
@@ -203,6 +211,14 @@ egg_cups_request_read_write (EggCupsRequest *request)
       return FALSE;
     }
 }
+
+EggCupsPollState 
+egg_cups_request_get_poll_state (EggCupsRequest *request)
+{
+  return request->poll_state;
+}
+
+
 
 EggCupsResult *
 egg_cups_request_get_result (EggCupsRequest *request)
@@ -443,6 +459,8 @@ egg_cups_request_encode_option (EggCupsRequest *request,
 static void
 _connect (EggCupsRequest *request)
 {
+  request->poll_state = EGG_CUPS_HTTP_IDLE;
+
   if (request->http == NULL)
     {
       request->http = httpConnectEncrypt (request->server, ippPort(), cupsEncryption());
@@ -459,6 +477,10 @@ _connect (EggCupsRequest *request)
     {
       request->attempts = 0;
       request->state++;
+
+      /* we always write to the socket after we get
+         the connection */
+      request->poll_state = EGG_CUPS_HTTP_WRITE;
     }
 }
 
@@ -467,6 +489,8 @@ _post_send (EggCupsRequest *request)
 {
   gchar length[255];
   struct stat data_info;
+
+  request->poll_state = EGG_CUPS_HTTP_WRITE;
 
   if (request->data_fd != 0)
     {
@@ -487,8 +511,8 @@ _post_send (EggCupsRequest *request)
     {
       if (httpReconnect(request->http))
         {
-          g_warning ("failed Post");
           request->state = EGG_CUPS_POST_DONE;
+          request->poll_state = EGG_CUPS_HTTP_IDLE;
 
           egg_cups_result_set_error (request->result, "Failed Post");
         }
@@ -507,13 +531,16 @@ static void
 _post_write_request (EggCupsRequest *request)
 {
   ipp_state_t ipp_status;
+
+  request->poll_state = EGG_CUPS_HTTP_WRITE;
+  
   ipp_status = ippWrite(request->http, request->ipp_request);
 
   if (ipp_status == IPP_ERROR)
     {
-      g_warning ("We got an error writting to the socket");
       request->state = EGG_CUPS_POST_DONE;
-     
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
+ 
       egg_cups_result_set_error (request->result, ippErrorString (cupsLastError ()));
       return;
     }
@@ -523,7 +550,10 @@ _post_write_request (EggCupsRequest *request)
       if (request->data_fd != 0)
         request->state = EGG_CUPS_POST_WRITE_DATA;
       else
-        request->state = EGG_CUPS_POST_CHECK;
+        {
+          request->state = EGG_CUPS_POST_CHECK;
+          request->poll_state = EGG_CUPS_HTTP_READ;
+	}
     }
 }
 
@@ -534,6 +564,8 @@ _post_write_data (EggCupsRequest *request)
   char buffer[_EGG_CUPS_MAX_CHUNK_SIZE];
   http_status_t http_status;
 
+  request->poll_state = EGG_CUPS_HTTP_WRITE;
+  
   if (httpCheck (request->http))
     http_status = httpUpdate(request->http);
   else
@@ -541,22 +573,33 @@ _post_write_data (EggCupsRequest *request)
 
   request->last_status = http_status;
 
+
   if (http_status == HTTP_CONTINUE || http_status == HTTP_OK)
     {
       /* send data */
       bytes = read(request->data_fd, buffer, _EGG_CUPS_MAX_CHUNK_SIZE);
-          
+
       if (bytes == 0)
         {
           request->state = EGG_CUPS_POST_CHECK;
+	  request->poll_state = EGG_CUPS_HTTP_READ;
+
           request->attempts = 0;
           return;
         }
-
+      else if (bytes == -1)
+        {
+          request->state = EGG_CUPS_POST_DONE;
+	  request->poll_state = EGG_CUPS_HTTP_IDLE;
+     
+          egg_cups_result_set_error (request->result, "Error reading from cache file: %s", strerror (errno));
+          return;
+	}
+	
       if (httpWrite(request->http, buffer, (int)bytes) < bytes)
         {
-          g_warning ("We got an error writting to the socket");
           request->state = EGG_CUPS_POST_DONE;
+	  request->poll_state = EGG_CUPS_HTTP_IDLE;
      
           egg_cups_result_set_error (request->result, "Error writting to socket in Post");
           return;
@@ -575,6 +618,8 @@ _post_check (EggCupsRequest *request)
 
   http_status = request->last_status;
 
+  request->poll_state = EGG_CUPS_HTTP_READ;
+
   if (http_status == HTTP_CONTINUE)
     {
       goto again; 
@@ -584,7 +629,8 @@ _post_check (EggCupsRequest *request)
       /* TODO: callout for auth */
       g_warning ("NOT IMPLEMENTED: We need to prompt for authorization");
       request->state = EGG_CUPS_POST_DONE;
-     
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
+      
       egg_cups_result_set_error (request->result, "Can't prompt for authorization");
       return;
     }
@@ -603,8 +649,8 @@ _post_check (EggCupsRequest *request)
         }
       else
         {
-          g_warning ("Error status");
           request->state = EGG_CUPS_POST_DONE;
+          request->poll_state = EGG_CUPS_HTTP_IDLE;
      
           egg_cups_result_set_error (request->result, "Unknown HTTP error");
           return;
@@ -629,9 +675,9 @@ _post_check (EggCupsRequest *request)
 #endif 
   else if (http_status != HTTP_OK)
     {
-      g_warning ("Error status");
       request->state = EGG_CUPS_POST_DONE;
-     
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
+      
       egg_cups_result_set_error (request->result, "HTTP Error");
       return;
     }
@@ -655,6 +701,8 @@ _post_read_response (EggCupsRequest *request)
 {
   ipp_state_t ipp_status;
 
+  request->poll_state = EGG_CUPS_HTTP_READ;
+
   if (request->result->ipp_response == NULL)
     request->result->ipp_response = ippNew();
 
@@ -663,27 +711,31 @@ _post_read_response (EggCupsRequest *request)
 
   if (ipp_status == IPP_ERROR)
     {
-      g_warning ("Error reading response");
       egg_cups_result_set_error (request->result, ippErrorString (cupsLastError()));
       
       ippDelete (request->result->ipp_response);
       request->result->ipp_response = NULL;
 
-      request->state = EGG_CUPS_POST_DONE; 
+      request->state = EGG_CUPS_POST_DONE;
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
     }
   else if (ipp_status == IPP_DATA)
     {
       request->state = EGG_CUPS_POST_DONE;
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
     }
 }
 
 static void 
 _get_send (EggCupsRequest *request)
 {
+  request->poll_state = EGG_CUPS_HTTP_WRITE;
+
   if (request->data_fd == 0)
     {
       egg_cups_result_set_error (request->result, "Get requires an open file descriptor");
       request->state = EGG_CUPS_GET_DONE;
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
 
       return;
     }
@@ -695,9 +747,9 @@ _get_send (EggCupsRequest *request)
     {
       if (httpReconnect(request->http))
         {
-          g_warning ("failed Get");
           request->state = EGG_CUPS_GET_DONE;
-
+          request->poll_state = EGG_CUPS_HTTP_IDLE;
+	  
           egg_cups_result_set_error (request->result, "Failed Get");
         }
 
@@ -708,6 +760,8 @@ _get_send (EggCupsRequest *request)
   request->attempts = 0;
 
   request->state = EGG_CUPS_GET_CHECK;
+  request->poll_state = EGG_CUPS_HTTP_READ;
+  
   request->ipp_request->state = IPP_IDLE;
 }
 
@@ -718,6 +772,8 @@ _get_check (EggCupsRequest *request)
 
   http_status = request->last_status;
 
+  request->poll_state = EGG_CUPS_HTTP_READ;
+
   if (http_status == HTTP_CONTINUE)
     {
       goto again; 
@@ -727,7 +783,8 @@ _get_check (EggCupsRequest *request)
       /* TODO: callout for auth */
       g_warning ("NOT IMPLEMENTED: We need to prompt for authorization in a non blocking manner");
       request->state = EGG_CUPS_GET_DONE;
-     
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
+ 
       egg_cups_result_set_error (request->result, "Can't prompt for authorization");
       return;
     }
@@ -752,7 +809,8 @@ _get_check (EggCupsRequest *request)
     {
       g_warning ("Error status");
       request->state = EGG_CUPS_POST_DONE;
-     
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
+      
       egg_cups_result_set_error (request->result, "HTTP Error");
 
       httpFlush(request->http);
@@ -780,12 +838,16 @@ _get_read_data (EggCupsRequest *request)
 {
   char buffer[_EGG_CUPS_MAX_CHUNK_SIZE];
   int bytes;
-  
+ 
+  request->poll_state = EGG_CUPS_HTTP_READ;
+ 
   bytes = httpRead(request->http, buffer, sizeof(buffer));
 
   if (bytes == 0)
     {
       request->state = EGG_CUPS_GET_DONE;
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
+
       return;
     }
     
@@ -794,6 +856,7 @@ _get_read_data (EggCupsRequest *request)
       char *error_msg;
 
       request->state = EGG_CUPS_POST_DONE;
+      request->poll_state = EGG_CUPS_HTTP_IDLE;
     
       error_msg = strerror (errno);
       egg_cups_result_set_error (request->result, error_msg ? error_msg:""); 
