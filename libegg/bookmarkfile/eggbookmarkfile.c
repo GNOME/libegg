@@ -383,21 +383,6 @@ do_profile_vprintf (const gchar *section,
 }
 #endif /* DO_PROFILE */
 
-static EggBookmarkAppInfo *egg_bookmark_app_info_new  (const gchar        *name);
-static void                egg_bookmark_app_info_free (EggBookmarkAppInfo *app_info);
-static gchar *             egg_bookmark_app_info_dump (EggBookmarkAppInfo *app_info);
-
-static EggBookmarkMetadata *egg_bookmark_metadata_new  (void);
-static void                 egg_bookmark_metadata_free (EggBookmarkMetadata *metadata);
-static gchar *              egg_bookmark_metadata_dump (EggBookmarkMetadata *metadata);
-
-static EggBookmarkItem *egg_bookmark_item_new  (const gchar     *uri);
-static void             egg_bookmark_item_free (EggBookmarkItem *item);
-static gchar *          egg_bookmark_item_dump (EggBookmarkItem *item);
-
-static ParseData *parse_data_new  (void);
-static void       parse_data_free (ParseData *data);
-
 static void             egg_bookmark_file_init        (EggBookmarkFile  *bookmark);
 static void             egg_bookmark_file_clear       (EggBookmarkFile  *bookmark);
 static gboolean         egg_bookmark_file_parse       (EggBookmarkFile  *bookmark,
@@ -413,9 +398,6 @@ static void             egg_bookmark_file_add_item    (EggBookmarkFile  *bookmar
 						       EggBookmarkItem  *item,
 						       GError          **error);
 						       
-static EggBookmarkAppInfo *egg_bookmark_item_lookup_app_info (EggBookmarkItem *item,
-							      const gchar     *app_name);
-
 static time_t  timestamp_from_iso8601 (const gchar *iso_date);
 static gchar * timestamp_to_iso8601   (time_t       timestamp);
 
@@ -546,6 +528,9 @@ egg_bookmark_metadata_dump (EggBookmarkMetadata *metadata)
   GString *retval;
  
   if (G_UNLIKELY (!metadata))
+    return NULL;
+  
+  if (!metadata->applications)
     return NULL;
   
   retval = g_string_new (NULL);
@@ -798,6 +783,19 @@ egg_bookmark_item_dump (EggBookmarkItem *item)
   g_string_append_printf (retval, "  </%s>\n", XBEL_BOOKMARK_ELEMENT);
   
   return g_string_free (retval, FALSE);
+}
+
+static EggBookmarkAppInfo *
+egg_bookmark_item_lookup_app_info (EggBookmarkItem *item,
+				   const gchar	   *app_name)
+{
+  g_return_val_if_fail (item != NULL, NULL);
+  g_return_val_if_fail (app_name != NULL, NULL);
+  
+  if (!item->metadata)
+    return NULL;
+  
+  return g_hash_table_lookup (item->metadata->apps_by_name, app_name);
 }
 
 /*************************
@@ -1800,7 +1798,7 @@ mktime_utc (struct tm *tm)
  * WARNING: the returned timestamp is relative to UTC; you must
  * convert it to the user's timezone before displaying it.
  *
- * taken from libsoup
+ * taken from libsoup/soup-date.c
  */
 static time_t
 timestamp_from_iso8601 (const gchar *iso_date)
@@ -1905,6 +1903,8 @@ egg_bookmark_file_error_quark (void)
  * file.
  *
  * Return value: an empty #EggBookmarkFile
+ *
+ * Since: 2.14
  */
 EggBookmarkFile *
 egg_bookmark_file_new (void)
@@ -1923,6 +1923,8 @@ egg_bookmark_file_new (void)
  * @bookmark: a #EggBookmarkFile
  *
  * Frees a #EggBookmarkFile.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_free (EggBookmarkFile *bookmark)
@@ -1945,8 +1947,9 @@ egg_bookmark_file_free (EggBookmarkFile *bookmark)
  * structure.  If the object cannot be created then @error is set to a
  * #EggBookmarkFileError.
  *
- * Return value: %TRUE if a desktop bookmark could be loaded,
- *   %FALSE otherwise
+ * Return value: %TRUE if a desktop bookmark could be loaded.
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_load_from_data (EggBookmarkFile  *bookmark,
@@ -2006,8 +2009,9 @@ egg_bookmark_file_load_from_data (EggBookmarkFile  *bookmark,
  * If the file could not be loaded then @error is set to either a #GFileError
  * or #EggBookmarkFileError.
  *
- * Return value: %TRUE if a desktop bookmark file could be loaded,
- *   %FALSE otherwise
+ * Return value: %TRUE if a desktop bookmark file could be loaded
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_load_from_file (EggBookmarkFile  *bookmark,
@@ -2138,6 +2142,8 @@ find_file_in_data_dirs (const gchar   *file,
  * set to either a #GFileError or #GBookmarkFileError.
  *
  * Return value: %TRUE if a key file could be loaded, %FALSE othewise
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_load_from_data_dirs (EggBookmarkFile  *bookmark,
@@ -2213,6 +2219,8 @@ egg_bookmark_file_load_from_data_dirs (EggBookmarkFile  *bookmark,
  *
  * Return value: a newly allocated string holding
  *   the contents of the #EggBookmarkFile
+ *
+ * Since: 2.14
  */
 gchar *
 egg_bookmark_file_to_data (EggBookmarkFile  *bookmark,
@@ -2242,9 +2250,11 @@ egg_bookmark_file_to_data (EggBookmarkFile  *bookmark,
  * @error: return location for a #GError, or %NULL
  *
  * This function outputs @bookmark into a file.  The write process is
- * guaranteed to be atomic by locking the target file.
+ * guaranteed to be atomic by using g_file_set_contents() internally.
  *
- * Return value: %TRUE if the file was successfully written, %FALSE otherwise
+ * Return value: %TRUE if the file was successfully written.
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_to_file (EggBookmarkFile  *bookmark,
@@ -2338,6 +2348,8 @@ egg_bookmark_file_add_item (EggBookmarkFile  *bookmark,
  * @error: return location for a #GError, or %NULL
  *
  * Removes the bookmark for @uri from the bookmark file @bookmark.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_remove_item (EggBookmarkFile  *bookmark,
@@ -2376,6 +2388,8 @@ egg_bookmark_file_remove_item (EggBookmarkFile  *bookmark,
  * Looks whether the desktop bookmark has an item with its URI set to @uri.
  *
  * Return value: %TRUE if @uri is inside @bookmark, %FALSE otherwise
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_has_item (EggBookmarkFile *bookmark,
@@ -2398,6 +2412,8 @@ egg_bookmark_file_has_item (EggBookmarkFile *bookmark,
  *
  * Return value: a newly allocated %NULL-terminated array of strings.
  *   Use g_strfreev() to free it.
+ *
+ * Since: 2.14
  */
 gchar **
 egg_bookmark_file_get_uris (EggBookmarkFile *bookmark,
@@ -2440,6 +2456,8 @@ egg_bookmark_file_get_uris (EggBookmarkFile *bookmark,
  * bookmark file @bookmark.
  *
  * If a bookmark for @uri cannot be found then it is created.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_title (EggBookmarkFile *bookmark,
@@ -2482,6 +2500,8 @@ egg_bookmark_file_set_title (EggBookmarkFile *bookmark,
  *
  * Return value: a newly allocated string or %NULL if the specified
  *   URI cannot be found.
+ *
+ * Since: 2.14
  */
 gchar *
 egg_bookmark_file_get_title (EggBookmarkFile  *bookmark,
@@ -2498,7 +2518,7 @@ egg_bookmark_file_get_title (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return NULL;
     }
@@ -2515,6 +2535,8 @@ egg_bookmark_file_get_title (EggBookmarkFile  *bookmark,
  * Sets @description as the description of the bookmark for @uri.
  *
  * If a bookmark for @uri cannot be found then it is created.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_description (EggBookmarkFile *bookmark,
@@ -2557,6 +2579,8 @@ egg_bookmark_file_set_description (EggBookmarkFile *bookmark,
  *
  * Return value: a newly allocated string or %NULL if the specified
  *   URI cannot be found.
+ *
+ * Since: 2.14
  */
 gchar *
 egg_bookmark_file_get_description (EggBookmarkFile  *bookmark,
@@ -2590,6 +2614,8 @@ egg_bookmark_file_get_description (EggBookmarkFile  *bookmark,
  * Sets @mime_type as the MIME type of the bookmark for @uri.
  *
  * If a bookmark for @uri cannot be found then it is created.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_mime_type (EggBookmarkFile *bookmark,
@@ -2636,6 +2662,8 @@ egg_bookmark_file_set_mime_type (EggBookmarkFile *bookmark,
  *
  * Return value: a newly allocated string or %NULL if the specified
  *   URI cannot be found.
+ *
+ * Since: 2.14
  */
 gchar *
 egg_bookmark_file_get_mime_type (EggBookmarkFile  *bookmark,
@@ -2678,6 +2706,8 @@ egg_bookmark_file_get_mime_type (EggBookmarkFile  *bookmark,
  * Sets the private flag of the bookmark for @uri.
  *
  * If a bookmark for @uri cannot be found then it is created.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_is_private (EggBookmarkFile *bookmark,
@@ -2719,6 +2749,8 @@ egg_bookmark_file_set_is_private (EggBookmarkFile *bookmark,
  * @error is set to #EGG_BOOKMARK_FILE_ERROR_INVALID_VALUE.
  *
  * Return value: %TRUE if the private flag is set, %FALSE otherwise.
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_get_is_private (EggBookmarkFile  *bookmark,
@@ -2744,7 +2776,7 @@ egg_bookmark_file_get_is_private (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_INVALID_VALUE,
-		   _("No private flag has been defined for item with URI '%s'"),
+		   _("No private flag has been defined in bookmark for URI '%s'"),
 		    uri);
       return FALSE;
     }
@@ -2761,6 +2793,8 @@ egg_bookmark_file_get_is_private (EggBookmarkFile  *bookmark,
  * Sets the time the bookmark for @uri was added into @bookmark.
  *
  * If no bookmark for @uri is found then it is created.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_added (EggBookmarkFile *bookmark,
@@ -2800,6 +2834,8 @@ egg_bookmark_file_set_added (EggBookmarkFile *bookmark,
  * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
  *
  * Return value: a timestamp
+ *
+ * Since: 2.14
  */
 time_t
 egg_bookmark_file_get_added (EggBookmarkFile  *bookmark,
@@ -2816,7 +2852,7 @@ egg_bookmark_file_get_added (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return (time_t) -1;
     }
@@ -2838,6 +2874,8 @@ egg_bookmark_file_get_added (EggBookmarkFile  *bookmark,
  * was actually changed.  Every function of #EggBookmarkFile that
  * modifies a bookmark also changes the modification time, except for
  * egg_bookmark_file_set_visited().
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_modified (EggBookmarkFile *bookmark,
@@ -2876,6 +2914,8 @@ egg_bookmark_file_set_modified (EggBookmarkFile *bookmark,
  * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
  *
  * Return value: a timestamp
+ *
+ * Since: 2.14
  */
 time_t
 egg_bookmark_file_get_modified (EggBookmarkFile  *bookmark,
@@ -2892,7 +2932,7 @@ egg_bookmark_file_get_modified (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return (time_t) -1;
     }
@@ -2915,6 +2955,8 @@ egg_bookmark_file_get_modified (EggBookmarkFile  *bookmark,
  * or by the default application for the bookmark's MIME type, retrieved
  * using egg_bookmark_file_get_mime_type().  Changing the "visited" time
  * does not affect the "modified" time.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_visited (EggBookmarkFile *bookmark,
@@ -2953,6 +2995,8 @@ egg_bookmark_file_set_visited (EggBookmarkFile *bookmark,
  * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
  *
  * Return value: a timestamp.
+ *
+ * Since: 2.14
  */
 time_t
 egg_bookmark_file_get_visited (EggBookmarkFile  *bookmark,
@@ -2969,12 +3013,175 @@ egg_bookmark_file_get_visited (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return (time_t) -1;
     }
   
   return item->visited;
+}
+
+/**
+ * egg_bookmark_file_has_group:
+ * @bookmark: a #EggBookmarkFile
+ * @uri: a valid URI
+ * @group: the group name to be searched
+ * @error: return location for a #GError, or %NULL
+ *
+ * Checks whether @group appears in the list of groups to which
+ * the bookmark for @uri belongs to.
+ *
+ * In the event the URI cannot be found, %FALSE is returned and
+ * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
+ *
+ * Return value: %TRUE if @group was found.
+ *
+ * Since: 2.14
+ */
+gboolean
+egg_bookmark_file_has_group (EggBookmarkFile  *bookmark,
+			     const gchar      *uri,
+			     const gchar      *group,
+			     GError          **error)
+{
+  EggBookmarkItem *item;
+  GList *l;
+  
+  g_return_val_if_fail (bookmark != NULL, FALSE);
+  g_return_val_if_fail (uri != NULL, FALSE);
+  
+  item = egg_bookmark_file_lookup_item (bookmark, uri);
+  if (!item)
+    {
+      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
+		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
+		   _("No bookmark found for URI '%s'"),
+		   uri);
+      return FALSE;
+    }
+  
+  if (!item->metadata)
+    return FALSE;
+   
+  for (l = item->metadata->groups; l != NULL; l = l->next)
+    {
+      if (strcmp (l->data, group) == 0)
+        return TRUE;
+    }
+  
+  return FALSE;
+
+}
+
+/**
+ * egg_bookmark_file_add_group:
+ * @bookmark: a #EggBookmarkFile
+ * @uri: a valid URI
+ * @group: the group name to be added
+ *
+ * Adds @group to the list of groups to which the bookmark for @uri
+ * belongs to.
+ *
+ * If no bookmark for @uri is found then it is created.
+ *
+ * Since: 2.14
+ */
+void
+egg_bookmark_file_add_group (EggBookmarkFile *bookmark,
+			     const gchar     *uri,
+			     const gchar     *group)
+{
+  EggBookmarkItem *item;
+  
+  g_return_if_fail (bookmark != NULL);
+  g_return_if_fail (uri != NULL);
+  g_return_if_fail (group != NULL);
+  
+  item = egg_bookmark_file_lookup_item (bookmark, uri);
+  if (!item)
+    {
+      item = egg_bookmark_item_new (uri);
+      egg_bookmark_file_add_item (bookmark, item, NULL);
+    }
+  
+  if (!item->metadata)
+    item->metadata = egg_bookmark_metadata_new ();
+  
+  if (!egg_bookmark_file_has_group (bookmark, uri, group, NULL))
+    {
+      item->metadata->groups = g_list_prepend (item->metadata->groups,
+                                               g_strdup (group));
+      
+      item->modified = time (NULL);
+      bookmark->is_dirty = TRUE;
+    }
+}
+
+/**
+ * egg_bookmark_file_remove_group:
+ * @bookmark: a #EggBookmarkFile
+ * @uri: a valid URI
+ * @group: the group name to be removed
+ * @error: return location for a #GError, or %NULL
+ *
+ * Removes @group from the list of groups to which the bookmark
+ * for @uri belongs to.
+ *
+ * In the event the URI cannot be found, %FALSE is returned and
+ * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
+ * In the event no group was defined, %FALSE is returned and
+ * @error is set to #EGG_BOOKMARK_FILE_ERROR_INVALID_VALUE.
+ *
+ * Return value: %TRUE if @group was successfully removed.
+ *
+ * Since: 2.14
+ */
+gboolean
+egg_bookmark_file_remove_group (EggBookmarkFile  *bookmark,
+				const gchar      *uri,
+				const gchar      *group,
+				GError          **error)
+{
+  EggBookmarkItem *item;
+  GList *l;
+  
+  g_return_val_if_fail (bookmark != NULL, FALSE);
+  g_return_val_if_fail (uri != NULL, FALSE);
+  
+  item = egg_bookmark_file_lookup_item (bookmark, uri);
+  if (!item)
+    {
+      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
+		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
+		   _("No bookmark found for URI '%s'"),
+		   uri);
+      return FALSE;
+    }
+  
+  if (!item->metadata)
+    {
+      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
+                   EGG_BOOKMARK_FILE_ERROR_INVALID_VALUE,
+                   _("No groups set in bookmark for URI '%s'"),
+                   uri);
+      return FALSE;
+    }
+  
+  for (l = item->metadata->groups; l != NULL; l = l->next)
+    {
+      if (strcmp (l->data, group) == 0)
+        {
+          item->metadata->groups = g_list_remove_link (item->metadata->groups, l);
+          g_list_free_1 (l);
+          
+          item->modified = time (NULL);          
+          bookmark->is_dirty = TRUE;
+          
+          return TRUE;
+        }
+    }
+  
+  return FALSE;
 }
 
 /**
@@ -3029,7 +3236,6 @@ egg_bookmark_file_set_groups (EggBookmarkFile  *bookmark,
     }
 
   item->modified = time (NULL);
-  
   bookmark->is_dirty = TRUE;
 }
 
@@ -3067,7 +3273,7 @@ egg_bookmark_file_get_groups (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return NULL;
     }
@@ -3100,52 +3306,211 @@ egg_bookmark_file_get_groups (EggBookmarkFile  *bookmark,
   return retval;
 }
 
-static EggBookmarkAppInfo *
-egg_bookmark_item_lookup_app_info (EggBookmarkItem *item,
-				   const gchar	   *app_name)
+/**
+ * egg_bookmark_file_add_application:
+ * @bookmark: a #EggBookmarkFile
+ * @uri: a valid URI
+ * @name: the name of the application registering the bookmark
+ *   or %NULL
+ * @exec: command line to be used to launch the bookmark or %NULL
+ *
+ * Adds the application with @name and @exec to the list of
+ * applications that have registered a bookmark for @uri into
+ * @bookmark.
+ *
+ * Every bookmark inside a #EggBookmarkFile must have at least an
+ * application registered.  Each application must provide a name, a
+ * command line useful for launching the bookmark, the number of times
+ * the bookmark has been registered by the application and the last
+ * time the application registered this bookmark.
+ *
+ * If @name is %NULL, the name of the application will be the
+ * same returned by g_get_application(). If @exec is %NULL, the
+ * command line will be a composition of the program name as
+ * returned by g_get_prgname() and the "%u" modifier.
+ *
+ * This function will automatically take care of updating the
+ * registrations count and timestamping in case an application
+ * with the same @name had already registered a bookmark for
+ * @uri inside @bookmark.
+ *
+ * If no bookmark for @uri is found, one is created.
+ *
+ * Since: 2.14
+ */
+void
+egg_bookmark_file_add_application (EggBookmarkFile *bookmark,
+				   const gchar     *uri,
+				   const gchar     *name,
+				   const gchar     *exec)
 {
-  g_return_val_if_fail (item != NULL, NULL);
-  g_return_val_if_fail (app_name != NULL, NULL);
+  gchar *app_name, *app_exec;
   
-  if (!item->metadata)
-    return NULL;
+  g_return_if_fail (bookmark != NULL);
+  g_return_if_fail (uri != NULL);
   
-  return g_hash_table_lookup (item->metadata->apps_by_name, app_name);
+  if (name || name[0] != '\0')
+    app_name = g_strdup (name);
+  else
+    app_name = g_strdup (g_get_application_name ());
+  
+  if (exec || exec[0] != '\0')
+    app_exec = g_strdup (exec);
+  else
+    app_exec = g_strjoin (" ", g_get_prgname(), "%u", NULL);
+
+  egg_bookmark_file_set_app_info (bookmark, uri,
+                                  app_name,
+                                  app_exec,
+                                  -1,
+                                  (time_t) -1);
+  
+  g_free (app_exec);
+  g_free (app_name);
+}
+
+/**
+ * egg_bookmark_file_remove_application:
+ * @bookmark: a #EggBookmarkFile
+ * @uri: a valid URI
+ * @name: the name of the application
+ * @error: return location for a #GError or %NULL
+ *
+ * Removes application registered with @name from the list of applications
+ * that have registered a bookmark for @uri inside @bookmark.
+ *
+ * In the event the URI cannot be found, %FALSE is returned and
+ * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
+ * In the event that no application with name @app_name has registered
+ * a bookmark for @uri,  %FALSE is returned and error is set to
+ * #EGG_BOOKMARK_FILE_ERROR_APP_NOT_REGISTERED.
+ *
+ * Return value: %TRUE if the application was successfully removed.
+ *
+ * Since: 2.14
+ */
+gboolean
+egg_bookmark_file_remove_application (EggBookmarkFile  *bookmark,
+				      const gchar      *uri,
+				      const gchar      *name,
+				      GError          **error)
+{
+  EggBookmarkItem *item;
+  EggBookmarkAppInfo *ai;
+  
+  g_return_val_if_fail (bookmark != NULL, FALSE);
+  g_return_val_if_fail (uri != NULL, FALSE);
+  g_return_val_if_fail (name != NULL, FALSE);
+  
+  item = egg_bookmark_file_lookup_item (bookmark, uri);
+  if (!item)
+    {
+      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
+		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
+		   _("No bookmark found for URI '%s'"),
+		   uri);
+      return FALSE;
+    }
+  
+  ai = egg_bookmark_item_lookup_app_info (item, name);
+  if (!ai)
+    {
+      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
+		   EGG_BOOKMARK_FILE_ERROR_APP_NOT_REGISTERED,
+		   _("No application with name '%s' registered a bookmark for '%s'"),
+		   name,
+		   uri);
+      return FALSE;
+    }
+  
+  item->metadata->applications = g_list_remove (item->metadata->applications, ai);
+  g_hash_table_remove (item->metadata->apps_by_name, ai->name);
+  
+  egg_bookmark_app_info_free (ai);
+  
+  return TRUE;
+}
+
+/**
+ * egg_bookmark_file_has_application:
+ * @bookmark: a #EggBookmarkFile
+ * @uri: a valid URI
+ * @name: the name of the application
+ * @error: return location for a #GError or %NULL
+ *
+ * Checks whether the bookmark for @uri inside @bookmark has been
+ * registered by application @name.
+ *
+ * In the event the URI cannot be found, %FALSE is returned and
+ * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
+ *
+ * Return value: %TRUE if the application @name was found
+ *
+ * Since: 2.14
+ */
+gboolean
+egg_bookmark_file_has_application (EggBookmarkFile  *bookmark,
+				   const gchar      *uri,
+				   const gchar      *name,
+				   GError          **error)
+{
+  EggBookmarkItem *item;
+  
+  g_return_val_if_fail (bookmark != NULL, FALSE);
+  g_return_val_if_fail (uri != NULL, FALSE);
+  g_return_val_if_fail (name != NULL, FALSE);
+  
+  item = egg_bookmark_file_lookup_item (bookmark, uri);
+  if (!item)
+    {
+      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
+		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
+		   _("No bookmark found for URI '%s'"),
+		   uri);
+      return FALSE;
+    }
+  
+  return (NULL != egg_bookmark_item_lookup_app_info (item, name));
 }
 
 /**
  * egg_bookmark_file_set_app_info:
  * @bookmark: a #EggBookmarkFile
  * @uri: a valid URI
- * @app_name: an application's name
- * @app_exec: an application's command line
- * @count: the number of registrations done for this application
- * @stamp: the time of the last registration for this application
+ * @name: an application's name
+ * @exec: an application's command line
+ * @count: the number of registrations done for this application or -1
+ * @stamp: the time of the last registration for this application or -1
  *
- * Registers a bookmark with @uri for an application with @app_name.
+ * Sets the informations of application @name inside the list of
+ * applications that have registered a bookmark for @uri inside
+ * @bookmark.
  *
- * Every bookmark inside a #EggBookmarkFile must have at least an application
- * registered.  Each application must provide a name, a command line useful for
- * launching the bookmark, the number of times the bookmark has been registered
- * by the application and the last time the application registered this
- * bookmark.
+ * You should rarely use this function; use egg_bookmark_file_add_application()
+ * instead.
  *
- * The @app_name might be the same as returned by g_get_application_name().
- * The @app_exec might have one of these two modifiers: "%f", which will
- * be expanded as the local file name retrieved from the bookmark's URI; "%u"
- * which will be expanded as the bookmark's URI.  The expansion is done
- * automatically when retrieving the stored command line using the
- * egg_bookmark_file_get_app_info() function.
- * If @count is -1, the current registration count will be increased by one.
- * If @stamp is -1, the current time will be used.
+ * @name can be any UTF-8 encoded string used to identify an
+ * application.
+ * @exec can have one of these two modifiers: "%f", which will
+ * be expanded as the local file name retrieved from the bookmark's
+ * URI; "%u", which will be expanded as the bookmark's URI.
+ * The expansion is done automatically when retrieving the stored
+ * command line using the egg_bookmark_file_get_app_info() function.
+ * @count is the number of times the application has registered the
+ * bookmark; if is =< 0, the current registration count will be increased
+ * by one.
+ * @stamp is the Unix time of the last registration; if it is -1, the
+ * current time will be used.
  *
  * If no bookmark for @uri is found then it is created.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_app_info (EggBookmarkFile *bookmark,
 				const gchar     *uri,
-				const gchar     *app_name,
-				const gchar     *app_exec,
+				const gchar     *name,
+				const gchar     *exec,
 				guint            count,
 				time_t           stamp)
 {
@@ -3154,15 +3519,9 @@ egg_bookmark_file_set_app_info (EggBookmarkFile *bookmark,
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
-  g_return_if_fail (app_name != NULL);
-  g_return_if_fail (app_exec != NULL);
+  g_return_if_fail (name != NULL);
+  g_return_if_fail (exec != NULL);
   
-  if (stamp == (time_t) -1)
-    stamp = time (NULL);
-  
-  if (count == 0)
-    count = 1;
-
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
@@ -3170,21 +3529,21 @@ egg_bookmark_file_set_app_info (EggBookmarkFile *bookmark,
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
-  ai = egg_bookmark_item_lookup_app_info (item, app_name);
+  ai = egg_bookmark_item_lookup_app_info (item, name);
   if (!ai)
     {
-      ai = egg_bookmark_app_info_new (app_name);
-      ai->exec = g_strdup (app_exec);
+      ai = egg_bookmark_app_info_new (name);
+      ai->exec = g_strdup (exec);
 
-      if (count == -1)
-	ai->count = 1;
-      else
+      if (count > 0)
 	ai->count = count;
-      
-      if (stamp == (time_t) -1)
-	ai->stamp = time (NULL);
       else
-        ai->stamp = stamp;
+	ai->count = 1;
+      
+      if (stamp != (time_t) -1)
+	ai->stamp = stamp;
+      else
+        ai->stamp = time (NULL);
       
       if (!item->metadata)
 	item->metadata = egg_bookmark_metadata_new ();
@@ -3194,19 +3553,18 @@ egg_bookmark_file_set_app_info (EggBookmarkFile *bookmark,
     }
   else
     {
-      if (count == -1)
-        ai->count += 1;
-      else
+      if (count > 0)
         ai->count = count;
-      
-      if (stamp == (time_t) -1)
-        ai->stamp = time (NULL);
       else
-	ai->stamp = stamp;
+        ai->count += 1;
+      
+      if (stamp != (time_t) -1)
+        ai->stamp = stamp;
+      else
+	ai->stamp = time (NULL);
     }
   
   item->modified = time (NULL);
-  
   bookmark->is_dirty = TRUE;
 }
 
@@ -3273,6 +3631,8 @@ expand_exec_line (const gchar *exec_fmt,
  * #EGG_BOOKMARK_FILE_ERROR_APP_NOT_REGISTERED.
  *
  * Return value: %TRUE on success.
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_get_app_info (EggBookmarkFile  *bookmark,
@@ -3295,7 +3655,7 @@ egg_bookmark_file_get_app_info (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return FALSE;
     }
@@ -3338,6 +3698,8 @@ egg_bookmark_file_get_app_info (EggBookmarkFile  *bookmark,
  *
  * Return value: a newly allocated %NULL-terminated array of strings.
  *   Use g_strfreev() to free it.
+ *
+ * Since: 2.14
  */
 gchar **
 egg_bookmark_file_get_applications (EggBookmarkFile  *bookmark,
@@ -3358,7 +3720,7 @@ egg_bookmark_file_get_applications (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return NULL;
     }
@@ -3401,7 +3763,9 @@ egg_bookmark_file_get_applications (EggBookmarkFile  *bookmark,
  * 
  * Gets the number of bookmarks inside @bookmark.
  * 
- * Return value: the number of bookmarks.
+ * Return value: the number of bookmarks
+ *
+ * Since: 2.14
  */
 gint
 egg_bookmark_file_get_size (EggBookmarkFile *bookmark)
@@ -3424,7 +3788,9 @@ egg_bookmark_file_get_size (EggBookmarkFile *bookmark)
  * In the event the URI cannot be found, %FALSE is returned and
  * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
  *
- * Return value: %TRUE on success, %FALSE otherwise.
+ * Return value: %TRUE if the URI was successfully changed
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_move_item (EggBookmarkFile  *bookmark,
@@ -3443,7 +3809,7 @@ egg_bookmark_file_move_item (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   old_uri);
       return FALSE;
     }
@@ -3506,6 +3872,8 @@ egg_bookmark_file_move_item (EggBookmarkFile  *bookmark,
  * the currently set icon.
  *
  * If no bookmark for @uri is found it is created.
+ *
+ * Since: 2.14
  */
 void
 egg_bookmark_file_set_icon (EggBookmarkFile *bookmark,
@@ -3540,7 +3908,6 @@ egg_bookmark_file_set_icon (EggBookmarkFile *bookmark,
     item->metadata->icon_mime = g_strdup ("application/octet-stream");
   
   item->modified = time (NULL);
-  
   bookmark->is_dirty = TRUE;
 }
 
@@ -3559,6 +3926,8 @@ egg_bookmark_file_set_icon (EggBookmarkFile *bookmark,
  *
  * Return value: %TRUE if the icon for the bookmark for the URI was found.
  *   You should free the returned strings.
+ *
+ * Since: 2.14
  */
 gboolean
 egg_bookmark_file_get_icon (EggBookmarkFile  *bookmark,
@@ -3577,7 +3946,7 @@ egg_bookmark_file_get_icon (EggBookmarkFile  *bookmark,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
 		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No item found for URI '%s'"),
+		   _("No bookmark found for URI '%s'"),
 		   uri);
       return FALSE;
     }

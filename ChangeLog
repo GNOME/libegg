@@ -1,3 +1,15 @@
+2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
+
+	* libegg/bookmarkfile/eggbookmarkfile.c:
+	* libegg/bookmarkfile/eggbookmarkfile.h: add commodity functions for
+	adding, removing and querying groups and applications.
+
+	* libegg/bookmarkfile/eggbookmarkfile.h: remove error codes for
+	LOCK and UNLOCK, since we don't use file locking anymore.
+
+	* libegg/bookmarkfile/eggbookmarkfile.c: clean up code; add "Since"
+	notices; update documentation and error messages.
+
 Sat Mar  4 17:33:21 2006  Soeren Sandmann  <sandmann@redhat.com>
 
 	* libegg/sequence/testsequence.c (main): Implement tests for

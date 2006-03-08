@@ -36,8 +36,6 @@ typedef enum
   EGG_BOOKMARK_FILE_ERROR_APP_NOT_REGISTERED,
   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
   EGG_BOOKMARK_FILE_ERROR_DUPLICATE_URI,
-  EGG_BOOKMARK_FILE_ERROR_LOCK,
-  EGG_BOOKMARK_FILE_ERROR_UNLOCK,
   EGG_BOOKMARK_FILE_ERROR_READ,
   EGG_BOOKMARK_FILE_ERROR_UNKNOWN_ENCODING,
   EGG_BOOKMARK_FILE_ERROR_WRITE,
@@ -94,10 +92,29 @@ void             egg_bookmark_file_set_groups          (EggBookmarkFile  *bookma
 							const gchar      *uri,
 							const gchar     **groups,
 							gsize             length);
+void             egg_bookmark_file_add_group           (EggBookmarkFile  *bookmark,
+							const gchar      *uri,
+							const gchar      *group);
+gboolean         egg_bookmark_file_has_group           (EggBookmarkFile  *bookmark,
+							const gchar      *uri,
+							const gchar      *group,
+							GError          **error);
 gchar **         egg_bookmark_file_get_groups          (EggBookmarkFile  *bookmark,
 							const gchar      *uri,
 							gsize            *length,
 							GError          **error) G_GNUC_MALLOC;
+void             egg_bookmark_file_add_application     (EggBookmarkFile  *bookmark,
+							const gchar      *uri,
+							const gchar      *name,
+							const gchar      *exec);
+gboolean         egg_bookmark_file_has_application     (EggBookmarkFile  *bookmark,
+							const gchar      *uri,
+							const gchar      *name,
+							GError          **error);
+gchar **         egg_bookmark_file_get_applications    (EggBookmarkFile  *bookmark,
+						        const gchar      *uri,
+						        gsize            *length,
+						        GError          **error) G_GNUC_MALLOC;
 void             egg_bookmark_file_set_app_info        (EggBookmarkFile  *bookmark,
 							const gchar      *uri,
 							const gchar      *name,
@@ -111,10 +128,6 @@ gboolean         egg_bookmark_file_get_app_info        (EggBookmarkFile  *bookma
 							guint            *count,
 							time_t           *stamp,
 							GError          **error);
-gchar **         egg_bookmark_file_get_applications    (EggBookmarkFile  *bookmark,
-						        const gchar      *uri,
-						        gsize            *length,
-						        GError          **error) G_GNUC_MALLOC;
 void             egg_bookmark_file_set_is_private      (EggBookmarkFile  *bookmark,
 						        const gchar      *uri,
 						        gboolean          is_private);
@@ -153,6 +166,14 @@ gboolean         egg_bookmark_file_has_item            (EggBookmarkFile  *bookma
 gint             egg_bookmark_file_get_size            (EggBookmarkFile  *bookmark);
 gchar **         egg_bookmark_file_get_uris            (EggBookmarkFile  *bookmark,
 						        gsize            *length) G_GNUC_MALLOC;
+gboolean         egg_bookmark_file_remove_group        (EggBookmarkFile  *bookmark,
+							const gchar      *uri,
+							const gchar      *group,
+							GError          **error);
+gboolean         egg_bookmark_file_remove_application  (EggBookmarkFile  *bookmark,
+							const gchar      *uri,
+							const gchar      *name,
+							GError          **error);
 void             egg_bookmark_file_remove_item         (EggBookmarkFile  *bookmark,
 						        const gchar      *uri,
 							GError          **error);
