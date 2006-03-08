@@ -8,5 +8,6 @@ eggrecenttypebuiltins.*
 test-viewer
 test-manager
 test-recent-menu
+test-recent-widget
 populate-recent
 

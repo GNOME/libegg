@@ -1,5 +1,14 @@
 2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
 
+	* libegg/recentchooser/eggrecentmanager.c
+	(egg_recent_manager_add_full): use the new BookmarkFile API to
+	merge group names and to register the application of a new
+	recently used document.
+
+	* libegg/recentchooser/.cvsignore: add missing test-recent-widget.
+
+2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
+
 	* libegg/bookmarkfile/eggbookmarkfile.h:
 	* libegg/bookmarkfile/eggbookmarkfile.c
 	(egg_bookmark_file_set_app_info): do not use an unsigned int if

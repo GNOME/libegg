@@ -821,72 +821,20 @@ egg_recent_manager_add_full (EggRecentManager     *recent_manager,
   
   if (data->groups && data->groups[0] != '\0')
     {
-      gchar **old_groups;
-      gsize n_old_groups;
+      gint j;
       
-      /* if the recent item already belongs to some group, we must merge
-       * the new groups with them, avoiding duplicates, since the
-       * call to egg_bookmark_file_set_group() will overwrite all
-       * current groups with the new ones.
-       */
-      old_groups = egg_bookmark_file_get_groups (priv->recent_items, uri,
-      						 &n_old_groups,
-						 NULL);
-      if (!n_old_groups)
-        egg_bookmark_file_set_groups (priv->recent_items,
-                                      uri,
-                                      (const gchar **) data->groups,
-                                      G_N_ELEMENTS (data->groups));
-      else
-        {
-          gchar **new_groups;
-          gsize i, j, k;
-          
-          /* allocate enough space for a vector containing all groups
-           * both old and new
-           */
-          new_groups = g_new0 (gchar *, n_old_groups + G_N_ELEMENTS (data->groups) + 1);
-          
-          for (i = 0; i < n_old_groups; i++)
-            new_groups[i] = g_strdup (old_groups[i]);
-          
-          for (j = 0; j < G_N_ELEMENTS (data->groups); j++)
-            {
-              gboolean found = FALSE;
-	      
-              for (k = 0; k < n_old_groups; k++)
-                {
-                  if (strcmp (data->groups[j], new_groups[k]) == 0)
-                    {
-                      found = TRUE;
-		      break;
-		    }
-		}
-	      
-	      if (!found)
-	        new_groups[++i] = g_strdup (data->groups[j]);
-	    }
-          
-          new_groups[i] = NULL;
-          
-          egg_bookmark_file_set_groups (priv->recent_items, uri,
-          				(const gchar **) new_groups,
-          				i);
-          
-          g_strfreev (new_groups);
-        }
-      
-      g_strfreev (old_groups);
+      for (j = 0; j < G_N_ELEMENTS (data->groups); j++)
+        egg_bookmark_file_add_group (priv->recent_items, uri,
+				     (data->groups)[j]);
     }
   
   /* register the application; this will take care of updating the
-   * registration count and time
+   * registration count and time in case the application has
+   * already registered the same document inside the list
    */
-  egg_bookmark_file_set_app_info (priv->recent_items, uri,
-		  		  data->app_name,
-				  data->app_exec,
-				  -1,
-				  (time_t) -1);
+  egg_bookmark_file_add_application (priv->recent_items, uri,
+		  		     data->app_name,
+				     data->app_exec);
   
   egg_bookmark_file_set_is_private (priv->recent_items, uri,
 		  		    data->is_private);
