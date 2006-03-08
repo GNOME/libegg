@@ -119,7 +119,7 @@ void             egg_bookmark_file_set_app_info        (EggBookmarkFile  *bookma
 							const gchar      *uri,
 							const gchar      *name,
 							const gchar      *launcher,
-							guint             count,
+							gint              count,
 							time_t            stamp);
 gboolean         egg_bookmark_file_get_app_info        (EggBookmarkFile  *bookmark,
 							const gchar      *uri,

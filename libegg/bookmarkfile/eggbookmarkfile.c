@@ -3191,8 +3191,8 @@ egg_bookmark_file_remove_group (EggBookmarkFile  *bookmark,
  * @groups: an array of group names, or %NULL to remove all groups
  * @length: number of group name values in @groups
  *
- * Sets a list of group names for the item with URI @uri.  Every previously
- * set group names are removed.
+ * Sets a list of group names for the item with URI @uri.  Each previously
+ * set group name list is removed.
  *
  * If @uri cannot be found then an item for it is created.
  */
@@ -3250,6 +3250,9 @@ egg_bookmark_file_set_groups (EggBookmarkFile  *bookmark,
  *
  * In the event the URI cannot be found, %NULL is returned and
  * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
+ *
+ * The returned array is %NULL terminated, so @length may optionally
+ * be %NULL.
  *
  * Return value: a newly allocated %NULL-terminated array of group names.
  *   Use g_strfreev() to free it.
@@ -3511,7 +3514,7 @@ egg_bookmark_file_set_app_info (EggBookmarkFile *bookmark,
 				const gchar     *uri,
 				const gchar     *name,
 				const gchar     *exec,
-				guint            count,
+				gint             count,
 				time_t           stamp)
 {
   EggBookmarkItem *item;

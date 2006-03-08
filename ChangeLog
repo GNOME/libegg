@@ -1,5 +1,12 @@
 2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
 
+	* libegg/bookmarkfile/eggbookmarkfile.h:
+	* libegg/bookmarkfile/eggbookmarkfile.c
+	(egg_bookmark_file_set_app_info): do not use an unsigned int if
+	we can expect a negative value as an argument.
+
+2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
+
 	* libegg/bookmarkfile/bookmark-spec.dtd: add a simple DTD for
 	the desktop bookmark specification.
 
