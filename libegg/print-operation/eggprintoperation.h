@@ -60,6 +60,15 @@ struct _EggPrintOperationClass
 		     int page_nr);
   void (*end_print) (EggPrintOperation *operation,
 		     EggPrintContext *context);
+
+  /* Padding for future expansion */
+  void (*_egg_reserved1) (void);
+  void (*_egg_reserved2) (void);
+  void (*_egg_reserved3) (void);
+  void (*_egg_reserved4) (void);
+  void (*_egg_reserved5) (void);
+  void (*_egg_reserved6) (void);
+  void (*_egg_reserved7) (void);
 };
 
 typedef enum {

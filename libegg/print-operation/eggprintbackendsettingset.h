@@ -55,6 +55,16 @@ struct _EggPrintBackendSettingSetClass
   GObjectClass parent_class;
 
   void (*changed) (EggPrintBackendSettingSet *setting);
+
+
+  /* Padding for future expansion */
+  void (*_egg_reserved1) (void);
+  void (*_egg_reserved2) (void);
+  void (*_egg_reserved3) (void);
+  void (*_egg_reserved4) (void);
+  void (*_egg_reserved5) (void);
+  void (*_egg_reserved6) (void);
+  void (*_egg_reserved7) (void);
 };
 
 typedef void (*EggPrintBackendSettingSetFunc) (EggPrintBackendSetting  *setting,

@@ -17,12 +17,12 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <config.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include "config.h"
-//#include <glib/gi18n-lib.h>
+#include "eggintl.h"
 #include <gtk/gtk.h>
 #include <gtk/gtkprivate.h>
 
@@ -41,8 +41,25 @@ enum {
   LAST_SIGNAL
 };
 
+enum {
+  PROP_0,
+  PROP_NAME,
+  PROP_STATE_MESSAGE,
+  PROP_LOCATION,
+  PROP_ICON_NAME,
+  PROP_JOB_COUNT,
+};
+
 static guint signals[LAST_SIGNAL] = { 0 };
 
+static void egg_printer_set_property (GObject      *object,
+				      guint         prop_id,
+				      const GValue *value,
+				      GParamSpec   *pspec);
+static void egg_printer_get_property (GObject      *object,
+				      guint         prop_id,
+				      GValue       *value,
+				      GParamSpec   *pspec);
 
 G_DEFINE_TYPE (EggPrinter, egg_printer, G_TYPE_OBJECT);
 
@@ -54,6 +71,9 @@ egg_printer_class_init (EggPrinterClass *class)
 
   object_class->finalize = egg_printer_finalize;
 
+  object_class->set_property = egg_printer_set_property;
+  object_class->get_property = egg_printer_get_property;
+
   signals[SETTINGS_RETRIEVED] =
     g_signal_new ("settings-retrieved",
 		  G_TYPE_FROM_CLASS (class),
@@ -64,7 +84,45 @@ egg_printer_class_init (EggPrinterClass *class)
 		  G_TYPE_NONE, 0);
 
 
-  g_type_class_add_private (class, sizeof (EggPrinterPrivate));  
+  g_type_class_add_private (class, sizeof (EggPrinterPrivate));
+
+  g_object_class_install_property (G_OBJECT_CLASS (class),
+                                   PROP_NAME,
+                                   g_param_spec_string ("name",
+						        P_("Name"),
+						        P_("Name of the printer job"),
+						        NULL,
+							GTK_PARAM_READABLE));
+  g_object_class_install_property (G_OBJECT_CLASS (class),
+                                   PROP_STATE_MESSAGE,
+                                   g_param_spec_string ("state-messate",
+						        P_("State Message"),
+						        P_("String giving the current state of the printer"),
+						        NULL,
+							GTK_PARAM_READABLE));
+  g_object_class_install_property (G_OBJECT_CLASS (class),
+                                   PROP_LOCATION,
+                                   g_param_spec_string ("location",
+						        P_("Location"),
+						        P_("The location of the printer"),
+						        NULL,
+							GTK_PARAM_READABLE));
+  g_object_class_install_property (G_OBJECT_CLASS (class),
+                                   PROP_ICON_NAME,
+                                   g_param_spec_string ("icon-name",
+						        P_("Icon Name"),
+						        P_("The icon name to use for the printer"),
+						        NULL,
+							GTK_PARAM_READABLE));
+  g_object_class_install_property (G_OBJECT_CLASS (class),
+                                   PROP_JOB_COUNT,
+				   g_param_spec_int ("job-count",
+ 						     P_("Job Count"),
+ 						     P_("Number of jobs queued in the printer"),
+ 						     0,
+ 						     G_MAXINT,
+ 						     0,
+ 						     GTK_PARAM_READABLE));
 }
 
 static void
@@ -100,6 +158,59 @@ egg_printer_finalize (GObject *object)
   if (G_OBJECT_CLASS (egg_printer_parent_class)->finalize)
     G_OBJECT_CLASS (egg_printer_parent_class)->finalize (object);
 }
+
+static void
+egg_printer_set_property (GObject         *object,
+			  guint            prop_id,
+			  const GValue    *value,
+			  GParamSpec      *pspec)
+{
+  /* No writable properties */
+}
+
+static void
+egg_printer_get_property (GObject    *object,
+			  guint       prop_id,
+			  GValue     *value,
+			  GParamSpec *pspec)
+{
+  EggPrinter *printer = EGG_PRINTER (object);
+
+  switch (prop_id)
+    {
+    case PROP_NAME:
+      if (printer->priv->name)
+	g_value_set_string (value, printer->priv->name);
+      else
+	g_value_set_string (value, "");
+      break;
+    case PROP_STATE_MESSAGE:
+      if (printer->priv->state_message)
+	g_value_set_string (value, printer->priv->state_message);
+      else
+	g_value_set_string (value, "");
+      break;
+    case PROP_LOCATION:
+      if (printer->priv->location)
+	g_value_set_string (value, printer->priv->location);
+      else
+	g_value_set_string (value, "");
+      break;
+    case PROP_ICON_NAME:
+      if (printer->priv->icon_name)
+	g_value_set_string (value, printer->priv->icon_name);
+      else
+	g_value_set_string (value, "");
+      break;
+    case PROP_JOB_COUNT:
+      g_value_set_int (value, printer->priv->job_count);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+    }
+}
+
 
 /**
  * egg_printer_new:

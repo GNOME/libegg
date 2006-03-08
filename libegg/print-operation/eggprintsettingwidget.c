@@ -17,16 +17,16 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <config.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include "config.h"
+#include "eggintl.h"
 #include <gtk/gtk.h>
+#include <gtk/gtkprivate.h>
 
 #include "eggprintsettingwidget.h"
-
-#define _(x) (x)
 
 #define EGG_PRINT_SETTING_WIDGET_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINT_SETTING_WIDGET, EggPrintSettingWidgetPrivate))
@@ -54,10 +54,23 @@ enum {
   LAST_SIGNAL
 };
 
+enum {
+  PROP_0,
+  PROP_SOURCE,
+};
+
 static guint signals[LAST_SIGNAL] = { 0 };
 
 G_DEFINE_TYPE (EggPrintSettingWidget, egg_print_setting_widget, GTK_TYPE_HBOX);
 
+static void egg_print_setting_widget_set_property (GObject      *object,
+						   guint         prop_id,
+						   const GValue *value,
+						   GParamSpec   *pspec);
+static void egg_print_setting_widget_get_property (GObject      *object,
+						   guint         prop_id,
+						   GValue       *value,
+						   GParamSpec   *pspec);
 
 static void
 egg_print_setting_widget_class_init (EggPrintSettingWidgetClass *class)
@@ -69,6 +82,8 @@ egg_print_setting_widget_class_init (EggPrintSettingWidgetClass *class)
   widget_class = (GtkWidgetClass *) class;
 
   object_class->finalize = egg_print_setting_widget_finalize;
+  object_class->set_property = egg_print_setting_widget_set_property;
+  object_class->get_property = egg_print_setting_widget_get_property;
 
   g_type_class_add_private (class, sizeof (EggPrintSettingWidgetPrivate));  
 
@@ -80,6 +95,15 @@ egg_print_setting_widget_class_init (EggPrintSettingWidgetClass *class)
 		  NULL, NULL,
 		  g_cclosure_marshal_VOID__VOID,
 		  G_TYPE_NONE, 0);
+
+  g_object_class_install_property (object_class,
+                                   PROP_SOURCE,
+                                   g_param_spec_object ("source",
+							P_("Source setting"),
+							P_("The PrintBackendSetting backing this widget"),
+							EGG_TYPE_PRINT_BACKEND_SETTING,
+							GTK_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
 }
 
 static void
@@ -106,6 +130,48 @@ egg_print_setting_widget_finalize (GObject *object)
 }
 
 static void
+egg_print_setting_widget_set_property (GObject         *object,
+				       guint            prop_id,
+				       const GValue    *value,
+				       GParamSpec      *pspec)
+{
+  EggPrintSettingWidget *setting;
+  
+  setting = EGG_PRINT_SETTING_WIDGET (object);
+
+  switch (prop_id)
+    {
+    case PROP_SOURCE:
+      egg_print_setting_widget_set_source (setting, g_value_get_object (value));
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+    }
+}
+
+static void
+egg_print_setting_widget_get_property (GObject    *object,
+				       guint       prop_id,
+				       GValue     *value,
+				       GParamSpec *pspec)
+{
+  EggPrintSettingWidget *setting;
+  
+  setting = EGG_PRINT_SETTING_WIDGET (object);
+
+  switch (prop_id)
+    {
+    case PROP_SOURCE:
+      g_value_set_object (value, setting->priv->source);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+    }
+}
+
+static void
 emit_changed (EggPrintSettingWidget *widget)
 {
   g_signal_emit (widget, signals[CHANGED], 0);
@@ -114,18 +180,8 @@ emit_changed (EggPrintSettingWidget *widget)
 GtkWidget *
 egg_print_setting_widget_new (EggPrintBackendSetting *source)
 {
-  GtkWidget *result;
-  EggPrintSettingWidget *setting;
-
-  result = g_object_new (EGG_TYPE_PRINT_SETTING_WIDGET, NULL);
-
-  setting = EGG_PRINT_SETTING_WIDGET (result);
-
-  egg_print_setting_widget_set_source (setting, source);
-  
-  return result;
+  return g_object_new (EGG_TYPE_PRINT_SETTING_WIDGET, "source", source, NULL);
 }
-
 
 static void
 source_changed_cb (EggPrintBackendSetting *source,
@@ -159,6 +215,8 @@ egg_print_setting_widget_set_source (EggPrintSettingWidget  *setting,
 
   construct_widgets (setting);
   update_widgets (setting);
+
+  g_object_notify (G_OBJECT (setting), "source");
 }
 
 static GtkWidget *
@@ -179,18 +237,6 @@ combo_box_new (void)
                                   NULL);
 
   return combo_box;
-}
-
-static void
-combo_box_clear (GtkComboBox *combo)
-{
-  GtkTreeModel *model;
-  GtkListStore *store;
-  
-  model = gtk_combo_box_get_model (GTK_COMBO_BOX (combo));
-  store = GTK_LIST_STORE (model);
-
-  gtk_list_store_clear (store);
 }
   
 static void
@@ -343,7 +389,7 @@ construct_widgets (EggPrintSettingWidget *setting)
   if (source == NULL)
     {
       setting->priv->combo = combo_box_new ();
-      combo_box_append (setting->priv->combo,_("Not availible"), "None");
+      combo_box_append (setting->priv->combo,_("Not available"), "None");
       gtk_combo_box_set_active (GTK_COMBO_BOX (setting->priv->combo), 0);
       gtk_widget_set_sensitive (setting->priv->combo, FALSE);
       gtk_widget_show (setting->priv->combo);

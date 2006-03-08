@@ -682,7 +682,7 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	    {
 	      EggPaperSize *paper_size = egg_paper_size_new (page_size_from_win32 (devmode->dmPaperSize));
 	      egg_printer_settings_set_paper_size (settings, paper_size);
-	      g_object_unref (paper_size);
+	      egg_paper_size_free (paper_size);
 	    }
 	  else
 	    {
@@ -691,7 +691,7 @@ dialog_to_printer_settings (EggPrintOperation *op,
 								    devmode->dmPaperLength * 10.0,
 								    EGG_UNIT_MM);
 	      egg_printer_settings_set_paper_size (settings, paper_size);
-	      g_object_unref (paper_size);
+	      egg_paper_size_free (paper_size);
 	    }
 	}
 
@@ -958,6 +958,7 @@ dialog_from_printer_settings (EggPrintOperation *op,
 	  devmode->dmPaperWidth = egg_paper_size_get_width (paper_size, EGG_UNIT_MM) * 10.0;
 	  devmode->dmPaperLength = egg_paper_size_get_height (paper_size, EGG_UNIT_MM) * 10.0;
 	}
+      egg_paper_size_free (paper_size);
     }
 
   if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_SCALE))

@@ -87,7 +87,7 @@ egg_page_setup_finalize (GObject *object)
 {
   EggPageSetup *setup = EGG_PAGE_SETUP (object);
   
-  g_object_unref (setup->paper_size);
+  egg_paper_size_free (setup->paper_size);
   
   G_OBJECT_CLASS (egg_page_setup_parent_class)->finalize (object);
 }
@@ -97,7 +97,7 @@ egg_page_setup_init (EggPageSetup *setup)
 {
   setup->orientation = EGG_PAGE_ORIENTATION_PORTRAIT;
   /* TODO: Default should be picked based on locale */
-  setup->paper_size = egg_paper_size_new (EEL_PAPER_NAME_A4);
+  setup->paper_size = egg_paper_size_new (EGG_PAPER_NAME_A4);
   setup->top_margin = to_mm (0.25, EGG_UNIT_INCH);
   setup->bottom_margin = to_mm (0.25, EGG_UNIT_INCH);
   setup->left_margin = to_mm (0.25, EGG_UNIT_INCH);

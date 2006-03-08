@@ -1021,9 +1021,9 @@ value_is_off (const char *value)
 }
 
 static int
-availible_choices (ppd_file_t *ppd,
+available_choices (ppd_file_t *ppd,
 		   ppd_option_t *option,
-		   ppd_choice_t ***availible,
+		   ppd_choice_t ***available,
 		   gboolean keep_if_only_one_option)
 {
   ppd_option_t *other_option;
@@ -1036,8 +1036,8 @@ availible_choices (ppd_file_t *ppd,
   int num_conflicts;
   gboolean all_default;
 
-  if (availible)
-    *availible = NULL;
+  if (available)
+    *available = NULL;
 
   conflicts = g_new0 (char, option->num_choices);
 
@@ -1125,15 +1125,15 @@ availible_choices (ppd_file_t *ppd,
   if (num_conflicts == option->num_choices)
     return 0;
     
-  if (availible)
+  if (available)
     {
-      *availible = g_new (ppd_choice_t *, option->num_choices - num_conflicts);
+      *available = g_new (ppd_choice_t *, option->num_choices - num_conflicts);
 
       i = 0;
       for (j = 0; j < option->num_choices; j++)
 	{
 	  if (!conflicts[j]) {
-	    (*availible)[i++] = &option->choices[j];
+	    (*available)[i++] = &option->choices[j];
 	  }
 	}
     }
@@ -1147,7 +1147,7 @@ create_pickone_setting (ppd_file_t *ppd_file,
 			const char *gtk_name)
 {
   EggPrintBackendSetting *setting;
-  ppd_choice_t **availible;
+  ppd_choice_t **available;
   char *label;
   int n_choices;
   int i;
@@ -1156,7 +1156,7 @@ create_pickone_setting (ppd_file_t *ppd_file,
   
   setting = NULL;
 
-  n_choices = availible_choices (ppd_file, option, &availible, g_str_has_prefix (gtk_name, "gtk-"));
+  n_choices = available_choices (ppd_file, option, &available, g_str_has_prefix (gtk_name, "gtk-"));
   if (n_choices > 0)
     {
       label = get_option_text (ppd_file, option);
@@ -1167,14 +1167,14 @@ create_pickone_setting (ppd_file_t *ppd_file,
       egg_print_backend_setting_allocate_choices (setting, n_choices);
       for (i = 0; i < n_choices; i++)
 	{
-	  setting->choices[i] = g_strdup (availible[i]->choice);
-	  setting->choices_display[i] = get_choice_text (ppd_file, availible[i]);
+	  setting->choices[i] = g_strdup (available[i]->choice);
+	  setting->choices_display[i] = get_choice_text (ppd_file, available[i]);
 	}
       egg_print_backend_setting_set (setting, option->defchoice);
     }
   else
     g_warning ("Ignoring pickone %s\n", option->text);
-  g_free (availible);
+  g_free (available);
 
   return setting;
 }
@@ -1185,7 +1185,7 @@ create_boolean_setting (ppd_file_t *ppd_file,
 			const char *gtk_name)
 {
   EggPrintBackendSetting *setting;
-  ppd_choice_t **availible;
+  ppd_choice_t **available;
   char *label;
   int n_choices;
 
@@ -1193,7 +1193,7 @@ create_boolean_setting (ppd_file_t *ppd_file,
   
   setting = NULL;
 
-  n_choices = availible_choices (ppd_file, option, &availible, g_str_has_prefix (gtk_name, "gtk-"));
+  n_choices = available_choices (ppd_file, option, &available, g_str_has_prefix (gtk_name, "gtk-"));
   if (n_choices == 2)
     {
       label = get_option_text (ppd_file, option);
@@ -1211,7 +1211,7 @@ create_boolean_setting (ppd_file_t *ppd_file,
     }
   else
     g_warning ("Ignoring boolean %s\n", option->text);
-  g_free (availible);
+  g_free (available);
 
   return setting;
 }

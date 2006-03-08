@@ -79,7 +79,7 @@ unix_finish_send  (EggPrintJob *job,
 
   if (error != NULL && *error != NULL)
     {
-      GtkDialog *edialog;
+      GtkWidget *edialog;
       GError *err = *error;
 
       edialog = gtk_message_dialog_new (parent, 
@@ -89,8 +89,8 @@ unix_finish_send  (EggPrintJob *job,
                                         "Error printing: %s",
                                         err->message);
 
-      gtk_dialog_run (edialog);
-      gtk_widget_destroy (GTK_WIDGET (edialog));
+      gtk_dialog_run (GTK_DIALOG (edialog));
+      gtk_widget_destroy (edialog);
     }
 }
 

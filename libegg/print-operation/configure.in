@@ -30,7 +30,7 @@ changequote(,)dnl
 if test "x$GCC" = "xyes"; then
   case " $CFLAGS " in
   *[\ \	]-Wall[\ \	]*) ;;
-  *) CFLAGS="$CFLAGS -Wall" ;;
+  *) CFLAGS="$CFLAGS -Wall -Werror" ;;
   esac
 
   if test "x$enable_ansi" = "xyes"; then
@@ -54,6 +54,10 @@ AC_TYPE_SIGNAL
 
 AC_CHECK_FUNCS(memmove strerror)
 
+GETTEXT_PACKAGE=gtk20
+AC_SUBST(GETTEXT_PACKAGE)
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE")
+		       
 ## here we get the flags we'll actually use
 PKG_CHECK_MODULES(EGG, gtk+-2.0 >= 2.5.0 gobject-2.0 >= 2.5.0)
 AC_SUBST(EGG_LIBS)

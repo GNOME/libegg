@@ -29,33 +29,31 @@ G_BEGIN_DECLS
 typedef struct _EggPaperSize EggPaperSize;
 
 #define EGG_TYPE_PAPER_SIZE    (egg_paper_size_get_type ())
-#define EGG_PAPER_SIZE(obj)    (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_PAPER_SIZE, EggPaperSize))
-#define EGG_IS_PAPER_SIZE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_PAPER_SIZE))
 
 /* Common names, from PWG 5101.1-2002 PWG: Standard for Media Standardized Names */
-#define EEL_PAPER_NAME_A0 "iso_a0"
-#define EEL_PAPER_NAME_A1 "iso_a1"
-#define EEL_PAPER_NAME_A2 "iso_a2"
-#define EEL_PAPER_NAME_A3 "iso_a3"
-#define EEL_PAPER_NAME_A4 "iso_a4"
-#define EEL_PAPER_NAME_A5 "iso_a5"
-#define EEL_PAPER_NAME_A6 "iso_a6"
-#define EEL_PAPER_NAME_A7 "iso_a7"
-#define EEL_PAPER_NAME_A8 "iso_a8"
-#define EEL_PAPER_NAME_A9 "iso_a9"
-#define EEL_PAPER_NAME_B0 "iso_b0"
-#define EEL_PAPER_NAME_B1 "iso_b1"
-#define EEL_PAPER_NAME_B2 "iso_b2"
-#define EEL_PAPER_NAME_B3 "iso_b3"
-#define EEL_PAPER_NAME_B4 "iso_b4"
-#define EEL_PAPER_NAME_B5 "iso_b5"
-#define EEL_PAPER_NAME_B6 "iso_b6"
-#define EEL_PAPER_NAME_B7 "iso_b7"
-#define EEL_PAPER_NAME_B8 "iso_b8"
-#define EEL_PAPER_NAME_B9 "iso_b9"
-#define EEL_PAPER_NAME_LETTER "na_letter"
-#define EEL_PAPER_NAME_EXECUTIVE "na_executive"
-#define EEL_PAPER_NAME_LEGAL "na_legal"
+#define EGG_PAPER_NAME_A0 "iso_a0"
+#define EGG_PAPER_NAME_A1 "iso_a1"
+#define EGG_PAPER_NAME_A2 "iso_a2"
+#define EGG_PAPER_NAME_A3 "iso_a3"
+#define EGG_PAPER_NAME_A4 "iso_a4"
+#define EGG_PAPER_NAME_A5 "iso_a5"
+#define EGG_PAPER_NAME_A6 "iso_a6"
+#define EGG_PAPER_NAME_A7 "iso_a7"
+#define EGG_PAPER_NAME_A8 "iso_a8"
+#define EGG_PAPER_NAME_A9 "iso_a9"
+#define EGG_PAPER_NAME_B0 "iso_b0"
+#define EGG_PAPER_NAME_B1 "iso_b1"
+#define EGG_PAPER_NAME_B2 "iso_b2"
+#define EGG_PAPER_NAME_B3 "iso_b3"
+#define EGG_PAPER_NAME_B4 "iso_b4"
+#define EGG_PAPER_NAME_B5 "iso_b5"
+#define EGG_PAPER_NAME_B6 "iso_b6"
+#define EGG_PAPER_NAME_B7 "iso_b7"
+#define EGG_PAPER_NAME_B8 "iso_b8"
+#define EGG_PAPER_NAME_B9 "iso_b9"
+#define EGG_PAPER_NAME_LETTER "na_letter"
+#define EGG_PAPER_NAME_EXECUTIVE "na_executive"
+#define EGG_PAPER_NAME_LEGAL "na_legal"
 
 GType egg_paper_size_get_type (void);
 
@@ -63,6 +61,7 @@ EggPaperSize *egg_paper_size_new         (const char *name);
 EggPaperSize *egg_paper_size_new_custom  (const char *name,
 					  double width, double height, EggUnit unit);
 EggPaperSize *egg_paper_size_copy        (EggPaperSize *other);
+void          egg_paper_size_free        (EggPaperSize *size);
 
 
 /* The width is always the shortest side, measure in mm */

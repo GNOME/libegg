@@ -1,3 +1,62 @@
+2006-03-08  Alexander Larsson  <alexl@redhat.com>
+
+	* TODO:
+	Added stuff
+	
+	* acconfig.h:
+	* configure.in:
+	Add -Werror and GETTEXT_PACKAGE
+	
+	* eggcupsutils.c: (egg_cups_request_encode_option):
+	Fix warning
+	
+	* eggcupsutils.h:
+	Re-indent function prototypes
+	
+	* eggintl.h:
+	Add a local version of gtkintl.h
+
+	* eggpapersize.[ch]:
+	Turn EggPaperSize into a boxed type.
+	s/EEL/EGG/
+	
+	* eggpagesetup.c:
+	Fixes for EggPaperSize being boxed
+	s/EEL/EGG/
+	
+	* eggprintbackend.h:
+	Remove old GtkFileSystem comment
+	
+	* eggprintbackendcups.c:
+	s/availible/available/
+	
+	* eggprintbackendsetting.h:
+	* eggprintbackendsettingset.h:
+	* eggprinter.h:
+	* eggprintjob.h:
+	* eggprintoperation.h:
+	* eggprintunixdialog.h:
+	Add padding to classes.
+	
+	* eggprinter.c:
+	Add properties
+	
+	* eggprintoperation-unix.c:
+	Fix warning
+	run dos2unix on file
+	
+	* eggprintoperation-win32.c:
+	* eggprintoperation.c:
+	Fixes for EggPaperSize being boxed
+	
+	* eggprintsettingwidget.c:
+	Add property for source, make constructor use it
+	s/availible/available/
+	
+	* eggprintunixdialog.c: (create_optional_page),
+	(create_advanced_page):
+	Remove strange bevels on extra tabs
+	
 2006-03-07  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggcupsutils.c:

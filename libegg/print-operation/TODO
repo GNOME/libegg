@@ -17,3 +17,15 @@ Cups/Unix:
 
 Win32:
 * Use threads for the dialog, to allow repaints of other windows while they are up
+
+Remove page size & orientation from print dialog (is in page setup)
+Add nicer scaling to print dialog (scale to fit page size)
+add printer default option to InputSlot (see mail from m sweet)
+print preview ideas?
+
+<matthias> - should base64 move to glib ?
+<matthias> must use themed icons, not xpms
+<matthias> I think it would be good to have some overview notes in there somewhere, basically the contents of your email
+<matthias> since it can be a bit confusing that there are different layers which can be ported
+
+

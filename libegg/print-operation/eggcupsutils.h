@@ -97,39 +97,29 @@ enum
   EGG_CUPS_GET_DONE = EGG_CUPS_REQUEST_DONE
 };
 
-EggCupsRequest *egg_cups_request_new (http_t *connection,
-                                      EggCupsRequestType req_type, 
-                                      gint operation_id,
-                                      gint data_fd,
-                                      const char *server,
-                                      const char *resource);
-
-void            egg_cups_request_ipp_add_string (EggCupsRequest *request,
-                                                 ipp_tag_t group,
-                                                 ipp_tag_t tag,
-                                                 const char *name,
-                                                 const char *charset,
-                                                 const char *value);
-                                             
-gboolean        egg_cups_request_read_write (EggCupsRequest *request);
-
-EggCupsPollState egg_cups_request_get_poll_state (EggCupsRequest *request);
-
-void            egg_cups_request_free (EggCupsRequest *request);
-
-EggCupsResult  *egg_cups_request_get_result (EggCupsRequest *request);
-
-gboolean        egg_cups_request_is_done (EggCupsRequest *request);
-
-void            egg_cups_request_encode_option (EggCupsRequest *request,
-                                                const gchar *option,
-				                const gchar *value);
-
-gboolean        egg_cups_result_is_error (EggCupsResult *result);
-
-ipp_t          *egg_cups_result_get_response (EggCupsResult *result);
-
-const char     *egg_cups_result_get_error_string (EggCupsResult *result);
+EggCupsRequest * egg_cups_request_new             (http_t             *connection,
+						   EggCupsRequestType  req_type,
+						   gint                operation_id,
+						   gint                data_fd,
+						   const char         *server,
+						   const char         *resource);
+void             egg_cups_request_ipp_add_string  (EggCupsRequest     *request,
+						   ipp_tag_t           group,
+						   ipp_tag_t           tag,
+						   const char         *name,
+						   const char         *charset,
+						   const char         *value);
+gboolean         egg_cups_request_read_write      (EggCupsRequest     *request);
+EggCupsPollState egg_cups_request_get_poll_state  (EggCupsRequest     *request);
+void             egg_cups_request_free            (EggCupsRequest     *request);
+EggCupsResult  * egg_cups_request_get_result      (EggCupsRequest     *request);
+gboolean         egg_cups_request_is_done         (EggCupsRequest     *request);
+void             egg_cups_request_encode_option   (EggCupsRequest     *request,
+						   const gchar        *option,
+						   const gchar        *value);
+gboolean         egg_cups_result_is_error         (EggCupsResult      *result);
+ipp_t          * egg_cups_result_get_response     (EggCupsResult      *result);
+const char     * egg_cups_result_get_error_string (EggCupsResult      *result);
 
 G_END_DECLS
 #endif 

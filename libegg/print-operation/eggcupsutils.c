@@ -390,7 +390,7 @@ egg_cups_request_encode_option (EggCupsRequest *request,
           if (*value == '-')
 	    {
 	      lower = 1;
-	      s = value;
+	      s = (char *)value;
 	    }
 	  else
 	    lower = strtol(value, &s, 0);

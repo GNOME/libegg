@@ -25,25 +25,12 @@
 #define MM_PER_INCH 25.4
 #define POINTS_PER_INCH 72
 
-typedef struct _EggPaperSizeClass EggPaperSizeClass;
-
-#define EGG_IS_PAPER_SIZE_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_PAPER_SIZE))
-#define EGG_PAPER_SIZE_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_PAPER_SIZE, EggPaperSizeClass))
-#define EGG_PAPER_SIZE_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYPE_PAPER_SIZE, EggPaperSizeClass))
-
 struct _EggPaperSize
 {
-  GObject parent_instance;
-
   char *name;
   char *display_name;
   double width, height; /* Stored in mm */
   gboolean is_custom;
-};
-
-struct _EggPaperSizeClass
-{
-  GObjectClass parent_class;
 };
 
 typedef struct {
@@ -55,7 +42,18 @@ typedef struct {
 
 #include "paper_names.c"
 
-G_DEFINE_TYPE (EggPaperSize, egg_paper_size, G_TYPE_OBJECT)
+
+GType
+egg_paper_size_get_type (void)
+{
+  static GType our_type = 0;
+  
+  if (our_type == 0)
+    our_type = g_boxed_type_register_static ("EggPaperSize",
+					     (GBoxedCopyFunc)egg_paper_size_copy,
+					     (GBoxedFreeFunc)egg_paper_size_free);
+  return our_type;
+}
 
 static int
 page_info_compare (const void *_a, const void *_b)
@@ -100,32 +98,6 @@ from_mm (double len, EggUnit unit)
     return len / (MM_PER_INCH / POINTS_PER_INCH);
     break;
   }
-}
-
-static void
-egg_paper_size_finalize (GObject *object)
-{
-  EggPaperSize *size;
-
-  size = EGG_PAPER_SIZE (object);
-  
-  g_free (size->name);
-  g_free (size->display_name);
-  
-  G_OBJECT_CLASS (egg_paper_size_parent_class)->finalize (object);
-}
-
-static void
-egg_paper_size_init (EggPaperSize *size)
-{
-}
-
-static void
-egg_paper_size_class_init (EggPaperSizeClass *class)
-{
-  GObjectClass *gobject_class = (GObjectClass *)class;
-
-  gobject_class->finalize = egg_paper_size_finalize;
 }
 
 static gboolean
@@ -226,7 +198,7 @@ egg_paper_size_new (const char *name)
   double width, height;
   PageInfo *info;
 
-  size = g_object_new (EGG_TYPE_PAPER_SIZE, NULL);
+  size = g_new0 (EggPaperSize, 1);
 
   if (parse_full_media_size_name (name, &short_name, &width, &height)) {
     size->width = width;
@@ -265,7 +237,7 @@ egg_paper_size_new_custom (const char *name,
   g_return_val_if_fail (name != NULL, NULL);
   g_return_val_if_fail (unit != EGG_UNIT_PIXEL, NULL);
 
-  size = g_object_new (EGG_TYPE_PAPER_SIZE, NULL);
+  size = g_new0 (EggPaperSize, 1);
   size->name = g_strdup (name);
   
   /* Width is always the shorter one */
@@ -286,7 +258,7 @@ egg_paper_size_copy (EggPaperSize *other)
 {
   EggPaperSize *size;
 
-  size = g_object_new (EGG_TYPE_PAPER_SIZE, NULL);
+  size = g_new0 (EggPaperSize, 1);
 
   size->name = g_strdup (other->name);
   size->display_name = g_strdup (other->display_name);
@@ -296,7 +268,15 @@ egg_paper_size_copy (EggPaperSize *other)
 
   return size;
 }
-  
+
+void
+egg_paper_size_free (EggPaperSize *size)
+{
+  g_free (size->name);
+  g_free (size->display_name);
+  g_free (size);
+}
+ 
 G_CONST_RETURN char *
 egg_paper_size_get_name (EggPaperSize *size)
 {

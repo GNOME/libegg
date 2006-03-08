@@ -48,11 +48,15 @@ struct _EggPrintUnixDialogClass
 {
   GtkDialogClass parent_class;
 
+
   /* Padding for future expansion */
-  void (*_gtk_reserved1) (void);
-  void (*_gtk_reserved2) (void);
-  void (*_gtk_reserved3) (void);
-  void (*_gtk_reserved4) (void);
+  void (*_egg_reserved1) (void);
+  void (*_egg_reserved2) (void);
+  void (*_egg_reserved3) (void);
+  void (*_egg_reserved4) (void);
+  void (*_egg_reserved5) (void);
+  void (*_egg_reserved6) (void);
+  void (*_egg_reserved7) (void);
 };
 
 GType		 egg_print_unix_dialog_get_type	   (void) G_GNUC_CONST;

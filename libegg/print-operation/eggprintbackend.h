@@ -52,8 +52,6 @@ typedef enum
 
 GQuark     egg_print_backend_error_quark      (void);
 
-/* The base GtkFileSystem interface
- */
 #define EGG_TYPE_PRINT_BACKEND             (egg_print_backend_get_type ())
 #define EGG_PRINT_BACKEND(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_PRINT_BACKEND, EggPrintBackend))
 #define EGG_IS_PRINT_BACKEND(obj)            (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_PRINT_BACKEND))

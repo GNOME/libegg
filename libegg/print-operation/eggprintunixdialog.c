@@ -1655,6 +1655,8 @@ create_optional_page (EggPrintUnixDialog *dialog,
 
   gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled),
 					 table);
+  gtk_viewport_set_shadow_type (GTK_VIEWPORT (GTK_BIN(scrolled)->child),
+				GTK_SHADOW_NONE);
   
   label = gtk_label_new (text);
   gtk_widget_show (label);
@@ -1686,6 +1688,8 @@ create_advanced_page (EggPrintUnixDialog *dialog)
 
   gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled),
 					 main_vbox);
+  gtk_viewport_set_shadow_type (GTK_VIEWPORT (GTK_BIN(scrolled)->child),
+				GTK_SHADOW_NONE);
   
   dialog->priv->advanced_vbox = main_vbox;
   
