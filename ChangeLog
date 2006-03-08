@@ -1,5 +1,10 @@
 2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
 
+	* libegg/bookmarkfile/bookmark-spec.dtd: add a simple DTD for
+	the desktop bookmark specification.
+
+2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
+
 	* libegg/bookmarkfile/eggbookmarkfile.c:
 	* libegg/bookmarkfile/eggbookmarkfile.h: add commodity functions for
 	adding, removing and querying groups and applications.
