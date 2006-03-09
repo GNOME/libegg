@@ -194,6 +194,9 @@ egg_paper_size_new (const char *name)
   double width, height;
   PageInfo *info;
 
+  if (name == NULL)
+    name = egg_paper_size_get_default ();
+  
   size = g_new0 (EggPaperSize, 1);
 
   if (parse_full_media_size_name (name, &short_name, &width, &height)) {

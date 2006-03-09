@@ -1,5 +1,10 @@
 2006-03-09  Alexander Larsson  <alexl@redhat.com>
 
+	* eggpapersize.c (egg_paper_size_new):
+	Use default size if argument is NULL
+
+2006-03-09  Alexander Larsson  <alexl@redhat.com>
+
 	* Makefile.am:
 	* eggpagesetupunixdialog.[ch]:
 	Add EggPageSetupUnixDialog
