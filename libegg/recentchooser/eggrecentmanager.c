@@ -823,7 +823,7 @@ egg_recent_manager_add_full (EggRecentManager     *recent_manager,
     {
       gint j;
       
-      for (j = 0; j < G_N_ELEMENTS (data->groups); j++)
+      for (j = 0; j < g_strv_length (data->groups); j++)
         egg_bookmark_file_add_group (priv->recent_items, uri,
 				     (data->groups)[j]);
     }

@@ -1,5 +1,11 @@
 2006-03-09  Emmanuele Bassi  <ebassi@gmail.com>
 
+	* libegg/recentchooser/eggrecentmanager.c:
+	(egg_recent_manager_add_full): use g_strv_length() in order to iterate
+	on the group names strings vector.
+
+2006-03-09  Emmanuele Bassi  <ebassi@gmail.com>
+
 	* libegg/bookmarkfile/eggbookmarkfile.c:
 	(egg_bookmark_app_info_new): init the count to 0
 	(egg_bookmark_metadata_new), (egg_bookmark_file_init): fix hash tables
