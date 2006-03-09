@@ -348,6 +348,7 @@ EggPaperSize *
 egg_printer_settings_get_paper_size (EggPrinterSettings *settings)
 {
   const char *val;
+  const char *name;
   double w, h;
 
   val = egg_printer_settings_get (settings, EGG_PRINTER_SETTINGS_PAPER_FORMAT);
@@ -356,9 +357,10 @@ egg_printer_settings_get_paper_size (EggPrinterSettings *settings)
 
   if (g_str_has_prefix (val, "custom-")) 
     {
+      name = val + strlen ("custom-");
       w = egg_printer_settings_get_paper_width (settings, EGG_UNIT_MM);
       h = egg_printer_settings_get_paper_height (settings, EGG_UNIT_MM);
-      return egg_paper_size_new_custom  (val + strlen ("custom-"), w, h, EGG_UNIT_MM);
+      return egg_paper_size_new_custom (name, name, w, h, EGG_UNIT_MM);
     }
 
   return egg_paper_size_new (val);

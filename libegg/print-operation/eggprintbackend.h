@@ -85,6 +85,7 @@ struct _EggPrintBackendIface
 							       EggPrinterSettings *settings);
   void                        (*printer_prepare_for_print)    (EggPrinter *printer,
 							       EggPrinterSettings *settings);
+  GList  *                    (*printer_get_paper_sizes)      (EggPrinter *printer);
 
   /* Signals 
    */

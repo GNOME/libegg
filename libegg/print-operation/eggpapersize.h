@@ -58,10 +58,11 @@ typedef struct _EggPaperSize EggPaperSize;
 GType egg_paper_size_get_type (void);
 
 EggPaperSize *egg_paper_size_new         (const char *name);
-EggPaperSize *egg_paper_size_new_custom  (const char *name,
+EggPaperSize *egg_paper_size_new_custom  (const char *name, const char *display_name,
 					  double width, double height, EggUnit unit);
 EggPaperSize *egg_paper_size_copy        (EggPaperSize *other);
 void          egg_paper_size_free        (EggPaperSize *size);
+gboolean      egg_paper_size_is_equal    (EggPaperSize *size1, EggPaperSize *size2);
 
 
 /* The width is always the shortest side, measure in mm */
@@ -73,6 +74,10 @@ gboolean egg_paper_size_is_custom        (EggPaperSize *size);
 
 /* Only for custom sizes: */
 void egg_paper_size_set_size (EggPaperSize *size, double width, double height, EggUnit unit);
+
+G_CONST_RETURN char * egg_paper_size_get_default (void);
+
+G_CONST_RETURN char * egg_get_paper_size_name_from_ppd_name (const char *ppd_name);
 
 G_END_DECLS
 

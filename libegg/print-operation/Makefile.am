@@ -21,6 +21,7 @@ libeggprint_la_SOURCES +=		\
 else
 
 libeggprint_la_SOURCES +=		\
+	eggpagesetupunixdialog.c	\
 	eggprintbackendsetting.c	\
 	eggprintbackendsettingset.c	\
 	eggprinter.c			\
@@ -37,6 +38,7 @@ endif
 
 noinst_HEADERS = 			\
 	eggpagesetup.h			\
+	eggpagesetupunixdialog.h	\
 	eggpapersize.h			\
 	eggprint-win32.h		\
 	eggprint.h			\

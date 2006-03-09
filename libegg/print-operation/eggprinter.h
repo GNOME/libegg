@@ -51,9 +51,6 @@ struct _EggPrinterClass
 {
   GObjectClass parent_class;
 
-  void (*settings_retrieved) (EggPrinter *printer);
-
-
   /* Padding for future expansion */
   void (*_egg_reserved1) (void);
   void (*_egg_reserved2) (void);

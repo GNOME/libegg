@@ -17,13 +17,13 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <config.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
 
-#include "config.h"
-//#include <glib/gi18n-lib.h>
+#include "eggintl.h"
 #include <gtk/gtk.h>
 #include <gtk/gtkprivate.h>
 
@@ -33,8 +33,6 @@
 #include "eggprintsettingwidget.h"
 
 #define EXAMPLE_PAGE_AREA_SIZE 140
-
-#define _(x) (x)
 
 #define EGG_PRINT_UNIX_DIALOG_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINT_UNIX_DIALOG, EggPrintUnixDialogPrivate))
@@ -116,7 +114,6 @@ struct EggPrintUnixDialogPrivate
   EggPrintBackend *print_backend;
   
   EggPrinter *current_printer;
-  gulong current_printer_settings_retrieved_handler;
   EggPrintBackendSettingSet *backend_settings;
   gulong backend_settings_changed_handler;
   gulong mark_conflicts_id;
@@ -362,7 +359,13 @@ egg_print_unix_dialog_finalize (GObject *object)
       g_object_unref (dialog->priv->current_printer);
       dialog->priv->current_printer = NULL;
     }
-	
+
+  if (dialog->priv->printer_list)
+    {
+      g_object_unref (dialog->priv->printer_list);
+      dialog->priv->printer_list = NULL;
+    }
+  
   if (dialog->priv->backend_settings)
     {
       g_object_unref (dialog->priv->backend_settings);
@@ -763,24 +766,6 @@ schedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
 }
 
 static void
-update_dialog_with_new_settings (EggPrintUnixDialog *dialog)
-{
-  if (dialog->priv->backend_settings)
-    {
-      g_signal_handler_disconnect (dialog->priv->backend_settings,
-				   dialog->priv->backend_settings_changed_handler);
-      g_object_unref (dialog->priv->backend_settings);
-    }
-  
-  dialog->priv->backend_settings = _egg_printer_get_backend_settings (dialog->priv->current_printer);
-
-  dialog->priv->backend_settings_changed_handler = 
-    g_signal_connect_swapped (dialog->priv->backend_settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
-  
-  update_dialog_from_settings (dialog);
-}
-
-static void
 clear_per_printer_ui (EggPrintUnixDialog *dialog)
 {
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->finishing_table),
@@ -821,8 +806,6 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
 
   if (dialog->priv->backend_settings)
     {
-      g_signal_handler_disconnect (dialog->priv->backend_settings,
-				   dialog->priv->backend_settings_changed_handler);
       g_object_unref (dialog->priv->backend_settings);
       dialog->priv->backend_settings = NULL;  
 
@@ -831,15 +814,10 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
 
   if (dialog->priv->current_printer)
     {
-      g_signal_handler_disconnect (dialog->priv->current_printer,
-                                   dialog->priv->current_printer_settings_retrieved_handler);
       g_object_unref (dialog->priv->current_printer);
     }
 
   dialog->priv->current_printer = printer;
-  dialog->priv->current_printer_settings_retrieved_handler =
-     g_signal_connect_swapped (dialog->priv->current_printer, "settings_retrieved", G_CALLBACK (update_dialog_with_new_settings), dialog);
-
 
   dialog->priv->backend_settings = _egg_printer_get_backend_settings (printer);
   

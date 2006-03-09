@@ -56,7 +56,6 @@ cairo_surface_t *          _egg_printer_create_cairo_surface (EggPrinter        
 							      gdouble                    width,
 							      gdouble                    height,
 							      gint                       cache_fd);
-
-void                       _egg_printer_emit_settings_retrieved (EggPrinter *printer);
+GList  *                   _egg_printer_get_paper_sizes      (EggPrinter                *printer);
 G_END_DECLS
 #endif /* __EGG_PRINT_OPERATION_PRIVATE_H__ */

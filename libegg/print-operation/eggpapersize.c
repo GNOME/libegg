@@ -18,9 +18,13 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include "eggpapersize.h"
+#include <config.h>
 #include <string.h>
 #include <stdlib.h>
+#include <locale.h>
+#include <langinfo.h>
+
+#include "eggpapersize.h"
 
 #define MM_PER_INCH 25.4
 #define POINTS_PER_INCH 72
@@ -33,15 +37,7 @@ struct _EggPaperSize
   gboolean is_custom;
 };
 
-typedef struct {
-  const char *name;
-  const char *size;
-  const char *display_name;
-} PageInfo;
-
-
 #include "paper_names.c"
-
 
 GType
 egg_paper_size_get_type (void)
@@ -230,7 +226,7 @@ egg_paper_size_new (const char *name)
 }
 
 EggPaperSize *
-egg_paper_size_new_custom (const char *name,
+egg_paper_size_new_custom (const char *name, const char *display_name,
 			   double width, double height, EggUnit unit)
 {
   EggPaperSize *size;
@@ -239,6 +235,7 @@ egg_paper_size_new_custom (const char *name,
 
   size = g_new0 (EggPaperSize, 1);
   size->name = g_strdup (name);
+  size->display_name = g_strdup (display_name);
   
   /* Width is always the shorter one */
   if (width > height) {
@@ -275,6 +272,13 @@ egg_paper_size_free (EggPaperSize *size)
   g_free (size->name);
   g_free (size->display_name);
   g_free (size);
+}
+
+gboolean
+egg_paper_size_is_equal (EggPaperSize *size1,
+			 EggPaperSize *size2)
+{
+  return strcmp (size1->name, size2->name) == 0;
 }
  
 G_CONST_RETURN char *
@@ -314,12 +318,62 @@ egg_paper_size_set_size (EggPaperSize *size, double width, double height, EggUni
   g_return_if_fail (size->is_custom);
 
   /* Width is always the shorter one */
-  if (width > height) {
-    double t = width;
-    width = height;
-    height = t;
-  }
+  if (width > height)
+    {
+      double t = width;
+      width = height;
+      height = t;
+    }
 
   size->width = to_mm (width, unit);
   size->height = to_mm (height, unit);
+}
+
+G_CONST_RETURN char *
+egg_get_paper_size_name_from_ppd_name (const char *ppd_name)
+{
+  int i;
+  for (i = 0; i < G_N_ELEMENTS(standard_names); i++)
+    {
+      if (standard_names[i].ppd_name != NULL &&
+	  strcmp (standard_names[i].ppd_name, ppd_name) == 0)
+	return standard_names[i].name;
+    }
+  return NULL;
+}
+
+#define NL_PAPER_GET(x)         \
+  ((union { char *string; unsigned int word; })nl_langinfo(x)).word
+
+G_CONST_RETURN char *
+egg_paper_size_get_default (void)
+{
+  char *locale;
+
+#if defined(HAVE__NL_PAPER_HEIGHT) && defined(HAVE__NL_PAPER_WIDTH)
+  {
+    int width = NL_PAPER_GET (_NL_PAPER_WIDTH);
+    int height = NL_PAPER_GET (_NL_PAPER_HEIGHT);
+    
+    if (width == 210 && height == 297)
+      return EGG_PAPER_NAME_A4;
+    
+    if (width == 216 && height == 279)
+      return EGG_PAPER_NAME_LEGAL;
+  }
+#endif
+
+#ifdef LC_PAPER
+  locale = setlocale(LC_PAPER, NULL);
+#else
+  locale = setlocale(LC_MESSAGES, NULL);
+#endif  
+
+  if (g_str_has_prefix (locale, "en_CA") ||
+      g_str_has_prefix (locale, "en_US") ||
+      g_str_has_prefix (locale, "es_PR") ||
+      g_str_has_prefix (locale, "es_US"))
+    return EGG_PAPER_NAME_LETTER;
+
+  return EGG_PAPER_NAME_A4;
 }

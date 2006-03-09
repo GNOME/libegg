@@ -1,3 +1,46 @@
+2006-03-09  Alexander Larsson  <alexl@redhat.com>
+
+	* Makefile.am:
+	* eggpagesetupunixdialog.[ch]:
+	Add EggPageSetupUnixDialog
+
+	* configure.in:
+	Check for various _NL_* enums
+
+	* eggpapersize.[ch]:
+	Pass display_name to custom constructor
+	Add egg_paper_size_is_equal, egg_get_paper_size_name_from_ppd_name
+	and egg_paper_size_get_default.
+	
+	* TODO:
+	
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	Add printer_get_paper_sizes.
+	
+	* eggprintbackendcups.c:
+	Implement printer_get_paper_sizes.
+	Always load ppds before showing giving the printer object
+	to the frontend. This means less flickering in the UI, less
+	problems with settings changing after a while, and easier code
+	in the frontend.
+	
+	* eggprinter.[ch]:
+	Remove settings-retrieved signal
+	Add _egg_printer_get_paper_sizes
+	
+	* eggprintersettings.c:
+	Pass display name to custom page size
+	
+	* eggprintunixdialog.c:
+	Remove handling of settings-retrieved signal
+	
+	* paper_names.c:
+	Major update.
+	
+	* testshowdialog.c: (main):
+	Show a page setup dialog for now.
+
 2006-03-08  Alexander Larsson  <alexl@redhat.com>
 
 	* TODO:

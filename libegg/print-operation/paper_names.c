@@ -1,192 +1,176 @@
-static PageInfo standard_names[] = {
+#define N_(s) s
+
+typedef struct {
+  const char *name;
+  const char *size;
+  const char *display_name;
+  const char *ppd_name;
+} PageInfo;
+
+static const PageInfo standard_names[] = {
   /* sorted by name, remember to sort when changing */
-  {"iso_a3", "297x420mm", "A3"},
-  {"iso_a4", "210x297mm", "A4"},
-  {"na_index-3x5", "3x5in", "Index 3x5"},
-  {"na_letter", "8.5x11in", "Letter"},
-  {"na_personal", "3.625x6.5in", "Personal (envelope)"},
+  {"asme_f", "28x40in", N_("asme_f")}, /* f           5    e1 */
+  {"iso_2a0", "1189x1682mm", N_("A0x2")},
+  {"iso_a0", "841x1189mm", N_("A0"), "A0"},
+  {"iso_a0x3", "1189x2523mm", N_("A0x3")},
+  {"iso_a1", "594x841mm", N_("A1"), "A1"},
+  {"iso_a10", "26x37mm", N_("A10"), "A10"},
+  {"iso_a1x3", "841x1783mm", N_("A1x3")},
+  {"iso_a1x4", "841x2378mm", N_("A1x4")}, 
+  {"iso_a2", "420x594mm", N_("A2"), "A2"},
+  {"iso_a2x3", "594x1261mm", N_("A2x3")},
+  {"iso_a2x4", "594x1682mm", N_("A2x4")},
+  {"iso_a2x5", "594x2102mm", N_("A2x5")},
+  {"iso_a3", "297x420mm", N_("A3"), "A3"},
+  {"iso_a3-extra", "322x445mm", N_("A3 Extra"), "A3Extra"},
+  {"iso_a3x3", "420x891mm", N_("A3x3")},
+  {"iso_a3x4", "420x1189mm", N_("A3x4")},
+  {"iso_a3x5", "420x1486mm", N_("A3x5")},
+  {"iso_a3x6", "420x1783mm", N_("A3x6")},
+  {"iso_a3x7", "420x2080mm", N_("A3x7")},
+  {"iso_a4", "210x297mm", N_("A4"), "A4"},
+  {"iso_a4-extra", "235.5x322.3mm", N_("A4 Extra"), "A4Extra"},
+  {"iso_a4-tab", "225x297mm", N_("A4 Tab")},
+  {"iso_a4x3", "297x630mm", N_("A4x3")},
+  {"iso_a4x4", "297x841mm", N_("A4x4")},
+  {"iso_a4x5", "297x1051mm", N_("A4x5")},
+  {"iso_a4x6", "297x1261mm", N_("A4x6")},
+  {"iso_a4x7", "297x1471mm", N_("A4x7")},
+  {"iso_a4x8", "297x1682mm", N_("A4x8")},
+  {"iso_a4x9", "297x1892mm", N_("A4x9")},
+  {"iso_a5", "148x210mm", N_("A5"), "A5"},
+  {"iso_a5-extra", "174x235mm", N_("A5 Extra"), "A5Extra"},
+  {"iso_a6", "105x148mm", N_("A6"), "A6"},
+  {"iso_a7", "74x105mm", N_("A7"), "A7"},
+  {"iso_a8", "52x74mm", N_("A8"), "A8"},
+  {"iso_a9", "37x52mm", N_("A9"), "A9"},
+  {"iso_b0", "1000x1414mm", N_("B0"), "ISOB0"},
+  {"iso_b1", "707x1000mm", N_("B1"), "ISOB1"},
+  {"iso_b10", "31x44mm", N_("B10"), "ISOB10"},
+  {"iso_b2", "500x707mm", N_("B2"), "ISOB2"},
+  {"iso_b3", "353x500mm", N_("B3"), "ISOB3"},
+  {"iso_b4", "250x353mm", N_("B4"), "ISOB4"},
+  {"iso_b5", "176x250mm", N_("B5"), "ISOB5"},
+  {"iso_b5-extra", "201x276mm", N_("B5 Extra"), "ISOB5Extra"},
+  {"iso_b6", "125x176mm", N_("B6"), "ISOB6"}, 
+  {"iso_b6c4", "125x324mm", N_("B6/C4")}, /* b6/c4 Envelope */
+  {"iso_b7", "88x125mm", N_("B7"), "ISOB7"},
+  {"iso_b8", "62x88mm", N_("B8"), "ISOB8"},
+  {"iso_b9", "44x62mm", N_("B9"), "ISOB9"},
+  {"iso_c0", "917x1297mm", N_("C0"), "EnvC0"},
+  {"iso_c1", "648x917mm", N_("C1"), "EnvC1"},
+  {"iso_c10", "28x40mm", N_("C10"), "EnvC10"},
+  {"iso_c2", "458x648mm", N_("C2"), "EnvC2"},
+  {"iso_c3", "324x458mm", N_("C3"), "EnvC3"},
+  {"iso_c4", "229x324mm", N_("C4"), "EnvC4"},
+  {"iso_c5", "162x229mm", N_("C5"), "EnvC5"},
+  {"iso_c6", "114x162mm", N_("C6"), "EnvC6"},
+  {"iso_c6c5", "114x229mm", N_("C6/C5"), "EnvC65"},
+  {"iso_c7", "81x114mm", N_("C7"), "EnvC7"},
+  {"iso_c7c6", "81x162mm", N_("C7/C6")}, /* c7/c6 Envelope */
+  {"iso_c8", "57x81mm", N_("C8"), "EnvC8"},
+  {"iso_c9", "40x57mm", N_("C9"), "EnvC9"},
+  {"iso_dl", "110x220mm", N_("DL Envelope"), "EnvDL"}, /* iso-designated 1, 2 designated-long, dl Envelope */
+  {"iso_ra0", "860x1220mm", N_("RA0")},
+  {"iso_ra1", "610x860mm", N_("RA1")},
+  {"iso_ra2", "430x610mm", N_("RA2")},
+  {"iso_sra0", "900x1280mm", N_("SRA0")},
+  {"iso_sra1", "640x900mm", N_("SRA1")},
+  {"iso_sra2", "450x640mm", N_("SRA2")},
+  {"jis_b0", "1030x1456mm", N_("JB0"), "B0"},
+  {"jis_b1", "728x1030mm", N_("JB1"), "B1"},
+  {"jis_b10", "32x45mm", N_("JB10"), "B10"},
+  {"jis_b2", "515x728mm", N_("JB2"), "B2"},
+  {"jis_b3", "364x515mm", N_("JB3"), "B3"},
+  {"jis_b4", "257x364mm", N_("JB4"), "B4"},
+  {"jis_b5", "182x257mm", N_("JB5"), "B5"},
+  {"jis_b6", "128x182mm", N_("JB6"), "B6"},
+  {"jis_b7", "91x128mm", N_("JB7"), "B7"},
+  {"jis_b8", "64x91mm", N_("JB8"), "B8"},
+  {"jis_b9", "45x64mm", N_("JB9"), "B9"},
+  {"jis_exec", "216x330mm", N_("jis exec")},
+  {"jpn_chou2", "111.1x146mm", N_("Choukei 2 Envelope")},
+  {"jpn_chou3", "120x235mm", N_("Choukei 3 Envelope"), "EnvChou3"},
+  {"jpn_chou4", "90x205mm", N_("Choukei 4 Envelope"), "EnvChou4"},
+  {"jpn_hagaki", "100x148mm", N_("hagaki (postcard)"), "Postcard"},
+  {"jpn_kahu", "240x322.1mm", N_("kahu Envelope")},
+  {"jpn_kaku2", "240x332mm", N_("kaku2 Envelope"), "EnvKaku2"},
+  {"jpn_oufuku", "148x200mm", N_("oufuku (reply postcard)"), "DoublePostcard"},
+  {"jpn_you4", "105x235mm", N_("you4 Envelope")},
+  {"na_10x11", "10x11in", N_("10x11"), "10x11"},
+  {"na_10x13", "10x13in", N_("10x13"), "10x13"},
+  {"na_10x14", "10x14in", N_("10x14"), "10x14"},
+  {"na_10x15", "10x15in", N_("10x15")},
+  {"na_10x15", "10x15in", N_("10x15")},
+  {"na_11x12", "11x12in", N_("11x12"), "12x11"}, 
+  {"na_11x15", "11x15in", N_("11x15"), "15x11"}, 
+  {"na_12x19", "12x19in", N_("12x19")},
+  {"na_5x7", "5x7in", N_("5x7")},
+  {"na_6x9", "6x9in", N_("6x9 Envelope")},
+  {"na_7x9", "7x9in", N_("7x9 Envelope"), "7x9"},
+  {"na_9x11", "9x11in", N_("9x11 Envelope"), "9x11"},
+  {"na_a2", "4.375x5.75in", N_("a2 Envelope")},
+  {"na_arch-a", "9x12in", N_("Arch A"), "ARCHA"},
+  {"na_arch-b", "12x18in", N_("Arch B"), "ARCHB"},
+  {"na_arch-c", "18x24in", N_("Arch C"), "ARCHC"},
+  {"na_arch-d", "24x36in", N_("Arch D"), "ARCHD"},
+  {"na_arch-e", "36x48in", N_("Arch E"), "ARCHE"},
+  {"na_b-plus", "12x19.17in", N_("b-plus")},
+  {"na_c", "17x22in", N_("c"), "AnsiC"},
+  {"na_c5", "6.5x9.5in", N_("c5 Envelope")},
+  {"na_d", "22x34in", N_("d"), "AnsiD"},
+  {"na_e", "34x44in", N_("e"), "AnsiE"},
+  {"na_edp", "11x14in", N_("edp")},
+  {"na_eur-edp", "12x14in", N_("European edp")},
+  {"na_executive", "7.25x10.5in", N_("Executive"), "Executive"},
+  {"na_f", "44x68in", N_("f")},
+  {"na_fanfold-eur", "8.5x12in", N_("FanFold European"), "FanFoldGerman"},
+  {"na_fanfold-us", "11x14.875in", N_("FanFold US"), "FanFoldUS"},
+  {"na_foolscap", "8.5x13in", N_("FanFold German Legal"), "FanFoldGermanLegal"}, /* foolscap, german-legal-fanfold */
+  {"na_govt-legal", "8x13in", N_("Government Legal")},
+  {"na_govt-letter", "8x10in", N_("Government Letter"), "8x10"},
+  {"na_index-3x5", "3x5in", N_("Index 3x5")},
+  {"na_index-4x6", "4x6in", N_("Index 4x6 (postcard)")},
+  {"na_index-4x6-ext", "6x8in", N_("Index 4x6 ext")},
+  {"na_index-5x8", "5x8in", N_("Index 5x8")},
+  {"na_invoice", "5.5x8.5in", N_("Invoice"), "Statement"}, /* invoice,  statement, mini, half-letter */
+  {"na_ledger", "11x17in", N_("Tabloid"), "Ledger"}, /* tabloid, engineering-b */
+  {"na_legal", "8.5x14in", N_("US Legal"), "Legal"},
+  {"na_legal-extra", "9.5x15in", N_("US Legal Extra"), "LegalExtra"},
+  {"na_letter", "8.5x11in", N_("US Letter"), "Letter"},
+  {"na_letter-extra", "9.5x12in", N_("US Letter Extra"), "LetterExtra"},
+  {"na_letter-plus", "8.5x12.69in", N_("US Letter Plus"), "LetterPlus"},
+  {"na_monarch", "3.875x7.5in", N_("Monarch Envelope"), "EnvMonarch"},
+  {"na_number-10", "4.125x9.5in", N_("#10 Envelope"), "Env10"}, /* na-number-10-envelope 1, 2 comm-10 Envelope */
+  {"na_number-11", "4.5x10.375in", N_("#11 Eenvelope"), "Env11"}, /* number-11 Envelope */
+  {"na_number-12", "4.75x11in", N_("#12 Envelope"), "Env12"}, /* number-12 Envelope */
+  {"na_number-14", "5x11.5in", N_("#14 Envelope"), "Env14"}, /* number-14 Envelope */
+  {"na_number-9", "3.875x8.875in", N_("#9 Envelope"), "Env9"},
+  {"na_personal", "3.625x6.5in", N_("Personal Envelope"), "EnvPersonal"},
+  {"na_quarto", "8.5x10.83in", N_("Quarto"), "Quarto"}, 
+  {"na_super-a", "8.94x14in", N_("Super A"), "SuperA"}, 
+  {"na_super-b", "13x19in", N_("Super B"), "SuperB"}, 
+  {"na_wide-format", "30x42in", N_("Wide Format")},
+  {"om_dai-pa-kai", "275x395mm", N_("Dai-pa-kai")},
+  {"om_folio", "210x330mm", N_("Folio"), "Folio"}, 
+  {"om_folio-sp", "215x315mm", N_("Folio sp")},
+  {"om_invite", "220x220mm", N_("Invite Envelope"), "EnvInvite"},
+  {"om_italian", "110x230mm", N_("Italian Envelope"), "EnvItalian"},
+  {"om_juuro-ku-kai", "198x275mm", N_("juuro-ku-kai")},
+  {"om_pa-kai", "267x389mm", N_("pa-kai")},
+  {"om_postfix", "114x229mm", N_("Postfix Envelope")},
+  {"om_small-photo", "100x150mm", N_("Small Photo")},
+  {"prc_1", "102x165mm", N_("prc1 Envelope"), "EnvPRC1"},
+  {"prc_10", "324x458mm", N_("prc10 Envelope"), "EnvPRC10"},
+  {"prc_16k", "146x215mm", N_("prc 16k"), "PRC16K"},
+  {"prc_2", "102x176mm", N_("prc2 Envelope"), "EnvPRC2"},
+  {"prc_3", "125x176mm", N_("prc3 Envelope"), "EnvPRC3"},
+  {"prc_32k", "97x151mm", N_("prc 32k"), "PRC32K"},
+  {"prc_4", "110x208mm", N_("prc4 Envelope"), "EnvPRC4"},
+  {"prc_5", "110x220mm", N_("prc5 Envelope"), "EnvPRC5"},
+  {"prc_6", "120x320mm", N_("prc6 Envelope"), "EnvPRC6"},
+  {"prc_7", "160x230mm", N_("prc7 Envelope"), "EnvPRC7"},
+  {"prc_8", "120x309mm", N_("prc8 Envelope"), "EnvPRC8"},
+  {"roc_16k", "7.75x10.75in", N_("ROC 16k")},
+  {"roc_8k", "10.75x15.5in", N_("ROC 8k")},
 };
-
-/* These names from the standard are not yet converted into the table: 
-
-Legacy Name           Ref. Alias (common name)            Self-Describing Name (inches)
-                           personal (envelope)            
-monarch-envelope      2                                   na_monarch_3.875x7.5in
-na-number-9-envelope  1, 2                                na_number-9_3.875x8.875in
-                           index-4x6 (postcard)           na_index-4x6_4x6in
-na-number-10-envelope 1, 2 comm-10 (envelope)             na_number-10_4.125x9.5in
-                           a2 (envelope)                  na_a2_4.375x5.75in
-                           number-11 (envelope)           na_number-11_4.5x10.375in
-                           number-12 (envelope)           na_number-12_4.75x11in
-                           5x7                            na_5x7_5x7in
-                           index-5x8                      na_index-5x8_5x8in
-                           number-14 (envelope)           na_number-14_5x11.5in
-invoice               2    statement, mini, half-letter   na_invoice_5.5x8.5in
-                           index-4x6-ext                  na_index-4x6-ext_6x8in
-na-6x9-envelope       1, 2 6x9 (envelope)                 na_6x9_6x9in
-                           c5 (envelope)                  na_c5_6.5x9.5in
-na-7x9-envelope       1, 2 7x9 (envelope)                 na_7x9_7x9in
-executive             2                                   na_executive_7.25x10.5in
-na-8x10               2    government-letter              na_govt-letter_8x10in
-                           government-legal               na_govt-legal_8x13in
-quarto                2                                   na_quarto_8.5x10.83in
-                           fanfold-European               na_fanfold-eur_8.5x12in
-                           letter-plus                    na_letter-plus_8.5x12.69in
-                           foolscap, german-legal-fanfold na_foolscap_8.5x13in
-na-legal              1, 2 legal                          na_legal_8.5x14in
-                           super-a                        na_super-a_8.94x14in
-na-9x11-envelope      1, 2 9x11 (envelope), letter-tab    na_9x11_9x11in
-arch-a                2    architecture-a (envelope)      na_arch-a_9x12in
-                           letter-extra                   na_letter-extra_9.5x12in
-                           legal-extra                    na_legal-extra_9.5x15in
-                           10x11                          na_10x11_10x11in
-na-10x13-envelope     1, 2 10x13 (envelope)               na_10x13_10x13in
-na-10x14-envelope     1, 2 10x14 (envelope)               na_10x14_10x14in
-na-10x15-envelope     1, 2 10x15 (envelope)               na_10x15_10x15in
-na-10x15-envelope     1, 2 10x15 (envelope)               na_10x15_10x15in
-                           11x12                          na_11x12_11x12in
-                           edp                            na_edp_11x14in
-
-
-Legacy Name Ref. Alias (common name)           Self-Describing Name (inches)
-                 fanfold-us                    na_fanfold-us_11x14.875in
-                 11x15                         na_11x15_11x15in
-tabloid     2    ledger, b, engineering-b      na_ledger_11x17in
-                 european-edp                  na_eur-edp_12x14in
-arch-b      2    architecture-b, tabloid-extra na_arch-b_12x18in
-                 12x19                         na_12x19_12x19in
-                 b-plus                        na_b-plus_12x19.17in
-                 super-b                       na_super-b_13x19in
-c           2    engineering-c                 na_c_17x22in
-arch-c      2    architecture-c                na_arch-c_18x24in
-d           2    engineering-d                 na_d_22x34in
-arch-d      2    architecture-d                na_arch-d_24x36in
-f           5    e1                            asme_f_28x40in
-                 wide-format                   na_wide-format_30x42in
-e           2    engineering-e                 na_e_34x44in
-arch-e      2    architecture-e                na_arch-e_36x48in
-                 f, engineering-f              na_f_44x68in
-
-Legacy Name Ref. Alias (common name) Self-Describing Name (inches)
-                 roc-16k             roc_16k_7.75x10.75in
-                 roc-8k              roc_8k_10.75x15.5in
-
-Legacy Name    Ref. Alias (common name) Self-Describing Name (mm)
-iso-a10        1, 2 a10                 iso_a10_26x37mm
-iso-a9         1, 2 a9                  iso_a9_37x52mm
-iso-a8         1, 2 a8                  iso_a8_52x74mm
-iso-a7         1, 2 a7                  iso_a7_74x105mm
-iso-a6         1, 2 a6                  iso_a6_105x148mm
-iso-a5         1, 2 a5                  iso_a5_148x210mm
-                    a5-extra            iso_a5-extra_174x235mm
-                    a4-tab              iso_a4-tab_225x297mm
-                    a4-extra            iso_a4-extra_235.5x322.3mm
-iso-a4x3, a4x3 2, 4                     iso_a4x3_297x630mm
-
-Legacy Name    Ref. Alias (common name) Self-Describing Name (mm)
-iso-a4x4, a4x4 2, 4                     iso_a4x4_297x841mm
-iso-a4x5, a4x5 2, 4                     iso_a4x5_297x1051mm
-iso-a4x6, a4x6 2, 4                     iso_a4x6_297x1261mm
-iso-a4x7, a4x7 2, 4                     iso_a4x7_297x1471mm
-iso-a4x8, a4x8 2, 4                     iso_a4x8_297x1682mm
-iso-a4x9, a4x9 2, 4                     iso_a4x9_297x1892mm
-iso-a3-extra                            iso_a3-extra_322x445mm
-iso-a2         1, 2 a2                  iso_a2_420x594mm
-iso-a3x3, a3x3 2, 4                     iso_a3x3_420x891mm
-iso-a3x4, a3x4 2, 4                     iso_a3x4_420x1189mm
-iso-a3x5, a3x5 2, 4                     iso_a3x5_420x1486mm
-iso-a3x6, a3x6 2, 4                     iso_a3x6_420x1783mm
-iso-a3x7, a3x7 2, 4                     iso_a3x7_420x2080mm
-iso-a1         1, 2 a1                  iso_a1_594x841mm
-iso-a2x3, a2x3 2, 4                     iso_a2x3_594x1261mm
-iso-a2x4, a2x4 2, 4                     iso_a2x4_594x1682mm
-iso-a2x5, a2x5 2, 4                     iso_a2x5_594x2102mm
-iso-a0         1, 2 a0                  iso_a0_841x1189mm
-iso-a1x3, a1x3 2, 4                     iso_a1x3_841x1783mm
-iso-a1x4, a1x4 2, 4                     iso_a1x4_841x2378mm
-a0x2           4    2a0                 iso_2a0_1189x1682mm
-a0x3           4                        iso_a0x3_1189x2523mm
-iso-b10        1, 2 b10                 iso_b10_31x44mm
-iso-b9         1, 2 b9                  iso_b9_44x62mm
-iso-b8         1, 2 b8                  iso_b8_62x88mm
-iso-b7         1, 2 b7                  iso_b7_88x125mm
-iso-b6         1, 2 b6 (envelope)       iso_b6_125x176mm
-                    b6/c4 (envelope)    iso_b6c4_125x324mm
-iso-b5         1, 2 b5 (envelope)       iso_b5_176x250mm
-                    b5-extra            iso_b5-extra_201x276mm
-iso-b4         1, 2 b4 (envelope)       iso_b4_250x353mm
-iso-b3         1, 2 b3                  iso_b3_353x500mm
-iso-b2         1, 2 b2                  iso_b2_500x707mm
-iso-b1         1, 2 b1                  iso_b1_707x1000mm
-iso-b0         1, 2 b0                  iso_b0_1000x1414mm
-                    c10 (envelope)      iso_c10_28x40mm
-                    c9 (envelope)       iso_c9_40x57mm
-iso-c8         1    c8 (envelope)       iso_c8_57x81mm
-iso-c7         1    c7 (envelope)       iso_c7_81x114mm
-                    c7/c6 (envelope)    iso_c7c6_81x162mm
-iso-c6         1, 2 c6 (envelope)       iso_c6_114x162mm
-
-Legacy Name    Ref. Alias (common name)            Self-Describing Name (mm)
-                    c6/c5 (envelope)               iso_c6c5_114x229mm
-iso-c5         1, 2 c5 (envelope)                  iso_c5_162x229mm
-iso-c4         1, 2 c4 (envelope)                  iso_c4_229x324mm
-iso-c3         1, 2 c3 (envelope)                  iso_c3_324x458mm
-iso-c2         1    c2 (envelope)                  iso_c2_458x648mm
-iso-c1         1    c1 (envelope)                  iso_c1_648x917mm
-iso-c0         1    c0 (envelope)                  iso_c0_917x1297mm
-iso-designated 1, 2 designated-long, dl (envelope) iso_dl_110x220mm
-iso-ra2                                            iso_ra2_430x610mm
-iso-sra2                                           iso_sra2_450x640mm
-iso-ra1                                            iso_ra1_610x860mm
-iso-sra1                                           iso_sra1_640x900mm
-iso-ra0                                            iso_ra0_860x1220mm
-iso-sra0                                           iso_sra0_900x1280mm
-
-Legacy Name Ref. Alias (common name)     Self-Describing Name (mm)
-jis-b10     1, 2                         jis_b10_32x45mm
-jis-b9      1, 2                         jis_b9_45x64mm
-jis-b8      1, 2                         jis_b8_64x91mm
-jis-b7      1, 2                         jis_b7_91x128mm
-jis-b6      1, 2                         jis_b6_128x182mm
-jis-b5      1, 2                         jis_b5_182x257mm
-jis-b4      1, 2                         jis_b4_257x364mm
-jis-b3      1, 2                         jis_b3_364x515mm
-jis-b2      1, 2                         jis_b2_515x728mm
-jis-b1      1, 2                         jis_b1_728x1030mm
-jis-b0      1, 2                         jis_b0_1030x1456mm
-                 exec                    jis_exec_216x330mm
-                 chou4 (envelope)        jpn_chou4_90x205mm
-                 hagaki (postcard)       jpn_hagaki_100x148mm
-                 you4 (envelope)         jpn_you4_105x235mm
-                 chou2 (envelope)        jpn_chou2_111.1x146mm
-                 chou3 (envelope)        jpn_chou3_120x235mm
-                 oufuku (reply postcard) jpn_oufuku_148x200mm
-                 kahu (envelope)         jpn_kahu_240x322.1mm
-                 kaku2 (envelope)        jpn_kaku2_240x332mm
-
-Legacy Name Ref. Alias (common name) Self-Describing Name (mm)
-                 prc-32k             prc_32k_97x151mm
-                 prc1 (envelope)     prc_1_102x165mm
-                 prc2 (envelope)     prc_2_102x176mm
-                 prc4 (envelope)     prc_4_110x208mm
-                 prc5 (envelope)     prc_5_110x220mm
-                 prc8 (envelope)     prc_8_120x309mm
-                 prc6 (envelope)     prc_6_120x320mm
-                 prc3 (envelope)     prc_3_125x176mm
-                 prc-16k             prc_16k_146x215mm
-                 prc7 (envelope)     prc_7_160x230mm
-                 juuro-ku-kai        om_juuro-ku-kai_198x275mm
-                 pa-kai              om_pa-kai_267x389mm
-                 dai-pa-kai          om_dai-pa-kai_275x395mm
-                 prc10 (envelope)    prc_10_324x458mm
-
-Legacy Name Ref. Alias (common name) Self-Describing Name (mm)
-                 small-photo         om_small-photo_100x150mm
-                 Italian (envelope)  om_italian_110x230mm
-                 Postfix (envelope)  om_postfix_114x229mm
-                 large-photo         om_large-photo_200x300
-folio       2                        om_folio_210x330mm
-                 folio-sp            om_folio-sp_215x315mm
-                 Invite (envelope)   om_invite_220x220mm
-
-*/

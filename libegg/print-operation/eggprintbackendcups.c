@@ -122,6 +122,7 @@ static gboolean                   cups_printer_mark_conflicts       (EggPrinter 
 static EggPrintBackendSettingSet *cups_printer_get_backend_settings (EggPrinter                        *printer);
 static void                       cups_printer_prepare_for_print    (EggPrinter                        *printer,
 								     EggPrinterSettings                *settings);
+static GList *                    cups_printer_get_paper_sizes      (EggPrinter                        *printer);
 
 static void
 _cups_request_ppd (EggPrintBackend *print_backend,
@@ -349,6 +350,7 @@ egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
   iface->printer_mark_conflicts = cups_printer_mark_conflicts;
   iface->printer_add_backend_settings = cups_printer_add_backend_settings;
   iface->printer_prepare_for_print = cups_printer_prepare_for_print;
+  iface->printer_get_paper_sizes = cups_printer_get_paper_sizes;
 }
 
 static void
@@ -526,20 +528,27 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
 
-
-  /* TODO: mark as inactive printer */
-  if (egg_cups_result_is_error (result))
-    return;
-
-  response = egg_cups_result_get_response (result);
-
   printer_name = (gchar *)user_data;
   cups_printer = (EggPrinterCups *) g_hash_table_lookup (print_backend->printers, printer_name);
 
   if (!cups_printer)
     return;
-    
+
   printer = EGG_PRINTER (cups_printer);
+  
+  if (egg_cups_result_is_error (result))
+    {
+      if (printer->priv->is_new)
+	{
+	  g_hash_table_remove (print_backend->printers,
+			       printer_name);
+	  return;
+	}
+      else
+	return; /* TODO: mark as inactive printer */
+    }
+
+  response = egg_cups_result_get_response (result);
 
   /* TODO: determine printer type and use correct icon */
   printer->priv->icon_name = g_strdup ("printer-inkjet");
@@ -572,10 +581,7 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   cups_printer->priv->port = port;
 
   if (printer->priv->is_new)
-    {
-      g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
-      printer->priv->is_new = FALSE;
-    }
+    _cups_request_ppd (EGG_PRINT_BACKEND (print_backend), printer);
 }
 
 
@@ -647,7 +653,7 @@ _cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
 
           g_hash_table_insert (print_backend->printers,
                                g_strdup (printer->priv->name), 
-                               cups_printer); 
+                               cups_printer);
         }
     
       _cups_request_printer_info (print_backend, egg_printer_get_name (printer));
@@ -706,15 +712,23 @@ _cups_request_ppd_cb (EggPrintBackendCups *print_backend,
                       GetPPDData *data)
 {
   ipp_t *response;
+  EggPrinter *printer;
 
-  /* TODO: Perhaps mark printer as inactive? */
+  printer = EGG_PRINTER (data->printer);
   if (egg_cups_result_is_error (result))
-    return;
+    {
+      g_hash_table_remove (print_backend->printers,
+			   printer->priv->name);
+      return;
+    }
 
   response = egg_cups_result_get_response (result);
 
   data->printer->priv->ppd_file = ppdOpenFile (data->ppd_filename);
-  _egg_printer_emit_settings_retrieved (EGG_PRINTER (data->printer));
+
+  /* Now we're done getting data for this printer, lets give it to the dialog */
+  g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
+  printer->priv->is_new = FALSE;
 }
 
 static void
@@ -1653,3 +1667,33 @@ cups_printer_prepare_for_print (EggPrinter *printer,
     egg_printer_settings_set (settings, "cups-page-set", "odd");
 }
 
+static GList *
+cups_printer_get_paper_sizes (EggPrinter *printer)
+{
+  ppd_file_t *ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
+  ppd_size_t *size;
+  const char *standard_name;
+  EggPaperSize *paper_size;
+  GList *l;
+  int i;
+
+  if (ppd_file == NULL)
+    return NULL;
+
+  l = NULL;
+  
+  for (i = 0; i < ppd_file->num_sizes; i++)
+    {
+      size = &ppd_file->sizes[i];
+      standard_name = egg_get_paper_size_name_from_ppd_name (size->name);
+      if (standard_name)
+	{
+	  paper_size = egg_paper_size_new (standard_name);
+	  l = g_list_prepend (l, paper_size);
+	}
+      else
+	g_print ("not found: %s\n", size->name);
+    }
+
+  return g_list_reverse (l);;
+}

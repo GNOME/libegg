@@ -37,11 +37,6 @@
 static void egg_printer_finalize     (GObject *object);
 
 enum {
-  SETTINGS_RETRIEVED,
-  LAST_SIGNAL
-};
-
-enum {
   PROP_0,
   PROP_NAME,
   PROP_STATE_MESSAGE,
@@ -49,8 +44,6 @@ enum {
   PROP_ICON_NAME,
   PROP_JOB_COUNT,
 };
-
-static guint signals[LAST_SIGNAL] = { 0 };
 
 static void egg_printer_set_property (GObject      *object,
 				      guint         prop_id,
@@ -73,16 +66,6 @@ egg_printer_class_init (EggPrinterClass *class)
 
   object_class->set_property = egg_printer_set_property;
   object_class->get_property = egg_printer_get_property;
-
-  signals[SETTINGS_RETRIEVED] =
-    g_signal_new ("settings-retrieved",
-		  G_TYPE_FROM_CLASS (class),
-		  G_SIGNAL_RUN_LAST,
-		  G_STRUCT_OFFSET (EggPrinterClass, settings_retrieved),
-		  NULL, NULL,
-		  g_cclosure_marshal_VOID__VOID,
-		  G_TYPE_NONE, 0);
-
 
   g_type_class_add_private (class, sizeof (EggPrinterPrivate));
 
@@ -348,10 +331,10 @@ _egg_printer_create_cairo_surface (EggPrinter *printer,
   return backend_iface->printer_create_cairo_surface (printer, width, height, cache_fd);
 }
 
-
-void 
-_egg_printer_emit_settings_retrieved (EggPrinter *printer)
+GList  *
+_egg_printer_get_paper_sizes (EggPrinter *printer)
 {
-  g_signal_emit (printer, signals[SETTINGS_RETRIEVED], 0);
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
 
+  return backend_iface->printer_get_paper_sizes (printer);
 }
