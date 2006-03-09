@@ -1,3 +1,22 @@
+2006-03-09  Emmanuele Bassi  <ebassi@gmail.com>
+
+	* libegg/bookmarkfile/eggbookmarkfile.c:
+	(egg_bookmark_app_info_new): init the count to 0
+	(egg_bookmark_metadata_new), (egg_bookmark_file_init): fix hash tables
+	constructors with explicit NULL destructor functions
+	(egg_bookmark_file_add_group): bail out on empty group name
+	(egg_bookmark_file_add_application): add the item before setting
+	the application meta-data, as egg_bookmark_file_set_app_info semantics
+	have been changed
+	(egg_bookmark_file_remove_application): wrap
+	egg_bookmark_file_set_app_info now that it can remove items
+	(egg_bookmark_file_set_app_info): change the function's semantics: now
+	it works only on existing bookmarks, and can also remove applications
+	by setting the registrations count to 0.
+
+	* libegg/bookmarkfile/eggbookmarkfile.h: update the signature of
+	egg_bookmark_file_set_app_info().
+
 2006-03-08  Emmanuele Bassi  <ebassi@gmail.com>
 
 	* libegg/recentchooser/eggrecentmanager.c

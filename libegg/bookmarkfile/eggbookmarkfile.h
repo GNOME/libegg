@@ -115,12 +115,13 @@ gchar **         egg_bookmark_file_get_applications    (EggBookmarkFile  *bookma
 						        const gchar      *uri,
 						        gsize            *length,
 						        GError          **error) G_GNUC_MALLOC;
-void             egg_bookmark_file_set_app_info        (EggBookmarkFile  *bookmark,
+gboolean         egg_bookmark_file_set_app_info        (EggBookmarkFile  *bookmark,
 							const gchar      *uri,
 							const gchar      *name,
 							const gchar      *launcher,
 							gint              count,
-							time_t            stamp);
+							time_t            stamp,
+							GError          **error);
 gboolean         egg_bookmark_file_get_app_info        (EggBookmarkFile  *bookmark,
 							const gchar      *uri,
 							const gchar      *name,
