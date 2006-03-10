@@ -4,6 +4,7 @@
 
 static GtkWidget *main_window;
 static char *filename = NULL;
+static EggPageSetup *page_setup = NULL;
 static EggPrintSettings *settings = NULL;
 static gboolean file_changed = FALSE;
 static GtkTextBuffer *buffer;
@@ -335,6 +336,24 @@ draw_page (EggPrintOperation *operation,
 }
 
 static void
+do_page_setup (GtkAction *action)
+{
+  EggPageSetup *new_page_setup;
+
+  if (settings == NULL)
+    settings = egg_print_settings_new ();
+  
+  new_page_setup = egg_print_run_page_setup_dialog (GTK_WINDOW (main_window),
+						    page_setup, settings);
+
+  if (page_setup)
+    g_object_unref (page_setup);
+  
+  page_setup = new_page_setup;
+}
+
+
+static void
 do_print (GtkAction *action)
 {
   GtkWidget *error_dialog;
@@ -349,6 +368,9 @@ do_print (GtkAction *action)
 
   if (settings != NULL)
     egg_print_operation_set_print_settings (print, settings);
+
+  if (page_setup != NULL)
+    egg_print_operation_set_default_page_setup (print, page_setup);
   
   g_signal_connect (print, "begin_print", G_CALLBACK (begin_print), &print_data);
   g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), &print_data);
@@ -425,6 +447,10 @@ static GtkActionEntry entries[] = {
     "_About", "<control>A",                    /* label, accelerator */     
     "About",                                   /* tooltip */  
     G_CALLBACK (do_about) },
+  { "PageSetup", NULL,                         /* name, stock id */
+    "Page _Setup", NULL,                       /* label, accelerator */     
+    "Set up the page",                         /* tooltip */
+    G_CALLBACK (do_page_setup) },
   { "Print", GTK_STOCK_PRINT,                  /* name, stock id */
      NULL, NULL,                               /* label, accelerator */     
     "Print the document",                      /* tooltip */
@@ -440,6 +466,7 @@ static const gchar *ui_info =
 "      <menuitem action='Open'/>"
 "      <menuitem action='Save'/>"
 "      <menuitem action='SaveAs'/>"
+"      <menuitem action='PageSetup'/>"
 "      <menuitem action='Print'/>"
 "      <separator/>"
 "      <menuitem action='Quit'/>"

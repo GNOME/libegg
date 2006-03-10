@@ -114,6 +114,10 @@ EggPrintOperationResult egg_print_operation_run                    (EggPrintOper
 								    GtkWindow          *parent,
 								    GError            **error);
 
+EggPageSetup *egg_print_run_page_setup_dialog (GtkWindow        *parent,
+					       EggPageSetup     *page_setup,
+					       EggPrintSettings *settings);
+
 G_END_DECLS
 
 #endif /* __EGG_PRINT_OPERATION_H__ */

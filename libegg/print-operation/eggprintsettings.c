@@ -134,6 +134,9 @@ egg_print_settings_copy (EggPrintSettings *other)
 {
   EggPrintSettings *settings;
 
+  if (other == NULL)
+    return NULL;
+  
   g_return_val_if_fail (EGG_IS_PRINT_SETTINGS (other), NULL);
 
   settings = egg_print_settings_new ();

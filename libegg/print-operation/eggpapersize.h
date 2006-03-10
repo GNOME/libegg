@@ -73,7 +73,6 @@ gboolean      egg_paper_size_is_equal     (EggPaperSize *size1,
 					   EggPaperSize *size2);
 
 
-
 /* The width is always the shortest side, measure in mm */
 G_CONST_RETURN char *   egg_paper_size_get_name         (EggPaperSize *size);
 G_CONST_RETURN char *   egg_paper_size_get_display_name (EggPaperSize *size);

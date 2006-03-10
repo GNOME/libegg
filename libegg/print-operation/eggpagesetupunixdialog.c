@@ -39,6 +39,15 @@ struct EggPageSetupUnixDialogPrivate
   GtkWidget *printer_combo;
   GtkWidget *paper_size_combo;
   GtkWidget *paper_size_label;
+
+  GtkWidget *portrait_radio;
+  GtkWidget *landscape_radio;
+  GtkWidget *reverse_portrait_radio;
+  GtkWidget *reverse_landscape_radio;
+
+  EggPrintSettings *print_settings;
+  /* These are stored in mm */
+  double top_margin, bottom_margin, left_margin, right_margin;
 };
 
 enum {
@@ -187,6 +196,18 @@ egg_page_setup_unix_dialog_finalize (GObject *object)
     {
       g_object_unref (dialog->priv->printer_list);
       dialog->priv->printer_list = NULL;
+    }
+
+  if (dialog->priv->paper_size_list)
+    {
+      g_object_unref (dialog->priv->paper_size_list);
+      dialog->priv->paper_size_list = NULL;
+    }
+
+  if (dialog->priv->print_settings)
+    {
+      g_object_unref (dialog->priv->print_settings);
+      dialog->priv->print_settings = NULL;
     }
   
   if (G_OBJECT_CLASS (egg_page_setup_unix_dialog_parent_class)->finalize)
@@ -344,6 +365,60 @@ paper_size_row_is_separator (GtkTreeModel *model,
   return name == NULL;
 }
 
+static EggPaperSize *
+get_current_paper_size (EggPageSetupUnixDialog *dialog)
+{
+  EggPaperSize *current_paper_size;
+  GtkComboBox *combo_box;
+  GtkTreeIter iter;
+
+  current_paper_size = NULL;
+  
+  combo_box = GTK_COMBO_BOX (dialog->priv->paper_size_combo);
+  if (gtk_combo_box_get_active_iter (combo_box, &iter))
+    gtk_tree_model_get (GTK_TREE_MODEL (dialog->priv->paper_size_list), &iter,
+			PAPER_SIZE_LIST_COL_PAPER_SIZE, &current_paper_size, -1);
+
+  return current_paper_size;
+}
+
+static void
+set_paper_size (EggPageSetupUnixDialog *dialog,
+		EggPaperSize *paper_size)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  EggPaperSize *list_paper_size;
+
+  model = GTK_TREE_MODEL (dialog->priv->paper_size_list);
+
+  if (gtk_tree_model_get_iter_first (model, &iter))
+    {
+      do
+	{
+	  gtk_tree_model_get (GTK_TREE_MODEL (dialog->priv->paper_size_list), &iter,
+			      PAPER_SIZE_LIST_COL_PAPER_SIZE, &list_paper_size, -1);
+	  if (list_paper_size == NULL)
+	    continue;
+	  
+	  if (egg_paper_size_is_equal (paper_size, list_paper_size))
+	    {
+	      gtk_combo_box_set_active_iter (GTK_COMBO_BOX (dialog->priv->paper_size_combo),
+					     &iter);
+	      egg_paper_size_free (list_paper_size);
+	      return;
+	    }
+	      
+	  egg_paper_size_free (list_paper_size);
+	  
+	} while (gtk_tree_model_iter_next (model, &iter));
+    }
+
+  /* TODO: Maybe we should create a new row if the
+   * paper size is not in the list?
+   */
+}
+
 static void
 fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
 			       EggPrinter *printer)
@@ -355,14 +430,7 @@ fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
   int current;
   int i;
 
-  combo_box = GTK_COMBO_BOX (dialog->priv->paper_size_combo);
-  current_paper_size = NULL;
-  if (gtk_combo_box_get_active_iter (combo_box, &iter))
-    {
-      gtk_tree_model_get (gtk_combo_box_get_model (combo_box),
-			  &iter, PAPER_SIZE_LIST_COL_PAPER_SIZE, &current_paper_size, -1);
-    }
-
+  current_paper_size = get_current_paper_size (dialog);
   current = -1;
   gtk_list_store_clear (dialog->priv->paper_size_list);
 
@@ -415,6 +483,7 @@ fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
                       0, _("Manage Custom Size..."),
                       -1);
   
+  combo_box = GTK_COMBO_BOX (dialog->priv->paper_size_combo);
   if (current > 0)
     gtk_combo_box_set_active (combo_box, current);
   else
@@ -437,6 +506,8 @@ printer_changed_callback (GtkComboBox *combo_box,
       gtk_tree_model_get (gtk_combo_box_get_model (combo_box), &iter,
 			  PRINTER_LIST_COL_PRINTER_OBJ, &printer, -1);
       fill_paper_sizes_from_printer (dialog, printer);
+
+      /* TODO: Add format-for-printer to print_settings */
     }
 }
 
@@ -494,11 +565,12 @@ paper_size_changed (GtkComboBox *combo_box, EggPageSetupUnixDialog *dialog)
       if (paper_size == NULL)
 	{
 	  GtkWidget *error;
+	  /* TODO: implement custom sizes */
 	  error = gtk_message_dialog_new (GTK_WINDOW (dialog),
-					   GTK_DIALOG_MODAL,
-					   GTK_MESSAGE_INFO,
-					   GTK_BUTTONS_CLOSE,
-					   "Custom size dialog not implemented yet");
+					  GTK_DIALOG_MODAL,
+					  GTK_MESSAGE_INFO,
+					  GTK_BUTTONS_CLOSE,
+					  "Custom size dialog not implemented yet");
 	  gtk_dialog_run (GTK_DIALOG (error));
 	  gtk_widget_destroy (error);
 	  return;
@@ -525,6 +597,8 @@ paper_size_changed (GtkComboBox *combo_box, EggPageSetupUnixDialog *dialog)
     }
   else
     gtk_label_set_text (label, "");
+
+  /* TODO: set margins */
 }
 
 static void
@@ -604,6 +678,7 @@ populate_dialog (EggPageSetupUnixDialog *dialog)
   gtk_widget_show (label);
 
   radio_button = gtk_radio_button_new_with_label (NULL, "port");
+  dialog->priv->portrait_radio = radio_button;
   gtk_table_attach (GTK_TABLE (table), radio_button,
 		    1, 2, 3, 4,
 		    GTK_FILL, 0, 0, 0);
@@ -611,6 +686,7 @@ populate_dialog (EggPageSetupUnixDialog *dialog)
 
   radio_button = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON(radio_button)),
 						  "land");
+  dialog->priv->landscape_radio = radio_button;
   gtk_table_attach (GTK_TABLE (table), radio_button,
 		    2, 3, 3, 4,
 		    GTK_FILL, 0, 0, 0);
@@ -620,6 +696,7 @@ populate_dialog (EggPageSetupUnixDialog *dialog)
   
   radio_button = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON(radio_button)),
 						  "rport");
+  dialog->priv->reverse_portrait_radio = radio_button;
   gtk_table_attach (GTK_TABLE (table), radio_button,
 		    1, 2, 4, 5,
 		    GTK_FILL, 0, 0, 0);
@@ -627,6 +704,7 @@ populate_dialog (EggPageSetupUnixDialog *dialog)
 
   radio_button = gtk_radio_button_new_with_label (gtk_radio_button_get_group (GTK_RADIO_BUTTON(radio_button)),
 						  "rland");
+  dialog->priv->reverse_landscape_radio = radio_button;
   gtk_table_attach (GTK_TABLE (table), radio_button,
 		    2, 3, 4, 5,
 		    GTK_FILL, 0, 0, 0);
@@ -644,13 +722,12 @@ egg_page_setup_unix_dialog_new (const gchar *title,
 				const gchar *print_backend)
 {
   GtkWidget *result;
-  const gchar *_title = "Page Setup";
 
-  if (title)
-    _title = title;
+  if (title == NULL)
+    title = _("Page Setup");
   
   result = g_object_new (EGG_TYPE_PAGE_SETUP_UNIX_DIALOG,
-                         "title", _title,
+                         "title", title,
 			 "has-separator", FALSE,
 			 "print-backend", print_backend,
                          NULL);
@@ -664,4 +741,100 @@ egg_page_setup_unix_dialog_new (const gchar *title,
                           NULL);
 
   return result;
+}
+
+static EggPageOrientation
+get_orientation (EggPageSetupUnixDialog *dialog)
+{
+  if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->portrait_radio)))
+    return EGG_PAGE_ORIENTATION_PORTRAIT;
+  if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->landscape_radio)))
+    return EGG_PAGE_ORIENTATION_LANDSCAPE;
+  if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_portrait_radio)))
+    return EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT;
+  if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_landscape_radio)))
+    return EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE;
+  return EGG_PAGE_ORIENTATION_PORTRAIT;
+}
+
+static void
+set_orientation (EggPageSetupUnixDialog *dialog, EggPageOrientation orientation)
+{
+  switch (orientation)
+    {
+    case EGG_PAGE_ORIENTATION_PORTRAIT:
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (dialog->priv->portrait_radio), TRUE);
+      break;
+    case EGG_PAGE_ORIENTATION_LANDSCAPE:
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (dialog->priv->landscape_radio), TRUE);
+      break;
+    case EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT:
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_portrait_radio), TRUE);
+      break;
+    case EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE:
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_landscape_radio), TRUE);
+      break;
+    }
+}
+
+
+void
+egg_page_setup_unix_dialog_set_page_setup (EggPageSetupUnixDialog *dialog,
+					   EggPageSetup           *page_setup)
+{
+  if (page_setup)
+    {
+      set_paper_size (dialog, egg_page_setup_get_paper_size (page_setup));
+      set_orientation (dialog, egg_page_setup_get_orientation (page_setup));
+      dialog->priv->top_margin = egg_page_setup_get_top_margin (page_setup, EGG_UNIT_MM);
+      dialog->priv->bottom_margin = egg_page_setup_get_bottom_margin (page_setup, EGG_UNIT_MM);
+      dialog->priv->left_margin = egg_page_setup_get_left_margin (page_setup, EGG_UNIT_MM);
+      dialog->priv->right_margin = egg_page_setup_get_right_margin (page_setup, EGG_UNIT_MM);
+    }
+  
+}
+
+EggPageSetup *
+egg_page_setup_unix_dialog_get_page_setup (EggPageSetupUnixDialog *dialog)
+{
+  EggPageSetup *page_setup;
+  EggPaperSize *paper_size;
+  
+  page_setup = egg_page_setup_new ();
+
+  paper_size = get_current_paper_size (dialog);
+  if (paper_size == NULL)
+    paper_size = egg_paper_size_new (NULL);
+  egg_page_setup_set_paper_size (page_setup, paper_size);
+  egg_paper_size_free (paper_size);
+
+  egg_page_setup_set_orientation (page_setup, get_orientation (dialog));
+
+  egg_page_setup_set_top_margin (page_setup, dialog->priv->top_margin, EGG_UNIT_MM);
+  egg_page_setup_set_bottom_margin (page_setup, dialog->priv->bottom_margin, EGG_UNIT_MM);
+  egg_page_setup_set_left_margin (page_setup, dialog->priv->left_margin, EGG_UNIT_MM);
+  egg_page_setup_set_right_margin (page_setup, dialog->priv->right_margin, EGG_UNIT_MM);
+
+  return page_setup;
+}
+
+void
+egg_page_setup_unix_dialog_set_print_settings (EggPageSetupUnixDialog *dialog,
+					       EggPrintSettings       *print_settings)
+{
+  if (dialog->priv->print_settings)
+    g_object_unref (dialog->priv->print_settings);
+
+  dialog->priv->print_settings = print_settings;
+
+  if (print_settings)
+    g_object_ref (print_settings);
+
+  /* TODO: Set format-for-printer if set. Delayed... */
+}
+
+EggPrintSettings *
+egg_page_setup_unix_dialog_get_print_settings (EggPageSetupUnixDialog *dialog)
+{
+  return dialog->priv->print_settings;
 }

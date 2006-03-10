@@ -1,5 +1,29 @@
 2006-03-10  Alexander Larsson  <alexl@redhat.com>
 
+	* eggpagesetup.c:
+	Init paper size to local-based default.
+	fix bug in set_paper_size
+	
+	* eggpagesetupunixdialog.[ch]:
+	Add functions to set and get page_setup and print_setup objects
+	
+	* eggprintoperation.h:
+	Add egg_print_run_page_setup_dialog.
+	
+	* eggprintoperation-unix.c:
+	Implement egg_print_run_page_setup_dialog for unix
+	
+	* eggprintsettings.c:
+	Allow copy of NULL settings
+	
+	* eggprintsettings.h:
+	Indent fixes
+	
+	* printedit.c:
+	Add page setup menu item and handling
+
+2006-03-10  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintoperation-win32.c:
 	Update win32 to the new names (not tested)
 

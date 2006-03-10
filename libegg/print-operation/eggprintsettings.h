@@ -33,8 +33,8 @@ typedef struct _EggPrintSettings EggPrintSettings;
 #define EGG_IS_PRINT_SETTINGS(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_PRINT_SETTINGS))
 
 typedef void  (*EggPrintSettingsFunc)  (const char *key,
-					  const char *value,
-					  gpointer  user_data);
+					const char *value,
+					gpointer  user_data);
 
 typedef struct {
   int start;

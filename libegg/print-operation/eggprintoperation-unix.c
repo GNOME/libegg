@@ -23,6 +23,7 @@
 #include "eggprintmarshal.h"
 
 #include "eggprintunixdialog.h"
+#include "eggpagesetupunixdialog.h"
 #include "eggprintbackend.h"
 #include "eggprinter.h"
 #include "eggprintjob.h"
@@ -184,5 +185,28 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
   gtk_widget_destroy (pd);
 
   return result;
+}
+
+EggPageSetup *
+egg_print_run_page_setup_dialog (GtkWindow        *parent,
+				 EggPageSetup     *page_setup,
+				 EggPrintSettings *settings)
+{
+  GtkWidget *dialog;
+  EggPageSetup *new_page_setup;
+  
+  dialog = egg_page_setup_unix_dialog_new (NULL, parent, NULL);
+  if (page_setup)
+    egg_page_setup_unix_dialog_set_page_setup (EGG_PAGE_SETUP_UNIX_DIALOG (dialog),
+					       page_setup);
+  egg_page_setup_unix_dialog_set_print_settings (EGG_PAGE_SETUP_UNIX_DIALOG (dialog),
+						 settings);
+  gtk_dialog_run (GTK_DIALOG (dialog));
+
+  new_page_setup = egg_page_setup_unix_dialog_get_page_setup (EGG_PAGE_SETUP_UNIX_DIALOG (dialog));
+
+  gtk_widget_destroy (dialog);
+
+  return new_page_setup;
 }
 

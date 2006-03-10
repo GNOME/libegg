@@ -21,6 +21,9 @@
 
 #include <gtk/gtk.h>
 
+#include "eggpagesetup.h"
+#include "eggprintsettings.h"
+
 G_BEGIN_DECLS
 
 #define EGG_TYPE_PAGE_SETUP_UNIX_DIALOG                  (egg_page_setup_unix_dialog_get_type ())
@@ -56,11 +59,16 @@ struct _EggPageSetupUnixDialogClass
   void (*_egg_reserved7) (void);
 };
 
-GType		 egg_page_setup_unix_dialog_get_type	(void) G_GNUC_CONST;
-GtkWidget *      egg_page_setup_unix_dialog_new         (const gchar *title,
-							 GtkWindow *parent,
-							 const gchar *page_setup_backend);
-
+GType 		  egg_page_setup_unix_dialog_get_type	        (void) G_GNUC_CONST;
+GtkWidget *       egg_page_setup_unix_dialog_new                (const gchar            *title,
+								 GtkWindow              *parent,
+								 const gchar            *page_setup_backend);
+void              egg_page_setup_unix_dialog_set_page_setup     (EggPageSetupUnixDialog *dialog,
+								 EggPageSetup           *page_setup);
+EggPageSetup *    egg_page_setup_unix_dialog_get_page_setup     (EggPageSetupUnixDialog *dialog);
+void              egg_page_setup_unix_dialog_set_print_settings (EggPageSetupUnixDialog *dialog,
+								 EggPrintSettings       *print_settings);
+EggPrintSettings *egg_page_setup_unix_dialog_get_print_settings (EggPageSetupUnixDialog *dialog);
 
 G_END_DECLS
 
