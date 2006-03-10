@@ -1,5 +1,10 @@
 2006-03-10  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintoperation-win32.c:
+	Update win32 to the new names (not tested)
+
+2006-03-10  Alexander Larsson  <alexl@redhat.com>
+
 	* Makefile.am:
 	* eggprintbackendsetting.[ch]:
 	* eggprintbackendsettingset.[ch]:

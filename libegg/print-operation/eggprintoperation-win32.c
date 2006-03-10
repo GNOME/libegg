@@ -613,23 +613,23 @@ get_parent_hwnd (GtkWidget *widget)
 
 
 static void
-dialog_to_printer_settings (EggPrintOperation *op,
-			    LPPRINTDLGEXW printdlgex)
+dialog_to_print_settings (EggPrintOperation *op,
+			  LPPRINTDLGEXW printdlgex)
 {
   int i;
   LPDEVMODEW devmode;
-  EggPrinterSettings *settings;
+  EggPrintSettings *settings;
 
-  settings = egg_printer_settings_new ();
+  settings = egg_print_settings_new ();
 
-  egg_printer_settings_set_print_pages (settings,
-					EGG_PRINT_PAGES_ALL);
+  egg_print_settings_set_print_pages (settings,
+				      EGG_PRINT_PAGES_ALL);
   if (printdlgex->Flags & PD_CURRENTPAGE)
-    egg_printer_settings_set_print_pages (settings,
-					  EGG_PRINT_PAGES_CURRENT);
+    egg_print_settings_set_print_pages (settings,
+					EGG_PRINT_PAGES_CURRENT);
   else if (printdlgex->Flags & PD_PAGENUMS)
-    egg_printer_settings_set_print_pages (settings,
-					  EGG_PRINT_PAGES_RANGES);
+    egg_print_settings_set_print_pages (settings,
+					EGG_PRINT_PAGES_RANGES);
 
   if (printdlgex->nPageRanges > 0)
     {
@@ -642,16 +642,16 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	  ranges[i].end = printdlgex->lpPageRanges[i].nToPage - 1;
 	}
 
-      egg_printer_settings_set_page_ranges (settings, ranges,
-					    printdlgex->nPageRanges);
+      egg_print_settings_set_page_ranges (settings, ranges,
+					  printdlgex->nPageRanges);
       g_free (ranges);
     }
   
   if (printdlgex->hDevNames != NULL) 
     {
       EggPrintWin32Devnames *devnames = egg_print_win32_devnames_from_win32 (printdlgex->hDevNames);
-      egg_printer_settings_set_printer (settings,
-					devnames->device);
+      egg_print_settings_set_printer (settings,
+				      devnames->device);
       egg_print_win32_devnames_free (devnames);
     }
 
@@ -659,21 +659,21 @@ dialog_to_printer_settings (EggPrintOperation *op,
     {
       devmode = GlobalLock (printdlgex->hDevMode);
 
-      egg_printer_settings_set_int (settings, EGG_PRINTER_SETTINGS_WIN32_DRIVER_VERSION,
-				    devmode->dmDriverVersion);
+      egg_print_settings_set_int (settings, EGG_PRINT_SETTINGS_WIN32_DRIVER_VERSION,
+				  devmode->dmDriverVersion);
       if (devmode->dmDriverExtra != 0)
 	{
 	  char *extra = base64_encode (((char *)devmode) + sizeof (DEVMODEW),
 				       devmode->dmDriverExtra);
-	  egg_printer_settings_set (settings,
-				    EGG_PRINTER_SETTINGS_WIN32_DRIVER_EXTRA,
-				    extra);
+	  egg_print_settings_set (settings,
+				  EGG_PRINT_SETTINGS_WIN32_DRIVER_EXTRA,
+				  extra);
 	  g_free (extra);
 	}
       
       if (devmode->dmFields & DM_ORIENTATION)
-	egg_printer_settings_set_orientation (settings,
-					      orientation_from_win32 (devmode->dmOrientation));
+	egg_print_settings_set_orientation (settings,
+					    orientation_from_win32 (devmode->dmOrientation));
 
 
       if (devmode->dmFields & DM_PAPERSIZE)
@@ -681,7 +681,7 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	  if (devmode->dmPaperSize != 0)
 	    {
 	      EggPaperSize *paper_size = egg_paper_size_new (page_size_from_win32 (devmode->dmPaperSize));
-	      egg_printer_settings_set_paper_size (settings, paper_size);
+	      egg_print_settings_set_paper_size (settings, paper_size);
 	      egg_paper_size_free (paper_size);
 	    }
 	  else
@@ -690,18 +690,18 @@ dialog_to_printer_settings (EggPrintOperation *op,
 								    devmode->dmPaperWidth * 10.0,
 								    devmode->dmPaperLength * 10.0,
 								    EGG_UNIT_MM);
-	      egg_printer_settings_set_paper_size (settings, paper_size);
+	      egg_print_settings_set_paper_size (settings, paper_size);
 	      egg_paper_size_free (paper_size);
 	    }
 	}
 
       if (devmode->dmFields & DM_SCALE)
-	egg_printer_settings_set_scale (settings,
-					devmode->dmScale / 100.0);
+	egg_print_settings_set_scale (settings,
+				      devmode->dmScale / 100.0);
 
       if (devmode->dmFields & DM_COPIES)
-	egg_printer_settings_set_num_copies (settings,
-					     devmode->dmCopies);
+	egg_print_settings_set_num_copies (settings,
+					   devmode->dmCopies);
       
       if (devmode->dmFields & DM_DEFAULTSOURCE)
 	{
@@ -749,7 +749,7 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	      source = "small-format";
 	      break;
 	    }
-	  egg_printer_settings_set_default_source (settings, source);
+	  egg_print_settings_set_default_source (settings, source);
 	}
 
       if (devmode->dmFields & DM_PRINTQUALITY)
@@ -771,11 +771,11 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	      quality = EGG_PRINT_QUALITY_DRAFT;
 	      break;
 	    }
-	  egg_printer_settings_set_quality (settings, quality);
+	  egg_print_settings_set_quality (settings, quality);
 	}
       
       if (devmode->dmFields & DM_COLOR)
-	egg_printer_settings_set_use_color (settings, devmode->dmFields == DMCOLOR_COLOR);
+	egg_print_settings_set_use_color (settings, devmode->dmFields == DMCOLOR_COLOR);
 
       if (devmode->dmFields & DM_DUPLEX)
 	{
@@ -794,12 +794,12 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	      break;
 	    }
 	  
-	  egg_printer_settings_set_duplex (settings, duplex);
+	  egg_print_settings_set_duplex (settings, duplex);
 	}
       
       if (devmode->dmFields & DM_COLLATE)
-	egg_printer_settings_set_collate (settings,
-					  devmode->dmCollate == DMCOLLATE_TRUE);
+	egg_print_settings_set_collate (settings,
+					devmode->dmCollate == DMCOLLATE_TRUE);
 
       if (devmode->dmFields & DM_MEDIATYPE)
 	{
@@ -817,7 +817,7 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	      media_type = "photographic-glossy";
 	      break;
 	    }
-	  egg_printer_settings_set_media_type (settings, media_type);
+	  egg_print_settings_set_media_type (settings, media_type);
 	}
 
       if (devmode->dmFields & DM_DITHERTYPE)
@@ -845,20 +845,20 @@ dialog_to_printer_settings (EggPrintOperation *op,
 	      dither = "error-diffusion";
 	      break;
 	    }
-	  egg_printer_settings_set_dither (settings, dither);
+	  egg_print_settings_set_dither (settings, dither);
 	}
       	  
       GlobalUnlock (printdlgex->hDevMode);
     }
   
-  egg_print_operation_set_printer_settings (op, settings);
+  egg_print_operation_set_print_settings (op, settings);
 }
 
 static void
-dialog_from_printer_settings (EggPrintOperation *op,
-			     LPPRINTDLGEXW printdlgex)
+dialog_from_print_settings (EggPrintOperation *op,
+			    LPPRINTDLGEXW printdlgex)
 {
-  EggPrinterSettings *settings = op->priv->printer_settings;
+  EggPrintSettings *settings = op->priv->print_settings;
   const char *printer;
   const char *extras_base64;
   const char *val;
@@ -871,9 +871,9 @@ dialog_from_printer_settings (EggPrintOperation *op,
   if (settings == NULL)
     return;
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_PRINT_PAGES))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_PRINT_PAGES))
     {
-      EggPrintPages print_pages = egg_printer_settings_get_print_pages (settings);
+      EggPrintPages print_pages = egg_print_settings_get_print_pages (settings);
 
       switch (print_pages)
 	{
@@ -889,12 +889,12 @@ dialog_from_printer_settings (EggPrintOperation *op,
 	  break;
 	}
     }
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_PAGE_RANGES))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_PAGE_RANGES))
     {
       EggPageRange *ranges;
       int num_ranges, i;
 
-      ranges = egg_printer_settings_get_page_ranges (settings, &num_ranges);
+      ranges = egg_print_settings_get_page_ranges (settings, &num_ranges);
 
       if (num_ranges > MAX_PAGE_RANGES)
 	num_ranges = MAX_PAGE_RANGES;
@@ -907,13 +907,13 @@ dialog_from_printer_settings (EggPrintOperation *op,
 	}
     }
   
-  printer = egg_printer_settings_get_printer (settings);
+  printer = egg_print_settings_get_printer (settings);
   if (printer)
     printdlgex->hDevNames = egg_print_win32_devnames_from_printer_name (printer);
 
   extras = NULL;
   extras_len = 0;
-  extras_base64 = egg_printer_settings_get (settings, EGG_PRINTER_SETTINGS_WIN32_DRIVER_EXTRA);
+  extras_base64 = egg_print_settings_get (settings, EGG_PRINT_SETTINGS_WIN32_DRIVER_EXTRA);
   if (extras_base64)
     {
       extras = base64_decode (extras_base64, &extras_len);
@@ -937,17 +937,17 @@ dialog_from_printer_settings (EggPrintOperation *op,
       memcpy (((char *)devmode) + sizeof (DEVMODEW), extras, extras_len);
       g_free (extras);
     }
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_WIN32_DRIVER_VERSION))
-    devmode->dmDriverVersion = egg_printer_settings_get_int (settings, EGG_PRINTER_SETTINGS_WIN32_DRIVER_VERSION);
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_WIN32_DRIVER_VERSION))
+    devmode->dmDriverVersion = egg_print_settings_get_int (settings, EGG_PRINT_SETTINGS_WIN32_DRIVER_VERSION);
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_ORIENTATION))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_ORIENTATION))
     {
       devmode->dmFields |= DM_ORIENTATION;
       devmode->dmOrientation =
-	orientation_to_win32 (egg_printer_settings_get_orientation (settings));
+	orientation_to_win32 (egg_print_settings_get_orientation (settings));
     }
 
-  paper_size = egg_printer_settings_get_paper_size (settings);
+  paper_size = egg_print_settings_get_paper_size (settings);
   if (paper_size)
     {
       devmode->dmFields |= DM_PAPERSIZE;
@@ -961,24 +961,24 @@ dialog_from_printer_settings (EggPrintOperation *op,
       egg_paper_size_free (paper_size);
     }
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_SCALE))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_SCALE))
     {
       devmode->dmFields |= DM_SCALE;
-      devmode->dmScale = egg_printer_settings_get_scale (settings) * 100;
+      devmode->dmScale = egg_print_settings_get_scale (settings) * 100;
     }
   
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_NUM_COPIES))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_NUM_COPIES))
     {
       devmode->dmFields |= DM_COPIES;
-      devmode->dmCopies = egg_printer_settings_get_num_copies (settings);
+      devmode->dmCopies = egg_print_settings_get_num_copies (settings);
     }
   
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_DEFAULT_SOURCE))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_DEFAULT_SOURCE))
     {
       devmode->dmFields |= DM_DEFAULTSOURCE;
       devmode->dmDefaultSource = DMBIN_AUTO;
 
-      val = egg_printer_settings_get_default_source (settings);
+      val = egg_print_settings_get_default_source (settings);
       if (strcmp (val, "auto") == 0)
 	devmode->dmDefaultSource = DMBIN_AUTO;
       if (strcmp (val, "cassette") == 0)
@@ -1007,15 +1007,15 @@ dialog_from_printer_settings (EggPrintOperation *op,
 	devmode->dmDefaultSource = DMBIN_SMALLFMT;
     }
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_RESOLUTION))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_RESOLUTION))
     {
       devmode->dmFields |= DM_PRINTQUALITY;
-      devmode->dmPrintQuality = egg_printer_settings_get_resolution (settings);
+      devmode->dmPrintQuality = egg_print_settings_get_resolution (settings);
     } 
-  else if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_QUALITY))
+  else if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_QUALITY))
     {
       devmode->dmFields |= DM_PRINTQUALITY;
-      switch (egg_printer_settings_get_quality (settings))
+      switch (egg_print_settings_get_quality (settings))
 	{
 	case EGG_PRINT_QUALITY_LOW:
 	  devmode->dmPrintQuality = DMRES_LOW;
@@ -1033,19 +1033,19 @@ dialog_from_printer_settings (EggPrintOperation *op,
 	}
     }
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_USE_COLOR))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_USE_COLOR))
     {
       devmode->dmFields |= DM_COLOR;
-      if (egg_printer_settings_get_use_color (settings))
+      if (egg_print_settings_get_use_color (settings))
 	devmode->dmColor = DMCOLOR_COLOR;
       else
 	devmode->dmColor = DMCOLOR_MONOCHROME;
     }
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_DUPLEX))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_DUPLEX))
     {
       devmode->dmFields |= DM_DUPLEX;
-      switch (egg_printer_settings_get_duplex (settings))
+      switch (egg_print_settings_get_duplex (settings))
 	{
 	default:
 	case EGG_PRINT_DUPLEX_SIMPLEX:
@@ -1060,33 +1060,33 @@ dialog_from_printer_settings (EggPrintOperation *op,
 	}
     }
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_COLLATE))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_COLLATE))
     {
       devmode->dmFields |= DM_COLLATE;
-      if (egg_printer_settings_get_collate (settings))
+      if (egg_print_settings_get_collate (settings))
 	devmode->dmCollate = DMCOLLATE_TRUE;
       else
 	devmode->dmCollate = DMCOLLATE_FALSE;
     }
 
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_MEDIA_TYPE))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_MEDIA_TYPE))
     {
       devmode->dmFields |= DM_MEDIATYPE;
       devmode->dmMediaType = DMMEDIA_STANDARD;
       
-      val = egg_printer_settings_get_media_type (settings);
+      val = egg_print_settings_get_media_type (settings);
       if (strcmp (val, "transparency") == 0)
 	devmode->dmMediaType = DMMEDIA_TRANSPARENCY;
       if (strcmp (val, "photographic-glossy") == 0)
 	devmode->dmMediaType = DMMEDIA_GLOSSY;
     }
  
-  if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_DITHER))
+  if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_DITHER))
     {
       devmode->dmFields |= DM_DITHERTYPE;
       devmode->dmDitherType = DMDITHER_FINE;
       
-      val = egg_printer_settings_get_dither (settings);
+      val = egg_print_settings_get_dither (settings);
       if (strcmp (val, "none") == 0)
 	devmode->dmDitherType = DMDITHER_NONE;
       if (strcmp (val, "coarse") == 0)
@@ -1179,7 +1179,7 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
   printdlgex->nStartPage = START_PAGE_GENERAL;
   printdlgex->dwResultAction = 0;
 
-  dialog_from_printer_settings (op, printdlgex);
+  dialog_from_print_settings (op, printdlgex);
 
   /* TODO: We should do this in a thread to avoid blocking the mainloop */
   hResult = PrintDlgExW(printdlgex);
@@ -1219,7 +1219,7 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
       printdlgex->dwResultAction == PD_RESULT_APPLY)
     {
       result = EGG_PRINT_OPERATION_RESULT_APPLY;
-      dialog_to_printer_settings (op, printdlgex);
+      dialog_to_print_settings (op, printdlgex);
     }
   else
     result = EGG_PRINT_OPERATION_RESULT_CANCEL;
