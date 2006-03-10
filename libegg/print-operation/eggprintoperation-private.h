@@ -28,7 +28,7 @@ G_BEGIN_DECLS
 struct _EggPrintOperationPrivate
 {
   EggPageSetup *default_page_setup;
-  EggPrinterSettings *printer_settings;
+  EggPrintSettings *print_settings;
   char *job_name;
   int nr_of_pages;
   int current_page;

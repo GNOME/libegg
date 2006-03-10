@@ -7,7 +7,7 @@ libeggprint_la_SOURCES = 		\
 	eggpagesetup.c			\
 	eggpapersize.c			\
 	eggprintcontext.c		\
-	eggprintersettings.c		\
+	eggprintsettings.c		\
 	eggprintmarshal.c		\
 	eggprintoperation.c		
 
@@ -52,7 +52,7 @@ noinst_HEADERS = 			\
 	eggprinter-private.h		\
 	eggprinter.h			\
 	eggprintercups.h		\
-	eggprintersettings.h		\
+	eggprintsettings.h		\
 	eggprintmarshal.h		\
 	eggprintoperation-private.h 	\
 	eggprintoperation.h		\

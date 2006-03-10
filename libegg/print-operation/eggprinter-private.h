@@ -23,7 +23,7 @@
 
 #include <glib.h>
 #include "eggprinter.h"
-#include "eggprintersettings.h"
+#include "eggprintsettings.h"
 #include "eggprintbackendsettingset.h"
 
 G_BEGIN_DECLS
@@ -49,9 +49,9 @@ gboolean                   _egg_printer_mark_conflicts       (EggPrinter        
 							      EggPrintBackendSettingSet *settings);
 void                       _egg_printer_add_backend_settings (EggPrinter                *printer,
 							      EggPrintBackendSettingSet *backend_settings,
-							      EggPrinterSettings        *settings);
+							      EggPrintSettings          *settings);
 void                       _egg_printer_prepare_for_print    (EggPrinter                *printer,
-							      EggPrinterSettings        *settings);
+							      EggPrintSettings          *settings);
 cairo_surface_t *          _egg_printer_create_cairo_surface (EggPrinter                *printer,
 							      gdouble                    width,
 							      gdouble                    height,

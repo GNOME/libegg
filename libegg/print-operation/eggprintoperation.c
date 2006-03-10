@@ -55,8 +55,8 @@ egg_print_operation_finalize (GObject *object)
   if (print_operation->priv->default_page_setup)
     g_object_unref (print_operation->priv->default_page_setup);
   
-  if (print_operation->priv->printer_settings)
-    g_object_unref (print_operation->priv->printer_settings);
+  if (print_operation->priv->print_settings)
+    g_object_unref (print_operation->priv->print_settings);
   
   g_free (print_operation->priv->pdf_target);
   g_free (print_operation->priv->job_name);
@@ -71,7 +71,7 @@ egg_print_operation_init (EggPrintOperation *operation)
   operation->priv = EGG_PRINT_OPERATION_GET_PRIVATE (operation);
 
   operation->priv->default_page_setup = NULL;
-  operation->priv->printer_settings = NULL;
+  operation->priv->print_settings = NULL;
   operation->priv->nr_of_pages = -1;
   operation->priv->current_page = -1;
   operation->priv->use_full_page = FALSE;
@@ -171,28 +171,28 @@ egg_print_operation_get_default_page_setup (EggPrintOperation  *op)
 }
 
 void
-egg_print_operation_set_printer_settings (EggPrintOperation  *op,
-					  EggPrinterSettings *printer_settings)
+egg_print_operation_set_print_settings (EggPrintOperation  *op,
+					EggPrintSettings *print_settings)
 {
   g_return_if_fail (op != NULL);
-  g_return_if_fail (printer_settings != NULL);
+  g_return_if_fail (print_settings != NULL);
 
-  if (printer_settings)
-    g_object_ref (printer_settings);
+  if (print_settings)
+    g_object_ref (print_settings);
 
-  if (op->priv->printer_settings)
-    g_object_unref (op->priv->printer_settings);
+  if (op->priv->print_settings)
+    g_object_unref (op->priv->print_settings);
   
-  op->priv->printer_settings = printer_settings;
+  op->priv->print_settings = print_settings;
 }
 
-EggPrinterSettings *
-egg_print_operation_get_printer_settings (EggPrintOperation  *op)
+EggPrintSettings *
+egg_print_operation_get_print_settings (EggPrintOperation  *op)
 {
   g_return_val_if_fail (op != NULL, NULL);
 
-  if (op->priv->printer_settings)
-    return g_object_ref (op->priv->printer_settings);
+  if (op->priv->print_settings)
+    return g_object_ref (op->priv->print_settings);
   
   return NULL;
 }
@@ -265,9 +265,9 @@ egg_print_operation_set_pdf_target (EggPrintOperation  *op,
  *
  * Data is taken from, in order, if existing:
  *
- * PrinterSettings returned from the print dialog
+ * PrintSettings returned from the print dialog
  *  (initial dialog values are set from default_page_setup
-     if unset in app specified printer_settings)
+     if unset in app specified print_settings)
  * default_page_setup
  * per-locale default setup
  */
@@ -275,24 +275,24 @@ static EggPageSetup *
 create_page_setup (EggPrintOperation  *op)
 {
   EggPageSetup *page_setup;
-  EggPrinterSettings *settings;
+  EggPrintSettings *settings;
   
   if (op->priv->default_page_setup)
     page_setup = egg_page_setup_copy (op->priv->default_page_setup);
   else
     page_setup = egg_page_setup_new ();
 
-  settings = op->priv->printer_settings;
+  settings = op->priv->print_settings;
   if (settings)
     {
       EggPaperSize *paper_size;
       
-      if (egg_printer_settings_has_key (settings, EGG_PRINTER_SETTINGS_ORIENTATION))
+      if (egg_print_settings_has_key (settings, EGG_PRINT_SETTINGS_ORIENTATION))
 	egg_page_setup_set_orientation (page_setup,
-					egg_printer_settings_get_orientation (settings));
+					egg_print_settings_get_orientation (settings));
 
 
-      paper_size = egg_printer_settings_get_paper_size (settings);
+      paper_size = egg_print_settings_get_paper_size (settings);
       if (paper_size)
 	egg_page_setup_set_paper_size (page_setup, paper_size);
       egg_paper_size_free (paper_size);
@@ -426,7 +426,7 @@ egg_print_operation_run (EggPrintOperation  *op,
   
   g_return_val_if_fail (op->priv->nr_of_pages != -1, FALSE);
 
-  if (op->priv->printer_settings == NULL)
+  if (op->priv->print_settings == NULL)
     {
       ranges = g_new (EggPageRange, 1);
       num_ranges = 1;
@@ -435,11 +435,11 @@ egg_print_operation_run (EggPrintOperation  *op,
     }
   else
     {
-      EggPrintPages print_pages = egg_printer_settings_get_print_pages (op->priv->printer_settings);
+      EggPrintPages print_pages = egg_print_settings_get_print_pages (op->priv->print_settings);
       ranges = NULL;
       if (print_pages == EGG_PRINT_PAGES_RANGES)
-	ranges = egg_printer_settings_get_page_ranges (op->priv->printer_settings,
-						       &num_ranges);
+	ranges = egg_print_settings_get_page_ranges (op->priv->print_settings,
+						     &num_ranges);
       if (ranges == NULL)
 	{
 	  ranges = g_new (EggPageRange, 1);

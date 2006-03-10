@@ -1801,42 +1801,42 @@ egg_print_unix_dialog_set_current_page (EggPrintUnixDialog *dialog,
 }
 
 
-EggPrinterSettings *
+EggPrintSettings *
 egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
 {
-  EggPrinterSettings *settings;
+  EggPrintSettings *settings;
   EggPrintPages print_pages;
 
-  settings = egg_printer_settings_new ();
+  settings = egg_print_settings_new ();
 
   if (dialog->priv->current_printer)
-    egg_printer_settings_set_printer (settings,
-				      egg_printer_get_name (dialog->priv->current_printer));
+    egg_print_settings_set_printer (settings,
+				    egg_printer_get_name (dialog->priv->current_printer));
   else
-    egg_printer_settings_set_printer (settings, "default");
+    egg_print_settings_set_printer (settings, "default");
   
 
-  egg_printer_settings_set_orientation (settings,
-					dialog_get_orientation (dialog));
+  egg_print_settings_set_orientation (settings,
+				      dialog_get_orientation (dialog));
 
-  egg_printer_settings_set_collate (settings,
-				    dialog_get_collate (dialog));
+  egg_print_settings_set_collate (settings,
+				  dialog_get_collate (dialog));
+  
+  egg_print_settings_set_reverse (settings,
+				  dialog_get_reverse (dialog));
+  
+  egg_print_settings_set_num_copies (settings,
+				     dialog_get_n_copies (dialog));
+  
 
-  egg_printer_settings_set_reverse (settings,
-				    dialog_get_reverse (dialog));
-
-  egg_printer_settings_set_num_copies (settings,
-				       dialog_get_n_copies (dialog));
-
-
-  egg_printer_settings_set_scale (settings,
-				  dialog_get_scale (dialog));
-
-  egg_printer_settings_set_page_set (settings,
-				     dialog_get_page_set (dialog));
-
+  egg_print_settings_set_scale (settings,
+				dialog_get_scale (dialog));
+  
+  egg_print_settings_set_page_set (settings,
+				   dialog_get_page_set (dialog));
+  
   print_pages = dialog_get_print_pages (dialog);
-  egg_printer_settings_set_print_pages (settings, print_pages);
+  egg_print_settings_set_print_pages (settings, print_pages);
 
   if (print_pages == EGG_PRINT_PAGES_RANGES)
     {
@@ -1845,7 +1845,7 @@ egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
 
       ranges = dialog_get_page_ranges (dialog, &n_ranges);
 
-      egg_printer_settings_set_page_ranges  (settings, ranges, n_ranges);
+      egg_print_settings_set_page_ranges  (settings, ranges, n_ranges);
       g_free (ranges);
     }
 

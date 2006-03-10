@@ -125,7 +125,7 @@ egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
     {
       EggPrintOperationUnix *op_unix;
       EggPrinter *printer;
-      EggPrinterSettings *settings;
+      EggPrintSettings *settings;
       EggPageSetup *page_setup;
       double width, height;
  

@@ -22,7 +22,7 @@
 #define __EGG_PRINT_H__
 
 #include <eggpagesetup.h>
-#include <eggprintersettings.h>
+#include <eggprintsettings.h>
 #include <eggprintoperation.h>
 
 #endif /* __EGG_PRINT_H__ */

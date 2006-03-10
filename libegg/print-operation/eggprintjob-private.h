@@ -35,7 +35,7 @@ struct _EggPrintJobPrivate
   gdouble width;
   gdouble height;
 
-  EggPrinterSettings *settings;
+  EggPrintSettings *settings;
   struct _EggPrintBackend *backend;  
   struct _EggPrinter *printer;
 

@@ -116,12 +116,12 @@ static void                       _cups_request_execute             (EggPrintBac
 								     GError                           **err);
 static void                       cups_printer_add_backend_settings (EggPrinter                        *printer,
 								     EggPrintBackendSettingSet         *backend_settings,
-								     EggPrinterSettings                *settings);
+								     EggPrintSettings                  *settings);
 static gboolean                   cups_printer_mark_conflicts       (EggPrinter                        *printer,
 								     EggPrintBackendSettingSet         *settings);
 static EggPrintBackendSettingSet *cups_printer_get_backend_settings (EggPrinter                        *printer);
 static void                       cups_printer_prepare_for_print    (EggPrinter                        *printer,
-								     EggPrinterSettings                *settings);
+								     EggPrintSettings                  *settings);
 static GList *                    cups_printer_get_paper_sizes      (EggPrinter                        *printer);
 
 static void
@@ -297,7 +297,7 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
   EggPrinterCups *cups_printer;
   _PrintStreamData *ps;
   EggCupsRequest *request;
-  EggPrinterSettings *settings;
+  EggPrintSettings *settings;
   
   cups_printer = EGG_PRINTER_CUPS (egg_print_job_get_printer (job));
   settings = egg_print_job_get_settings (job);
@@ -321,7 +321,7 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
     egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
                                      title);
 
-  egg_printer_settings_foreach (settings, add_cups_options, request);
+  egg_print_settings_foreach (settings, add_cups_options, request);
   
   ps = g_new0 (_PrintStreamData, 1);
   ps->callback = callback;
@@ -1476,7 +1476,7 @@ cups_printer_mark_conflicts  (EggPrinter                *printer,
 struct BackendSettingData {
   EggPrinter *printer;
   EggPrintBackendSettingSet *backend_settings;
-  EggPrinterSettings *settings;
+  EggPrintSettings *settings;
   ppd_file_t *ppd_file;
 };
 
@@ -1489,7 +1489,7 @@ static void
 map_cups_settings (const char *value,
 		   NameMapping table[],
 		   int n_elements,
-		   EggPrinterSettings *settings,
+		   EggPrintSettings *settings,
 		   const char *standard_name,
 		   const char *cups_name)
 {
@@ -1500,33 +1500,33 @@ map_cups_settings (const char *value,
     {
       if (table[i].cups == NULL && table[i].standard == NULL)
 	{
-	  egg_printer_settings_set (settings,
-				    standard_name,
-				    value);
+	  egg_print_settings_set (settings,
+				  standard_name,
+				  value);
 	  break;
 	}
       else if (table[i].cups == NULL && table[i].standard != NULL)
 	{
 	  if (value_is_off (value))
 	    {
-	      egg_printer_settings_set (settings,
-					standard_name,
-					table[i].standard);
+	      egg_print_settings_set (settings,
+				      standard_name,
+				      table[i].standard);
 	      break;
 	    }
 	}
       else if (strcmp (table[i].cups, value) == 0)
 	{
-	  egg_printer_settings_set (settings,
-				    standard_name,
-				    table[i].standard);
+	  egg_print_settings_set (settings,
+				  standard_name,
+				  table[i].standard);
 	  break;
 	}
     }
 
   /* Always set the corresponding cups-specific setting */
   name = g_strdup_printf ("cups-%s", cups_name);
-  egg_printer_settings_set (settings, name, value);
+  egg_print_settings_set (settings, name, value);
   g_free (name);
 }
       
@@ -1536,7 +1536,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
 			 gpointer                 user_data)
 {
   struct BackendSettingData *data = user_data;
-  EggPrinterSettings *settings = data->settings;
+  EggPrintSettings *settings = data->settings;
   const char *value;
 
   value = setting->value;
@@ -1558,7 +1558,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
 	{ NULL, NULL}
       };
       map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINTER_SETTINGS_DEFAULT_SOURCE, "InputSlot");
+			 settings, EGG_PRINT_SETTINGS_DEFAULT_SOURCE, "InputSlot");
     }
   else if (strcmp (setting->name, "gtk-output-tray") == 0)
     {
@@ -1569,7 +1569,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
 	{ NULL, NULL}
       };
       map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINTER_SETTINGS_OUTPUT_BIN, "OutputBin");
+			 settings, EGG_PRINT_SETTINGS_OUTPUT_BIN, "OutputBin");
     }
   else if (strcmp (setting->name, "gtk-duplex") == 0)
     {
@@ -1579,7 +1579,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
 	{ NULL, "simplex" }
       };
       map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINTER_SETTINGS_DUPLEX, "Duplex");
+			 settings, EGG_PRINT_SETTINGS_DUPLEX, "Duplex");
     }
   else if (strcmp (setting->name, "cups-OutputMode") == 0)
     {
@@ -1590,15 +1590,15 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
 	{ "Fast", "draft" },
       };
       map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINTER_SETTINGS_QUALITY, "OutputMode");
+			 settings, EGG_PRINT_SETTINGS_QUALITY, "OutputMode");
     }
   else if (strcmp (setting->name, "cups-Resolution") == 0)
     {
       int res = atoi (value);
       /* TODO: What if resolution is on XXXxYYYdpi form? */
       if (res != 0)
-	egg_printer_settings_set_resolution (settings, res);
-      egg_printer_settings_set (settings, setting->name, value);
+	egg_print_settings_set_resolution (settings, res);
+      egg_print_settings_set (settings, setting->name, value);
     }
   else if (strcmp (setting->name, "cups-MediaType") == 0)
     {
@@ -1608,15 +1608,15 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
 	{ NULL, NULL}
       };
       map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINTER_SETTINGS_MEDIA_TYPE, "MediaType");
+			 settings, EGG_PRINT_SETTINGS_MEDIA_TYPE, "MediaType");
     }
   else if (strcmp (setting->name, "gtk-n-up") == 0)
     {
-      egg_printer_settings_set (settings, "cups-number-up", value);
+      egg_print_settings_set (settings, "cups-number-up", value);
     }
   else if (g_str_has_prefix (setting->name, "cups-"))
     {
-      egg_printer_settings_set (settings, setting->name, value);
+      egg_print_settings_set (settings, setting->name, value);
     }
 }
 
@@ -1624,7 +1624,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
 static void
 cups_printer_add_backend_settings (EggPrinter *printer,
 				   EggPrintBackendSettingSet *backend_settings,
-				   EggPrinterSettings *settings)
+				   EggPrintSettings *settings)
 {
   struct BackendSettingData data;
 
@@ -1639,32 +1639,32 @@ cups_printer_add_backend_settings (EggPrinter *printer,
 
 static void
 cups_printer_prepare_for_print (EggPrinter *printer,
-				EggPrinterSettings *settings)
+				EggPrintSettings *settings)
 {
   EggPageSet page_set;
   double scale;
   
   /* TODO: paper size & orientation */
 
-  if (egg_printer_settings_get_collate (settings))
-    egg_printer_settings_set (settings, "cups-Collate", "True");
+  if (egg_print_settings_get_collate (settings))
+    egg_print_settings_set (settings, "cups-Collate", "True");
 
-  if (egg_printer_settings_get_reverse (settings))
-    egg_printer_settings_set (settings, "cups-OutputOrder", "Reverse");
+  if (egg_print_settings_get_reverse (settings))
+    egg_print_settings_set (settings, "cups-OutputOrder", "Reverse");
 
-  if (egg_printer_settings_get_num_copies (settings) > 1)
-    egg_printer_settings_set_int (settings, "cups-copies",
-				  egg_printer_settings_get_num_copies (settings));
+  if (egg_print_settings_get_num_copies (settings) > 1)
+    egg_print_settings_set_int (settings, "cups-copies",
+				egg_print_settings_get_num_copies (settings));
 
-  scale = egg_printer_settings_get_scale (settings);
+  scale = egg_print_settings_get_scale (settings);
   if (scale != 100.0)
-    egg_printer_settings_set_double (settings, "manual-scale", scale);
+    egg_print_settings_set_double (settings, "manual-scale", scale);
 
-  page_set = egg_printer_settings_get_page_set (settings);
+  page_set = egg_print_settings_get_page_set (settings);
   if (page_set == EGG_PAGE_SET_EVEN)
-    egg_printer_settings_set (settings, "cups-page-set", "even");
+    egg_print_settings_set (settings, "cups-page-set", "even");
   else if (page_set == EGG_PAGE_SET_ODD)
-    egg_printer_settings_set (settings, "cups-page-set", "odd");
+    egg_print_settings_set (settings, "cups-page-set", "odd");
 }
 
 static GList *

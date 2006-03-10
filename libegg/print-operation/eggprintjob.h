@@ -22,7 +22,7 @@
 #include <glib-object.h>
 #include <cairo.h>
 
-#include "eggprintersettings.h"
+#include "eggprintsettings.h"
 
 G_BEGIN_DECLS
 
@@ -66,22 +66,22 @@ struct _EggPrintJobClass
   void (*_egg_reserved7) (void);
 };
 
-GType                    egg_print_job_get_type             (void) G_GNUC_CONST;
-EggPrintJob             *egg_print_job_new                  (const gchar *title,
-							     EggPrinterSettings *settings,
-                                                             struct _EggPrinter *printer,
-                                                             gdouble width,
-		                                             gdouble height);
+GType                    egg_print_job_get_type     (void) G_GNUC_CONST;
+EggPrintJob             *egg_print_job_new          (const gchar              *title,
+						     EggPrintSettings         *settings,
+						     struct _EggPrinter       *printer,
+						     gdouble                   width,
+						     gdouble                   height);
+EggPrintSettings      *  egg_print_job_get_settings (EggPrintJob              *print_job);
+struct _EggPrinter      *egg_print_job_get_printer  (EggPrintJob              *print_job);
+cairo_surface_t         *egg_print_job_get_surface  (EggPrintJob              *print_job);
+gboolean                 egg_print_job_send         (EggPrintJob              *print_job,
+						     EggPrintJobCompleteFunc   callback,
+						     gpointer                  user_data,
+						     GError                  **error);
+gboolean                 egg_print_job_prep         (EggPrintJob              *job,
+						     GError                  **error);
 
-EggPrinterSettings      *egg_print_job_get_settings         (EggPrintJob *print_job);
-struct _EggPrinter      *egg_print_job_get_printer          (EggPrintJob *print_job);
-cairo_surface_t         *egg_print_job_get_surface          (EggPrintJob *print_job);
-gboolean                 egg_print_job_send                 (EggPrintJob *print_job,
-							     EggPrintJobCompleteFunc callback,
-							     gpointer user_data,
-							     GError **error);
-gboolean                 egg_print_job_prep                 (EggPrintJob *job, 
-                                                             GError **error);
 
 G_END_DECLS
 

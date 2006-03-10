@@ -89,7 +89,7 @@ egg_print_job_class_init (EggPrintJobClass *class)
                                    g_param_spec_object ("settings",
 						        "Settings",
 						        "Printer settings",
-						        EGG_TYPE_PRINTER_SETTINGS,
+						        EGG_TYPE_PRINT_SETTINGS,
 							G_PARAM_WRITABLE |
 						        G_PARAM_CONSTRUCT_ONLY));
 
@@ -171,7 +171,7 @@ egg_print_job_finalize (GObject *object)
  **/
 EggPrintJob *
 egg_print_job_new (const gchar *title,
-		   EggPrinterSettings *settings,
+		   EggPrintSettings *settings,
                    EggPrinter *printer,
                    double width,
 		   double height)
@@ -189,10 +189,10 @@ egg_print_job_new (const gchar *title,
   return (EggPrintJob *) result;
 }
 
-EggPrinterSettings *
+EggPrintSettings *
 egg_print_job_get_settings (EggPrintJob *print_job)
 {
-  g_assert (EGG_IS_PRINTER_SETTINGS (print_job->priv->settings));
+  g_assert (EGG_IS_PRINT_SETTINGS (print_job->priv->settings));
   return g_object_ref (print_job->priv->settings);
 }
 
@@ -270,8 +270,8 @@ egg_print_job_set_property (GObject      *object,
       break;
 
     case EGG_PRINT_JOB_PROP_SETTINGS:
-      impl->priv->settings = EGG_PRINTER_SETTINGS (g_value_dup_object (value));
-      g_assert (EGG_IS_PRINTER_SETTINGS (impl->priv->settings));
+      impl->priv->settings = EGG_PRINT_SETTINGS (g_value_dup_object (value));
+      g_assert (EGG_IS_PRINT_SETTINGS (impl->priv->settings));
       impl->priv->settings_set = TRUE;
       break;
 

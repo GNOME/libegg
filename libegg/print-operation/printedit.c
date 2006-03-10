@@ -4,7 +4,7 @@
 
 static GtkWidget *main_window;
 static char *filename = NULL;
-static EggPrinterSettings *settings = NULL;
+static EggPrintSettings *settings = NULL;
 static gboolean file_changed = FALSE;
 static GtkTextBuffer *buffer;
 static GtkWidget *statusbar;
@@ -348,7 +348,7 @@ do_print (GtkAction *action)
   print = egg_print_operation_new ();
 
   if (settings != NULL)
-    egg_print_operation_set_printer_settings (print, settings);
+    egg_print_operation_set_print_settings (print, settings);
   
   g_signal_connect (print, "begin_print", G_CALLBACK (begin_print), &print_data);
   g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), &print_data);
@@ -372,7 +372,7 @@ do_print (GtkAction *action)
     {
       if (settings != NULL)
 	g_object_unref (settings);
-      settings = egg_print_operation_get_printer_settings (print);
+      settings = egg_print_operation_get_print_settings (print);
     }
 }
 

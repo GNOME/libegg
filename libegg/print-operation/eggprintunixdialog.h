@@ -19,7 +19,7 @@
 #ifndef __EGG_PRINT_UNIX_DIALOG_H__
 #define __EGG_PRINT_UNIX_DIALOG_H__
 #include "eggprinter.h"
-#include "eggprintersettings.h"
+#include "eggprintsettings.h"
 
 #include <gtk/gtk.h>
 
@@ -70,7 +70,7 @@ void egg_print_unix_dialog_set_current_page   (EggPrintUnixDialog *dialog,
 
 EggPrinter *egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog);
 
-EggPrinterSettings *egg_print_unix_dialog_get_settings       (EggPrintUnixDialog *dialog);
+EggPrintSettings *egg_print_unix_dialog_get_settings   (EggPrintUnixDialog *dialog);
 
 G_END_DECLS
 

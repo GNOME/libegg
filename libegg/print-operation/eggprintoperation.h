@@ -26,7 +26,7 @@
 #include <gtk/gtk.h>
 #include <eggprintenums.h>
 #include <eggpagesetup.h>
-#include <eggprintersettings.h>
+#include <eggprintsettings.h>
 #include <eggprintcontext.h>
 
 G_BEGIN_DECLS
@@ -93,9 +93,9 @@ EggPrintOperation *     egg_print_operation_new                    (void);
 void                    egg_print_operation_set_default_page_setup (EggPrintOperation  *op,
 								    EggPageSetup       *default_page_setup);
 EggPageSetup *          egg_print_operation_get_default_page_setup (EggPrintOperation  *op);
-void                    egg_print_operation_set_printer_settings   (EggPrintOperation  *op,
-								    EggPrinterSettings *printer_settings);
-EggPrinterSettings *    egg_print_operation_get_printer_settings   (EggPrintOperation  *op);
+void                    egg_print_operation_set_print_settings     (EggPrintOperation  *op,
+								    EggPrintSettings   *print_settings);
+EggPrintSettings *      egg_print_operation_get_print_settings     (EggPrintOperation  *op);
 void                    egg_print_operation_set_job_name           (EggPrintOperation  *op,
 								    const char         *job_name);
 void                    egg_print_operation_set_nr_of_pages        (EggPrintOperation  *op,

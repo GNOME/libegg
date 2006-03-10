@@ -34,7 +34,7 @@
 #include <cairo.h>
 
 #include "eggprinter-private.h"
-#include "eggprintersettings.h"
+#include "eggprintsettings.h"
 #include "eggprintbackendsettingset.h"
 #include "eggprintjob.h"
 
@@ -82,9 +82,9 @@ struct _EggPrintBackendIface
 							       EggPrintBackendSettingSet *settings);
   void                        (*printer_add_backend_settings) (EggPrinter *printer,
 							       EggPrintBackendSettingSet *backend_settings,
-							       EggPrinterSettings *settings);
+							       EggPrintSettings *settings);
   void                        (*printer_prepare_for_print)    (EggPrinter *printer,
-							       EggPrinterSettings *settings);
+							       EggPrintSettings *settings);
   GList  *                    (*printer_get_paper_sizes)      (EggPrinter *printer);
 
   /* Signals 

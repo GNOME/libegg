@@ -265,7 +265,7 @@ egg_printer_get_job_count (EggPrinter *printer)
 
 EggPrintJob *
 egg_printer_prep_job (EggPrinter *printer,
-		      EggPrinterSettings *settings,
+		      EggPrintSettings *settings,
 		      const gchar *title,
                       double width, 
                       double height,
@@ -306,15 +306,15 @@ _egg_printer_mark_conflicts (EggPrinter                *printer,
 void
 _egg_printer_add_backend_settings (EggPrinter                *printer,
 				   EggPrintBackendSettingSet *backend_settings,
-				   EggPrinterSettings        *settings)
+				   EggPrintSettings          *settings)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
   return backend_iface->printer_add_backend_settings (printer, backend_settings, settings);
 }
 
 void
-_egg_printer_prepare_for_print    (EggPrinter                *printer,
-				   EggPrinterSettings        *settings)
+_egg_printer_prepare_for_print (EggPrinter *printer,
+				EggPrintSettings *settings)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
   return backend_iface->printer_prepare_for_print (printer, settings);
