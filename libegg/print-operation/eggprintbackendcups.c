@@ -397,7 +397,7 @@ _cups_dispatch_watch_check (GSource *source)
       g_source_add_poll (source, dispatch->data_poll);
     }
             
-  if (dispatch->data_poll != NULL)
+  if (dispatch->data_poll != NULL && dispatch->request->http != NULL)
     {
       if (dispatch->data_poll->fd != dispatch->request->http->fd)
         dispatch->data_poll->fd = dispatch->request->http->fd;
@@ -518,6 +518,8 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   gchar *printer_name;
   EggPrinterCups *cups_printer;
   EggPrinter *printer;
+  gchar *printer_uri;
+  gchar *member_printer_uri;
 
   char uri[HTTP_MAX_URI],	/* Printer URI */
        method[HTTP_MAX_URI],	/* Method/scheme name */
@@ -528,6 +530,9 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
 
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
+
+  printer_uri = NULL;
+  member_printer_uri = NULL;
 
   printer_name = (gchar *)user_data;
   cups_printer = (EggPrinterCups *) g_hash_table_lookup (print_backend->printers, printer_name);
@@ -555,20 +560,47 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   printer->priv->icon_name = g_strdup ("printer-inkjet");
   
   cups_printer->priv->device_uri = g_strdup_printf ("/printers/%s", printer_name);
+
   for (attr = response->attrs; attr != NULL; attr = attr->next) {
     if (!attr->name)
       continue;
 
+#if 0 
+    //debug stuff
+    if (strcmp (attr->name, "device-uri") == 0 ||
+        strcmp (attr->name, "printer-uri-supported") == 0 || 
+        strcmp (attr->name, "member-uris") == 0 || 
+        strcmp (attr->name, "printer-location")==0 ||
+        strcmp (attr->name, "printer-info")==0 ||
+        strcmp (attr->name, "printer-more-info")==0) ||
+
+      {
+        int i;
+        for (i=0; i < attr->num_values; i++)
+         g_message ("%s = %s", attr->name, attr->values[i].string.text);
+      } else  g_message ("%s", attr->name);
+#endif /* debug stuff */
+
     _CUPS_MAP_ATTR_STR (attr, printer->priv->location, "printer-location");
     _CUPS_MAP_ATTR_STR (attr, printer->priv->description, "printer-info");
 
-    /*_CUPS_MAP_ATTR_STR (attr, cups_printer->priv->device_uri, "device-uri");*/
-    _CUPS_MAP_ATTR_STR (attr, cups_printer->priv->printer_uri, "printer-uri-supported");
+    _CUPS_MAP_ATTR_STR (attr, printer_uri, "printer-uri-supported");
+    _CUPS_MAP_ATTR_STR (attr, member_printer_uri, "member-uris");
     _CUPS_MAP_ATTR_STR (attr, printer->priv->state_message, "printer-state-message");
     _CUPS_MAP_ATTR_INT (attr, cups_printer->priv->state, "printer-state");
     _CUPS_MAP_ATTR_INT (attr, printer->priv->job_count, "queued-job-count");
 
   }
+
+  /* if we got a member_printer_uri then this printer is part of a class
+     so use member_printer_uri, else user printer_uri */
+  if (member_printer_uri)
+    {
+      g_free (printer_uri);
+      cups_printer->priv->printer_uri = member_printer_uri;
+    }
+  else
+    cups_printer->priv->printer_uri = printer_uri;
 
   httpSeparate(cups_printer->priv->printer_uri, method, username, hostname,
 	       &port, resource);

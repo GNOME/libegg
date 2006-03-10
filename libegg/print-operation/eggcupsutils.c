@@ -541,7 +541,7 @@ _post_write_request (EggCupsRequest *request)
       request->state = EGG_CUPS_POST_DONE;
       request->poll_state = EGG_CUPS_HTTP_IDLE;
  
-      egg_cups_result_set_error (request->result, ippErrorString (cupsLastError ()));
+      egg_cups_result_set_error (request->result, "%s",ippErrorString (cupsLastError ()));
       return;
     }
 
@@ -601,7 +601,7 @@ _post_write_data (EggCupsRequest *request)
           request->state = EGG_CUPS_POST_DONE;
 	  request->poll_state = EGG_CUPS_HTTP_IDLE;
      
-          egg_cups_result_set_error (request->result, "Error writting to socket in Post");
+          egg_cups_result_set_error (request->result, "Error writting to socket in Post %s", strerror (httpError (request->http)));
           return;
         }
     }
@@ -675,11 +675,30 @@ _post_check (EggCupsRequest *request)
 #endif 
   else if (http_status != HTTP_OK)
     {
-      request->state = EGG_CUPS_POST_DONE;
+      int http_errno;
+
+      http_errno = httpError (request->http);
+
+      if (http_errno == EPIPE)
+        request->state = EGG_CUPS_POST_CONNECT;
+      else
+        {
+          request->state = EGG_CUPS_POST_DONE;
+          egg_cups_result_set_error (request->result, "HTTP Error in POST %s", strerror (http_errno));
+         request->poll_state = EGG_CUPS_HTTP_IDLE;
+ 
+          httpFlush(request->http); 
+          return;
+        }
+
       request->poll_state = EGG_CUPS_HTTP_IDLE;
+       
+      httpFlush(request->http); 
       
-      egg_cups_result_set_error (request->result, "HTTP Error");
-      return;
+      request->last_status = HTTP_CONTINUE;
+      httpClose (request->http);
+      request->http = NULL;
+      return;  
     }
   else
     {
@@ -711,7 +730,7 @@ _post_read_response (EggCupsRequest *request)
 
   if (ipp_status == IPP_ERROR)
     {
-      egg_cups_result_set_error (request->result, ippErrorString (cupsLastError()));
+      egg_cups_result_set_error (request->result, "%s", ippErrorString (cupsLastError()));
       
       ippDelete (request->result->ipp_response);
       request->result->ipp_response = NULL;
@@ -807,15 +826,29 @@ _get_check (EggCupsRequest *request)
 #endif 
   else if (http_status != HTTP_OK)
     {
-      g_warning ("Error status");
-      request->state = EGG_CUPS_POST_DONE;
+      int http_errno;
+
+      http_errno = httpError (request->http);
+
+      if (http_errno == EPIPE)
+        request->state = EGG_CUPS_GET_CONNECT;
+      else
+        {
+          request->state = EGG_CUPS_GET_DONE;
+          egg_cups_result_set_error (request->result, "HTTP Error in GET %s", strerror (http_errno));
+          request->poll_state = EGG_CUPS_HTTP_IDLE;
+          httpFlush(request->http);
+
+          return;
+        }
+
       request->poll_state = EGG_CUPS_HTTP_IDLE;
-      
-      egg_cups_result_set_error (request->result, "HTTP Error");
-
-      httpFlush(request->http);
-
+      httpFlush (request->http);
+      httpClose (request->http);
+      request->last_status = HTTP_CONTINUE;
+      request->http = NULL;
       return;
+
     }
   else
     {
