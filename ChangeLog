@@ -1,5 +1,29 @@
 2006-03-09  Emmanuele Bassi  <ebassi@gmail.com>
 
+	Support root-level "title" and "desc" elements, as per XBEL 1.0
+	specification; now, each bookmark file can have its own global title
+	and description.
+
+	* libegg/bookmarkfile/eggbookmarkfile.c:
+	(egg_bookmark_file_init), (egg_bookmark_file_clear): add global title
+	and description members to the EggBookmarkFile object
+	(start_element_raw_cb), (end_element_raw_cb), (text_raw_cb): add
+	support for global title and desc elements when parsing
+	(egg_bookmark_file_dump): dump global title and desc elements
+	(egg_bookmark_file_set_title), (egg_bookmark_file_get_title),
+	(egg_bookmark_file_set_description),
+	(egg_bookmark_file_get_description): if the passed URI is NULL, set/get
+	the global title and description.
+
+	* libegg/bookmarkfile/test-one.xbel:
+	* libegg/bookmarkfile/test-file.xbel: add global title and description
+	to the test files.
+
+	* libegg/bookmarkfile/testbookmarkfile.c (main): print the global title
+	and description, if found.
+
+2006-03-09  Emmanuele Bassi  <ebassi@gmail.com>
+
 	* libegg/recentchooser/eggrecentmanager.c:
 	(egg_recent_manager_add_full): use g_strv_length() in order to iterate
 	on the group names strings vector.

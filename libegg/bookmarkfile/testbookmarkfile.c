@@ -8,9 +8,12 @@ int main (int argc, char *argv[])
 {
 	EggBookmarkFile *bookmark_file;
 	const gchar *filename;
+	gchar *title, *desc;
 	GError *err = NULL;
+#if 0
 	gchar **uris;
 	gsize len, i;
+#endif
 
 	if (argc > 1)
           filename = argv[1];
@@ -44,6 +47,16 @@ int main (int argc, char *argv[])
 
 	fprintf (stdout, "%d bookmarks loaded successfully.\n",
 		 egg_bookmark_file_get_size (bookmark_file));
+
+
+	title = egg_bookmark_file_get_title (bookmark_file, NULL, NULL);
+	desc = egg_bookmark_file_get_description (bookmark_file, NULL, NULL);
+
+	if (title || desc)
+		fprintf (stdout, "File: %s (%s).\n", title, desc);
+
+	g_free (title);
+	g_free (desc);
 
 #if 0
 	uris = egg_bookmark_file_get_uris (bookmark_file, &len);

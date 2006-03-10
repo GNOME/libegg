@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <xbel xmlns:bookmark="http://www.freedesktop.org/standards/desktop-bookmarks" xmlns:mime="http://www.freedesktop.org/standards/shared-mime-info" version="1.0">
+  <title>Test file</title>
+  <desc>A simple test file</desc>
+  
   <bookmark href="file:///home/zefram/Documents/elevator.pdf" added="20050726T12:45:01Z" modified="20050726T12:45:01Z" visited="20050726T12:45:01Z">
     <info>
       <metadata owner="http://freedesktop.org">

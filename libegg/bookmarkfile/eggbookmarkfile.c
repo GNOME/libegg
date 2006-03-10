@@ -82,9 +82,9 @@
 #define ISO_8601_LEN 	21
 
 /* Desktop bookmark spec entities */
-#define BOOKMARK_METADATA_OWNER 		"http://freedesktop.org"
+#define BOOKMARK_METADATA_OWNER 	"http://freedesktop.org"
 
-#define BOOKMARK_NAMESPACE_NAME 		"bookmark"
+#define BOOKMARK_NAMESPACE_NAME 	"bookmark"
 #define BOOKMARK_NAMESPACE_URI		"http://www.freedesktop.org/standards/desktop-bookmarks"
 
 #define BOOKMARK_GROUPS_ELEMENT		"groups"
@@ -92,14 +92,14 @@
 #define BOOKMARK_APPLICATIONS_ELEMENT	"applications"
 #define BOOKMARK_APPLICATION_ELEMENT	"application"
 #define BOOKMARK_ICON_ELEMENT 		"icon"
-#define BOOKMARK_PRIVATE_ELEMENT	 	"private"
+#define BOOKMARK_PRIVATE_ELEMENT	"private"
 
 #define BOOKMARK_NAME_ATTRIBUTE		"name"
 #define BOOKMARK_EXEC_ATTRIBUTE		"exec"
-#define BOOKMARK_COUNT_ATTRIBUTE	 	"count"
+#define BOOKMARK_COUNT_ATTRIBUTE 	"count"
 #define BOOKMARK_TIMESTAMP_ATTRIBUTE	"timestamp"
-#define BOOKMARK_HREF_ATTRIBUTE 		"href"
-#define BOOKMARK_TYPE_ATTRIBUTE 		"type"
+#define BOOKMARK_HREF_ATTRIBUTE 	"href"
+#define BOOKMARK_TYPE_ATTRIBUTE 	"type"
 
 /* Shared MIME Info entities */
 #define MIME_NAMESPACE_NAME	"mime"
@@ -107,7 +107,6 @@
 #define MIME_TYPE_ELEMENT	"mime-type"
 #define MIME_TYPE_ATTRIBUTE	"type"
 
-#define READ_BUF_LEN	4096
 
 typedef struct _EggBookmarkAppInfo  EggBookmarkAppInfo;
 typedef struct _EggBookmarkMetadata EggBookmarkMetadata;
@@ -155,6 +154,9 @@ struct _EggBookmarkItem
 
 struct _EggBookmarkFile
 {
+  gchar *title;
+  gchar *description;
+
   /* we store our items in a list and keep a copy inside
    * an hash table for faster lookup performances
    */
@@ -808,6 +810,9 @@ egg_bookmark_item_lookup_app_info (EggBookmarkItem *item,
 static void
 egg_bookmark_file_init (EggBookmarkFile *bookmark)
 {
+  bookmark->title = NULL;
+  bookmark->description = NULL;
+  
   bookmark->items = NULL;
   bookmark->items_by_uri = g_hash_table_new_full (g_str_hash,
                                                   g_str_equal,
@@ -822,6 +827,9 @@ egg_bookmark_file_clear (EggBookmarkFile *bookmark)
 {
   if (G_UNLIKELY (!bookmark))
     return;
+  
+  g_free (bookmark->title);
+  g_free (bookmark->description);
 
   if (bookmark->items)
     {
@@ -1331,7 +1339,11 @@ start_element_raw_cb (GMarkupParseContext *context,
           	     element_name, XBEL_ROOT_ELEMENT);
       break;
     case STATE_ROOT:
-      if (IS_ELEMENT (parse_data, element_name, XBEL_BOOKMARK_ELEMENT))
+      if (IS_ELEMENT (parse_data, element_name, XBEL_TITLE_ELEMENT))
+        parse_data->state = STATE_TITLE;
+      else if (IS_ELEMENT (parse_data, element_name, XBEL_DESC_ELEMENT))
+        parse_data->state = STATE_DESC;
+      else if (IS_ELEMENT (parse_data, element_name, XBEL_BOOKMARK_ELEMENT))
         {
           GError *inner_error = NULL;
           
@@ -1348,9 +1360,9 @@ start_element_raw_cb (GMarkupParseContext *context,
       else
         g_set_error (error, G_MARKUP_ERROR,
         	     G_MARKUP_ERROR_INVALID_CONTENT,
-        	     _("Unexpected tag '%s', tag '%s' expected"),
+        	     _("Unexpected tag '%s' inside '%s'"),
         	     element_name,
-        	     XBEL_BOOKMARK_ELEMENT);
+        	     XBEL_ROOT_ELEMENT);
       break;
     case STATE_BOOKMARK:
       if (IS_ELEMENT (parse_data, element_name, XBEL_TITLE_ELEMENT))
@@ -1512,7 +1524,12 @@ end_element_raw_cb (GMarkupParseContext *context,
   else if ((IS_ELEMENT (parse_data, element_name, XBEL_INFO_ELEMENT)) ||
            (IS_ELEMENT (parse_data, element_name, XBEL_TITLE_ELEMENT)) ||
            (IS_ELEMENT (parse_data, element_name, XBEL_DESC_ELEMENT)))
-    parse_data->state = STATE_BOOKMARK;
+    {
+      if (parse_data->current_item)
+        parse_data->state = STATE_BOOKMARK;
+      else
+        parse_data->state = STATE_ROOT;
+    }
   else if (IS_ELEMENT (parse_data, element_name, XBEL_METADATA_ELEMENT))
     parse_data->state = STATE_INFO;
   else if (IS_ELEMENT_NS (parse_data, element_name,
@@ -1546,12 +1563,28 @@ text_raw_cb (GMarkupParseContext *context,
   switch (parse_data->state)
     {
     case STATE_TITLE:
-      g_assert (parse_data->current_item != NULL);
-      parse_data->current_item->title = g_strdup (payload);
+      if (parse_data->current_item)
+        {
+          g_free (parse_data->current_item->title);
+          parse_data->current_item->title = g_strdup (payload);
+        }
+      else
+        {
+          g_free (parse_data->bookmark_file->title);
+          parse_data->bookmark_file->title = g_strdup (payload);
+        }
       break;
     case STATE_DESC:
-      g_assert (parse_data->current_item != NULL);
-      parse_data->current_item->description = g_strdup (payload);
+      if (parse_data->current_item)
+        {
+          g_free (parse_data->current_item->description);
+          parse_data->current_item->description = g_strdup (payload);
+        }
+      else
+        {
+          g_free (parse_data->bookmark_file->description);
+          parse_data->bookmark_file->description = g_strdup (payload);
+        }
       break;
     case STATE_GROUP:
       {
@@ -1713,6 +1746,34 @@ egg_bookmark_file_dump (EggBookmarkFile  *bookmark,
   			  XBEL_VERSION_ATTRIBUTE, XBEL_VERSION,
   			  BOOKMARK_NAMESPACE_NAME, BOOKMARK_NAMESPACE_URI,
   			  MIME_NAMESPACE_NAME, MIME_NAMESPACE_URI);
+  
+  if (bookmark->title)
+    {
+      gchar *escaped_title;
+      
+      escaped_title = g_markup_escape_text (bookmark->title, -1);
+      
+      g_string_append_printf (retval, "  <%s>%s</%s>\n",
+                              XBEL_TITLE_ELEMENT,
+                              escaped_title,
+                              XBEL_TITLE_ELEMENT);
+      
+      g_free (escaped_title);
+    }
+  
+  if (bookmark->description)
+    {
+      gchar *escaped_desc;
+      
+      escaped_desc = g_markup_escape_text (bookmark->description, -1);
+      
+      g_string_append_printf (retval, "  <%s>%s</%s>\n",
+                              XBEL_DESC_ELEMENT,
+                              escaped_desc,
+                              XBEL_DESC_ELEMENT);
+      
+      g_free (escaped_desc);
+    }
   
   if (!bookmark->items)
     goto out;
@@ -2455,11 +2516,13 @@ egg_bookmark_file_get_uris (EggBookmarkFile *bookmark,
 /**
  * egg_bookmark_file_set_title:
  * @bookmark: a #EggBookmarkFile
- * @uri: a valid URI
+ * @uri: a valid URI or %NULL
  * @title: a UTF-8 encoded string
  *
  * Sets @title as the title of the bookmark for @uri inside the
  * bookmark file @bookmark.
+ *
+ * If @uri is %NULL, the title of @bookmark is set.
  *
  * If a bookmark for @uri cannot be found then it is created.
  *
@@ -2470,25 +2533,33 @@ egg_bookmark_file_set_title (EggBookmarkFile *bookmark,
 			     const gchar     *uri,
 			     const gchar     *title)
 {
-  EggBookmarkItem *item;
-  
   g_return_if_fail (bookmark != NULL);
-  g_return_if_fail (uri != NULL);
   
-  item = egg_bookmark_file_lookup_item (bookmark, uri);
-  if (!item)
+  if (!uri)
     {
-      item = egg_bookmark_item_new (uri);
-      egg_bookmark_file_add_item (bookmark, item, NULL);
+      g_free (bookmark->title);
+      
+      if (title && title[0] != '\0')
+        bookmark->title = g_strdup (title);
     }
-  
-  if (item->title)
-    g_free (item->title);
-  
-  if (title && (title[0] != '\0'))
-    item->title = g_strdup (title);
-  
-  item->modified = time (NULL);
+  else
+    {
+      EggBookmarkItem *item;
+      
+      item = egg_bookmark_file_lookup_item (bookmark, uri);
+      if (!item)
+        {
+          item = egg_bookmark_item_new (uri);
+          egg_bookmark_file_add_item (bookmark, item, NULL);
+        }
+      
+      g_free (item->title);
+      
+      if (title && title[0] != '\0')
+        item->title = g_strdup (title);
+      
+      item->modified = time (NULL);
+    }
   
   bookmark->is_dirty = TRUE;
 }
@@ -2496,10 +2567,12 @@ egg_bookmark_file_set_title (EggBookmarkFile *bookmark,
 /**
  * egg_bookmark_file_get_title:
  * @bookmark: a #EggBookmarkFile
- * @uri: a valid URI
+ * @uri: a valid URI or %NULL
  * @error: return location for a #GError, or %NULL
  *
  * Returns the title of the bookmark for @uri.
+ *
+ * If @uri is %NULL, the title of @bookmark is returned.
  *
  * In the event the URI cannot be found, %NULL is returned and
  * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
@@ -2517,7 +2590,9 @@ egg_bookmark_file_get_title (EggBookmarkFile  *bookmark,
   EggBookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, NULL);
-  g_return_val_if_fail (uri != NULL, NULL);
+  
+  if (!uri)
+    return g_strdup (bookmark->title);
   
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
@@ -2535,10 +2610,12 @@ egg_bookmark_file_get_title (EggBookmarkFile  *bookmark,
 /**
  * egg_bookmark_file_set_description:
  * @bookmark: a #EggBookmarkFile
- * @uri: a valid URI
+ * @uri: a valid URI or %NULL
  * @description: a string
  *
  * Sets @description as the description of the bookmark for @uri.
+ *
+ * If @uri is %NULL, the description of @bookmark is set.
  *
  * If a bookmark for @uri cannot be found then it is created.
  *
@@ -2549,25 +2626,33 @@ egg_bookmark_file_set_description (EggBookmarkFile *bookmark,
 				   const gchar     *uri,
 				   const gchar     *description)
 {
-  EggBookmarkItem *item;
-  
   g_return_if_fail (bookmark != NULL);
-  g_return_if_fail (uri != NULL);
-  
-  item = egg_bookmark_file_lookup_item (bookmark, uri);
-  if (!item)
+
+  if (!uri)
     {
-      item = egg_bookmark_item_new (uri);
-      egg_bookmark_file_add_item (bookmark, item, NULL);
+      g_free (bookmark->description);
+      
+      if (description && description[0] != '\0')
+        bookmark->description = g_strdup (description);
     }
-  
-  if (item->description)
-    g_free (item->description);
-  
-  if (description && (description[0] != '\0'))
-    item->description = g_strdup (description);
-    
-  item->modified = time (NULL);
+  else
+    {
+      EggBookmarkItem *item;
+      
+      item = egg_bookmark_file_lookup_item (bookmark, uri);
+      if (!item)
+        {
+          item = egg_bookmark_item_new (uri);
+          egg_bookmark_file_add_item (bookmark, item, NULL);
+        }
+      
+      g_free (item->description);
+      
+      if (description && description[0] != '\0')
+        item->description = g_strdup (description);
+      
+      item->modified = time (NULL);
+    }
   
   bookmark->is_dirty = TRUE;
 }
@@ -2596,7 +2681,9 @@ egg_bookmark_file_get_description (EggBookmarkFile  *bookmark,
   EggBookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, NULL);
-  g_return_val_if_fail (uri != NULL, NULL);
+
+  if (!uri)
+    return g_strdup (bookmark->description);
   
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
