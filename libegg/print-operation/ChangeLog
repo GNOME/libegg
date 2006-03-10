@@ -1,3 +1,17 @@
+2006-03-10  Alexander Larsson  <alexl@redhat.com>
+
+	* eggpapersize.[ch]:
+	Don't unnecessarily copy the data from the paper info arrays.
+	Add ppd_name member and getter for it.
+	Add egg_paper_size_new_from_ppd().
+	
+	* eggprintbackendcups.c: (cups_printer_get_paper_sizes):
+	Use egg_paper_size_new_from_ppd.
+	
+	* paper_names.c:
+	Add extra_ppd_names for ppd names that duplicate names in the
+	main list. (The "prefered" ones are in the list)
+
 2006-03-09  Alexander Larsson  <alexl@redhat.com>
 
 	* eggpapersize.c (egg_paper_size_new):

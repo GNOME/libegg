@@ -29,10 +29,22 @@
 #define MM_PER_INCH 25.4
 #define POINTS_PER_INCH 72
 
+typedef struct {
+  const char *name;
+  const char *size;
+  const char *display_name;
+  const char *ppd_name;
+} PaperInfo;
+
 struct _EggPaperSize
 {
+  const PaperInfo *info;
+
+  /* If these are not set we fall back to info */
   char *name;
   char *display_name;
+  char *ppd_name;
+  
   double width, height; /* Stored in mm */
   gboolean is_custom;
 };
@@ -52,48 +64,63 @@ egg_paper_size_get_type (void)
 }
 
 static int
-page_info_compare (const void *_a, const void *_b)
+paper_info_compare (const void *_a, const void *_b)
 {
-  const PageInfo *a = _a;
-  const PageInfo *b = _b;
+  const PaperInfo *a = _a;
+  const PaperInfo *b = _b;
 
   return strcmp (a->name, b->name);
 }
+
+static PaperInfo *
+lookup_paper_info (const char *name)
+{
+  PaperInfo key;
+  PaperInfo *info;
   
+  key.name = name;
+  info = bsearch (&key, standard_names, G_N_ELEMENTS (standard_names),
+		  sizeof (PaperInfo), paper_info_compare);
+  
+  return info;
+}
+
 static double
 to_mm (double len, EggUnit unit)
 {
-  switch (unit) {
-  case EGG_UNIT_MM:
-    return len;
-  case EGG_UNIT_INCH:
-    return len * MM_PER_INCH;
-  default:
-  case EGG_UNIT_PIXEL:
-    g_warning ("Unsupported unit");
-    /* Fall through */
-  case EGG_UNIT_POINTS:
-    return len * (MM_PER_INCH / POINTS_PER_INCH);
-    break;
-  }
+  switch (unit)
+    {
+    case EGG_UNIT_MM:
+      return len;
+    case EGG_UNIT_INCH:
+      return len * MM_PER_INCH;
+    default:
+    case EGG_UNIT_PIXEL:
+      g_warning ("Unsupported unit");
+      /* Fall through */
+    case EGG_UNIT_POINTS:
+      return len * (MM_PER_INCH / POINTS_PER_INCH);
+      break;
+    }
 }
 
 static double
 from_mm (double len, EggUnit unit)
 {
-  switch (unit) {
-  case EGG_UNIT_MM:
-    return len;
-  case EGG_UNIT_INCH:
-    return len / MM_PER_INCH;
-  default:
-  case EGG_UNIT_PIXEL:
-    g_warning ("Unsupported unit");
-    /* Fall through */
-  case EGG_UNIT_POINTS:
-    return len / (MM_PER_INCH / POINTS_PER_INCH);
-    break;
-  }
+  switch (unit)
+    {
+    case EGG_UNIT_MM:
+      return len;
+    case EGG_UNIT_INCH:
+      return len / MM_PER_INCH;
+    default:
+    case EGG_UNIT_PIXEL:
+      g_warning ("Unsupported unit");
+      /* Fall through */
+    case EGG_UNIT_POINTS:
+      return len / (MM_PER_INCH / POINTS_PER_INCH);
+      break;
+    }
 }
 
 static gboolean
@@ -120,12 +147,13 @@ parse_media_size (const char *size,
 
   p = e;
 
-  if (strcmp (p, "in") == 0) {
-    short_dim = short_dim * MM_PER_INCH;
-    long_dim = long_dim * MM_PER_INCH;
-  } else if (strcmp (p, "mm") != 0) {
+  if (strcmp (p, "in") == 0)
+    {
+      short_dim = short_dim * MM_PER_INCH;
+      long_dim = long_dim * MM_PER_INCH;
+    }
+  else if (strcmp (p, "mm") != 0)
     return FALSE;
-  }
 
   if (width_mm)
     *width_mm = short_dim;
@@ -186,47 +214,94 @@ parse_full_media_size_name (const char *full_name,
   return TRUE;  
 }
 
+static EggPaperSize *
+egg_paper_size_new_from_info (const PaperInfo *info)
+{
+  EggPaperSize *size;
+  
+  size = g_new0 (EggPaperSize, 1);
+  size->info = info;
+  parse_media_size (info->size, &size->width, &size->height);
+  
+  return size;
+}
+
+
 EggPaperSize *
 egg_paper_size_new (const char *name)
 {
   EggPaperSize *size;
   char *short_name;
   double width, height;
-  PageInfo *info;
+  PaperInfo *info;
 
   if (name == NULL)
     name = egg_paper_size_get_default ();
   
-  size = g_new0 (EggPaperSize, 1);
+  if (parse_full_media_size_name (name, &short_name, &width, &height))
+    {
+      size = g_new0 (EggPaperSize, 1);
 
-  if (parse_full_media_size_name (name, &short_name, &width, &height)) {
-    size->width = width;
-    size->height = height;
-    size->name = short_name;
-    size->display_name = g_strdup (short_name);
-  } else {
-    PageInfo key;
-    key.name = name;
-    info = bsearch (&key, standard_names, G_N_ELEMENTS (standard_names),
-		    sizeof (PageInfo), page_info_compare);
-
-    if (info != NULL) {
-      parse_media_size (info->size, &size->width, &size->height);
-      size->name = g_strdup (info->name);
-      size->display_name = g_strdup (info->display_name);
-    } else {
-      g_warning ("Unknown paper size %s\n", name);
-      size->name = g_strdup (name);
-      size->display_name = g_strdup (name);
-      /* Default to A4 size */
-      size->width = 210;
-      size->height = 297;
+      size->width = width;
+      size->height = height;
+      size->name = short_name;
+      size->display_name = g_strdup (short_name);
     }
-  }
-
-  return size;
+  else
+    {
+      info = lookup_paper_info (name);
+      if (info != NULL)
+	size = egg_paper_size_new_from_info (info);
+      else
+	{
+	  g_warning ("Unknown paper size %s\n", name);
+	  size = g_new0 (EggPaperSize, 1);
+	  size->name = g_strdup (name);
+	  size->display_name = g_strdup (name);
+	  /* Default to A4 size */
+	  size->width = 210;
+	  size->height = 297;
+	}
+    }
   
+  return size;
 }
+
+
+EggPaperSize *
+egg_paper_size_new_from_ppd (const char *ppd_name,
+			     const char *ppd_display_name,
+			     double width,
+			     double height)
+{
+  char *name;
+  EggPaperSize *size;
+  int i;
+  
+  for (i = 0; i < G_N_ELEMENTS(standard_names); i++)
+    {
+      if (standard_names[i].ppd_name != NULL &&
+	  strcmp (standard_names[i].ppd_name, ppd_name) == 0)
+	return egg_paper_size_new_from_info (&standard_names[i]);
+    }
+  
+  for (i = 0; i < G_N_ELEMENTS(extra_ppd_names); i++)
+    {
+      if (strcmp (extra_ppd_names[i].ppd_name, ppd_name) == 0)
+	{
+	  size = egg_paper_size_new (extra_ppd_names[i].standard_name);
+	  size->ppd_name = g_strdup (ppd_name);
+	  return size;
+	}
+    }
+
+  name = g_strdup_printf ("ppd_%s", ppd_name);
+  size = egg_paper_size_new_custom (name, ppd_display_name, width, height, EGG_UNIT_POINTS);
+  g_free (name);
+  size->ppd_name = g_strdup (ppd_name);
+  return size;
+}
+
 
 EggPaperSize *
 egg_paper_size_new_custom (const char *name, const char *display_name,
@@ -237,15 +312,17 @@ egg_paper_size_new_custom (const char *name, const char *display_name,
   g_return_val_if_fail (unit != EGG_UNIT_PIXEL, NULL);
 
   size = g_new0 (EggPaperSize, 1);
+  
   size->name = g_strdup (name);
   size->display_name = g_strdup (display_name);
   
   /* Width is always the shorter one */
-  if (width > height) {
-    double t = width;
-    width = height;
-    height = t;
-  }
+  if (width > height)
+    {
+      double t = width;
+      width = height;
+      height = t;
+    }
 
   size->width = to_mm (width, unit);
   size->height = to_mm (height, unit);
@@ -260,8 +337,14 @@ egg_paper_size_copy (EggPaperSize *other)
 
   size = g_new0 (EggPaperSize, 1);
 
-  size->name = g_strdup (other->name);
-  size->display_name = g_strdup (other->display_name);
+  size->info = other->info;
+  if (other->name)
+    size->name = g_strdup (other->name);
+  if (other->display_name)
+    size->display_name = g_strdup (other->display_name);
+  if (other->ppd_name)
+    size->ppd_name = g_strdup (other->ppd_name);
+  
   size->width = other->width;
   size->height = other->height;
   size->is_custom = other->is_custom;
@@ -274,6 +357,7 @@ egg_paper_size_free (EggPaperSize *size)
 {
   g_free (size->name);
   g_free (size->display_name);
+  g_free (size->ppd_name);
   g_free (size);
 }
 
@@ -281,19 +365,39 @@ gboolean
 egg_paper_size_is_equal (EggPaperSize *size1,
 			 EggPaperSize *size2)
 {
-  return strcmp (size1->name, size2->name) == 0;
+  if (size1->info != NULL && size2->info != NULL)
+    return size1->info == size2->info;
+  
+  return strcmp (egg_paper_size_get_name (size1),
+		 egg_paper_size_get_name (size2)) == 0;
 }
  
 G_CONST_RETURN char *
 egg_paper_size_get_name (EggPaperSize *size)
 {
-  return size->name;
+  if (size->name)
+    return size->name;
+  g_assert (size->info != NULL);
+  return size->info->name;
 }
 
 G_CONST_RETURN char *
 egg_paper_size_get_display_name (EggPaperSize *size)
 {
-  return size->display_name;
+  if (size->display_name)
+    return size->display_name;
+  g_assert (size->info != NULL);
+  return size->info->display_name;
+}
+
+G_CONST_RETURN char *
+egg_paper_size_get_ppd_name (EggPaperSize *size)
+{
+  if (size->ppd_name)
+    return size->ppd_name;
+  if (size->info)
+    return size->info->ppd_name;
+  return NULL;
 }
 
 double
@@ -330,19 +434,6 @@ egg_paper_size_set_size (EggPaperSize *size, double width, double height, EggUni
 
   size->width = to_mm (width, unit);
   size->height = to_mm (height, unit);
-}
-
-G_CONST_RETURN char *
-egg_get_paper_size_name_from_ppd_name (const char *ppd_name)
-{
-  int i;
-  for (i = 0; i < G_N_ELEMENTS(standard_names); i++)
-    {
-      if (standard_names[i].ppd_name != NULL &&
-	  strcmp (standard_names[i].ppd_name, ppd_name) == 0)
-	return standard_names[i].name;
-    }
-  return NULL;
 }
 
 #define NL_PAPER_GET(x)         \

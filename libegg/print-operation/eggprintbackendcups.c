@@ -1672,8 +1672,10 @@ cups_printer_get_paper_sizes (EggPrinter *printer)
 {
   ppd_file_t *ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
   ppd_size_t *size;
-  const char *standard_name;
+  char *display_name;
   EggPaperSize *paper_size;
+  ppd_option_t *option;
+  ppd_choice_t *choice;
   GList *l;
   int i;
 
@@ -1685,14 +1687,25 @@ cups_printer_get_paper_sizes (EggPrinter *printer)
   for (i = 0; i < ppd_file->num_sizes; i++)
     {
       size = &ppd_file->sizes[i];
-      standard_name = egg_get_paper_size_name_from_ppd_name (size->name);
-      if (standard_name)
+
+      display_name = NULL;
+      option = ppdFindOption(ppd_file, "PageSize");
+      if (option)
 	{
-	  paper_size = egg_paper_size_new (standard_name);
-	  l = g_list_prepend (l, paper_size);
+	  choice = ppdFindChoice(option, size->name);
+	  if (choice)
+	    display_name = ppd_text_to_utf8 (ppd_file, choice->text);
 	}
-      else
-	g_print ("not found: %s\n", size->name);
+      if (display_name == NULL)
+	display_name = g_strdup (size->name);
+
+      paper_size = egg_paper_size_new_from_ppd (size->name,
+						display_name,
+						size->width,
+						size->length);
+      g_free (display_name);
+
+      l = g_list_prepend (l, paper_size);
     }
 
   return g_list_reverse (l);;

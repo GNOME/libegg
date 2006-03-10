@@ -1,13 +1,6 @@
 #define N_(s) s
 
-typedef struct {
-  const char *name;
-  const char *size;
-  const char *display_name;
-  const char *ppd_name;
-} PageInfo;
-
-static const PageInfo standard_names[] = {
+static const PaperInfo standard_names[] = {
   /* sorted by name, remember to sort when changing */
   {"asme_f", "28x40in", N_("asme_f")}, /* f           5    e1 */
   {"iso_2a0", "1189x1682mm", N_("A0x2")},
@@ -173,4 +166,20 @@ static const PageInfo standard_names[] = {
   {"prc_8", "120x309mm", N_("prc8 Envelope"), "EnvPRC8"},
   {"roc_16k", "7.75x10.75in", N_("ROC 16k")},
   {"roc_8k", "10.75x15.5in", N_("ROC 8k")},
+};
+
+/* Some page sizes have multiple PPD names in use.
+ * The array above only contails the prefered one,
+ * and this array fills out with the duplicates.
+ */
+const struct {
+  const char *ppd_name;
+  const char *standard_name;
+} extra_ppd_names[] = {
+  { "C4", "iso_c4"},
+  { "C5", "iso_c5"},
+  { "C6", "iso_c6"},
+  { "Comm10", "na_number-10"},
+  { "DL", "iso_dl"},
+  { "Monarch", "na_monarch"},
 };
