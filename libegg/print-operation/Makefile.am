@@ -22,11 +22,11 @@ else
 
 libeggprint_la_SOURCES +=		\
 	eggpagesetupunixdialog.c	\
-	eggprintbackendsetting.c	\
-	eggprintbackendsettingset.c	\
+	eggprinteroption.c		\
+	eggprinteroptionset.c		\
 	eggprinter.c			\
 	eggprintoperation-unix.c	\
-	eggprintsettingwidget.c		\
+	eggprinteroptionwidget.c	\
 	eggprintunixdialog.c		\
         eggprintbackend.c		\
         eggprintbackendcups.c		\
@@ -44,8 +44,8 @@ noinst_HEADERS = 			\
 	eggprint.h			\
 	eggprintbackend.h		\
 	eggprintbackendcups.h		\
-	eggprintbackendsetting.h	\
-	eggprintbackendsettingset.h	\
+	eggprinteroption.h		\
+	eggprinteroptionset.h		\
 	eggprintcontext-private.h 	\
 	eggprintcontext.h		\
 	eggprintenums.h			\
@@ -56,7 +56,7 @@ noinst_HEADERS = 			\
 	eggprintmarshal.h		\
 	eggprintoperation-private.h 	\
 	eggprintoperation.h		\
-	eggprintsettingwidget.h		\
+	eggprinteroptionwidget.h	\
 	eggprintunixdialog.h		\
 	eggprintercups-private.h	\
 	eggprintjob.h			\

@@ -1,5 +1,6 @@
 /* EggPrintUnixDialog
  * Copyright (C) 2006 John (J5) Palmieri  <johnp@redhat.com>
+ * Copyright (C) 2006 Alexander Larsson <alexl@redhat.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,36 +31,29 @@
 #include "eggprintbackend.h"
 #include "eggprintbackendcups.h"
 #include "eggprintunixdialog.h"
-#include "eggprintsettingwidget.h"
+#include "eggprinteroptionwidget.h"
 
 #define EXAMPLE_PAGE_AREA_SIZE 140
 
 #define EGG_PRINT_UNIX_DIALOG_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINT_UNIX_DIALOG, EggPrintUnixDialogPrivate))
 
-static void egg_print_unix_dialog_finalize     (GObject *object);
-static void egg_print_unix_dialog_set_property (GObject      *object,
-						guint         prop_id,
-						const GValue *value,
-						GParamSpec   *pspec);
-static void egg_print_unix_dialog_get_property (GObject      *object,
-			                   guint         prop_id,
-			                   GValue *value,
-			                   GParamSpec   *pspec);
-
-static void populate_dialog (EggPrintUnixDialog *dialog);
-static void unschedule_idle_mark_conflicts (EggPrintUnixDialog *dialog);
+static void egg_print_unix_dialog_finalize     (GObject            *object);
+static void egg_print_unix_dialog_set_property (GObject            *object,
+						guint               prop_id,
+						const GValue       *value,
+						GParamSpec         *pspec);
+static void egg_print_unix_dialog_get_property (GObject            *object,
+						guint               prop_id,
+						GValue             *value,
+						GParamSpec         *pspec);
+static void populate_dialog                    (EggPrintUnixDialog *dialog);
+static void unschedule_idle_mark_conflicts     (EggPrintUnixDialog *dialog);
 
 enum {
   PROP_0,
-  EGG_PRINT_UNIX_DIALOG_PROP_PRINT_BACKEND
+  PROP_PRINT_BACKEND
 };
-
-enum {
-  LAST_SIGNAL
-};
-
-//static guint egg_print_unix_dialog_signals[LAST_SIGNAL] = { 0 };
 
 enum {
   PRINTER_LIST_COL_ICON,
@@ -92,12 +86,12 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *page_layout_preview;
   GtkWidget *scale_spin;
   GtkWidget *page_set_combo;
-  EggPrintSettingWidget *pages_per_sheet;
-  EggPrintSettingWidget *duplex;
-  EggPrintSettingWidget *paper_size;
-  EggPrintSettingWidget *paper_type;
-  EggPrintSettingWidget *paper_source;
-  EggPrintSettingWidget *output_tray;
+  EggPrinterOptionWidget *pages_per_sheet;
+  EggPrinterOptionWidget *duplex;
+  EggPrinterOptionWidget *paper_size;
+  EggPrinterOptionWidget *paper_type;
+  EggPrinterOptionWidget *paper_source;
+  EggPrinterOptionWidget *output_tray;
 
   GtkWidget *conflicts_widget;
 
@@ -114,8 +108,8 @@ struct EggPrintUnixDialogPrivate
   EggPrintBackend *print_backend;
   
   EggPrinter *current_printer;
-  EggPrintBackendSettingSet *backend_settings;
-  gulong backend_settings_changed_handler;
+  EggPrinterOptionSet *options;
+  gulong options_changed_handler;
   gulong mark_conflicts_id;
 
   gint current_page;
@@ -326,7 +320,7 @@ egg_print_unix_dialog_class_init (EggPrintUnixDialogClass *class)
 						      GTK_PARAM_READWRITE));
 
   g_object_class_install_property (object_class,
-                                   EGG_PRINT_UNIX_DIALOG_PROP_PRINT_BACKEND,
+                                   PROP_PRINT_BACKEND,
                                    g_param_spec_string ("print-backend",
 						      "Print backend",
 						      "The EggPrintUnixDialog backend to use",
@@ -366,10 +360,10 @@ egg_print_unix_dialog_finalize (GObject *object)
       dialog->priv->printer_list = NULL;
     }
   
-  if (dialog->priv->backend_settings)
+  if (dialog->priv->options)
     {
-      g_object_unref (dialog->priv->backend_settings);
-      dialog->priv->backend_settings = NULL;
+      g_object_unref (dialog->priv->options);
+      dialog->priv->options = NULL;
     }
   
   if (G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize)
@@ -403,16 +397,16 @@ _printer_added_cb (EggPrintBackend *backend,
 
 static void
 _printer_removed_cb (EggPrintBackend *backend, 
-                   EggPrinter *printer, 
-		   EggPrintUnixDialog *impl)
+		     EggPrinter *printer, 
+		     EggPrintUnixDialog *impl)
 {
 }
 
 
 static void
 _printer_status_cb (EggPrintBackend *backend, 
-                   EggPrinter *printer, 
-		   EggPrintUnixDialog *impl)
+		    EggPrinter *printer, 
+		    EggPrintUnixDialog *impl)
 {
 }
 
@@ -487,16 +481,16 @@ _set_print_backend (EggPrintUnixDialog *impl,
 
 static void
 egg_print_unix_dialog_set_property (GObject      *object,
-			       guint         prop_id,
-			       const GValue *value,
-			       GParamSpec   *pspec)
+				    guint         prop_id,
+				    const GValue *value,
+				    GParamSpec   *pspec)
 
 {
   EggPrintUnixDialog *impl = EGG_PRINT_UNIX_DIALOG (object);
 
   switch (prop_id)
     {
-    case EGG_PRINT_UNIX_DIALOG_PROP_PRINT_BACKEND:
+    case PROP_PRINT_BACKEND:
       _set_print_backend (impl, g_value_get_string (value));
       break;
     
@@ -509,9 +503,9 @@ egg_print_unix_dialog_set_property (GObject      *object,
 
 static void
 egg_print_unix_dialog_get_property (GObject    *object,
-			       guint       prop_id,
-			       GValue     *value,
-			       GParamSpec *pspec)
+				    guint       prop_id,
+				    GValue     *value,
+				    GParamSpec *pspec)
 {
   /* EggPrintUnixDialog *impl = EGG_PRINT_UNIX_DIALOG (object); */
 
@@ -562,19 +556,19 @@ wrap_in_frame (const char *label, GtkWidget *child)
 }
 
 static void
-setup_setting (EggPrintUnixDialog *dialog,
-	       const char *setting_name,
-	       EggPrintSettingWidget *widget)
+setup_option (EggPrintUnixDialog *dialog,
+	      const char *option_name,
+	      EggPrinterOptionWidget *widget)
 {
-  EggPrintBackendSetting *setting;
+  EggPrinterOption *option;
 
-  setting = egg_print_backend_setting_set_lookup (dialog->priv->backend_settings, setting_name);
-  egg_print_setting_widget_set_source (widget, setting);
+  option = egg_printer_option_set_lookup (dialog->priv->options, option_name);
+  egg_printer_option_widget_set_source (widget, option);
 }
 
 static void
-add_setting_to_table (EggPrintBackendSetting  *setting,
-		      gpointer                 user_data)
+add_option_to_table (EggPrinterOption *option,
+		     gpointer          user_data)
 {
   GtkTable *table;
   GtkWidget *label, *widget;
@@ -582,18 +576,18 @@ add_setting_to_table (EggPrintBackendSetting  *setting,
 
   table = GTK_TABLE (user_data);
   
-  if (g_str_has_prefix (setting->name, "gtk-"))
+  if (g_str_has_prefix (option->name, "gtk-"))
     return;
   
-  widget = egg_print_setting_widget_new (setting);
+  widget = egg_printer_option_widget_new (option);
   gtk_widget_show (widget);
 
   row = table->nrows;
   gtk_table_resize (table, table->nrows + 1, table->ncols + 1);
   
-  if (egg_print_setting_widget_has_external_label (EGG_PRINT_SETTING_WIDGET (widget)))
+  if (egg_printer_option_widget_has_external_label (EGG_PRINTER_OPTION_WIDGET (widget)))
     {
-      label = egg_print_setting_widget_get_external_label (EGG_PRINT_SETTING_WIDGET (widget));
+      label = egg_printer_option_widget_get_external_label (EGG_PRINTER_OPTION_WIDGET (widget));
       gtk_widget_show (label);
 
       gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
@@ -611,14 +605,14 @@ add_setting_to_table (EggPrintBackendSetting  *setting,
 
 
 static void
-setup_page_table (EggPrintBackendSettingSet *settings,
+setup_page_table (EggPrinterOptionSet *options,
 		  const char *group,
 		  GtkWidget *table,
 		  GtkWidget *page)
 {
-  egg_print_backend_setting_set_foreach_in_group (settings, group,
-						  add_setting_to_table,
-						  table);
+  egg_printer_option_set_foreach_in_group (options, group,
+					   add_option_to_table,
+					   table);
   if (GTK_TABLE (table)->nrows == 1)
     gtk_widget_hide (page);
   else
@@ -633,30 +627,30 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   GtkWidget *table, *frame;
   gboolean has_advanced;
   
-  setup_setting (dialog, "gtk-n-up", dialog->priv->pages_per_sheet);
-  setup_setting (dialog, "gtk-duplex", dialog->priv->duplex);
-  setup_setting (dialog, "gtk-paper-size", dialog->priv->paper_size);
-  setup_setting (dialog, "gtk-paper-type", dialog->priv->paper_type);
-  setup_setting (dialog, "gtk-paper-source", dialog->priv->paper_source);
-  setup_setting (dialog, "gtk-output-tray", dialog->priv->output_tray);
+  setup_option (dialog, "gtk-n-up", dialog->priv->pages_per_sheet);
+  setup_option (dialog, "gtk-duplex", dialog->priv->duplex);
+  setup_option (dialog, "gtk-paper-size", dialog->priv->paper_size);
+  setup_option (dialog, "gtk-paper-type", dialog->priv->paper_type);
+  setup_option (dialog, "gtk-paper-source", dialog->priv->paper_source);
+  setup_option (dialog, "gtk-output-tray", dialog->priv->output_tray);
 
-  setup_page_table (dialog->priv->backend_settings,
+  setup_page_table (dialog->priv->options,
 		    "ImageQualityPage",
 		    dialog->priv->image_quality_table,
 		    dialog->priv->image_quality_page);
   
-  setup_page_table (dialog->priv->backend_settings,
+  setup_page_table (dialog->priv->options,
 		    "FinishingPage",
 		    dialog->priv->finishing_table,
 		    dialog->priv->finishing_page);
 
-  setup_page_table (dialog->priv->backend_settings,
+  setup_page_table (dialog->priv->options,
 		    "ColorPage",
 		    dialog->priv->color_table,
 		    dialog->priv->color_page);
 
   /* Put the rest of the groups in the advanced page */
-  groups = egg_print_backend_setting_set_get_groups (dialog->priv->backend_settings);
+  groups = egg_printer_option_set_get_groups (dialog->priv->options);
 
   has_advanced = FALSE;
   for (l = groups; l != NULL; l = l->next)
@@ -673,10 +667,10 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
 
       table = gtk_table_new (1, 2, FALSE);
       
-      egg_print_backend_setting_set_foreach_in_group (dialog->priv->backend_settings,
-						      group,
-						      add_setting_to_table,
-						      table);
+      egg_printer_option_set_foreach_in_group (dialog->priv->options,
+					       group,
+					       add_option_to_table,
+					       table);
       if (GTK_TABLE (table)->nrows == 1)
 	gtk_widget_destroy (table);
       else
@@ -714,17 +708,16 @@ mark_conflicts (EggPrintUnixDialog *dialog)
   if (printer)
     {
 
-      g_signal_handler_block (dialog->priv->backend_settings,
-			      dialog->priv->backend_settings_changed_handler);
+      g_signal_handler_block (dialog->priv->options,
+			      dialog->priv->options_changed_handler);
       
-      egg_print_backend_setting_set_clear_conflicts (dialog->priv->backend_settings);
+      egg_printer_option_set_clear_conflicts (dialog->priv->options);
       
       have_conflict = _egg_printer_mark_conflicts (printer,
-						   dialog->priv->backend_settings);
+						   dialog->priv->options);
       
-      g_signal_handler_unblock (dialog->priv->backend_settings,
-				dialog->priv->backend_settings_changed_handler);
-
+      g_signal_handler_unblock (dialog->priv->options,
+				dialog->priv->options_changed_handler);
     }
 
   if (have_conflict)
@@ -786,7 +779,8 @@ clear_per_printer_ui (EggPrintUnixDialog *dialog)
 }
  
 static void
-selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialog)
+selected_printer_changed (GtkTreeSelection *selection,
+			  EggPrintUnixDialog *dialog)
 {
   EggPrinter *printer;
   GtkTreeIter iter;
@@ -804,10 +798,10 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
       return;
     }
 
-  if (dialog->priv->backend_settings)
+  if (dialog->priv->options)
     {
-      g_object_unref (dialog->priv->backend_settings);
-      dialog->priv->backend_settings = NULL;  
+      g_object_unref (dialog->priv->options);
+      dialog->priv->options = NULL;  
 
       clear_per_printer_ui (dialog);
     }
@@ -819,16 +813,17 @@ selected_printer_changed (GtkTreeSelection *selection, EggPrintUnixDialog *dialo
 
   dialog->priv->current_printer = printer;
 
-  dialog->priv->backend_settings = _egg_printer_get_backend_settings (printer);
+  dialog->priv->options = _egg_printer_get_options (printer);
   
-  dialog->priv->backend_settings_changed_handler = 
-    g_signal_connect_swapped (dialog->priv->backend_settings, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
+  dialog->priv->options_changed_handler = 
+    g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
   
   update_dialog_from_settings (dialog);
 }
 
 static void
-update_collate_icon (GtkToggleButton *toggle_button, EggPrintUnixDialog *dialog)
+update_collate_icon (GtkToggleButton *toggle_button,
+		     EggPrintUnixDialog *dialog)
 {
   GdkPixbuf *pixbuf;
   gboolean collate, reverse;
@@ -1021,7 +1016,8 @@ is_range_separator (char c)
 }
 
 static EggPageRange *
-dialog_get_page_ranges (EggPrintUnixDialog *dialog, int *n_ranges_out)
+dialog_get_page_ranges (EggPrintUnixDialog *dialog,
+			int *n_ranges_out)
 {
   int i, n_ranges;
   const char *text, *p;
@@ -1138,7 +1134,7 @@ dialog_get_pages_per_sheet (EggPrintUnixDialog *dialog)
   const char *val;
   int num;
 
-  val = egg_print_setting_widget_get_value (dialog->priv->pages_per_sheet);
+  val = egg_printer_option_widget_get_value (dialog->priv->pages_per_sheet);
 
   num = 1;
   
@@ -1308,9 +1304,9 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 1, 0, 1,  GTK_FILL, 0,
 		    0, 0);
 
-  widget = egg_print_setting_widget_new (NULL);
+  widget = egg_printer_option_widget_new (NULL);
   g_signal_connect_swapped (widget, "changed", G_CALLBACK (redraw_page_layout_preview), dialog);
-  priv->pages_per_sheet = EGG_PRINT_SETTING_WIDGET (widget);
+  priv->pages_per_sheet = EGG_PRINTER_OPTION_WIDGET (widget);
   gtk_widget_show (widget);
   gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 0, 1,  GTK_FILL, 0,
@@ -1323,8 +1319,8 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 1, 1, 2,  GTK_FILL, 0,
 		    0, 0);
 
-  widget = egg_print_setting_widget_new (NULL);
-  priv->duplex = EGG_PRINT_SETTING_WIDGET (widget);
+  widget = egg_printer_option_widget_new (NULL);
+  priv->duplex = EGG_PRINTER_OPTION_WIDGET (widget);
   gtk_widget_show (widget);
   gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 1, 2,  GTK_FILL, 0,
@@ -1361,7 +1357,8 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 0);
 
   combo = gtk_combo_box_new_text ();
-  g_signal_connect_swapped (combo, "changed", G_CALLBACK (redraw_page_layout_preview), dialog);
+  g_signal_connect_swapped (combo, "changed",
+			    G_CALLBACK (redraw_page_layout_preview), dialog);
   priv->orientation_combo = combo;
   gtk_widget_show (combo);
   gtk_table_attach (GTK_TABLE (table), combo,
@@ -1405,8 +1402,8 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 1, 0, 1,  GTK_FILL, 0,
 		    0, 0);
 
-  widget = egg_print_setting_widget_new (NULL);
-  priv->paper_size = EGG_PRINT_SETTING_WIDGET (widget);
+  widget = egg_printer_option_widget_new (NULL);
+  priv->paper_size = EGG_PRINTER_OPTION_WIDGET (widget);
   gtk_widget_show (widget);
   gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 0, 1,  GTK_FILL, 0,
@@ -1419,8 +1416,8 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 1, 1, 2,  GTK_FILL, 0,
 		    0, 0);
 
-  widget = egg_print_setting_widget_new (NULL);
-  priv->paper_type = EGG_PRINT_SETTING_WIDGET (widget);
+  widget = egg_printer_option_widget_new (NULL);
+  priv->paper_type = EGG_PRINTER_OPTION_WIDGET (widget);
   gtk_widget_show (widget);
   gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 1, 2,  GTK_FILL, 0,
@@ -1433,8 +1430,8 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 1, 2, 3,  GTK_FILL, 0,
 		    0, 0);
 
-  widget = egg_print_setting_widget_new (NULL);
-  priv->paper_source = EGG_PRINT_SETTING_WIDGET (widget);
+  widget = egg_printer_option_widget_new (NULL);
+  priv->paper_source = EGG_PRINTER_OPTION_WIDGET (widget);
   gtk_widget_show (widget);
   gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 2, 3,  GTK_FILL, 0,
@@ -1447,8 +1444,8 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
 		    0, 1, 3, 4,  GTK_FILL, 0,
 		    0, 0);
 
-  widget = egg_print_setting_widget_new (NULL);
-  priv->output_tray = EGG_PRINT_SETTING_WIDGET (widget);
+  widget = egg_printer_option_widget_new (NULL);
+  priv->output_tray = EGG_PRINTER_OPTION_WIDGET (widget);
   gtk_widget_show (widget);
   gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 3, 4,  GTK_FILL, 0,
@@ -1736,7 +1733,7 @@ populate_dialog (EggPrintUnixDialog *dialog)
   gtk_container_remove (GTK_CONTAINER (GTK_DIALOG (dialog)->vbox),
 			GTK_DIALOG (dialog)->action_area);
   gtk_box_pack_end (GTK_BOX (hbox), GTK_DIALOG (dialog)->action_area,
-		      FALSE, FALSE, 0);
+		    FALSE, FALSE, 0);
   g_object_unref (GTK_DIALOG (dialog)->action_area);
   
   gtk_widget_show (dialog->priv->notebook);
@@ -1853,9 +1850,9 @@ egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
      How to handle? */
 
   if (dialog->priv->current_printer)
-    _egg_printer_add_backend_settings (dialog->priv->current_printer,
-				       dialog->priv->backend_settings,
-				       settings);
+    _egg_printer_get_settings_from_options (dialog->priv->current_printer,
+					    dialog->priv->options,
+					    settings);
   
   return settings;
 }

@@ -288,28 +288,28 @@ egg_printer_prep_job (EggPrinter *printer,
   return job;
 }
 
-EggPrintBackendSettingSet *
-_egg_printer_get_backend_settings (EggPrinter *printer)
+EggPrinterOptionSet *
+_egg_printer_get_options (EggPrinter *printer)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
-  return backend_iface->printer_get_backend_settings (printer);
+  return backend_iface->printer_get_options (printer);
 }
 
 gboolean
-_egg_printer_mark_conflicts (EggPrinter                *printer,
-			     EggPrintBackendSettingSet *settings)
+_egg_printer_mark_conflicts (EggPrinter          *printer,
+			     EggPrinterOptionSet *options)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
-  return backend_iface->printer_mark_conflicts (printer, settings);
+  return backend_iface->printer_mark_conflicts (printer, options);
 }
   
 void
-_egg_printer_add_backend_settings (EggPrinter                *printer,
-				   EggPrintBackendSettingSet *backend_settings,
-				   EggPrintSettings          *settings)
+_egg_printer_get_settings_from_options (EggPrinter          *printer,
+					EggPrinterOptionSet *options,
+					EggPrintSettings    *settings)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
-  return backend_iface->printer_add_backend_settings (printer, backend_settings, settings);
+  return backend_iface->printer_get_settings_from_options (printer, options, settings);
 }
 
 void

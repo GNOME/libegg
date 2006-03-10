@@ -1,6 +1,27 @@
 2006-03-10  Alexander Larsson  <alexl@redhat.com>
 
 	* Makefile.am:
+	* eggprintbackendsetting.[ch]:
+	* eggprintbackendsettingset.[ch]:
+	* eggprintsettingwidget.[ch]:
+	* eggprinteroption.[ch]:
+	* eggprinteroptionset.[ch]:
+	* eggprinteroptionwidget.[ch]:
+	Rename:
+	EggPrintBackendSetting -> EggPrinterOption
+	EggPrintBackendSettingSet -> EggPrinterOptionSet
+	EggPrintSettingWidget -> EggPrinterOptionWidget
+	
+	* eggprintbackend.h:
+	* eggprintbackendcups.c:
+	* eggprinter-private.h:
+	* eggprinter.c:
+	* eggprintunixdialog.c:
+	Update to new names
+
+2006-03-10  Alexander Larsson  <alexl@redhat.com>
+
+	* Makefile.am:
 	* eggprintersettings.[ch]:
 	* eggprintsettings.[ch]:
 	Rename EggPrinterSettings to EggPrintSettings

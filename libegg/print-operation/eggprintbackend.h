@@ -35,7 +35,7 @@
 
 #include "eggprinter-private.h"
 #include "eggprintsettings.h"
-#include "eggprintbackendsettingset.h"
+#include "eggprinteroption.h"
 #include "eggprintjob.h"
 
 G_BEGIN_DECLS
@@ -73,19 +73,19 @@ struct _EggPrintBackendIface
 				gpointer user_data);
 
   /* Printer methods: */
-  cairo_surface_t *           (*printer_create_cairo_surface) (EggPrinter *printer,
-							       gdouble height,
-							       gdouble width,
-							       gint cache_fd);
-  EggPrintBackendSettingSet * (*printer_get_backend_settings) (EggPrinter *printer);
-  gboolean                    (*printer_mark_conflicts)       (EggPrinter *printer,
-							       EggPrintBackendSettingSet *settings);
-  void                        (*printer_add_backend_settings) (EggPrinter *printer,
-							       EggPrintBackendSettingSet *backend_settings,
-							       EggPrintSettings *settings);
-  void                        (*printer_prepare_for_print)    (EggPrinter *printer,
-							       EggPrintSettings *settings);
-  GList  *                    (*printer_get_paper_sizes)      (EggPrinter *printer);
+  cairo_surface_t *     (*printer_create_cairo_surface)      (EggPrinter *printer,
+							      gdouble height,
+							      gdouble width,
+							      gint cache_fd);
+  EggPrinterOptionSet * (*printer_get_options)               (EggPrinter *printer);
+  gboolean              (*printer_mark_conflicts)            (EggPrinter *printer,
+							      EggPrinterOptionSet *options);
+  void                  (*printer_get_settings_from_options) (EggPrinter *printer,
+							      EggPrinterOptionSet *options,
+							      EggPrintSettings *settings);
+  void                  (*printer_prepare_for_print)         (EggPrinter *printer,
+							      EggPrintSettings *settings);
+  GList  *              (*printer_get_paper_sizes)           (EggPrinter *printer);
 
   /* Signals 
    */

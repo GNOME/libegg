@@ -24,7 +24,7 @@
 #include <glib.h>
 #include "eggprinter.h"
 #include "eggprintsettings.h"
-#include "eggprintbackendsettingset.h"
+#include "eggprinteroptionset.h"
 
 G_BEGIN_DECLS
 struct _EggPrinterPrivate
@@ -44,18 +44,19 @@ struct _EggPrinterPrivate
 };
 
 
-EggPrintBackendSettingSet *_egg_printer_get_backend_settings (EggPrinter                *printer);
-gboolean                   _egg_printer_mark_conflicts       (EggPrinter                *printer,
-							      EggPrintBackendSettingSet *settings);
-void                       _egg_printer_add_backend_settings (EggPrinter                *printer,
-							      EggPrintBackendSettingSet *backend_settings,
-							      EggPrintSettings          *settings);
-void                       _egg_printer_prepare_for_print    (EggPrinter                *printer,
-							      EggPrintSettings          *settings);
-cairo_surface_t *          _egg_printer_create_cairo_surface (EggPrinter                *printer,
-							      gdouble                    width,
-							      gdouble                    height,
-							      gint                       cache_fd);
-GList  *                   _egg_printer_get_paper_sizes      (EggPrinter                *printer);
+EggPrinterOptionSet *_egg_printer_get_options               (EggPrinter          *printer);
+gboolean             _egg_printer_mark_conflicts            (EggPrinter          *printer,
+							     EggPrinterOptionSet *options);
+void                 _egg_printer_get_settings_from_options (EggPrinter          *printer,
+							     EggPrinterOptionSet *options,
+							     EggPrintSettings    *settings);
+void                 _egg_printer_prepare_for_print         (EggPrinter          *printer,
+							     EggPrintSettings    *settings);
+cairo_surface_t *    _egg_printer_create_cairo_surface      (EggPrinter          *printer,
+							     gdouble              width,
+							     gdouble              height,
+							     gint                 cache_fd);
+GList  *             _egg_printer_get_paper_sizes           (EggPrinter          *printer);
+
 G_END_DECLS
 #endif /* __EGG_PRINT_OPERATION_PRIVATE_H__ */

@@ -103,26 +103,26 @@ struct _EggPrintBackendCups
 
 static GObjectClass *backend_parent_class;
 
-static void                       egg_print_backend_cups_class_init (EggPrintBackendCupsClass          *class);
-static void                       egg_print_backend_cups_iface_init (EggPrintBackendIface              *iface);
-static void                       egg_print_backend_cups_init       (EggPrintBackendCups               *impl);
-static void                       egg_print_backend_cups_finalize   (GObject                           *object);
-static void                       _cups_request_printer_list        (EggPrintBackendCups               *print_backend);
-static void                       _cups_request_execute             (EggPrintBackendCups               *print_backend,
-								     EggCupsRequest                    *request,
-								     EggPrintCupsResponseCallbackFunc   callback,
-								     gpointer                           user_data,
-								     GDestroyNotify                     notify,
-								     GError                           **err);
-static void                       cups_printer_add_backend_settings (EggPrinter                        *printer,
-								     EggPrintBackendSettingSet         *backend_settings,
-								     EggPrintSettings                  *settings);
-static gboolean                   cups_printer_mark_conflicts       (EggPrinter                        *printer,
-								     EggPrintBackendSettingSet         *settings);
-static EggPrintBackendSettingSet *cups_printer_get_backend_settings (EggPrinter                        *printer);
-static void                       cups_printer_prepare_for_print    (EggPrinter                        *printer,
-								     EggPrintSettings                  *settings);
-static GList *                    cups_printer_get_paper_sizes      (EggPrinter                        *printer);
+static void                 egg_print_backend_cups_class_init      (EggPrintBackendCupsClass          *class);
+static void                 egg_print_backend_cups_iface_init      (EggPrintBackendIface              *iface);
+static void                 egg_print_backend_cups_init            (EggPrintBackendCups               *impl);
+static void                 egg_print_backend_cups_finalize        (GObject                           *object);
+static void                 _cups_request_printer_list             (EggPrintBackendCups               *print_backend);
+static void                 _cups_request_execute                  (EggPrintBackendCups               *print_backend,
+								    EggCupsRequest                    *request,
+								    EggPrintCupsResponseCallbackFunc   callback,
+								    gpointer                           user_data,
+								    GDestroyNotify                     notify,
+								    GError                           **err);
+static void                 cups_printer_get_settings_from_options (EggPrinter                        *printer,
+								    EggPrinterOptionSet               *options,
+								    EggPrintSettings                  *settings);
+static gboolean             cups_printer_mark_conflicts            (EggPrinter                        *printer,
+								    EggPrinterOptionSet               *options);
+static EggPrinterOptionSet *cups_printer_get_options               (EggPrinter                        *printer);
+static void                 cups_printer_prepare_for_print         (EggPrinter                        *printer,
+								    EggPrintSettings                  *settings);
+static GList *              cups_printer_get_paper_sizes           (EggPrinter                        *printer);
 
 static void
 _cups_request_ppd (EggPrintBackend *print_backend,
@@ -341,14 +341,14 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
 
 
 static void
-egg_print_backend_cups_iface_init   (EggPrintBackendIface *iface)
+egg_print_backend_cups_iface_init (EggPrintBackendIface *iface)
 {
   iface->find_printer = egg_print_backend_cups_find_printer;
   iface->print_stream = egg_print_backend_cups_print_stream;
   iface->printer_create_cairo_surface = cups_printer_create_cairo_surface;
-  iface->printer_get_backend_settings = cups_printer_get_backend_settings;
+  iface->printer_get_options = cups_printer_get_options;
   iface->printer_mark_conflicts = cups_printer_mark_conflicts;
-  iface->printer_add_backend_settings = cups_printer_add_backend_settings;
+  iface->printer_get_settings_from_options = cups_printer_get_settings_from_options;
   iface->printer_prepare_for_print = cups_printer_prepare_for_print;
   iface->printer_get_paper_sizes = cups_printer_get_paper_sizes;
 }
@@ -478,11 +478,12 @@ _cups_dispatch_watch_finalize (GSource *source)
     g_free (dispatch->data_poll);
 }
 
-static GSourceFuncs _cups_dispatch_watch_funcs = 
-                              {_cups_dispatch_watch_prepare,
-	                       _cups_dispatch_watch_check,
-	                       _cups_dispatch_watch_dispatch,
-	                       _cups_dispatch_watch_finalize};
+static GSourceFuncs _cups_dispatch_watch_funcs = {
+  _cups_dispatch_watch_prepare,
+  _cups_dispatch_watch_check,
+  _cups_dispatch_watch_dispatch,
+  _cups_dispatch_watch_finalize
+};
 
 
 static void
@@ -686,11 +687,9 @@ _cups_request_printer_list (EggPrintBackendCups *print_backend)
 			 request,
 			 NULL,
                          &error);
-
 }
 
-typedef struct 
-{
+typedef struct {
   EggPrinterCups *printer;
   gint ppd_fd;
   gchar *ppd_filename;
@@ -859,7 +858,7 @@ static const struct {
 static const struct {
   const char *ppd_keyword;
   const char *name;
-} setting_names[] = {
+} option_names[] = {
   {"Duplex", "gtk-duplex"},
   {"PageSize", "gtk-paper-size"},
   {"MediaType", "gtk-paper-type"},
@@ -1155,99 +1154,99 @@ available_choices (ppd_file_t *ppd,
   return option->num_choices - num_conflicts;
 }
 
-static EggPrintBackendSetting *
-create_pickone_setting (ppd_file_t *ppd_file,
-			ppd_option_t *option,
-			const char *gtk_name)
+static EggPrinterOption *
+create_pickone_option (ppd_file_t *ppd_file,
+		       ppd_option_t *ppd_option,
+		       const char *gtk_name)
 {
-  EggPrintBackendSetting *setting;
+  EggPrinterOption *option;
   ppd_choice_t **available;
   char *label;
   int n_choices;
   int i;
 
-  g_assert (option->ui == PPD_UI_PICKONE);
+  g_assert (ppd_option->ui == PPD_UI_PICKONE);
   
-  setting = NULL;
+  option = NULL;
 
-  n_choices = available_choices (ppd_file, option, &available, g_str_has_prefix (gtk_name, "gtk-"));
+  n_choices = available_choices (ppd_file, ppd_option, &available, g_str_has_prefix (gtk_name, "gtk-"));
   if (n_choices > 0)
     {
-      label = get_option_text (ppd_file, option);
-      setting = egg_print_backend_setting_new (gtk_name, label,
-					       EGG_PRINT_BACKEND_SETTING_TYPE_PICKONE);
+      label = get_option_text (ppd_file, ppd_option);
+      option = egg_printer_option_new (gtk_name, label,
+				       EGG_PRINTER_OPTION_TYPE_PICKONE);
       g_free (label);
       
-      egg_print_backend_setting_allocate_choices (setting, n_choices);
+      egg_printer_option_allocate_choices (option, n_choices);
       for (i = 0; i < n_choices; i++)
 	{
-	  setting->choices[i] = g_strdup (available[i]->choice);
-	  setting->choices_display[i] = get_choice_text (ppd_file, available[i]);
+	  option->choices[i] = g_strdup (available[i]->choice);
+	  option->choices_display[i] = get_choice_text (ppd_file, available[i]);
 	}
-      egg_print_backend_setting_set (setting, option->defchoice);
+      egg_printer_option_set (option, ppd_option->defchoice);
     }
   else
-    g_warning ("Ignoring pickone %s\n", option->text);
+    g_warning ("Ignoring pickone %s\n", ppd_option->text);
   g_free (available);
 
-  return setting;
+  return option;
 }
 
-static EggPrintBackendSetting *
-create_boolean_setting (ppd_file_t *ppd_file,
-			ppd_option_t *option,
-			const char *gtk_name)
+static EggPrinterOption *
+create_boolean_option (ppd_file_t *ppd_file,
+		       ppd_option_t *ppd_option,
+		       const char *gtk_name)
 {
-  EggPrintBackendSetting *setting;
+  EggPrinterOption *option;
   ppd_choice_t **available;
   char *label;
   int n_choices;
 
-  g_assert (option->ui == PPD_UI_BOOLEAN);
+  g_assert (ppd_option->ui == PPD_UI_BOOLEAN);
   
-  setting = NULL;
+  option = NULL;
 
-  n_choices = available_choices (ppd_file, option, &available, g_str_has_prefix (gtk_name, "gtk-"));
+  n_choices = available_choices (ppd_file, ppd_option, &available, g_str_has_prefix (gtk_name, "gtk-"));
   if (n_choices == 2)
     {
-      label = get_option_text (ppd_file, option);
-      setting = egg_print_backend_setting_new (gtk_name, label,
-					       EGG_PRINT_BACKEND_SETTING_TYPE_BOOLEAN);
+      label = get_option_text (ppd_file, ppd_option);
+      option = egg_printer_option_new (gtk_name, label,
+					       EGG_PRINTER_OPTION_TYPE_BOOLEAN);
       g_free (label);
       
-      egg_print_backend_setting_allocate_choices (setting, 2);
-      setting->choices[0] = g_strdup ("True");
-      setting->choices_display[0] = g_strdup ("True");
-      setting->choices[1] = g_strdup ("True");
-      setting->choices_display[1] = g_strdup ("True");
+      egg_printer_option_allocate_choices (option, 2);
+      option->choices[0] = g_strdup ("True");
+      option->choices_display[0] = g_strdup ("True");
+      option->choices[1] = g_strdup ("True");
+      option->choices_display[1] = g_strdup ("True");
       
-      egg_print_backend_setting_set (setting, option->defchoice);
+      egg_printer_option_set (option, ppd_option->defchoice);
     }
   else
-    g_warning ("Ignoring boolean %s\n", option->text);
+    g_warning ("Ignoring boolean %s\n", ppd_option->text);
   g_free (available);
 
-  return setting;
+  return option;
 }
 
 char *
-get_setting_name (const char *keyword)
+get_option_name (const char *keyword)
 {
   int i;
 
-  for (i = 0; i < G_N_ELEMENTS (setting_names); i++)
-    if (strcmp (setting_names[i].ppd_keyword, keyword) == 0)
-      return g_strdup (setting_names[i].name);
+  for (i = 0; i < G_N_ELEMENTS (option_names); i++)
+    if (strcmp (option_names[i].ppd_keyword, keyword) == 0)
+      return g_strdup (option_names[i].name);
 
   return g_strdup_printf ("cups-%s", keyword);
 }
 
 static int
-strptr_cmp(const void *a, const void *b)
+strptr_cmp (const void *a, const void *b)
 {
   char **aa = (char **)a;
   char **bb = (char **)b;
-  return strcmp(*aa, *bb);
+  return strcmp (*aa, *bb);
 }
 
 
@@ -1260,67 +1259,67 @@ string_in_table (char *str, const char *table[], int table_len)
 #define STRING_IN_TABLE(_str, _table) (string_in_table (_str, _table, G_N_ELEMENTS (_table)))
 
 static void
-handle_option (EggPrintBackendSettingSet *set,
+handle_option (EggPrinterOptionSet *set,
 	       ppd_file_t *ppd_file,
-	       ppd_option_t *option,
+	       ppd_option_t *ppd_option,
 	       ppd_group_t *toplevel_group)
 {
-  EggPrintBackendSetting *setting;
+  EggPrinterOption *option;
   char *name;
 
-  if (STRING_IN_TABLE (option->keyword, cups_option_blacklist))
+  if (STRING_IN_TABLE (ppd_option->keyword, cups_option_blacklist))
     return;
   
-  name = get_setting_name (option->keyword);
+  name = get_option_name (ppd_option->keyword);
 
-  setting = NULL;
-  if (option->ui == PPD_UI_PICKONE)
+  option = NULL;
+  if (ppd_option->ui == PPD_UI_PICKONE)
     {
-      setting = create_pickone_setting (ppd_file, option, name);
+      option = create_pickone_option (ppd_file, ppd_option, name);
     }
-  else if (option->ui == PPD_UI_BOOLEAN)
+  else if (ppd_option->ui == PPD_UI_BOOLEAN)
     {
-      setting = create_boolean_setting (ppd_file, option, name);
+      option = create_boolean_option (ppd_file, ppd_option, name);
     }
   else
-    g_warning ("Ignored pickmany setting %s\n", option->text);
+    g_warning ("Ignored pickmany setting %s\n", ppd_option->text);
   
   
-  if (setting)
+  if (option)
     {
       if (STRING_IN_TABLE (toplevel_group->name,
 			   color_group_whitelist) ||
-	  STRING_IN_TABLE (option->keyword,
+	  STRING_IN_TABLE (ppd_option->keyword,
 			   color_option_whitelist))
 	{
-	  setting->group = g_strdup ("ColorPage");
+	  option->group = g_strdup ("ColorPage");
 	}
       else if (STRING_IN_TABLE (toplevel_group->name,
 				image_quality_group_whitelist) ||
-	       STRING_IN_TABLE (option->keyword,
+	       STRING_IN_TABLE (ppd_option->keyword,
 				image_quality_option_whitelist))
 	{
-	  setting->group = g_strdup ("ImageQualityPage");
+	  option->group = g_strdup ("ImageQualityPage");
 	}
       else if (STRING_IN_TABLE (toplevel_group->name,
 				finishing_group_whitelist) ||
-	       STRING_IN_TABLE (option->keyword,
+	       STRING_IN_TABLE (ppd_option->keyword,
 				finishing_option_whitelist))
 	{
-	  setting->group = g_strdup ("FinishingPage");
+	  option->group = g_strdup ("FinishingPage");
 	}
       else
 	{
-	  setting->group = g_strdup (toplevel_group->text);
+	  option->group = g_strdup (toplevel_group->text);
 	}
-      egg_print_backend_setting_set_add (set, setting);
+      egg_printer_option_set_add (set, option);
     }
   
   g_free (name);
 }
 
 static void
-handle_group (EggPrintBackendSettingSet *set,
+handle_group (EggPrinterOptionSet *set,
 	      ppd_file_t *ppd_file,
 	      ppd_group_t *group,
 	      ppd_group_t *toplevel_group)
@@ -1339,31 +1338,28 @@ handle_group (EggPrintBackendSettingSet *set,
 
 }
 
-static EggPrintBackendSettingSet *
-cups_printer_get_backend_settings (EggPrinter *printer)
+static EggPrinterOptionSet *
+cups_printer_get_options (EggPrinter *printer)
 {
-  EggPrintBackendSettingSet *set;
-  EggPrintBackendSetting *setting;
+  EggPrinterOptionSet *set;
+  EggPrinterOption *option;
   ppd_file_t *ppd_file;
   int i;
   char *n_up[] = {"1", "2", "4", "6", "9", "16" };
 
-  set = egg_print_backend_setting_set_new ();
+  set = egg_printer_option_set_new ();
 
   /* Cups specific, non-ppd related settings */
 
-  setting = egg_print_backend_setting_new ("gtk-n-up", _("Pages Per Sheet"), EGG_PRINT_BACKEND_SETTING_TYPE_PICKONE);
-  egg_print_backend_setting_choices_from_array (setting, G_N_ELEMENTS (n_up),
-						n_up, n_up);
-  egg_print_backend_setting_set (setting, "1");
-  egg_print_backend_setting_set_add (set, setting);
-  g_object_unref (setting);
-
+  option = egg_printer_option_new ("gtk-n-up", _("Pages Per Sheet"), EGG_PRINTER_OPTION_TYPE_PICKONE);
+  egg_printer_option_choices_from_array (option, G_N_ELEMENTS (n_up),
+					 n_up, n_up);
+  egg_printer_option_set (option, "1");
+  egg_printer_option_set_add (set, option);
+  g_object_unref (option);
 
   /* Printer (ppd) specific settings */
-  
   ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
-
   if (ppd_file)
     {
       ppdMarkDefaults (ppd_file);
@@ -1381,24 +1377,24 @@ cups_printer_get_backend_settings (EggPrinter *printer)
 
 
 static void
-mark_option_from_set (EggPrintBackendSettingSet *set,
+mark_option_from_set (EggPrinterOptionSet *set,
 		      ppd_file_t *ppd_file,
-		      ppd_option_t *option)
+		      ppd_option_t *ppd_option)
 {
-  EggPrintBackendSetting *setting;
-  char *name = get_setting_name (option->keyword);
+  EggPrinterOption *option;
+  char *name = get_option_name (ppd_option->keyword);
 
-  setting = egg_print_backend_setting_set_lookup (set, name);
+  option = egg_printer_option_set_lookup (set, name);
 
-  if (setting)
-    ppdMarkOption (ppd_file, option->keyword, setting->value);
+  if (option)
+    ppdMarkOption (ppd_file, ppd_option->keyword, option->value);
   
   g_free (name);
 }
 
 
 static void
-mark_group_from_set (EggPrintBackendSettingSet *set,
+mark_group_from_set (EggPrinterOptionSet *set,
 		     ppd_file_t *ppd_file,
 		     ppd_group_t *group)
 {
@@ -1412,30 +1408,28 @@ mark_group_from_set (EggPrintBackendSettingSet *set,
 }
 
 static void
-set_conflicts_from_option (EggPrintBackendSettingSet *set,
+set_conflicts_from_option (EggPrinterOptionSet *set,
 			   ppd_file_t *ppd_file,
-			   ppd_option_t *option)
+			   ppd_option_t *ppd_option)
 {
-  EggPrintBackendSetting *setting;
+  EggPrinterOption *option;
   char *name;
-  if (option->conflicted)
+  if (ppd_option->conflicted)
     {
-      name = get_setting_name (option->keyword);
-      setting = egg_print_backend_setting_set_lookup (set, name);
+      name = get_option_name (ppd_option->keyword);
+      option = egg_printer_option_set_lookup (set, name);
 
-      if (setting)
-	{
-	  egg_print_backend_setting_set_has_conflict (setting, TRUE);
-	}
+      if (option)
+	egg_printer_option_set_has_conflict (option, TRUE);
       else
-	g_warning ("conflict for option %s ignored", option->keyword);
+	g_warning ("conflict for option %s ignored", ppd_option->keyword);
       
       g_free (name);
     }
 }
 
 static void
-set_conflicts_from_group (EggPrintBackendSettingSet *set,
+set_conflicts_from_group (EggPrinterOptionSet *set,
 			  ppd_file_t *ppd_file,
 			  ppd_group_t *group)
 {
@@ -1449,8 +1443,8 @@ set_conflicts_from_group (EggPrintBackendSettingSet *set,
 }
 
 static gboolean
-cups_printer_mark_conflicts  (EggPrinter                *printer,
-			      EggPrintBackendSettingSet *settings)
+cups_printer_mark_conflicts  (EggPrinter          *printer,
+			      EggPrinterOptionSet *options)
 {
   ppd_file_t *ppd_file;
   int num_conflicts;
@@ -1460,22 +1454,22 @@ cups_printer_mark_conflicts  (EggPrinter                *printer,
   ppdMarkDefaults (ppd_file);
 
   for (i = 0; i < ppd_file->num_groups; i++)
-    mark_group_from_set (settings, ppd_file, &ppd_file->groups[i]);
+    mark_group_from_set (options, ppd_file, &ppd_file->groups[i]);
 
   num_conflicts = ppdConflicts (ppd_file);
 
   if (num_conflicts > 0)
     {
       for (i = 0; i < ppd_file->num_groups; i++)
-	set_conflicts_from_group (settings, ppd_file, &ppd_file->groups[i]);
+	set_conflicts_from_group (options, ppd_file, &ppd_file->groups[i]);
     }
  
   return num_conflicts > 0;
 }
 
-struct BackendSettingData {
+struct OptionData {
   EggPrinter *printer;
-  EggPrintBackendSettingSet *backend_settings;
+  EggPrinterOptionSet *options;
   EggPrintSettings *settings;
   ppd_file_t *ppd_file;
 };
@@ -1532,18 +1526,18 @@ map_cups_settings (const char *value,
       
 
 static void
-foreach_backend_setting (EggPrintBackendSetting  *setting,
-			 gpointer                 user_data)
+foreach_option (EggPrinterOption  *option,
+		gpointer          user_data)
 {
-  struct BackendSettingData *data = user_data;
+  struct OptionData *data = user_data;
   EggPrintSettings *settings = data->settings;
   const char *value;
 
-  value = setting->value;
+  value = option->value;
 
   /* TODO: paper size, margin */
   
-  if (strcmp (setting->name, "gtk-paper-source") == 0)
+  if (strcmp (option->name, "gtk-paper-source") == 0)
     {
       NameMapping map[] = {
 	{ "Lower", "lower"},
@@ -1560,7 +1554,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
       map_cups_settings (value, map, G_N_ELEMENTS (map),
 			 settings, EGG_PRINT_SETTINGS_DEFAULT_SOURCE, "InputSlot");
     }
-  else if (strcmp (setting->name, "gtk-output-tray") == 0)
+  else if (strcmp (option->name, "gtk-output-tray") == 0)
     {
       NameMapping map[] = {
 	{ "Upper", "upper"},
@@ -1571,7 +1565,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
       map_cups_settings (value, map, G_N_ELEMENTS (map),
 			 settings, EGG_PRINT_SETTINGS_OUTPUT_BIN, "OutputBin");
     }
-  else if (strcmp (setting->name, "gtk-duplex") == 0)
+  else if (strcmp (option->name, "gtk-duplex") == 0)
     {
       NameMapping map[] = {
 	{ "DuplexTumble", "vertical" },
@@ -1581,7 +1575,7 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
       map_cups_settings (value, map, G_N_ELEMENTS (map),
 			 settings, EGG_PRINT_SETTINGS_DUPLEX, "Duplex");
     }
-  else if (strcmp (setting->name, "cups-OutputMode") == 0)
+  else if (strcmp (option->name, "cups-OutputMode") == 0)
     {
       NameMapping map[] = {
 	{ "Standard", "normal" },
@@ -1592,15 +1586,15 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
       map_cups_settings (value, map, G_N_ELEMENTS (map),
 			 settings, EGG_PRINT_SETTINGS_QUALITY, "OutputMode");
     }
-  else if (strcmp (setting->name, "cups-Resolution") == 0)
+  else if (strcmp (option->name, "cups-Resolution") == 0)
     {
       int res = atoi (value);
       /* TODO: What if resolution is on XXXxYYYdpi form? */
       if (res != 0)
 	egg_print_settings_set_resolution (settings, res);
-      egg_print_settings_set (settings, setting->name, value);
+      egg_print_settings_set (settings, option->name, value);
     }
-  else if (strcmp (setting->name, "cups-MediaType") == 0)
+  else if (strcmp (option->name, "cups-MediaType") == 0)
     {
       NameMapping map[] = {
 	{ "Transparency", "transparency"},
@@ -1610,31 +1604,30 @@ foreach_backend_setting (EggPrintBackendSetting  *setting,
       map_cups_settings (value, map, G_N_ELEMENTS (map),
 			 settings, EGG_PRINT_SETTINGS_MEDIA_TYPE, "MediaType");
     }
-  else if (strcmp (setting->name, "gtk-n-up") == 0)
+  else if (strcmp (option->name, "gtk-n-up") == 0)
     {
       egg_print_settings_set (settings, "cups-number-up", value);
     }
-  else if (g_str_has_prefix (setting->name, "cups-"))
+  else if (g_str_has_prefix (option->name, "cups-"))
     {
-      egg_print_settings_set (settings, setting->name, value);
+      egg_print_settings_set (settings, option->name, value);
     }
 }
 
 
 static void
-cups_printer_add_backend_settings (EggPrinter *printer,
-				   EggPrintBackendSettingSet *backend_settings,
-				   EggPrintSettings *settings)
+cups_printer_get_settings_from_options (EggPrinter *printer,
+					EggPrinterOptionSet *options,
+					EggPrintSettings *settings)
 {
-  struct BackendSettingData data;
+  struct OptionData data;
 
   data.printer = printer;
-  data.backend_settings = backend_settings;
+  data.options = options;
   data.settings = settings;
   data.ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
   
-  egg_print_backend_setting_set_foreach (backend_settings, 
-					 foreach_backend_setting, &data);
+  egg_printer_option_set_foreach (options, foreach_option, &data);
 }
 
 static void
@@ -1670,7 +1663,7 @@ cups_printer_prepare_for_print (EggPrinter *printer,
 static GList *
 cups_printer_get_paper_sizes (EggPrinter *printer)
 {
-  ppd_file_t *ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
+  ppd_file_t *ppd_file;
   ppd_size_t *size;
   char *display_name;
   EggPaperSize *paper_size;
@@ -1679,6 +1672,7 @@ cups_printer_get_paper_sizes (EggPrinter *printer)
   GList *l;
   int i;
 
+  ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
   if (ppd_file == NULL)
     return NULL;
 
