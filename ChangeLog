@@ -1,3 +1,13 @@
+2006-03-10  Emmanuele Bassi  <ebassi@gmail.com>
+
+	Final change to the semantics of egg_bookmark_file_set_app_info():
+	the function might fail only if you are trying to remove an application
+	by forcing its registrarions count to zero - otherwise, it will act
+	like the other setters, and silently create a new bookmark.
+
+	* libegg/bookmarkfile/eggbookarkfile.c:
+	(egg_bookmark_file_set_app_info): update the function's semantics.
+
 2006-03-09  Emmanuele Bassi  <ebassi@gmail.com>
 
 	Support root-level "title" and "desc" elements, as per XBEL 1.0

@@ -3597,11 +3597,13 @@ egg_bookmark_file_has_application (EggBookmarkFile  *bookmark,
  * @stamp is the Unix time of the last registration; if it is -1, the
  * current time will be used.
  *
- * In the event the URI cannot be found, %FALSE is returned and
- * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND.
- * In the event that no application @name has registered a bookmark
+ * If you try to remove an application by setting its registration count to
+ * zero, and no bookmark for @uri is found, %FALSE is returned and
+ * @error is set to #EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND; similarly,
+ * in the event that no application @name has registered a bookmark
  * for @uri,  %FALSE is returned and error is set to
- * #EGG_BOOKMARK_FILE_ERROR_APP_NOT_REGISTERED.
+ * #EGG_BOOKMARK_FILE_ERROR_APP_NOT_REGISTERED.  Otherwise, if no bookmark
+ * for @uri is found, one is created.
  *
  * Return value: %TRUE if the application's meta-data was successfully
  *   changed.
@@ -3628,11 +3630,19 @@ egg_bookmark_file_set_app_info (EggBookmarkFile  *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
-		   EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
-		   _("No bookmark found for URI '%s'"),
-		   uri);
-      return FALSE;
+      if (count == 0)
+        {
+          g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
+		       EGG_BOOKMARK_FILE_ERROR_URI_NOT_FOUND,
+		       _("No bookmark found for URI '%s'"),
+		       uri);
+	  return FALSE;
+	}
+      else
+        {
+          item = egg_bookmark_item_new (uri);
+	  egg_bookmark_file_add_item (bookmark, item, NULL);
+	}
     }
   
   ai = egg_bookmark_item_lookup_app_info (item, name);

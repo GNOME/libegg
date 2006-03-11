@@ -118,14 +118,14 @@ gchar **         egg_bookmark_file_get_applications    (EggBookmarkFile  *bookma
 gboolean         egg_bookmark_file_set_app_info        (EggBookmarkFile  *bookmark,
 							const gchar      *uri,
 							const gchar      *name,
-							const gchar      *launcher,
+							const gchar      *exec,
 							gint              count,
 							time_t            stamp,
 							GError          **error);
 gboolean         egg_bookmark_file_get_app_info        (EggBookmarkFile  *bookmark,
 							const gchar      *uri,
 							const gchar      *name,
-							gchar           **launcher,
+							gchar           **exec,
 							guint            *count,
 							time_t           *stamp,
 							GError          **error);
