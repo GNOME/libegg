@@ -173,10 +173,8 @@ on_drag_data_received (GtkWidget        *widget,
       gchar **uris = gtk_selection_data_get_uris (data);
       gsize i;
 
-      for (i = 0; i < g_strv_length (uris); i++)
-        {
-          g_print ("Received URI := '%s'\n", uris[i]);
-	}
+      for (i = 0; uris[i] != NULL; i++)
+        g_print ("Received URI := '%s'\n", uris[i]);
 
       g_strfreev (uris);
 

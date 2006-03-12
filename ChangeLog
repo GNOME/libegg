@@ -1,3 +1,12 @@
+2006-03-12  Emmanuele Bassi  <ebassi@gmail.com>
+
+	* libegg/recentchooser/eggrecentmanager.c:
+	(egg_recent_manager_add_full): fix a misuse of g_strv_length (thanks
+	to Paolo Borelli for the fix).
+
+	* libegg/recentchooser/test-recent-menu.c:
+	(on_drag_data_received): ditto
+
 2006-03-10  Emmanuele Bassi  <ebassi@gmail.com>
 
 	Final change to the semantics of egg_bookmark_file_set_app_info():
