@@ -19,7 +19,9 @@
 #ifndef __EGG_PRINTER_CUPS_H__
 #define __EGG_PRINTER_CUPS_H__
 
+#include <glib.h>
 #include <glib-object.h>
+#include <cups/cups.h>
 #include <cups/ppd.h>
 
 #include "eggprinter.h"
@@ -41,7 +43,14 @@ struct _EggPrinterCups
 {
   EggPrinter parent_instance;
 
-  EggPrinterCupsPrivate *priv;
+  gchar *device_uri;
+  gchar *printer_uri;
+  gchar *hostname;
+  gint port;
+  
+  ipp_pstate_t state;
+  gboolean reading_ppd;
+  ppd_file_t *ppd_file;
 };
 
 struct _EggPrinterCupsClass

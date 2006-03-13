@@ -1,3 +1,30 @@
+2006-03-13  Alexander Larsson  <alexl@redhat.com>
+
+	* TODO:
+	Update
+	
+	* Makefile.am:
+	* eggprintercups-private.h:
+	* eggprintercups.h:
+	* eggprintercups.c:
+	Remove eggprintercups-private.h, move private details of
+	EggPrinterCups into main struct. This is not a public API after
+	all.
+	
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	* eggprinter.c:
+	* eggprinter.h:
+	Add printer_request_details and printer_has_details API.
+	Add details_acquired signal.
+	
+	* eggprintbackendcups.c:
+	Implement request_details,
+	
+	* eggpagesetupunixdialog.c:
+	* eggprintunixdialog.c:
+	Handle the asynchronous read of printer details.
+
 2006-03-10 John (J5) Palmieri  <johnp@redhat.com>
  
 	* eggcupsutils.c:

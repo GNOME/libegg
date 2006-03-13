@@ -58,7 +58,6 @@ noinst_HEADERS = 			\
 	eggprintoperation.h		\
 	eggprinteroptionwidget.h	\
 	eggprintunixdialog.h		\
-	eggprintercups-private.h	\
 	eggprintjob.h			\
 	eggprintjob-private.h		\
 	eggcupsutils.h

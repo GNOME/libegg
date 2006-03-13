@@ -34,6 +34,8 @@
 #include <cairo-pdf.h>
 #include <cairo-ps.h>
 
+#include <glib/gi18n-lib.h>
+
 #include "eggprintoperation.h"
 
 #include "eggprintbackend.h"
@@ -43,13 +45,9 @@
 #include "eggprinter-private.h"
 
 #include "eggprintercups.h"
-#include "eggprintercups-private.h"
 
 #include "eggcupsutils.h"
 
-
-#define N_(x) (x)
-#define _(x) (x)
 
 typedef struct _EggPrintBackendCupsClass EggPrintBackendCupsClass;
 
@@ -107,8 +105,8 @@ static void                 egg_print_backend_cups_class_init      (EggPrintBack
 static void                 egg_print_backend_cups_iface_init      (EggPrintBackendIface              *iface);
 static void                 egg_print_backend_cups_init            (EggPrintBackendCups               *impl);
 static void                 egg_print_backend_cups_finalize        (GObject                           *object);
-static void                 _cups_request_printer_list             (EggPrintBackendCups               *print_backend);
-static void                 _cups_request_execute                  (EggPrintBackendCups               *print_backend,
+static void                 cups_request_printer_list              (EggPrintBackendCups               *print_backend);
+static void                 cups_request_execute                   (EggPrintBackendCups               *print_backend,
 								    EggCupsRequest                    *request,
 								    EggPrintCupsResponseCallbackFunc   callback,
 								    gpointer                           user_data,
@@ -123,11 +121,8 @@ static EggPrinterOptionSet *cups_printer_get_options               (EggPrinter  
 static void                 cups_printer_prepare_for_print         (EggPrinter                        *printer,
 								    EggPrintSettings                  *settings);
 static GList *              cups_printer_get_paper_sizes           (EggPrinter                        *printer);
-
-static void
-_cups_request_ppd (EggPrintBackend *print_backend,
-                   EggPrinter      *printer);
-
+static void                 cups_request_ppd                       (EggPrinter                        *printer);
+static void                 cups_printer_request_details           (EggPrinter                        *printer);
 
 /*
  * EggPrintBackendCups
@@ -158,10 +153,10 @@ egg_print_backend_cups_get_type (void)
 	NULL,			                              /* interface_finalize */
 	NULL			                              /* interface_data */
       };
-
+      
       print_backend_cups_type = g_type_register_static (G_TYPE_OBJECT,
-						      "EggPrintBackendCups",
-						      &print_backend_cups_info, 0);
+							"EggPrintBackendCups",
+							&print_backend_cups_info, 0);
       g_type_add_interface_static (print_backend_cups_type,
 				   EGG_TYPE_PRINT_BACKEND,
 				   &print_backend_info);
@@ -213,7 +208,6 @@ _cairo_write_to_cups (void *cache_fd_as_pointer,
   return result;
 }
 
-
 static cairo_surface_t *
 cups_printer_create_cairo_surface (EggPrinter *printer,
 				   gdouble width, 
@@ -251,7 +245,7 @@ typedef struct {
 } _PrintStreamData;
 
 void
-_cups_print_cb (EggPrintBackendCups *print_backend,
+cups_print_cb (EggPrintBackendCups *print_backend,
                 EggCupsResult *result,
                 gpointer user_data)
 {
@@ -309,10 +303,10 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
                                   IPP_PRINT_JOB,
 				  data_fd,
 				  NULL,
-				  cups_printer->priv->device_uri);
+				  cups_printer->device_uri);
 
   egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri",
-                                   NULL, cups_printer->priv->printer_uri);
+                                   NULL, cups_printer->printer_uri);
 
   egg_cups_request_ipp_add_string (request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
                                    NULL, cupsUser());
@@ -328,12 +322,12 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
   ps->user_data = user_data;
   ps->job = job;
 
-  _cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
-                         request,
-                         (EggPrintCupsResponseCallbackFunc) _cups_print_cb,
-                         ps,
-                         NULL,
-                         &error);
+  cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
+			request,
+			(EggPrintCupsResponseCallbackFunc) cups_print_cb,
+			ps,
+			NULL,
+			&error);
 
   g_object_unref (settings);
   g_object_unref (cups_printer);
@@ -345,6 +339,7 @@ egg_print_backend_cups_iface_init (EggPrintBackendIface *iface)
 {
   iface->find_printer = egg_print_backend_cups_find_printer;
   iface->print_stream = egg_print_backend_cups_print_stream;
+  iface->printer_request_details = cups_printer_request_details;
   iface->printer_create_cairo_surface = cups_printer_create_cairo_surface;
   iface->printer_get_options = cups_printer_get_options;
   iface->printer_mark_conflicts = cups_printer_mark_conflicts;
@@ -361,7 +356,7 @@ egg_print_backend_cups_init (EggPrintBackendCups *backend_cups)
                                                  (GDestroyNotify) g_free,
                                                  (GDestroyNotify) g_object_unref);
 
-  _cups_request_printer_list (backend_cups);
+  cups_request_printer_list (backend_cups);
 }
 
 static void
@@ -378,7 +373,7 @@ egg_print_backend_cups_finalize (GObject *object)
 }
 
 static gboolean
-_cups_dispatch_watch_check (GSource *source)
+cups_dispatch_watch_check (GSource *source)
 {
   EggPrintCupsDispatchWatch *dispatch;
   EggCupsPollState poll_state;
@@ -426,7 +421,7 @@ _cups_dispatch_watch_check (GSource *source)
 }
 
 static gboolean
-_cups_dispatch_watch_prepare (GSource *source,
+cups_dispatch_watch_prepare (GSource *source,
                               gint *timeout_)
 {
   EggPrintCupsDispatchWatch *dispatch;
@@ -440,7 +435,7 @@ _cups_dispatch_watch_prepare (GSource *source,
 }
 
 static gboolean
-_cups_dispatch_watch_dispatch (GSource *source,
+cups_dispatch_watch_dispatch (GSource *source,
                                GSourceFunc callback,
                                gpointer user_data)
 {
@@ -466,7 +461,7 @@ _cups_dispatch_watch_dispatch (GSource *source,
 }
 
 static void
-_cups_dispatch_watch_finalize (GSource *source)
+cups_dispatch_watch_finalize (GSource *source)
 {
   EggPrintCupsDispatchWatch *dispatch;
 
@@ -479,20 +474,20 @@ _cups_dispatch_watch_finalize (GSource *source)
 }
 
 static GSourceFuncs _cups_dispatch_watch_funcs = {
-  _cups_dispatch_watch_prepare,
-  _cups_dispatch_watch_check,
-  _cups_dispatch_watch_dispatch,
-  _cups_dispatch_watch_finalize
+  cups_dispatch_watch_prepare,
+  cups_dispatch_watch_check,
+  cups_dispatch_watch_dispatch,
+  cups_dispatch_watch_finalize
 };
 
 
 static void
-_cups_request_execute (EggPrintBackendCups *print_backend,
-                       EggCupsRequest *request,
-                       EggPrintCupsResponseCallbackFunc callback,
-                       gpointer user_data,
-                       GDestroyNotify notify,
-                       GError **err)
+cups_request_execute (EggPrintBackendCups *print_backend,
+		      EggCupsRequest *request,
+		      EggPrintCupsResponseCallbackFunc callback,
+		      gpointer user_data,
+		      GDestroyNotify notify,
+		      GError **err)
 {
   EggPrintCupsDispatchWatch *dispatch;
   
@@ -509,9 +504,9 @@ _cups_request_execute (EggPrintBackendCups *print_backend,
 }
 
 void
-_cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
-                               EggCupsResult *result,
-                               gpointer user_data)
+cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
+			      EggCupsResult *result,
+			      gpointer user_data)
 {
   ipp_attribute_t *attr;
   ipp_t *response;
@@ -559,7 +554,7 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   /* TODO: determine printer type and use correct icon */
   printer->priv->icon_name = g_strdup ("printer-inkjet");
   
-  cups_printer->priv->device_uri = g_strdup_printf ("/printers/%s", printer_name);
+  cups_printer->device_uri = g_strdup_printf ("/printers/%s", printer_name);
 
   for (attr = response->attrs; attr != NULL; attr = attr->next) {
     if (!attr->name)
@@ -587,7 +582,7 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
     _CUPS_MAP_ATTR_STR (attr, printer_uri, "printer-uri-supported");
     _CUPS_MAP_ATTR_STR (attr, member_printer_uri, "member-uris");
     _CUPS_MAP_ATTR_STR (attr, printer->priv->state_message, "printer-state-message");
-    _CUPS_MAP_ATTR_INT (attr, cups_printer->priv->state, "printer-state");
+    _CUPS_MAP_ATTR_INT (attr, cups_printer->state, "printer-state");
     _CUPS_MAP_ATTR_INT (attr, printer->priv->job_count, "queued-job-count");
 
   }
@@ -597,12 +592,12 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   if (member_printer_uri)
     {
       g_free (printer_uri);
-      cups_printer->priv->printer_uri = member_printer_uri;
+      cups_printer->printer_uri = member_printer_uri;
     }
   else
-    cups_printer->priv->printer_uri = printer_uri;
+    cups_printer->printer_uri = printer_uri;
 
-  httpSeparate(cups_printer->priv->printer_uri, method, username, hostname,
+  httpSeparate(cups_printer->printer_uri, method, username, hostname,
 	       &port, resource);
 
   gethostname(uri, sizeof(uri));
@@ -610,17 +605,20 @@ _cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   if (strcasecmp(uri, hostname) == 0)
     strcpy(hostname, "localhost");
 
-  cups_printer->priv->hostname = g_strdup (hostname);
-  cups_printer->priv->port = port;
+  cups_printer->hostname = g_strdup (hostname);
+  cups_printer->port = port;
 
   if (printer->priv->is_new)
-    _cups_request_ppd (EGG_PRINT_BACKEND (print_backend), printer);
+    {
+      g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
+      printer->priv->is_new = FALSE;
+    }
 }
 
 
 static void
-_cups_request_printer_info (EggPrintBackendCups *print_backend,
-                            const gchar *printer_name)
+cups_request_printer_info (EggPrintBackendCups *print_backend,
+			   const gchar *printer_name)
 {
   GError *error;
   EggCupsRequest *request;
@@ -642,19 +640,19 @@ _cups_request_printer_info (EggPrintBackendCups *print_backend,
 
   g_free (printer_uri);
 
-  _cups_request_execute (print_backend,
-                         request,
-                         (EggPrintCupsResponseCallbackFunc) _cups_request_printer_info_cb,
-                         g_strdup (printer_name),
-                         (GDestroyNotify) g_free,
-                         &error);
+  cups_request_execute (print_backend,
+			request,
+			(EggPrintCupsResponseCallbackFunc) cups_request_printer_info_cb,
+			g_strdup (printer_name),
+			(GDestroyNotify) g_free,
+			&error);
  
 }
 
 void
-_cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
-                               EggCupsResult *result,
-                               gpointer user_data)
+cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
+			      EggCupsResult *result,
+			      gpointer user_data)
 {
   ipp_attribute_t *attr;
   ipp_t *response;
@@ -689,7 +687,7 @@ _cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
                                cups_printer);
         }
     
-      _cups_request_printer_info (print_backend, egg_printer_get_name (printer));
+      cups_request_printer_info (print_backend, egg_printer_get_name (printer));
       
       attr = ippFindNextAttribute (response, 
                                    "printer-name",
@@ -699,7 +697,7 @@ _cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
 }
 
 static void
-_cups_request_printer_list (EggPrintBackendCups *print_backend)
+cups_request_printer_list (EggPrintBackendCups *print_backend)
 {
   GError *error;
   EggCupsRequest *request;
@@ -713,12 +711,12 @@ _cups_request_printer_list (EggPrintBackendCups *print_backend)
 				  NULL,
 				  NULL);
 
-  _cups_request_execute (print_backend,
-                         request,
-                         (EggPrintCupsResponseCallbackFunc) _cups_request_printer_list_cb,
-			 request,
-			 NULL,
-                         &error);
+  cups_request_execute (print_backend,
+			request,
+			(EggPrintCupsResponseCallbackFunc) cups_request_printer_list_cb,
+			request,
+			NULL,
+			&error);
 }
 
 typedef struct {
@@ -738,34 +736,37 @@ get_ppd_data_free (GetPPDData *data)
 }
 
 static void
-_cups_request_ppd_cb (EggPrintBackendCups *print_backend,
-                      EggCupsResult *result,
-                      GetPPDData *data)
+cups_request_ppd_cb (EggPrintBackendCups *print_backend,
+		     EggCupsResult *result,
+		     GetPPDData *data)
 {
   ipp_t *response;
   EggPrinter *printer;
 
   printer = EGG_PRINTER (data->printer);
+
+  EGG_PRINTER_CUPS (printer)->reading_ppd = FALSE;
+  
   if (egg_cups_result_is_error (result))
     {
-      g_hash_table_remove (print_backend->printers,
-			   printer->priv->name);
+      g_signal_emit_by_name (printer, "details-acquired", printer, FALSE);
+      g_object_unref (print_backend);
       return;
     }
 
   response = egg_cups_result_get_response (result);
 
-  data->printer->priv->ppd_file = ppdOpenFile (data->ppd_filename);
+  data->printer->ppd_file = ppdOpenFile (data->ppd_filename);
+  printer->priv->has_details = TRUE;
+  g_signal_emit_by_name (printer, "details-acquired", printer, TRUE);
 
-  /* Now we're done getting data for this printer, lets give it to the dialog */
-  g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
-  printer->priv->is_new = FALSE;
+  g_object_unref (print_backend);
 }
 
 static void
-_cups_request_ppd (EggPrintBackend *print_backend,
-                   EggPrinter      *printer)
+cups_request_ppd (EggPrinter *printer)
 {
+  EggPrintBackend *print_backend;
   GError *error;
   EggPrinterCups *cups_printer;
   EggCupsRequest *request;
@@ -777,8 +778,8 @@ _cups_request_ppd (EggPrintBackend *print_backend,
 
   error = NULL;
 
-  http = httpConnectEncrypt(cups_printer->priv->hostname, 
-                            cups_printer->priv->port,
+  http = httpConnectEncrypt(cups_printer->hostname, 
+                            cups_printer->port,
                             cupsEncryption());
 
   data = g_new0 (GetPPDData, 1);
@@ -793,6 +794,8 @@ _cups_request_ppd (EggPrintBackend *print_backend,
       g_error_free (error);
       httpClose (http);
       g_free (data);
+      
+      g_signal_emit_by_name (printer, "details-acquired", printer, FALSE);
       return;
     }
     
@@ -805,17 +808,30 @@ _cups_request_ppd (EggPrintBackend *print_backend,
                                   EGG_CUPS_GET,
 				  0,
                                   data->ppd_fd,
-				  cups_printer->priv->hostname,
+				  cups_printer->hostname,
 				  resource);
 
   g_free (resource);
-  
-  _cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
-                         request,
-                         (EggPrintCupsResponseCallbackFunc) _cups_request_ppd_cb,
-                         data,
-                         (GDestroyNotify)get_ppd_data_free,
-                         &error);
+
+  cups_printer->reading_ppd = TRUE;
+  print_backend = egg_printer_get_backend (printer);
+  cups_request_execute (EGG_PRINT_BACKEND_CUPS (print_backend),
+			request,
+			(EggPrintCupsResponseCallbackFunc) cups_request_ppd_cb,
+			data,
+			(GDestroyNotify)get_ppd_data_free,
+			&error);
+}
+
+static void
+cups_printer_request_details (EggPrinter *printer)
+{
+  EggPrinterCups *cups_printer;
+
+  cups_printer = EGG_PRINTER_CUPS (printer);
+  if (!cups_printer->reading_ppd && 
+      egg_printer_cups_get_ppd (cups_printer) == NULL)
+    cups_request_ppd (printer);
 }
 
 char *
@@ -1399,10 +1415,6 @@ cups_printer_get_options (EggPrinter *printer)
       for (i = 0; i < ppd_file->num_groups; i++)
         handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
     }
-  else
-    { 
-       _cups_request_ppd (printer->priv->backend, printer);
-    }
 
   return set;
 }
@@ -1481,8 +1493,11 @@ cups_printer_mark_conflicts  (EggPrinter          *printer,
   ppd_file_t *ppd_file;
   int num_conflicts;
   int i;
-  
+
   ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
+  if (ppd_file == NULL)
+    return FALSE;
+  
   ppdMarkDefaults (ppd_file);
 
   for (i = 0; i < ppd_file->num_groups; i++)
@@ -1658,8 +1673,9 @@ cups_printer_get_settings_from_options (EggPrinter *printer,
   data.options = options;
   data.settings = settings;
   data.ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
-  
-  egg_printer_option_set_foreach (options, foreach_option, &data);
+
+  if (data.ppd_file != NULL)
+    egg_printer_option_set_foreach (options, foreach_option, &data);
 }
 
 static void

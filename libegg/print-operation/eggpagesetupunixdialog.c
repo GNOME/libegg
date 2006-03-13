@@ -46,6 +46,8 @@ struct EggPageSetupUnixDialogPrivate
   GtkWidget *reverse_portrait_radio;
   GtkWidget *reverse_landscape_radio;
 
+  guint request_details_tag;
+  
   EggPrintSettings *print_settings;
   /* These are stored in mm */
   double top_margin, bottom_margin, left_margin, right_margin;
@@ -193,6 +195,12 @@ egg_page_setup_unix_dialog_finalize (GObject *object)
   
   g_return_if_fail (object != NULL);
 
+  if (dialog->priv->request_details_tag)
+    {
+      g_source_remove (dialog->priv->request_details_tag);
+      dialog->priv->request_details_tag = 0;
+    }
+  
   if (dialog->priv->printer_list)
     {
       g_object_unref (dialog->priv->printer_list);
@@ -496,17 +504,45 @@ fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
 }
 
 static void
+printer_changed_finished_callback (EggPrinter *printer,
+				   gboolean success,
+				   EggPageSetupUnixDialog *dialog)
+{
+  dialog->priv->request_details_tag = 0;
+  
+  if (success)
+    fill_paper_sizes_from_printer (dialog, printer);
+
+}
+
+static void
 printer_changed_callback (GtkComboBox *combo_box,
 			  EggPageSetupUnixDialog *dialog)
 {
   EggPrinter *printer;
   GtkTreeIter iter;
 
+  if (dialog->priv->request_details_tag)
+    {
+      g_source_remove (dialog->priv->request_details_tag);
+      dialog->priv->request_details_tag = 0;
+    }
+  
   if (gtk_combo_box_get_active_iter (combo_box, &iter))
     {
       gtk_tree_model_get (gtk_combo_box_get_model (combo_box), &iter,
 			  PRINTER_LIST_COL_PRINTER_OBJ, &printer, -1);
-      fill_paper_sizes_from_printer (dialog, printer);
+
+
+      if (printer == NULL || _egg_printer_has_details (printer))
+	fill_paper_sizes_from_printer (dialog, printer);
+      else
+	{
+	  dialog->priv->request_details_tag =
+	    g_signal_connect (printer, "details-acquired",
+			      G_CALLBACK (printer_changed_finished_callback), dialog);
+	  _egg_printer_request_details (printer);
+	}
 
       /* TODO: Add format-for-printer to print_settings */
     }

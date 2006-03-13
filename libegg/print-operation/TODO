@@ -1,11 +1,9 @@
 Highlevel API:
-* Add API for showing a page setup dialog
 * Add a way to make the cairo printing callbacks (optionally) happen in a thread
 * Add API to EggPrintOperation to handle job status feedback while printing.
   Needs something like "job_status_changed" and "job_finished" signals
 * Add API to allow the app to add a custom tab with gtk+ widgets to the
   print dialog. We can hopefully implement this on osx & win32.
-* Finish all the tables in paper_names.c
 
 Cups/Unix:
 * Add custom translations for a lot of standard PPD options
@@ -30,3 +28,14 @@ print preview ideas?
 
 renaming:
 backendsetting -> option
+
+page setting dialog:
+* handle set page size not in availible list
+* gtk-print-backend property installed twice
+* sort paper lists
+* make sure we get good default for all settings
+* implement custom sizes
+* make sure we don't overwrite e.g. margins when setting initial dialog values
+* save the format-for printer
+* update format for printer when it change
+* update margins when paper size changes

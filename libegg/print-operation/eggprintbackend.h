@@ -73,6 +73,7 @@ struct _EggPrintBackendIface
 				gpointer user_data);
 
   /* Printer methods: */
+  void                  (*printer_request_details)           (EggPrinter *printer);
   cairo_surface_t *     (*printer_create_cairo_surface)      (EggPrinter *printer,
 							      gdouble height,
 							      gdouble width,

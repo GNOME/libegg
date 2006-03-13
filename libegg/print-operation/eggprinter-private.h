@@ -36,6 +36,7 @@ struct _EggPrinterPrivate
 
   guint is_active: 1;
   guint is_new: 1;
+  guint has_details: 1;
 
   gchar *state_message;  
   gint job_count;
@@ -44,6 +45,8 @@ struct _EggPrinterPrivate
 };
 
 
+gboolean             _egg_printer_has_details               (EggPrinter          *printer);
+void                 _egg_printer_request_details           (EggPrinter          *printer);
 EggPrinterOptionSet *_egg_printer_get_options               (EggPrinter          *printer);
 gboolean             _egg_printer_mark_conflicts            (EggPrinter          *printer,
 							     EggPrinterOptionSet *options);

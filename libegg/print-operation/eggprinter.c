@@ -37,6 +37,11 @@
 static void egg_printer_finalize     (GObject *object);
 
 enum {
+  DETAILS_ACQUIRED,
+  LAST_SIGNAL
+};
+
+enum {
   PROP_0,
   PROP_NAME,
   PROP_STATE_MESSAGE,
@@ -44,6 +49,8 @@ enum {
   PROP_ICON_NAME,
   PROP_JOB_COUNT,
 };
+
+static guint signals[LAST_SIGNAL] = { 0 };
 
 static void egg_printer_set_property (GObject      *object,
 				      guint         prop_id,
@@ -106,6 +113,16 @@ egg_printer_class_init (EggPrinterClass *class)
  						     G_MAXINT,
  						     0,
  						     GTK_PARAM_READABLE));
+
+
+  signals[DETAILS_ACQUIRED] =
+   g_signal_new ("details-acquired",
+                 G_TYPE_FROM_CLASS (class),
+                 G_SIGNAL_RUN_LAST,
+                 G_STRUCT_OFFSET (EggPrinterClass, details_acquired),
+                 NULL, NULL,
+                 g_cclosure_marshal_VOID__BOOLEAN,
+                 G_TYPE_NONE, 1, G_TYPE_BOOLEAN);
 }
 
 static void
@@ -120,6 +137,7 @@ egg_printer_init (EggPrinter *printer)
 
   printer->priv->is_active = TRUE;
   printer->priv->is_new = TRUE;
+  printer->priv->has_details = FALSE;
 
   printer->priv->state_message = NULL;  
   printer->priv->job_count = 0;
@@ -218,7 +236,7 @@ egg_printer_new (void)
 EggPrintBackend *
 egg_printer_get_backend (EggPrinter *printer)
 {
-  EGG_IS_PRINTER (printer);
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), NULL);
   
   return g_object_ref (G_OBJECT (printer->priv->backend));
 }
@@ -226,7 +244,7 @@ egg_printer_get_backend (EggPrinter *printer)
 const gchar *
 egg_printer_get_name (EggPrinter *printer)
 {
-  EGG_IS_PRINTER (printer);
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), NULL);
 
   return printer->priv->name;
 }
@@ -234,7 +252,7 @@ egg_printer_get_name (EggPrinter *printer)
 const gchar *
 egg_printer_get_state_message (EggPrinter *printer)
 {
-  EGG_IS_PRINTER (printer);
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), NULL);
 
   return printer->priv->state_message;
 }
@@ -242,7 +260,7 @@ egg_printer_get_state_message (EggPrinter *printer)
 const gchar *
 egg_printer_get_location (EggPrinter *printer)
 {
-  EGG_IS_PRINTER (printer);
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), NULL);
 
   return printer->priv->location;
 }
@@ -250,7 +268,7 @@ egg_printer_get_location (EggPrinter *printer)
 const gchar * 
 egg_printer_get_icon_name (EggPrinter *printer)
 {
-  EGG_IS_PRINTER (printer);
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), NULL);
 
   return printer->priv->icon_name;
 }
@@ -258,9 +276,17 @@ egg_printer_get_icon_name (EggPrinter *printer)
 gint 
 egg_printer_get_job_count (EggPrinter *printer)
 {
-  EGG_IS_PRINTER (printer);
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), 0);
 
   return printer->priv->job_count;
+}
+
+gboolean
+_egg_printer_has_details (EggPrinter *printer)
+{
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), TRUE);
+  
+  return printer->priv->has_details;
 }
 
 EggPrintJob *
@@ -286,6 +312,13 @@ egg_printer_prep_job (EggPrinter *printer,
     }
   
   return job;
+}
+
+void
+_egg_printer_request_details (EggPrinter *printer)
+{
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
+  return backend_iface->printer_request_details (printer);
 }
 
 EggPrinterOptionSet *

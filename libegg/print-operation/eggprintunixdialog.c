@@ -49,6 +49,8 @@ static void egg_print_unix_dialog_get_property (GObject            *object,
 						GParamSpec         *pspec);
 static void populate_dialog                    (EggPrintUnixDialog *dialog);
 static void unschedule_idle_mark_conflicts     (EggPrintUnixDialog *dialog);
+static void selected_printer_changed           (GtkTreeSelection   *selection,
+						EggPrintUnixDialog *dialog);
 
 enum {
   PROP_0,
@@ -108,6 +110,7 @@ struct EggPrintUnixDialogPrivate
   EggPrintBackend *print_backend;
   
   EggPrinter *current_printer;
+  guint request_details_tag;
   EggPrinterOptionSet *options;
   gulong options_changed_handler;
   gulong mark_conflicts_id;
@@ -348,6 +351,12 @@ egg_print_unix_dialog_finalize (GObject *object)
 
   unschedule_idle_mark_conflicts (dialog);
 
+  if (dialog->priv->request_details_tag)
+    {
+      g_source_remove (dialog->priv->request_details_tag);
+      dialog->priv->request_details_tag = 0;
+    }
+  
   if (dialog->priv->current_printer)
     {
       g_object_unref (dialog->priv->current_printer);
@@ -777,7 +786,23 @@ clear_per_printer_ui (EggPrintUnixDialog *dialog)
 			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
 }
- 
+
+static void
+printer_details_acquired (EggPrinter *printer,
+			  gboolean success,
+			  EggPrintUnixDialog *dialog)
+{
+  dialog->priv->request_details_tag = 0;
+  
+  if (success)
+    {
+      GtkTreeSelection *selection;
+      selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
+      
+      selected_printer_changed (selection, dialog);
+    }
+}
+
 static void
 selected_printer_changed (GtkTreeSelection *selection,
 			  EggPrintUnixDialog *dialog)
@@ -785,12 +810,27 @@ selected_printer_changed (GtkTreeSelection *selection,
   EggPrinter *printer;
   GtkTreeIter iter;
 
+  if (dialog->priv->request_details_tag)
+    {
+      g_source_remove (dialog->priv->request_details_tag);
+      dialog->priv->request_details_tag = 0;
+    }
+  
   printer = NULL;
   if (gtk_tree_selection_get_selected (selection, NULL, &iter))
     gtk_tree_model_get (dialog->priv->printer_list, &iter,
 			PRINTER_LIST_COL_PRINTER_OBJ, &printer,
 			-1);
 
+  if (printer != NULL && !_egg_printer_has_details (printer))
+    {
+      dialog->priv->request_details_tag =
+	g_signal_connect (printer, "details-acquired",
+			  G_CALLBACK (printer_details_acquired), dialog);
+      _egg_printer_request_details (printer);
+      return;
+    }
+  
   if (printer == dialog->priv->current_printer)
     {
       if (printer)
