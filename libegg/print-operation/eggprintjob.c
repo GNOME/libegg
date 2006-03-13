@@ -25,14 +25,34 @@
 #include <sys/stat.h>
 
 #include "config.h"
-//#include <glib/gi18n-lib.h>
 #include <gtk/gtk.h>
 #include <gtk/gtkprivate.h>
 
 #include "eggprintjob.h"
-#include "eggprintjob-private.h"
 #include "eggprinter.h"
 #include "eggprintbackend.h"
+
+struct _EggPrintJobPrivate
+{
+  gchar *title;
+
+  gint cache_fd;
+  cairo_surface_t *surface;
+
+  gdouble width;
+  gdouble height;
+
+  EggPrintSettings *settings;
+  struct _EggPrintBackend *backend;  
+  struct _EggPrinter *printer;
+
+  gint printer_set : 1;
+  gint width_set   : 1;
+  gint height_set  : 1;
+  gint settings_set  : 1;
+  gint prepped     : 1;
+};
+
 
 #define EGG_PRINT_JOB_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINT_JOB, EggPrintJobPrivate))

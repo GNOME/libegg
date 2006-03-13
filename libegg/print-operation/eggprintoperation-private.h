@@ -54,10 +54,19 @@ struct _EggPrintOperationPrivate
   void (*end_run) (EggPrintOperation *operation);
 };
 
-EggPrintOperationResult egg_print_operation_platform_backend_run_dialog (EggPrintOperation *operation,
-									 GtkWindow *parent,
-									 gboolean *do_print,
-									 GError **error);
+EggPrintOperationResult _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *operation,
+									  GtkWindow *parent,
+									  gboolean *do_print,
+									  GError **error);
+
+
+
+/* EggPrintContext private functions: */
+
+EggPrintContext *_egg_print_context_new                   (EggPrintOperation *op);
+void             _egg_print_context_set_page_setup        (EggPrintContext   *context,
+							   EggPageSetup      *page_setup);
+void             _egg_print_context_translate_into_margin (EggPrintContext   *context);
 
 G_END_DECLS
 

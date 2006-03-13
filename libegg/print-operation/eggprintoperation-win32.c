@@ -1106,10 +1106,10 @@ dialog_from_print_settings (EggPrintOperation *op,
 }
 
 EggPrintOperationResult
-egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
-						 GtkWindow *parent,
-						 gboolean *do_print,
-						 GError **error)
+_egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
+						  GtkWindow *parent,
+						  gboolean *do_print,
+						  GError **error)
 {
   HRESULT hResult;
   LPPRINTDLGEXW printdlgex = NULL;

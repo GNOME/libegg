@@ -1,5 +1,31 @@
 2006-03-13  Alexander Larsson  <alexl@redhat.com>
 
+	* Makefile.am:
+	Remove eggprintcontext-private.h and eggprintjob-private.h
+	
+	* eggpagesetupunixdialog.c:
+	* eggprintunixdialog.c:
+	Share gtk-print-backend property install code.
+	
+	* eggprintjob-private.h:
+	* eggprintjob.c:
+	Move EggPrintJobPrivate to .c file, remove .h file.
+	Was not included externally.
+	
+	* eggprintoperation-private.h:
+	* eggprintcontext-private.h:
+	* eggprintcontext.c:
+	Move context private calls to eggprintoperation-private.h and
+	remove eggprintcontext-private.h to minimize nr of private headers.
+
+	* eggprintoperation-dummy.c:
+	* eggprintoperation-unix.c:
+	* eggprintoperation-win32.c:
+	* eggprintoperation.c:
+	Make private non-static functions start with _.
+
+2006-03-13  Alexander Larsson  <alexl@redhat.com>
+
 	* TODO:
 	Update
 	

@@ -19,7 +19,6 @@
  */
 
 #include "eggprintoperation-private.h"
-#include "eggprintcontext-private.h"
 #include "eggprintmarshal.h"
 
 #include "eggprintunixdialog.h"
@@ -109,10 +108,10 @@ unix_end_run (EggPrintOperation *op)
 }
 
 EggPrintOperationResult
-egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
-						 GtkWindow *parent,
-						 gboolean *do_print,
-						 GError **error)
+_egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
+						  GtkWindow *parent,
+						  gboolean *do_print,
+						  GError **error)
 {
   GtkWidget *pd;
   EggPrintOperationResult result;

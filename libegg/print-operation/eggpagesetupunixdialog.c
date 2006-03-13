@@ -17,6 +17,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
+
 #include <config.h>
 #include <string.h>
 #include <locale.h>
@@ -132,6 +133,9 @@ get_default_user_units (void)
   return EGG_UNIT_MM;
 }
 
+/* This should be called by gtk_init(), but is called as-needed atm */
+extern void _egg_print_unix_init (void);
+
 static void
 egg_page_setup_unix_dialog_class_init (EggPageSetupUnixDialogClass *class)
 {
@@ -147,13 +151,8 @@ egg_page_setup_unix_dialog_class_init (EggPageSetupUnixDialogClass *class)
 
   g_type_class_add_private (class, sizeof (EggPageSetupUnixDialogPrivate));  
 
-  /* TODO: This is installed twice atm */
-  gtk_settings_install_property (g_param_spec_string ("gtk-print-backend",
-						      P_("Default print backend"),
-						      P_("Name of the printbackend to use by default"),
-						      NULL,
-						      GTK_PARAM_READWRITE));
-
+  _egg_print_unix_init ();
+  
   g_object_class_install_property (object_class,
                                    PROP_PRINT_BACKEND,
                                    g_param_spec_string ("print-backend",

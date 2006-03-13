@@ -19,7 +19,6 @@
  */
 
 #include "eggprintoperation-private.h"
-#include "eggprintcontext-private.h"
 #include "eggprintmarshal.h"
 #include <cairo-pdf.h>
 
@@ -381,9 +380,9 @@ run_print_dialog (EggPrintOperation *op,
    * create cairo surface and data for print job
    * return correct result val
    */
-  return egg_print_operation_platform_backend_run_dialog (op, parent,
-							  do_print,
-							  error);
+  return _egg_print_operation_platform_backend_run_dialog (op, parent,
+							   do_print,
+							   error);
 }
 
 EggPrintOperationResult

@@ -301,6 +301,22 @@ static const char *nocollate_reverse_xpm[] = {
 "....................              ....................           "};
 
 
+/* This should be called by gtk_init(), but is called as-needed atm */
+void
+_egg_print_unix_init (void)
+{
+  static gboolean initialized = FALSE;
+
+  if (initialized)
+    return;
+
+  gtk_settings_install_property (g_param_spec_string ("gtk-print-backend",
+						      P_("Default print backend"),
+						      P_("Name of the printbackend to use by default"),
+						      NULL,
+						      GTK_PARAM_READWRITE));
+}
+
 static void
 egg_print_unix_dialog_class_init (EggPrintUnixDialogClass *class)
 {
@@ -316,11 +332,7 @@ egg_print_unix_dialog_class_init (EggPrintUnixDialogClass *class)
 
   g_type_class_add_private (class, sizeof (EggPrintUnixDialogPrivate));  
 
-  gtk_settings_install_property (g_param_spec_string ("gtk-print-backend",
-						      "Default print backend",
-						      "Name of the EggPrintUnixDialog backend to use by default",
-						      NULL,
-						      GTK_PARAM_READWRITE));
+  _egg_print_unix_init ();
 
   g_object_class_install_property (object_class,
                                    PROP_PRINT_BACKEND,

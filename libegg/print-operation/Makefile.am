@@ -46,7 +46,6 @@ noinst_HEADERS = 			\
 	eggprintbackendcups.h		\
 	eggprinteroption.h		\
 	eggprinteroptionset.h		\
-	eggprintcontext-private.h 	\
 	eggprintcontext.h		\
 	eggprintenums.h			\
 	eggprinter-private.h		\
@@ -59,7 +58,6 @@ noinst_HEADERS = 			\
 	eggprinteroptionwidget.h	\
 	eggprintunixdialog.h		\
 	eggprintjob.h			\
-	eggprintjob-private.h		\
 	eggcupsutils.h
 
 marshal_sources = 		\

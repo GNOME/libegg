@@ -18,7 +18,6 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include "eggprintcontext-private.h"
 #include "eggprintoperation-private.h"
 
 typedef struct _EggPrintContextClass EggPrintContextClass;
