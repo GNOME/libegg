@@ -1,3 +1,17 @@
+2006-03-13 John (J5) Palmieri  <johnp@redhat.com>
+
+	* modules/printbackends/cups/eggcupsutils.[ch]:
+	* modules/printbackends/cups/eggprintbackendcups.[ch]:
+	* modules/printbackends/cups/eggprintercups.[ch]:
+	Made into modules, moved into modules/printbackends/cups/
+	and forward ported all of Alex's changes
+
+	* TODO:
+	Add lowlevel API section and some items dealing with modules
+
+	* Makefile.am:
+	Make library installable so we generate .so files for the modules
+
 2006-03-13  Alexander Larsson  <alexl@redhat.com>
 
 	* Makefile.am:

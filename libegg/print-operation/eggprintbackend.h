@@ -107,6 +107,9 @@ void egg_print_backend_print_stream                             (EggPrintBackend
 				                                 EggPrintJobCompleteFunc callback,
 				                                 gpointer user_data);
 
+GList *egg_print_backend_load_modules                            (void);
+
+
 G_END_DECLS
 
 #endif /* __EGG_PRINT_BACKEND_H__ */

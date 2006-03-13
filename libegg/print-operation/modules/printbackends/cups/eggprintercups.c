@@ -34,6 +34,7 @@ egg_printer_cups_class_init (EggPrinterCupsClass *class)
   object_class = (GObjectClass *) class;
 
   object_class->finalize = egg_printer_cups_finalize;
+
 }
 
 static void

@@ -29,7 +29,6 @@
 #include <gtk/gtkprivate.h>
 
 #include "eggprintbackend.h"
-#include "eggprintbackendcups.h"
 #include "eggprintunixdialog.h"
 #include "eggprinteroptionwidget.h"
 
@@ -107,7 +106,7 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *advanced_vbox;
   GtkWidget *advanced_page;
   
-  EggPrintBackend *print_backend;
+  GList *print_backends;
   
   EggPrinter *current_printer;
   guint request_details_tag;
@@ -333,24 +332,15 @@ egg_print_unix_dialog_class_init (EggPrintUnixDialogClass *class)
   g_type_class_add_private (class, sizeof (EggPrintUnixDialogPrivate));  
 
   _egg_print_unix_init ();
-
-  g_object_class_install_property (object_class,
-                                   PROP_PRINT_BACKEND,
-                                   g_param_spec_string ("print-backend",
-						      "Print backend",
-						      "The EggPrintUnixDialog backend to use",
-						      NULL,
-						      GTK_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
-
-
 }
 
 static void
 egg_print_unix_dialog_init (EggPrintUnixDialog *dialog)
 {
   dialog->priv = EGG_PRINT_UNIX_DIALOG_GET_PRIVATE (dialog); 
-  dialog->priv->print_backend = NULL;
+  dialog->priv->print_backends = NULL;
   dialog->priv->current_page = -1;
+
   populate_dialog (dialog);
 }
 
@@ -433,22 +423,23 @@ _printer_status_cb (EggPrintBackend *backend,
 
 
 static void
-_printer_list_initialize (EggPrintUnixDialog *impl)
+_printer_list_initialize (EggPrintUnixDialog *impl,
+                          EggPrintBackend *print_backend)
 {
   /* TODO: allow for multiple backends */
-  g_return_if_fail (impl->priv->print_backend != NULL);
+  g_return_if_fail (print_backend != NULL);
 
-  g_signal_connect (impl->priv->print_backend, 
+  g_signal_connect (print_backend, 
                     "printer-added", 
 		    (GCallback) _printer_added_cb, 
 		    impl);
 
-  g_signal_connect (impl->priv->print_backend, 
+  g_signal_connect (print_backend, 
                     "printer-removed", 
 		    (GCallback) _printer_removed_cb, 
 		    impl);
 
-  g_signal_connect (impl->priv->print_backend, 
+  g_signal_connect (print_backend, 
                     "printer-status-changed", 
 		    (GCallback) _printer_status_cb, 
 		    impl);
@@ -456,48 +447,25 @@ _printer_list_initialize (EggPrintUnixDialog *impl)
 }
 
 static void
-_set_print_backend (EggPrintUnixDialog *impl,
-		   const char *backend)
+_load_print_backends (EggPrintUnixDialog *impl)
 {
-  if (impl->priv->print_backend)
+
+  if (g_module_supported ())
+    impl->priv->print_backends = egg_print_backend_load_modules ();
+
+  if (impl->priv->print_backends)
     {
-      /*TODO: clean up signal handlers
-      g_signal_handler_disconnect */
-      g_object_unref (impl->priv->print_backend);
+      GList *node;
+
+      node = impl->priv->print_backends;
+
+      while (node != NULL)
+        {
+          _printer_list_initialize (impl, EGG_PRINT_BACKEND (node->data));
+
+          node = node->next;
+        }
     }
-
-  impl->priv->print_backend = NULL;
-
-/* TODO: allow for dynamicly loaded backends */
-#if 0
-  if (backend)
-    impl->priv->print_backend = _egg_print_backend_create (backend);
-  else
-    {
-      GtkSettings *settings = gtk_settings_get_default ();
-      gchar *default_backend = NULL;
-
-      g_object_get (settings, "gtk-print-backend", &default_backend, NULL);
-      if (default_backend)
-	{
-	  impl->priv->print_backend = _egg_print_backend_create (default_backend);
-	  g_free (default_backend);
-	}
-    }
-#endif
-
-  if (!impl->priv->print_backend)
-    {
-#if defined (G_OS_UNIX)
-      impl->priv->print_backend = egg_print_backend_cups_new ();
-#else
-#error "No default filesystem implementation on the platform"
-#endif
-    }
-
-  if (impl->priv->print_backend)
-    _printer_list_initialize (impl);
-
 }
 
 static void
@@ -507,15 +475,10 @@ egg_print_unix_dialog_set_property (GObject      *object,
 				    GParamSpec   *pspec)
 
 {
-  EggPrintUnixDialog *impl = EGG_PRINT_UNIX_DIALOG (object);
+  //EggPrintUnixDialog *impl = EGG_PRINT_UNIX_DIALOG (object);
 
   switch (prop_id)
     {
-    case PROP_PRINT_BACKEND:
-      _set_print_backend (impl, g_value_get_string (value));
-      break;
-    
-
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -1789,6 +1752,9 @@ populate_dialog (EggPrintUnixDialog *dialog)
   g_object_unref (GTK_DIALOG (dialog)->action_area);
   
   gtk_widget_show (dialog->priv->notebook);
+
+  _load_print_backends (dialog);
+
 }
 
 /**
@@ -1804,8 +1770,7 @@ populate_dialog (EggPrintUnixDialog *dialog)
  **/
 GtkWidget *
 egg_print_unix_dialog_new (const gchar *title,
-			   GtkWindow *parent,
-			   const gchar *print_backend)
+			   GtkWindow *parent)
 {
   GtkWidget *result;
   const gchar *_title = "Print";
@@ -1816,7 +1781,6 @@ egg_print_unix_dialog_new (const gchar *title,
   result = g_object_new (EGG_TYPE_PRINT_UNIX_DIALOG,
                          "title", _title,
 			 "has-separator", FALSE,
-			 "print-backend", print_backend,
                          NULL);
 
   if (parent)

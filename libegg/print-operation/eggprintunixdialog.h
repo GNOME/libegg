@@ -61,8 +61,7 @@ struct _EggPrintUnixDialogClass
 
 GType		 egg_print_unix_dialog_get_type	   (void) G_GNUC_CONST;
 GtkWidget *      egg_print_unix_dialog_new         (const gchar *title,
-                                                    GtkWindow *parent,
-						    const gchar *print_backend);
+                                                    GtkWindow *parent);
 
 
 void egg_print_unix_dialog_set_current_page   (EggPrintUnixDialog *dialog,

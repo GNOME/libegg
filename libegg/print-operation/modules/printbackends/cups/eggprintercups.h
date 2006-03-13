@@ -47,7 +47,7 @@ struct _EggPrinterCups
   gchar *printer_uri;
   gchar *hostname;
   gint port;
-  
+
   ipp_pstate_t state;
   gboolean reading_ppd;
   ppd_file_t *ppd_file;

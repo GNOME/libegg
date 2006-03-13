@@ -5,11 +5,15 @@ Highlevel API:
 * Add API to allow the app to add a custom tab with gtk+ widgets to the
   print dialog. We can hopefully implement this on osx & win32.
 
+Lowlevel API:
+* Figure out the best way to configure module loading (textfile, gtkrc or 
+  just frob the modules directory)
+* Make sure to hook up to GtkModule for finding modules when we move to gtk
+
 Cups/Unix:
 * Add custom translations for a lot of standard PPD options
 * Hook up the settings in the "Job" tab
 * Figure out the details in handling page size, orientation and margins
-* Use GPollFD in cups GSource
 * General UI review and polish
 * fix UI padding according to HIG
 

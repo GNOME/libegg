@@ -1,7 +1,9 @@
-INCLUDES = $(EGG_CFLAGS) $(CUPS_CFLAGS) -DEGG_PRINT_BACKEND_ENABLE_UNSUPPORTED
-LIBS = $(EGG_LIBS) $(CUPS_LIBS)
+SUBDIRS= . modules
 
-noinst_LTLIBRARIES = libeggprint.la
+INCLUDES = $(EGG_CFLAGS) -DEGG_PRINT_BACKEND_ENABLE_UNSUPPORTED
+LIBS = $(EGG_LIBS) 
+
+lib_LTLIBRARIES = libeggprint.la
 
 libeggprint_la_SOURCES = 		\
 	eggpagesetup.c			\
@@ -29,10 +31,7 @@ libeggprint_la_SOURCES +=		\
 	eggprinteroptionwidget.c	\
 	eggprintunixdialog.c		\
         eggprintbackend.c		\
-        eggprintbackendcups.c		\
-	eggprintercups.c		\
-	eggprintjob.c			\
-	eggcupsutils.c
+	eggprintjob.c
 
 endif
 
@@ -43,22 +42,19 @@ noinst_HEADERS = 			\
 	eggprint-win32.h		\
 	eggprint.h			\
 	eggprintbackend.h		\
-	eggprintbackendcups.h		\
 	eggprinteroption.h		\
 	eggprinteroptionset.h		\
 	eggprintcontext.h		\
 	eggprintenums.h			\
 	eggprinter-private.h		\
 	eggprinter.h			\
-	eggprintercups.h		\
 	eggprintsettings.h		\
 	eggprintmarshal.h		\
 	eggprintoperation-private.h 	\
 	eggprintoperation.h		\
 	eggprinteroptionwidget.h	\
 	eggprintunixdialog.h		\
-	eggprintjob.h			\
-	eggcupsutils.h
+	eggprintjob.h
 
 marshal_sources = 		\
 	eggprintmarshal.h	\

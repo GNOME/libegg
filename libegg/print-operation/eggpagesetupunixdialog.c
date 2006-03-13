@@ -28,7 +28,7 @@
 #include <gtk/gtkprivate.h>
 
 #include "eggpagesetupunixdialog.h"
-#include "eggprintbackendcups.h"
+#include "eggprintbackend.h"
 #include "eggprinter-private.h"
 #include "eggpapersize.h"
 
@@ -312,7 +312,7 @@ _set_print_backend (EggPageSetupUnixDialog *impl,
   if (!impl->priv->print_backend)
     {
 #if defined (G_OS_UNIX)
-      impl->priv->print_backend = egg_print_backend_cups_new ();
+      //impl->priv->print_backend = egg_print_backend_cups_new ();
 #else
 #error "No default filesystem implementation on the platform"
 #endif

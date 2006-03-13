@@ -118,7 +118,7 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
   
   result = EGG_PRINT_OPERATION_RESULT_CANCEL;
   
-  pd = egg_print_unix_dialog_new ("Print...", parent, NULL);
+  pd = egg_print_unix_dialog_new ("Print...", parent);
   
   *do_print = FALSE; 
   if (gtk_dialog_run (GTK_DIALOG (pd)) == GTK_RESPONSE_ACCEPT)
