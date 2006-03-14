@@ -1,5 +1,11 @@
 #define N_(s) s
 
+/* The paper size names are from:
+ * PWG 5101.1-2002 PWG: Standard for Media Standardized Names
+ *
+ * The PPD names come from the PPD specification.
+ */
+
 static const PaperInfo standard_names[] = {
   /* sorted by name, remember to sort when changing */
   {"asme_f", "28x40in", N_("asme_f")}, /* f           5    e1 */
