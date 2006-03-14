@@ -182,6 +182,7 @@ const struct {
   const char *ppd_name;
   const char *standard_name;
 } extra_ppd_names[] = {
+  /* sorted by ppd_name, remember to sort when changing */
   { "C4", "iso_c4"},
   { "C5", "iso_c5"},
   { "C6", "iso_c6"},
