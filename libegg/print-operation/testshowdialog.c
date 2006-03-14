@@ -10,7 +10,7 @@ main (gint argc, gchar *argv[])
 
   gtk_init (&argc, &argv);
 
-  pd = egg_page_setup_unix_dialog_new ("Print Test", NULL, NULL);
+  pd = egg_page_setup_unix_dialog_new ("Print Test", NULL);
   gtk_dialog_run (GTK_DIALOG (pd));
 
   return 0;

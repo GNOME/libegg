@@ -61,8 +61,7 @@ struct _EggPageSetupUnixDialogClass
 
 GType 		  egg_page_setup_unix_dialog_get_type	        (void) G_GNUC_CONST;
 GtkWidget *       egg_page_setup_unix_dialog_new                (const gchar            *title,
-								 GtkWindow              *parent,
-								 const gchar            *page_setup_backend);
+								 GtkWindow              *parent);
 void              egg_page_setup_unix_dialog_set_page_setup     (EggPageSetupUnixDialog *dialog,
 								 EggPageSetup           *page_setup);
 EggPageSetup *    egg_page_setup_unix_dialog_get_page_setup     (EggPageSetupUnixDialog *dialog);

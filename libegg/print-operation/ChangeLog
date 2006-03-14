@@ -1,3 +1,19 @@
+2006-03-14  Alexander Larsson  <alexl@redhat.com>
+
+	* eggpagesetupunixdialog.[ch]:
+	Remove backend property
+	Load backends like print dialog
+	
+	* eggprintoperation-unix.c:
+	* testshowdialog.c:
+	Update for page setup API changes
+	
+	* eggprintunixdialog.c:
+	Remove unneeded code
+
+	* TODO:
+	Remove done items
+	
 2006-03-13 John (J5) Palmieri  <johnp@redhat.com>
 
 	* modules/printbackends/cups/eggcupsutils.[ch]:

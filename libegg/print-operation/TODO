@@ -35,7 +35,6 @@ backendsetting -> option
 
 page setting dialog:
 * handle set page size not in availible list
-* gtk-print-backend property installed twice
 * sort paper lists
 * make sure we get good default for all settings
 * implement custom sizes

@@ -36,7 +36,8 @@ struct EggPageSetupUnixDialogPrivate
 {
   GtkListStore *printer_list;
   GtkListStore *paper_size_list;
-  EggPrintBackend *print_backend;
+  
+  GList *print_backends;
 
   GtkWidget *printer_combo;
   GtkWidget *paper_size_combo;
@@ -56,7 +57,6 @@ struct EggPageSetupUnixDialogPrivate
 
 enum {
   PROP_0,
-  PROP_PRINT_BACKEND
 };
 
 enum {
@@ -133,9 +133,6 @@ get_default_user_units (void)
   return EGG_UNIT_MM;
 }
 
-/* This should be called by gtk_init(), but is called as-needed atm */
-extern void _egg_print_unix_init (void);
-
 static void
 egg_page_setup_unix_dialog_class_init (EggPageSetupUnixDialogClass *class)
 {
@@ -150,16 +147,6 @@ egg_page_setup_unix_dialog_class_init (EggPageSetupUnixDialogClass *class)
   object_class->get_property = egg_page_setup_unix_dialog_get_property;
 
   g_type_class_add_private (class, sizeof (EggPageSetupUnixDialogPrivate));  
-
-  _egg_print_unix_init ();
-  
-  g_object_class_install_property (object_class,
-                                   PROP_PRINT_BACKEND,
-                                   g_param_spec_string ("print-backend",
-							P_("Print backend"),
-							P_("The print backend to use"),
-							NULL,
-							GTK_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 }
 
 static void
@@ -168,7 +155,7 @@ egg_page_setup_unix_dialog_init (EggPageSetupUnixDialog *dialog)
   GtkTreeIter iter;
   
   dialog->priv = EGG_PAGE_SETUP_UNIX_DIALOG_GET_PRIVATE (dialog); 
-  dialog->priv->print_backend = NULL;
+  dialog->priv->print_backends = NULL;
 
   dialog->priv->printer_list = gtk_list_store_new (PRINTER_LIST_N_COLS,
 						   G_TYPE_STRING, 
@@ -258,70 +245,38 @@ _printer_status_cb (EggPrintBackend *backend,
 }
 
 static void
-_printer_list_initialize (EggPageSetupUnixDialog *impl)
+_printer_list_initialize (EggPageSetupUnixDialog *impl,
+                          EggPrintBackend *print_backend)
 {
-  g_return_if_fail (impl->priv->print_backend != NULL);
+  g_return_if_fail (print_backend != NULL);
 
-  g_signal_connect (impl->priv->print_backend, 
+  g_signal_connect (print_backend, 
                     "printer-added", 
 		    (GCallback) _printer_added_cb, 
 		    impl);
 
-  g_signal_connect (impl->priv->print_backend, 
+  g_signal_connect (print_backend, 
                     "printer-removed", 
 		    (GCallback) _printer_removed_cb, 
 		    impl);
 
-  g_signal_connect (impl->priv->print_backend, 
+  g_signal_connect (print_backend, 
                     "printer-status-changed", 
 		    (GCallback) _printer_status_cb, 
 		    impl);
 }
 
 static void
-_set_print_backend (EggPageSetupUnixDialog *impl,
-		   const char *backend)
+_load_print_backends (EggPageSetupUnixDialog *dialog)
 {
-  if (impl->priv->print_backend)
-    {
-      /*TODO: clean up signal handlers
-      g_signal_handler_disconnect */
-      g_object_unref (impl->priv->print_backend);
-    }
+  GList *node;
 
-  impl->priv->print_backend = NULL;
+  if (g_module_supported ())
+    dialog->priv->print_backends = egg_print_backend_load_modules ();
 
-/* TODO: allow for dynamicly loaded backends */
-#if 0
-  if (backend)
-    impl->priv->print_backend = _egg_print_backend_create (backend);
-  else
-    {
-      GtkSettings *settings = gtk_settings_get_default ();
-      gchar *default_backend = NULL;
-
-      g_object_get (settings, "gtk-print-backend", &default_backend, NULL);
-      if (default_backend)
-	{
-	  impl->priv->print_backend = _egg_print_backend_create (default_backend);
-	  g_free (default_backend);
-	}
-    }
-#endif
-
-  if (!impl->priv->print_backend)
-    {
-#if defined (G_OS_UNIX)
-      //impl->priv->print_backend = egg_print_backend_cups_new ();
-#else
-#error "No default filesystem implementation on the platform"
-#endif
-    }
-
-  if (impl->priv->print_backend)
-    _printer_list_initialize (impl);
+  for (node = dialog->priv->print_backends; node != NULL; node = node->next)
+    _printer_list_initialize (dialog, EGG_PRINT_BACKEND (node->data));
 }
-
 
 static void
 egg_page_setup_unix_dialog_set_property (GObject      *object,
@@ -334,10 +289,6 @@ egg_page_setup_unix_dialog_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_PRINT_BACKEND:
-      _set_print_backend (impl, g_value_get_string (value));
-      break;
-
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -750,12 +701,13 @@ populate_dialog (EggPageSetupUnixDialog *dialog)
   g_signal_connect (dialog->priv->paper_size_combo, "changed", G_CALLBACK (paper_size_changed), dialog);
   g_signal_connect (dialog->priv->printer_combo, "changed", G_CALLBACK (printer_changed_callback), dialog);
   gtk_combo_box_set_active (GTK_COMBO_BOX (dialog->priv->printer_combo), 0);
+
+  _load_print_backends (dialog);
 }
 
 GtkWidget *
 egg_page_setup_unix_dialog_new (const gchar *title,
-				GtkWindow *parent,
-				const gchar *print_backend)
+				GtkWindow *parent)
 {
   GtkWidget *result;
 
@@ -765,7 +717,6 @@ egg_page_setup_unix_dialog_new (const gchar *title,
   result = g_object_new (EGG_TYPE_PAGE_SETUP_UNIX_DIALOG,
                          "title", title,
 			 "has-separator", FALSE,
-			 "print-backend", print_backend,
                          NULL);
 
   if (parent)

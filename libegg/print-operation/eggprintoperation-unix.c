@@ -194,7 +194,7 @@ egg_print_run_page_setup_dialog (GtkWindow        *parent,
   GtkWidget *dialog;
   EggPageSetup *new_page_setup;
   
-  dialog = egg_page_setup_unix_dialog_new (NULL, parent, NULL);
+  dialog = egg_page_setup_unix_dialog_new (NULL, parent);
   if (page_setup)
     egg_page_setup_unix_dialog_set_page_setup (EGG_PAGE_SETUP_UNIX_DIALOG (dialog),
 					       page_setup);
