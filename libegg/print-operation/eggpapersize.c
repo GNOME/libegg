@@ -315,6 +315,7 @@ egg_paper_size_new_custom (const char *name, const char *display_name,
   
   size->name = g_strdup (name);
   size->display_name = g_strdup (display_name);
+  size->is_custom = TRUE;
   
   /* Width is always the shorter one */
   if (width > height)

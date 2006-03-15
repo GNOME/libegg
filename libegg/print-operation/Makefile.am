@@ -1,6 +1,6 @@
 SUBDIRS= . modules
 
-INCLUDES = $(EGG_CFLAGS) -DEGG_PRINT_BACKEND_ENABLE_UNSUPPORTED
+INCLUDES = $(EGG_CFLAGS) -DEGG_PRINT_BACKEND_ENABLE_UNSUPPORTED -Werror
 LIBS = $(EGG_LIBS) 
 
 lib_LTLIBRARIES = libeggprint.la
@@ -59,6 +59,8 @@ noinst_HEADERS = 			\
 marshal_sources = 		\
 	eggprintmarshal.h	\
 	eggprintmarshal.c
+
+eggprintmarshal.c:    eggprintmarshal.h
 
 eggprintmarshal.h: eggprintmarshal.list
 	$(GLIB_GENMARSHAL) $< --header --prefix=_egg_marshal > $@

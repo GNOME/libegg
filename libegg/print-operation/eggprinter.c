@@ -365,9 +365,21 @@ _egg_printer_create_cairo_surface (EggPrinter *printer,
 }
 
 GList  *
-_egg_printer_get_paper_sizes (EggPrinter *printer)
+_egg_printer_list_papers (EggPrinter *printer)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
 
-  return backend_iface->printer_get_paper_sizes (printer);
+  return backend_iface->printer_list_papers (printer);
+}
+
+void
+_egg_printer_get_hard_margins          (EggPrinter          *printer,
+					double              *top,
+					double              *bottom,
+					double              *left,
+					double              *right)
+{
+  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
+
+  backend_iface->printer_get_hard_margins (printer, top, bottom, left, right);
 }

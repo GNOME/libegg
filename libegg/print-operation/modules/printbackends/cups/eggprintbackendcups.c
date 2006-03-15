@@ -106,8 +106,8 @@ static void                 egg_print_backend_cups_class_init      (EggPrintBack
 static void                 egg_print_backend_cups_iface_init      (EggPrintBackendIface              *iface);
 static void                 egg_print_backend_cups_init            (EggPrintBackendCups               *impl);
 static void                 egg_print_backend_cups_finalize        (GObject                           *object);
-static void                 cups_request_printer_list             (EggPrintBackendCups               *print_backend);
-static void                 cups_request_execute                  (EggPrintBackendCups               *print_backend,
+static void                 cups_request_printer_list              (EggPrintBackendCups               *print_backend);
+static void                 cups_request_execute                   (EggPrintBackendCups               *print_backend,
 								    EggCupsRequest                    *request,
 								    EggPrintCupsResponseCallbackFunc   callback,
 								    gpointer                           user_data,
@@ -121,9 +121,14 @@ static gboolean             cups_printer_mark_conflicts            (EggPrinter  
 static EggPrinterOptionSet *cups_printer_get_options               (EggPrinter                        *printer);
 static void                 cups_printer_prepare_for_print         (EggPrinter                        *printer,
 								    EggPrintSettings                  *settings);
-static GList *              cups_printer_get_paper_sizes           (EggPrinter                        *printer);
+static GList *              cups_printer_list_papers               (EggPrinter                        *printer);
 static void                 cups_printer_request_details           (EggPrinter                        *printer);
 static void                 cups_request_ppd                       (EggPrinter                        *printer);
+static void                 cups_printer_get_hard_margins          (EggPrinter                        *printer,
+								    double                            *top,
+								    double                            *bottom,
+								    double                            *left,
+								    double                            *right);
 
 
 static void
@@ -372,7 +377,8 @@ egg_print_backend_cups_iface_init (EggPrintBackendIface *iface)
   iface->printer_mark_conflicts = cups_printer_mark_conflicts;
   iface->printer_get_settings_from_options = cups_printer_get_settings_from_options;
   iface->printer_prepare_for_print = cups_printer_prepare_for_print;
-  iface->printer_get_paper_sizes = cups_printer_get_paper_sizes;
+  iface->printer_list_papers = cups_printer_list_papers;
+  iface->printer_get_hard_margins = cups_printer_get_hard_margins;
 }
 
 static void
@@ -1737,11 +1743,12 @@ cups_printer_prepare_for_print (EggPrinter *printer,
 }
 
 static GList *
-cups_printer_get_paper_sizes (EggPrinter *printer)
+cups_printer_list_papers (EggPrinter *printer)
 {
   ppd_file_t *ppd_file;
   ppd_size_t *size;
   char *display_name;
+  EggPageSetup *page_setup;
   EggPaperSize *paper_size;
   ppd_option_t *option;
   ppd_choice_t *choice;
@@ -1769,14 +1776,42 @@ cups_printer_get_paper_sizes (EggPrinter *printer)
       if (display_name == NULL)
 	display_name = g_strdup (size->name);
 
+      page_setup = egg_page_setup_new ();
       paper_size = egg_paper_size_new_from_ppd (size->name,
 						display_name,
 						size->width,
 						size->length);
+      egg_page_setup_set_paper_size (page_setup, paper_size);
+      egg_paper_size_free (paper_size);
+
+      egg_page_setup_set_top_margin (page_setup, size->length - size->top, EGG_UNIT_POINTS);
+      egg_page_setup_set_bottom_margin (page_setup, size->bottom, EGG_UNIT_POINTS);
+      egg_page_setup_set_left_margin (page_setup, size->left, EGG_UNIT_POINTS);
+      egg_page_setup_set_right_margin (page_setup, size->width - size->right, EGG_UNIT_POINTS);
+	
       g_free (display_name);
 
-      l = g_list_prepend (l, paper_size);
+      l = g_list_prepend (l, page_setup);
     }
 
   return g_list_reverse (l);;
+}
+
+static void
+cups_printer_get_hard_margins (EggPrinter *printer,
+			       double     *top,
+			       double     *bottom,
+			       double     *left,
+			       double     *right)
+{
+  ppd_file_t *ppd_file;
+
+  ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
+  if (ppd_file == NULL)
+    return;
+
+  *left = ppd_file->custom_margins[0];
+  *bottom = ppd_file->custom_margins[1];
+  *right = ppd_file->custom_margins[2];
+  *top = ppd_file->custom_margins[3];
 }

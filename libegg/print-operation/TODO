@@ -37,8 +37,8 @@ page setting dialog:
 * handle set page size not in availible list
 * sort paper lists
 * make sure we get good default for all settings
-* implement custom sizes
 * make sure we don't overwrite e.g. margins when setting initial dialog values
 * save the format-for printer
 * update format for printer when it change
 * update margins when paper size changes
+* nicer unit editor than spinbutton

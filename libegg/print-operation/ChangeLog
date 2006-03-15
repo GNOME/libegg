@@ -1,3 +1,24 @@
+2006-03-15  Alexander Larsson  <alexl@redhat.com>
+
+	* Makefile.am:
+	Hopefully solve the eggmarshal.h dependency issue
+	
+	* TODO:
+	Update
+	
+	* eggpagesetupunixdialog.c:
+	Implement custom page sizes
+	
+	* eggpapersize.c: (egg_paper_size_new_custom):
+	Set is_custom
+	
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	* eggprinter.c:
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Add get_hard_margins
+	Rename get_paper_sizes to list_papers which now returns PageSetup objs
+
 2006-03-14  Alexander Larsson  <alexl@redhat.com>
 
 	* eggpagesetupunixdialog.[ch]:

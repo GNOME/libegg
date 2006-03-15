@@ -59,7 +59,12 @@ cairo_surface_t *    _egg_printer_create_cairo_surface      (EggPrinter         
 							     gdouble              width,
 							     gdouble              height,
 							     gint                 cache_fd);
-GList  *             _egg_printer_get_paper_sizes           (EggPrinter          *printer);
+GList  *             _egg_printer_list_papers               (EggPrinter          *printer);
+void                 _egg_printer_get_hard_margins          (EggPrinter          *printer,
+							     double              *top,
+							     double              *bottom,
+							     double              *left,
+							     double              *right);
 
 G_END_DECLS
 #endif /* __EGG_PRINT_OPERATION_PRIVATE_H__ */
