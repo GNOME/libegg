@@ -106,8 +106,8 @@ static void                 egg_print_backend_cups_class_init      (EggPrintBack
 static void                 egg_print_backend_cups_iface_init      (EggPrintBackendIface              *iface);
 static void                 egg_print_backend_cups_init            (EggPrintBackendCups               *impl);
 static void                 egg_print_backend_cups_finalize        (GObject                           *object);
-static void                 cups_request_printer_list              (EggPrintBackendCups               *print_backend);
-static void                 cups_request_execute                   (EggPrintBackendCups               *print_backend,
+static GList *              cups_request_printer_list             (EggPrintBackend                    *print_backend);
+static void                 cups_request_execute                  (EggPrintBackendCups               *print_backend,
 								    EggCupsRequest                    *request,
 								    EggPrintCupsResponseCallbackFunc   callback,
 								    gpointer                           user_data,
@@ -369,6 +369,7 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
 static void
 egg_print_backend_cups_iface_init (EggPrintBackendIface *iface)
 {
+  iface->get_printer_list = cups_request_printer_list; 
   iface->find_printer = egg_print_backend_cups_find_printer;
   iface->print_stream = egg_print_backend_cups_print_stream;
   iface->printer_request_details = cups_printer_request_details;
@@ -389,7 +390,6 @@ egg_print_backend_cups_init (EggPrintBackendCups *backend_cups)
                                                  (GDestroyNotify) g_free,
                                                  (GDestroyNotify) g_object_unref);
 
-  cups_request_printer_list (backend_cups);
 }
 
 static void
@@ -729,10 +729,22 @@ cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
 }
 
 static void
-cups_request_printer_list (EggPrintBackendCups *print_backend)
+_hash_values_to_list (const gchar *key,
+                      gpointer value,
+                      GList **out_list)
+{
+  *out_list = g_list_append (*out_list, value);
+}
+
+static GList * 
+cups_request_printer_list (EggPrintBackend *print_backend)
 {
   GError *error;
   EggCupsRequest *request;
+  EggPrintBackendCups *cups_backend;
+  GList *result;
+
+  cups_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
 
   error = NULL;
 
@@ -743,12 +755,20 @@ cups_request_printer_list (EggPrintBackendCups *print_backend)
 				  NULL,
 				  NULL);
 
-  cups_request_execute (print_backend,
+  cups_request_execute (cups_backend,
                         request,
                         (EggPrintCupsResponseCallbackFunc) cups_request_printer_list_cb,
 		        request,
 		        NULL,
                         &error);
+
+  result = NULL;
+  if (cups_backend->printers != NULL)
+    g_hash_table_foreach (cups_backend->printers,
+                          (GHFunc) _hash_values_to_list,
+                          &result);
+ 
+  return result;
 }
 
 typedef struct {

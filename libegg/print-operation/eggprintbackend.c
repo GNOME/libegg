@@ -69,8 +69,9 @@ static GSList *loaded_backends;
 static gboolean
 egg_print_backend_module_load (GTypeModule *module)
 {
-  EggPrintBackendModule *pb_module = EGG_PRINT_BACKEND_MODULE (module);
-  
+  EggPrintBackendModule *pb_module = EGG_PRINT_BACKEND_MODULE (module); 
+  gpointer initp, exitp, createp;
+ 
   pb_module->library = g_module_open (pb_module->path, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL);
   if (!pb_module->library)
     {
@@ -80,18 +81,22 @@ egg_print_backend_module_load (GTypeModule *module)
   
   /* extract symbols from the lib */
   if (!g_module_symbol (pb_module->library, "pb_module_init",
-			(gpointer *)&pb_module->init) ||
+			&initp) ||
       !g_module_symbol (pb_module->library, "pb_module_exit", 
-			(gpointer *)&pb_module->exit) ||
+			&exitp) ||
       !g_module_symbol (pb_module->library, "pb_module_create", 
-			(gpointer *)&pb_module->create))
+			&createp))
     {
       g_warning (g_module_error());
       g_module_close (pb_module->library);
       
       return FALSE;
     }
-	    
+
+  pb_module->init = initp;
+  pb_module->exit = exitp;
+  pb_module->create = createp;
+
   /* call the filesystems's init function to let it */
   /* setup anything it needs to set up. */
   pb_module->init (module);
@@ -171,7 +176,7 @@ module_build_la_path (const gchar *directory,
   if (strncmp (module_name, "lib", 3) == 0)
     filename = (gchar *)module_name;
   else
-    filename =  g_strconcat ("lib", module_name, ".la", NULL);
+    filename =  g_strconcat ("libeggprintbackend", module_name, ".la", NULL);
 
   if (directory && *directory)
     result = g_build_filename (directory, filename, NULL);
@@ -194,7 +199,7 @@ _egg_print_find_module (const gchar *name,
 
   result = NULL;
 
-  path = g_strdup_printf ("modules/%s/", type); 
+  path = g_strdup_printf ("modules/%s/%s", type, name); 
 
   result = module_build_la_path (path, name);
 
@@ -225,7 +230,7 @@ _egg_print_backend_create (const char *backend_name)
   if (g_module_supported ())
     {
       /* TODO: make this _gtk_find_module from gtkmodules when we move to gtk */
-      module_path = _egg_print_find_module (backend_name, "printbackends/cups");
+      module_path = _egg_print_find_module (backend_name, "printbackends");
 
       if (module_path)
 	{
@@ -259,7 +264,12 @@ egg_print_backend_load_modules ()
   /* TODO: don't hardcode modules. 
      Figure out how to specify which modules to load */
 
-  backend = _egg_print_backend_create ("eggprintbackendcups");
+  backend = _egg_print_backend_create ("pdf");
+
+  if (backend)
+    result = g_list_append (result, backend);
+
+  backend = _egg_print_backend_create ("cups");
   
   if (backend)
     result = g_list_append (result, backend);
@@ -327,6 +337,15 @@ egg_print_backend_base_init (gpointer g_class)
 
       initialized = TRUE;
     }
+}
+
+GList *
+egg_print_backend_get_printer_list (EggPrintBackend *print_backend)
+{
+  g_return_val_if_fail (EGG_IS_PRINT_BACKEND (print_backend), NULL);
+
+  return EGG_PRINT_BACKEND_GET_IFACE (print_backend)->get_printer_list (print_backend);
+
 }
 
 EggPrinter *

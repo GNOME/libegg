@@ -1,1 +1,1 @@
-SUBDIRS=cups
+SUBDIRS=cups pdf

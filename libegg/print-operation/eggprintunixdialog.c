@@ -402,11 +402,13 @@ _printer_status_cb (EggPrintBackend *backend,
 {
 }
 
-
 static void
 _printer_list_initialize (EggPrintUnixDialog *impl,
                           EggPrintBackend *print_backend)
 {
+  GList *list;
+  GList *node;
+
   /* TODO: allow for multiple backends */
   g_return_if_fail (print_backend != NULL);
 
@@ -425,6 +427,16 @@ _printer_list_initialize (EggPrintUnixDialog *impl,
 		    (GCallback) _printer_status_cb, 
 		    impl);
 
+  list = egg_print_backend_get_printer_list (print_backend);
+
+  node = list;
+  while (node != NULL)
+    {
+      _printer_added_cb (print_backend, node->data, impl);
+      node = node->next;
+    }
+
+  g_list_free (list);
 }
 
 static void
