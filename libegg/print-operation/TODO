@@ -16,6 +16,8 @@ Cups/Unix:
 * Figure out the details in handling page size, orientation and margins
 * General UI review and polish
 * fix UI padding according to HIG
+* Hide tabs if there is no printers (none selected)
+* Make print button insensitive if no printer selected
 
 Win32:
 * Use threads for the dialog, to allow repaints of other windows while they are up
