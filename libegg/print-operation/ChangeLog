@@ -1,5 +1,11 @@
 2006-03-15  Alexander Larsson  <alexl@redhat.com>
 
+	* eggpagesetupunixdialog.c:
+	Save custom sizes on custom size dialog close
+	Disable widgets initially if no custom pages
+
+2006-03-15  Alexander Larsson  <alexl@redhat.com>
+
 	* Makefile.am:
 	Hopefully solve the eggmarshal.h dependency issue
 	

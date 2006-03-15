@@ -1792,10 +1792,10 @@ run_custom_paper_dialog (EggPageSetupUnixDialog *dialog)
   gtk_box_pack_start (GTK_BOX (vbox), frame, FALSE, FALSE, 0);
   gtk_widget_show (frame);
 
+  update_custom_widgets_from_list (data);
+  
   gtk_dialog_run (GTK_DIALOG (custom_dialog));
   gtk_widget_destroy (custom_dialog);
 
-  
-  if (0)
-    save_custom_papers (dialog->priv->custom_paper_list);
+  save_custom_papers (dialog->priv->custom_paper_list);
 }
