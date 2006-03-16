@@ -1,5 +1,10 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
+	* README:
+	Add some initial docs, including a source tree walkthrough
+
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
 	* TODO:
 	Updated
 	

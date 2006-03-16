@@ -1,0 +1,139 @@
+This is the printing code that we'd like to get into Gtk+ 2.10.
+
+The code consists of several parts. First we have the highlevel
+portable print API that most apps are supposed to use, plus
+implementations for win32 and unix. Then we have the code for the Unix
+print dialog which is used for the unix implementation of the
+highlevel code, but is also availible on unix only for apps like OOo
+and Firefox to use as a "native" print dialog. The dialog is split
+into common code and code implementing cups support. The cups support
+is in a module behind a generic backend interface, so other implementations
+are possible.
+
+Here is a highlevel walktrough of the sources:
+
+Highlevel API
+=============
+* eggprint.h
+
+General include file which is meant to pull in all interesting headers
+for printing.
+
+* eggprintoperation.[ch]
+* eggprintoperation-private.h
+
+This defines the main object you interact with when printing. When the
+user selects print you allocate an EggPrintOperation, set some data
+like page size, old print settings, nr of pages, current page, etc and
+kick it off. It will then show a dialog, let the user select a printer
+and options. When the user finished the dialog various signals will be
+emited on the EggPrintOperation, the main one being draw_page() which
+you are supposed to catch and render the page using cairo.
+
+* eggprintcontext.[ch]
+* eggprintcontext-private.h
+
+This is an object that gets passed to the begin_print,
+request_page_setup, draw_page and end_print signals on the print
+operation. It lets you get the cairo context and important rendering
+information like page size and resolution. It also lets you easily
+create pango layoungs/contexts that match the font metrics of the
+cairo surface.
+
+* eggprintsettings.[ch]
+
+This object represents the settings of a print dialog in a
+system-independent way. Its basically a key-string = value-string
+hashtable with some predefined keys that you can use for convenience
+(although an implementation can use more keys than the predefined
+ones). The main use for this object is that once you've printed you
+can get a settings object that represents the settings the user chose,
+and the next time you print you can pass that in so that the user
+doesn't have to re-set all his settings. Its also possible to
+enumerate the settings so that you can easily save the settings for
+the next time your app runs, or even in a document. The predefined
+keys try to use shared values as much as possible so that moving such
+a document between systems still works.
+
+* eggpapersize.[ch]
+* paper_names.c
+
+Object that handles paper sizes. We use a standard called "PWG
+5101.1-2002 PWG: Standard for Media Standardized Names" to name the
+page sizes (and to get the data for the page sizes).
+
+* eggpagesetup.[ch]
+This object stored the page size, orientation and margins. The idea is
+that you can pass/get one of these from the page setup dialog and then
+send it to the print object when printing. The margins specified in this
+object is the "print margins", i.e. the parts of the page that the
+printer cannot print on. The idea of splitting this out of the print
+settins is that these affect the actual layout of the page, and thus
+needs to be set long before user prints. So, we have a page setup
+dialog and a page setup object that it returns.
+
+* eggprintenums.h
+Various enums needed for printing
+
+* eggprintoperation-win32.c
+* eggprint-win32.[ch]
+Win32 implementation of the highlevel API
+
+* eggprintoperation-unix.c
+Unix implementation of the highlevel API
+
+Unix Print Dialog
+=================
+* eggprintunixdialog.[ch]
+The print dialog code. The header is availible only on unix systems. I
+think it will be put in a separate include directory and have its own
+pkg-config module that you can use to get the headers.
+
+* eggpagesetupunixdialog.[ch]:
+The page setup dialog. Similarly to EggPrintUnixDialog this will not
+be availible on all platforms. For a platform independent version of
+this use egg_print_run_page_setup_dialog() from eggprintoperation.h.
+
+* eggprintbackend.[ch]
+* eggprinter.[ch]
+* eggprinter-private.h
+A printer backend implements the EggPrintBackend interface, which
+hands out EggPrinter objects to the dialog.
+
+* eggprinteroption.[ch]
+* eggprinteroptionset.[ch]
+The backend hands the dialog code a set of EggPrinterOption objects
+that describe the possible settings that a printer has. For instance,
+the cups implementation generates these from the ppd file for the
+printer. 
+
+* eggprinteroptionwidget.[ch]
+Widget that can display an EggPrinterOption
+
+*eggprintjob.[ch]
+*eggprintjob-private.h
+Code to handle sending a print job to the printer
+
+* modules/printbackends/cups/*.[ch]
+Cups implementation of EggPrintBackend
+
+* modules/printbackends/pdf/*.[ch]
+Print-to-file implementation of EggPrintBackend, prints to a pdf
+
+Test Code
+=========
+
+* printedit.c
+A simple editor that lets you print
+
+* testprintfileoperation.[ch]
+And example of how you can derive from EggPrintOperation to implement
+printing.
+
+* testprint.c
+A small test app that shows how you print using the high level api,
+using both g_signal_connect and using TestPrintFileOperation.
+
+* testshowdialog.c
+Just shows a print dialog
+
