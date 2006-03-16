@@ -19,6 +19,10 @@ Cups/Unix:
 * Hide tabs if there is no printers (none selected)
 * Make print button insensitive if no printer selected
 
+PDF backend:
+* Change to using a GtkFileChooserEntry to get file names when we move to 
+  GTK.  It is a private object in GTK right now.
+
 Win32:
 * Use threads for the dialog, to allow repaints of other windows while they are up
 

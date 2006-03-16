@@ -42,8 +42,8 @@ struct _EggPrinterPdf
 {
   EggPrinter parent_instance;
 
-  gchar *filename;
-
+  GtkWidget *fileentry;
+  GtkWidget *filebutton;
   GtkWidget *filechooser;
 };
 

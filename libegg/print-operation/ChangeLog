@@ -1,3 +1,52 @@
+2006-03-15  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprinter.c:
+	(_egg_printer_get_custom_widgets): New interface for getting
+	a hash of custom widgets from the backend
+
+	* eggprintunixdialog.c:
+	(egg_print_unix_dialog_destroy):
+	Make sure we clear widgets before we destroy so that custome widgets
+	wich are owned by the backend printers, are not destroyed with the 
+	dialog.
+	(clear_per_printer_ui):
+	Remove custom widgets from the container
+	(add_custom_ui):
+	Match up extention points with widgets in a hash table
+	(create_main_page):
+	Add the main-page-custom-input extention point
+	
+	* modules/printbackends/pdf/eggprintbackendpdf.c:
+	(egg_print_backend_pdf_print_stream):
+	Get the filename and directory from the custom widgets
+	(pdf_printer_get_custom_widgets):
+	Put the file chooser widgets into a hash with the key
+	"main-page-custom-input"
+
+	* modules/printbackends/pdf/eggprinterpdf.c:
+	(egg_printer_pdf_init):
+	Create the UI elements for choosing a file to print to
+	
+	* TODO:
+	updated
+
+2006-03-15  John (J5) Palmieri  <johnp@redhat.com>
+
+	* modules/printbackends/pdf/*:
+	New print to PDF module
+
+	* eggprintbackend.c:
+	(egg_print_backend_module_load):
+	Fix strict aliasing rules warning
+	(egg_print_backend_load_modules):
+	Load print to PDF module
+	(egg_print_backend_get_printer_list):
+	Make it part of the interface
+	
+	* eggprintunixdialog.c:
+	(_printer_list_initialize):
+	Explicitly call get_printer_list
+
 2006-03-15  Alexander Larsson  <alexl@redhat.com>
 
 	* eggpagesetupunixdialog.c:

@@ -65,6 +65,7 @@ void                 _egg_printer_get_hard_margins          (EggPrinter         
 							     double              *bottom,
 							     double              *left,
 							     double              *right);
+GHashTable *         _egg_printer_get_custom_widgets        (EggPrinter          *printer);
 
 G_END_DECLS
 #endif /* __EGG_PRINT_OPERATION_PRIVATE_H__ */

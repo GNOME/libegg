@@ -37,6 +37,7 @@
 #define EGG_PRINT_UNIX_DIALOG_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PRINT_UNIX_DIALOG, EggPrintUnixDialogPrivate))
 
+static void egg_print_unix_dialog_destroy      (EggPrintUnixDialog *dialog);
 static void egg_print_unix_dialog_finalize     (GObject            *object);
 static void egg_print_unix_dialog_set_property (GObject            *object,
 						guint               prop_id,
@@ -50,6 +51,7 @@ static void populate_dialog                    (EggPrintUnixDialog *dialog);
 static void unschedule_idle_mark_conflicts     (EggPrintUnixDialog *dialog);
 static void selected_printer_changed           (GtkTreeSelection   *selection,
 						EggPrintUnixDialog *dialog);
+static void clear_per_printer_ui               (EggPrintUnixDialog *dialog);
 
 enum {
   PROP_0,
@@ -64,6 +66,8 @@ enum {
   PRINTER_LIST_COL_PRINTER_OBJ,
   PRINTER_LIST_N_COLS
 };
+
+#define _EXTENTION_POINT_MAIN_PAGE_CUSTOM_INPUT "main-page-custom-input"
 
 struct EggPrintUnixDialogPrivate
 {
@@ -104,7 +108,9 @@ struct EggPrintUnixDialogPrivate
 
   GtkWidget *advanced_vbox;
   GtkWidget *advanced_page;
-  
+
+  GHashTable *extention_points;  
+
   GList *print_backends;
   
   EggPrinter *current_printer;
@@ -322,7 +328,23 @@ egg_print_unix_dialog_init (EggPrintUnixDialog *dialog)
   dialog->priv->print_backends = NULL;
   dialog->priv->current_page = -1;
 
+  dialog->priv->extention_points = g_hash_table_new (g_str_hash,
+                                                     g_str_equal);
+
   populate_dialog (dialog);
+
+  g_signal_connect (dialog, 
+                    "destroy", 
+		    (GCallback) egg_print_unix_dialog_destroy, 
+		    NULL);
+
+}
+
+static void
+egg_print_unix_dialog_destroy (EggPrintUnixDialog *dialog)
+{
+  /* Make sure we don't destroy custom widgets owned by the backends */
+  clear_per_printer_ui (dialog);  
 }
 
 static void
@@ -357,7 +379,13 @@ egg_print_unix_dialog_finalize (GObject *object)
       g_object_unref (dialog->priv->options);
       dialog->priv->options = NULL;
     }
-  
+ 
+  if (dialog->priv->extention_points)
+    {
+      g_hash_table_unref (dialog->priv->extention_points);
+      dialog->priv->extention_points = NULL;
+    }
+ 
   if (G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize)
     G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize (object);
 }
@@ -726,6 +754,23 @@ schedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
 }
 
 static void
+remove_custom_widget (GtkWidget *widget,
+                      GtkContainer *container)
+{
+  gtk_container_remove (container, widget);
+}
+
+static void
+extention_point_clear_children (const gchar *key,
+                                GtkContainer *container,
+                                gpointer data)
+{
+  gtk_container_foreach (container,
+                         (GtkCallback)remove_custom_widget,
+                         container);
+}
+
+static void
 clear_per_printer_ui (EggPrintUnixDialog *dialog)
 {
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->finishing_table),
@@ -743,6 +788,9 @@ clear_per_printer_ui (EggPrintUnixDialog *dialog)
   gtk_container_foreach (GTK_CONTAINER (dialog->priv->advanced_vbox),
 			 (GtkCallback)gtk_widget_destroy,
 			 NULL);
+  g_hash_table_foreach (dialog->priv->extention_points, 
+                        (GHFunc) extention_point_clear_children, 
+                        NULL);
 }
 
 static void
@@ -759,6 +807,45 @@ printer_details_acquired (EggPrinter *printer,
       
       selected_printer_changed (selection, dialog);
     }
+}
+
+
+static void
+extention_point_add_from_hash (const gchar *key,
+                               GtkContainer *container,
+                               GHashTable *widget_table)
+{
+   GtkWidget *custom_widget;
+
+   custom_widget = g_hash_table_lookup (widget_table,
+                                        key);
+
+   if (custom_widget != NULL)
+     {
+       gtk_container_add (container, custom_widget);
+       gtk_widget_show_all (GTK_WIDGET (container));
+     }
+}
+
+static void
+add_custom_ui (EggPrintUnixDialog *dialog, 
+               EggPrinter *printer)
+{
+  GHashTable *widget_table;
+
+  widget_table = _egg_printer_get_custom_widgets (printer);
+
+  if (widget_table == NULL)
+    return;
+
+  /* TODO: define more extention points */
+  
+  /* Go through a list of known extention points */
+  g_hash_table_foreach (dialog->priv->extention_points,
+                        (GHFunc) extention_point_add_from_hash,
+                        widget_table);
+
+  g_hash_table_unref (widget_table);
 }
 
 static void
@@ -817,6 +904,7 @@ selected_printer_changed (GtkTreeSelection *selection,
     g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
   
   update_dialog_from_settings (dialog);
+  add_custom_ui (dialog, printer);
 }
 
 static void
@@ -861,6 +949,7 @@ create_main_page (EggPrintUnixDialog *dialog)
   GtkCellRenderer *renderer;
   GtkTreeViewColumn *column;
   GtkTreeSelection *selection;
+  GtkWidget *custom_input;
   
   priv = dialog->priv;
 
@@ -918,6 +1007,13 @@ create_main_page (EggPrintUnixDialog *dialog)
 
   gtk_widget_show (treeview);
   gtk_container_add (GTK_CONTAINER (scrolled), treeview);
+
+  custom_input = gtk_hbox_new (FALSE, 8);
+  gtk_widget_show (custom_input);
+  gtk_box_pack_start (GTK_BOX (main_vbox), custom_input, FALSE, FALSE, 6);
+  g_hash_table_insert (dialog->priv->extention_points, 
+                       _EXTENTION_POINT_MAIN_PAGE_CUSTOM_INPUT,
+                       custom_input);
 
   hbox = gtk_hbox_new (FALSE, 8);
   gtk_widget_show (hbox);
