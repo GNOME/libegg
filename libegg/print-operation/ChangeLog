@@ -1,5 +1,10 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
+	* Makefile.am (INCLUDES): 
+	Remove -Werror
+	
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
 	* eggpapersize.[ch]:
 	Add getters for "default" printer margins for different paper sizes.
 	
