@@ -425,6 +425,9 @@ _printer_added_cb (EggPrintBackend *backend,
   GtkTreeIter iter;
   char *str;
 
+  if (egg_printer_is_virtual (printer))
+    return;
+  
   str = g_strdup_printf ("<b>%s</b>\n%s",
 			 egg_printer_get_name (printer),
 			 egg_printer_get_location (printer));

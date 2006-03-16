@@ -79,10 +79,11 @@ egg_printer_pdf_init (EggPrinterPdf *printer)
 
   
   /* this is part of our custom widget API so keep a ref around
-     so we don't get destroied by the dialog */
+     so we don't get destroyed by the dialog */
   gtk_widget_ref (printer->filechooser);
 
   parent->priv->has_details = TRUE;
+  parent->priv->is_virtual = TRUE;
   
 }
 

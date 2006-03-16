@@ -289,6 +289,14 @@ _egg_printer_has_details (EggPrinter *printer)
   return printer->priv->has_details;
 }
 
+gboolean
+egg_printer_is_virtual (EggPrinter *printer)
+{
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), TRUE);
+  
+  return printer->priv->is_virtual;
+}
+
 EggPrintJob *
 egg_printer_prep_job (EggPrinter *printer,
 		      EggPrintSettings *settings,

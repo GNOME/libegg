@@ -1,5 +1,17 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprinter.[ch]:
+	* eggprinter-private.h:
+	Add egg_printer_is_virtual
+	
+	* eggpagesetupunixdialog.c:
+	Only show non-virtual printers in page setup dialog.
+	
+	* modules/printbackends/pdf/eggprinterpdf.c:
+	Mark printer virtual.
+
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
 	* TODO:
 	Some updates
 	
