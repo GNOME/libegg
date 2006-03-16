@@ -17,6 +17,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <config.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -24,7 +25,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "config.h"
+#include "eggintl.h"
 #include <gtk/gtk.h>
 #include <gtk/gtkprivate.h>
 
@@ -59,10 +60,13 @@ struct _EggPrintJobPrivate
 
 static void egg_print_job_finalize     (GObject      *object);
 static void egg_print_job_set_property (GObject      *object,
-	                                guint         prop_id,
-	                                const GValue *value,
-                                        GParamSpec   *pspec);
-
+					guint         prop_id,
+					const GValue *value,
+					GParamSpec   *pspec);
+static void egg_print_job_get_property (GObject      *object,
+					guint         prop_id,
+					GValue       *value,
+					GParamSpec   *pspec);
 
 enum {
   PROP_0,
@@ -83,57 +87,58 @@ egg_print_job_class_init (EggPrintJobClass *class)
 
   object_class->finalize = egg_print_job_finalize;
   object_class->set_property = egg_print_job_set_property;
+  object_class->get_property = egg_print_job_get_property;
 
   g_type_class_add_private (class, sizeof (EggPrintJobPrivate));
 
   g_object_class_install_property (G_OBJECT_CLASS (class),
                                    EGG_PRINT_JOB_PROP_TITLE,
                                    g_param_spec_string ("title",
-						        "Title",
-						        "Title of the print job",
+						        P_("Title"),
+						        P_("Title of the print job"),
 						        NULL,
-							G_PARAM_WRITABLE |
+							GTK_PARAM_WRITABLE |
 						        G_PARAM_CONSTRUCT_ONLY));
 
   g_object_class_install_property (G_OBJECT_CLASS (class),
                                    EGG_PRINT_JOB_PROP_PRINTER,
                                    g_param_spec_object ("printer",
-						        "Printer",
-						        "Printer to print the job to",
+						        P_("Printer"),
+						        P_("Printer to print the job to"),
 						        EGG_TYPE_PRINTER,
-							G_PARAM_WRITABLE |
+							GTK_PARAM_READWRITE |
 						        G_PARAM_CONSTRUCT_ONLY));
 
   g_object_class_install_property (G_OBJECT_CLASS (class),
                                    EGG_PRINT_JOB_PROP_SETTINGS,
                                    g_param_spec_object ("settings",
-						        "Settings",
-						        "Printer settings",
+						        P_("Settings"),
+						        P_("Printer settings"),
 						        EGG_TYPE_PRINT_SETTINGS,
-							G_PARAM_WRITABLE |
+							GTK_PARAM_READWRITE |
 						        G_PARAM_CONSTRUCT_ONLY));
 
   g_object_class_install_property (G_OBJECT_CLASS (class),
                                    EGG_PRINT_JOB_PROP_WIDTH,
                                    g_param_spec_double ("width",
-						        "Width",
-						        "Width of job in points",
+						        P_("Width"),
+						        P_("Width of job in points"),
 						        0.0,
 							99999999.0,
 							612.0,
-							G_PARAM_WRITABLE |
+							GTK_PARAM_WRITABLE |
 						        G_PARAM_CONSTRUCT_ONLY));
 
 
   g_object_class_install_property (G_OBJECT_CLASS (class),
                                    EGG_PRINT_JOB_PROP_HEIGHT,
                                    g_param_spec_double ("height",
-						        "Height",
-						        "Height of job in points",
+						        P_("Height"),
+						        P_("Height of job in points"),
 							0.0,
 							99999999.0,
 						        792.0,
-							G_PARAM_WRITABLE |
+							GTK_PARAM_WRITABLE |
 						        G_PARAM_CONSTRUCT_ONLY));
 
 }
@@ -311,6 +316,27 @@ egg_print_job_set_property (GObject      *object,
     }
 }
 
+static void
+egg_print_job_get_property (GObject    *object,
+			    guint       prop_id,
+			    GValue     *value,
+			    GParamSpec *pspec)
+{
+  EggPrintJob *impl = EGG_PRINT_JOB (object);
+
+  switch (prop_id)
+    {
+    case EGG_PRINT_JOB_PROP_PRINTER:
+      g_value_set_object (value, impl->priv->printer);
+      break;
+    case EGG_PRINT_JOB_PROP_SETTINGS:
+      g_value_set_object (value, impl->priv->settings);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+    }
+}
 
 gboolean
 egg_print_job_send (EggPrintJob *print_job,

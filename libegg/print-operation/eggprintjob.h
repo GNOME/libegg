@@ -22,6 +22,7 @@
 #include <glib-object.h>
 #include <cairo.h>
 
+#include "eggprinter.h"
 #include "eggprintsettings.h"
 
 G_BEGIN_DECLS
@@ -72,8 +73,8 @@ EggPrintJob             *egg_print_job_new          (const gchar              *t
 						     struct _EggPrinter       *printer,
 						     gdouble                   width,
 						     gdouble                   height);
-EggPrintSettings      *  egg_print_job_get_settings (EggPrintJob              *print_job);
-struct _EggPrinter      *egg_print_job_get_printer  (EggPrintJob              *print_job);
+EggPrintSettings        *egg_print_job_get_settings (EggPrintJob              *print_job);
+EggPrinter              *egg_print_job_get_printer  (EggPrintJob              *print_job);
 cairo_surface_t         *egg_print_job_get_surface  (EggPrintJob              *print_job);
 gboolean                 egg_print_job_send         (EggPrintJob              *print_job,
 						     EggPrintJobCompleteFunc   callback,
@@ -81,6 +82,7 @@ gboolean                 egg_print_job_send         (EggPrintJob              *p
 						     GError                  **error);
 gboolean                 egg_print_job_prep         (EggPrintJob              *job,
 						     GError                  **error);
+
 
 
 G_END_DECLS

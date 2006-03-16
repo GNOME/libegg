@@ -31,7 +31,6 @@ emited on the EggPrintOperation, the main one being draw_page() which
 you are supposed to catch and render the page using cairo.
 
 * eggprintcontext.[ch]
-* eggprintcontext-private.h
 
 This is an object that gets passed to the begin_print,
 request_page_setup, draw_page and end_print signals on the print

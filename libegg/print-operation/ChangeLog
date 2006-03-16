@@ -1,6 +1,14 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
 	* README:
+	Remove old file reference
+	
+	* eggprintjob.[ch]:
+	Fix up property details, add get_properties.
+
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
+	* README:
 	Add some initial docs, including a source tree walkthrough
 
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
