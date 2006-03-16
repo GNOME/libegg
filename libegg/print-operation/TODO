@@ -48,3 +48,4 @@ page setting dialog:
 * update format for printer when it change
 * update margins when paper size changes
 * nicer unit editor than spinbutton
+* Good page size selected after having run custom page size manager

@@ -424,7 +424,7 @@ _printer_added_cb (EggPrintBackend *backend,
 {
   GtkTreeIter iter;
   char *str;
-  
+
   str = g_strdup_printf ("<b>%s</b>\n%s",
 			 egg_printer_get_name (printer),
 			 egg_printer_get_location (printer));
@@ -456,6 +456,8 @@ static void
 _printer_list_initialize (EggPageSetupUnixDialog *impl,
                           EggPrintBackend *print_backend)
 {
+  GList *list, *node;
+  
   g_return_if_fail (print_backend != NULL);
 
   g_signal_connect (print_backend, 
@@ -472,6 +474,18 @@ _printer_list_initialize (EggPageSetupUnixDialog *impl,
                     "printer-status-changed", 
 		    (GCallback) _printer_status_cb, 
 		    impl);
+
+  list = egg_print_backend_get_printer_list (print_backend);
+
+  node = list;
+  while (node != NULL)
+    {
+      _printer_added_cb (print_backend, node->data, impl);
+      node = node->next;
+    }
+
+  g_list_free (list);
+  
 }
 
 static void

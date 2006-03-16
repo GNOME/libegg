@@ -1,3 +1,18 @@
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
+	* TODO:
+	Some updates
+	
+	* eggpagesetupunixdialog.c:
+	Call egg_print_backend_get_printer_list
+	
+	* eggprintbackend.h:
+	Spelling fix
+	
+	* modules/printbackends/pdf/eggprintbackendpdf.c:
+	Add pdf_printer_list_papers implementation.
+	Fix warning.
+
 2006-03-15  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggprinter.c:

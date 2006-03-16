@@ -89,6 +89,7 @@ static void                 pdf_printer_get_hard_margins          (EggPrinter   
                                                                    double                            *right);
 static void                 pdf_printer_request_details           (EggPrinter                        *printer);
 static GHashTable *         pdf_printer_get_custom_widgets        (EggPrinter                        *printer);
+static GList *              pdf_printer_list_papers               (EggPrinter                        *printer);
 
 static void
 egg_print_backend_register_type (GTypeModule *module)
@@ -334,7 +335,7 @@ egg_print_backend_pdf_print_stream (EggPrintBackend *print_backend,
   
   filename = g_strdup_printf ("%s/%s", 
                               directory,
-                              gtk_entry_get_text (pdf_printer->fileentry)) ;
+                              gtk_entry_get_text (GTK_ENTRY (pdf_printer->fileentry))) ;
   
   ps->target_fd = creat (filename, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
   g_free (directory);  
@@ -379,6 +380,7 @@ egg_print_backend_pdf_iface_init (EggPrintBackendIface *iface)
   iface->printer_mark_conflicts = pdf_printer_mark_conflicts;
   iface->printer_get_settings_from_options = pdf_printer_get_settings_from_options;
   iface->printer_prepare_for_print = pdf_printer_prepare_for_print;
+  iface->printer_list_papers = pdf_printer_list_papers;
   iface->printer_get_hard_margins = pdf_printer_get_hard_margins;
   iface->printer_get_custom_widgets = pdf_printer_get_custom_widgets;
 }
@@ -522,4 +524,10 @@ pdf_printer_get_custom_widgets (EggPrinter *printer)
   g_hash_table_insert (widget_table, "main-page-custom-input", pdf_printer->filechooser); 
 
   return widget_table;
+}
+
+static GList *
+pdf_printer_list_papers (EggPrinter *printer)
+{
+  return NULL;
 }

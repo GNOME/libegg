@@ -62,7 +62,7 @@ struct _EggPrintBackendIface
   GTypeInterface base_iface;
 
   /* Global backend methods: */
-  GList      * (*get_printer_list) (EggPrintBackend *printe_backend);
+  GList      * (*get_printer_list) (EggPrintBackend *printer_backend);
 
   EggPrinter * (*find_printer) (EggPrintBackend *print_backend,
                                 const gchar *printer_name);
