@@ -49,39 +49,41 @@ G_DEFINE_TYPE (EggPageSetup, egg_page_setup, G_TYPE_OBJECT)
 static double
 to_mm (double len, EggUnit unit)
 {
-  switch (unit) {
-  case EGG_UNIT_MM:
-    return len;
-  case EGG_UNIT_INCH:
-    return len * MM_PER_INCH;
-  default:
-  case EGG_UNIT_PIXEL:
-    g_warning ("Unsupported unit");
-    /* Fall through */
-  case EGG_UNIT_POINTS:
-    return len * (MM_PER_INCH / POINTS_PER_INCH);
-    break;
-  }
+  switch (unit)
+    {
+    case EGG_UNIT_MM:
+      return len;
+    case EGG_UNIT_INCH:
+      return len * MM_PER_INCH;
+    default:
+    case EGG_UNIT_PIXEL:
+      g_warning ("Unsupported unit");
+      /* Fall through */
+    case EGG_UNIT_POINTS:
+      return len * (MM_PER_INCH / POINTS_PER_INCH);
+      break;
+    }
 }
 
 static double
 from_mm (double len, EggUnit unit)
 {
-  switch (unit) {
-  case EGG_UNIT_MM:
-    return len;
-  case EGG_UNIT_INCH:
-    return len / MM_PER_INCH;
-  default:
-  case EGG_UNIT_PIXEL:
-    g_warning ("Unsupported unit");
-    /* Fall through */
-  case EGG_UNIT_POINTS:
-    return len / (MM_PER_INCH / POINTS_PER_INCH);
-    break;
-  }
+  switch (unit)
+    {
+    case EGG_UNIT_MM:
+      return len;
+    case EGG_UNIT_INCH:
+      return len / MM_PER_INCH;
+    default:
+    case EGG_UNIT_PIXEL:
+      g_warning ("Unsupported unit");
+      /* Fall through */
+    case EGG_UNIT_POINTS:
+      return len / (MM_PER_INCH / POINTS_PER_INCH);
+      break;
+    }
 }
-  
+
 static void
 egg_page_setup_finalize (GObject *object)
 {
@@ -235,22 +237,20 @@ double
 egg_page_setup_get_paper_width (EggPageSetup *setup,
 				EggUnit       unit)
 {
-  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT) {
+  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT)
     return egg_paper_size_get_width (setup->paper_size, unit);
-  } else {
+  else
     return egg_paper_size_get_height (setup->paper_size, unit);
-  }
 }
 
 double
 egg_page_setup_get_paper_height (EggPageSetup  *setup,
 				 EggUnit        unit)
 {
-  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT) {
+  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT)
     return egg_paper_size_get_height (setup->paper_size, unit);
-  } else {
+  else
     return egg_paper_size_get_width (setup->paper_size, unit);
-  }
 }
 
 /* These take orientation, and margins into consideration */

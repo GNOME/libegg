@@ -47,7 +47,7 @@ enum {
   PROP_STATE_MESSAGE,
   PROP_LOCATION,
   PROP_ICON_NAME,
-  PROP_JOB_COUNT,
+  PROP_JOB_COUNT
 };
 
 static guint signals[LAST_SIGNAL] = { 0 };
@@ -85,7 +85,7 @@ egg_printer_class_init (EggPrinterClass *class)
 							GTK_PARAM_READABLE));
   g_object_class_install_property (G_OBJECT_CLASS (class),
                                    PROP_STATE_MESSAGE,
-                                   g_param_spec_string ("state-messate",
+                                   g_param_spec_string ("state-message",
 						        P_("State Message"),
 						        P_("String giving the current state of the printer"),
 						        NULL,
@@ -211,7 +211,6 @@ egg_printer_get_property (GObject    *object,
       break;
     }
 }
-
 
 /**
  * egg_printer_new:

@@ -66,7 +66,7 @@ struct EggPageSetupUnixDialogPrivate
 };
 
 enum {
-  PROP_0,
+  PROP_0
 };
 
 enum {
@@ -174,11 +174,10 @@ get_default_user_units (void)
     return EGG_UNIT_MM;  /* metric */
 #endif
   
-  if (strcmp (e, "default:inch")==0) {
+  if (strcmp (e, "default:inch")==0)
     return EGG_UNIT_INCH;
-  } else if (strcmp (e, "default:mm")) {
+  else if (strcmp (e, "default:mm"))
     g_warning ("Whoever translated default:mm did so wrongly.\n");
-  }
   return EGG_UNIT_MM;
 }
 
@@ -937,7 +936,7 @@ page_name_func (GtkCellLayout   *cell_layout,
       g_object_unref (page_setup);
     }
   else
-      g_object_set (cell, "text",  _("Manage Custom Size..."), NULL);
+    g_object_set (cell, "text",  _("Manage Custom Size..."), NULL);
       
 }
 
@@ -1310,28 +1309,28 @@ update_custom_widgets_from_list (CustomPaperDialog *data)
   data->non_user_change = TRUE;
   if (gtk_tree_selection_get_selected (selection, NULL, &iter))
     {
-	  gtk_tree_model_get (model, &iter, 0, &page_setup, -1);
-
-	  unit_widget_set (data->width_widget,
-			   egg_page_setup_get_paper_width (page_setup, EGG_UNIT_MM));
-	  unit_widget_set (data->height_widget, 
-			   egg_page_setup_get_paper_height (page_setup, EGG_UNIT_MM));
-	  unit_widget_set (data->top_widget,
-			   egg_page_setup_get_top_margin (page_setup, EGG_UNIT_MM));
-	  unit_widget_set (data->bottom_widget, 
-			   egg_page_setup_get_bottom_margin (page_setup, EGG_UNIT_MM));
-	  unit_widget_set (data->left_widget,
-			   egg_page_setup_get_left_margin (page_setup, EGG_UNIT_MM));
-	  unit_widget_set (data->right_widget,
-			   egg_page_setup_get_right_margin (page_setup, EGG_UNIT_MM));
-
-	  unit_widget_set_sensitive (data->width_widget, TRUE);
-	  unit_widget_set_sensitive (data->height_widget, TRUE);
-	  unit_widget_set_sensitive (data->top_widget, TRUE);
-	  unit_widget_set_sensitive (data->bottom_widget, TRUE);
-	  unit_widget_set_sensitive (data->left_widget, TRUE);
-	  unit_widget_set_sensitive (data->right_widget, TRUE);
-	  gtk_widget_set_sensitive (data->printer_combo, TRUE);
+      gtk_tree_model_get (model, &iter, 0, &page_setup, -1);
+      
+      unit_widget_set (data->width_widget,
+		       egg_page_setup_get_paper_width (page_setup, EGG_UNIT_MM));
+      unit_widget_set (data->height_widget, 
+		       egg_page_setup_get_paper_height (page_setup, EGG_UNIT_MM));
+      unit_widget_set (data->top_widget,
+		       egg_page_setup_get_top_margin (page_setup, EGG_UNIT_MM));
+      unit_widget_set (data->bottom_widget, 
+		       egg_page_setup_get_bottom_margin (page_setup, EGG_UNIT_MM));
+      unit_widget_set (data->left_widget,
+		       egg_page_setup_get_left_margin (page_setup, EGG_UNIT_MM));
+      unit_widget_set (data->right_widget,
+		       egg_page_setup_get_right_margin (page_setup, EGG_UNIT_MM));
+      
+      unit_widget_set_sensitive (data->width_widget, TRUE);
+      unit_widget_set_sensitive (data->height_widget, TRUE);
+      unit_widget_set_sensitive (data->top_widget, TRUE);
+      unit_widget_set_sensitive (data->bottom_widget, TRUE);
+      unit_widget_set_sensitive (data->left_widget, TRUE);
+      unit_widget_set_sensitive (data->right_widget, TRUE);
+      gtk_widget_set_sensitive (data->printer_combo, TRUE);
     }
   else
     {
@@ -1555,7 +1554,6 @@ margins_from_printer_changed (CustomPaperDialog *data)
 		g_signal_connect (printer, "details-acquired",
 				  G_CALLBACK (get_margins_finished_callback), data);
 	      _egg_printer_request_details (printer);
-	      
 	    }
 
 	  g_object_unref (printer);

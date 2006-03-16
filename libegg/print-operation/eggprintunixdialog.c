@@ -1271,29 +1271,30 @@ draw_page_cb (GtkWidget	     *widget,
   w = (EXAMPLE_PAGE_AREA_SIZE - 3) / ratio;
   h = w * ratio;
 
-  switch (dialog_get_pages_per_sheet (dialog)) {
-  default:
-  case 1:
-    pages_x = 1; pages_y = 1;
-    break;
-  case 2:
-    landscape = !landscape;
-    pages_x = 1; pages_y = 2;
-    break;
-  case 4:
-    pages_x = 2; pages_y = 2;
-    break;
-  case 6:
-    landscape = !landscape;
-    pages_x = 2; pages_y = 3;
-    break;
-  case 9:
-    pages_x = 3; pages_y = 3;
-    break;
-  case 16:
-    pages_x = 4; pages_y = 4;
-    break;
-  }
+  switch (dialog_get_pages_per_sheet (dialog))
+    {
+    default:
+    case 1:
+      pages_x = 1; pages_y = 1;
+      break;
+    case 2:
+      landscape = !landscape;
+      pages_x = 1; pages_y = 2;
+      break;
+    case 4:
+      pages_x = 2; pages_y = 2;
+      break;
+    case 6:
+      landscape = !landscape;
+      pages_x = 2; pages_y = 3;
+      break;
+    case 9:
+      pages_x = 3; pages_y = 3;
+      break;
+    case 16:
+      pages_x = 4; pages_y = 4;
+      break;
+    }
 
   if (landscape)
     {
@@ -1852,7 +1853,7 @@ egg_print_unix_dialog_new (const gchar *title,
 			   GtkWindow *parent)
 {
   GtkWidget *result;
-  const gchar *_title = "Print";
+  const gchar *_title = _("Print");
 
   if (title)
     _title = title;

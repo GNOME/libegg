@@ -29,7 +29,8 @@
 #define MM_PER_INCH 25.4
 #define POINTS_PER_INCH 72
 
-typedef struct {
+typedef struct
+{
   const char *name;
   const char *size;
   const char *display_name;

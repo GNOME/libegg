@@ -33,7 +33,6 @@ typedef struct _EggPageSetup EggPageSetup;
 #define EGG_PAGE_SETUP(obj)    (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_PAGE_SETUP, EggPageSetup))
 #define EGG_IS_PAGE_SETUP(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_PAGE_SETUP))
 
-
 GType              egg_page_setup_get_type          (void);
 EggPageSetup *     egg_page_setup_new               (void);
 EggPageSetup *     egg_page_setup_copy              (EggPageSetup       *other);
@@ -64,8 +63,8 @@ void               egg_page_setup_set_right_margin  (EggPageSetup       *setup,
 						     double              margin,
 						     EggUnit             unit);
 
-void               egg_page_setup_set_paper_size_and_default_margins (EggPageSetup *setup,
-								      EggPaperSize *size);
+void egg_page_setup_set_paper_size_and_default_margins (EggPageSetup *setup,
+							EggPaperSize *size);
 
 /* These take orientation, but not margins into consideration */
 double             egg_page_setup_get_paper_width   (EggPageSetup       *setup,
@@ -80,9 +79,6 @@ double             egg_page_setup_get_page_width    (EggPageSetup       *setup,
 double             egg_page_setup_get_page_height   (EggPageSetup       *setup,
 						     EggUnit             unit);
 
-
-/* More in here?
-   paper color? paper source? scale? */
 
 G_END_DECLS
 

@@ -80,9 +80,6 @@ egg_print_operation_init (EggPrintOperation *operation)
   operation->priv->unit = EGG_UNIT_PIXEL;
 
   appname = g_get_application_name ();
-  if (appname == NULL)
-    appname = "Gtk+ application";
-
   operation->priv->job_name = g_strdup_printf ("%s job #%d",
 					       appname, job_nr++);
 }
@@ -95,7 +92,6 @@ egg_print_operation_class_init (EggPrintOperationClass *class)
   gobject_class->finalize = egg_print_operation_finalize;
   
   g_type_class_add_private (gobject_class, sizeof (EggPrintOperationPrivate));
-
 
   signals[BEGIN_PRINT] =
     g_signal_new ("begin_print",

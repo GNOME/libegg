@@ -400,11 +400,8 @@ egg_print_settings_set_paper_size (EggPrintSettings *settings,
 					   EGG_UNIT_MM);
     } 
   else
-    {
-      egg_print_settings_set (settings, EGG_PRINT_SETTINGS_PAPER_FORMAT, 
-			      egg_paper_size_get_name (paper_size));
-    }
-    
+    egg_print_settings_set (settings, EGG_PRINT_SETTINGS_PAPER_FORMAT, 
+			    egg_paper_size_get_name (paper_size));
 }
 
 double

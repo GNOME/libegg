@@ -88,26 +88,27 @@ _egg_print_context_new (EggPrintOperation *op)
   context->op = op;
   context->cr = cairo_create (op->priv->surface);
 
-  switch (op->priv->unit) {
-  default:
-  case EGG_UNIT_PIXEL:
-    /* Do nothing, this is the cairo default unit */
-    context->pixels_per_unit_x = 1.0;
-    context->pixels_per_unit_y = 1.0;
-    break;
-  case EGG_UNIT_POINTS:
-    context->pixels_per_unit_x = op->priv->dpi_x / POINTS_PER_INCH;
-    context->pixels_per_unit_y = op->priv->dpi_y / POINTS_PER_INCH;
-    break;
-  case EGG_UNIT_INCH:
-    context->pixels_per_unit_x = op->priv->dpi_x;
-    context->pixels_per_unit_y = op->priv->dpi_y;
-    break;
-  case EGG_UNIT_MM:
-    context->pixels_per_unit_x = op->priv->dpi_x / MM_PER_INCH;
-    context->pixels_per_unit_y = op->priv->dpi_y / MM_PER_INCH;
-    break;
-  }
+  switch (op->priv->unit)
+    {
+    default:
+    case EGG_UNIT_PIXEL:
+      /* Do nothing, this is the cairo default unit */
+      context->pixels_per_unit_x = 1.0;
+      context->pixels_per_unit_y = 1.0;
+      break;
+    case EGG_UNIT_POINTS:
+      context->pixels_per_unit_x = op->priv->dpi_x / POINTS_PER_INCH;
+      context->pixels_per_unit_y = op->priv->dpi_y / POINTS_PER_INCH;
+      break;
+    case EGG_UNIT_INCH:
+      context->pixels_per_unit_x = op->priv->dpi_x;
+      context->pixels_per_unit_y = op->priv->dpi_y;
+      break;
+    case EGG_UNIT_MM:
+      context->pixels_per_unit_x = op->priv->dpi_x / MM_PER_INCH;
+      context->pixels_per_unit_y = op->priv->dpi_y / MM_PER_INCH;
+      break;
+    }
   cairo_scale (context->cr,
 	       context->pixels_per_unit_x,
 	       context->pixels_per_unit_y);
@@ -205,7 +206,6 @@ egg_print_context_get_dpi_y (EggPrintContext *context)
 {
   return context->op->priv->dpi_y;
 }
-
 
 /* Fonts */
 PangoFontMap *

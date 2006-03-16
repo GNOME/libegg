@@ -1,5 +1,25 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
+	* TODO:
+	Updated
+	
+	* eggpagesetup.[ch]: 
+	* eggpagesetupunixdialog.c:
+	* eggpapersize.[ch]:
+	* eggprintbackend.[ch]:
+	* eggprintcontext.c:
+	* eggprintenums.h:
+	* eggprinter.c:
+	* eggprinteroptionwidget.c:
+	* eggprintjob.c:
+	* eggprintoperation-win32.c:
+	* eggprintoperation.c:
+	* eggprintsettings.c:
+	* eggprintunixdialog.c:
+	Indentation fixes and other small cleanups.
+
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
 	* Makefile.am (INCLUDES): 
 	Remove -Werror
 	

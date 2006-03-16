@@ -208,10 +208,8 @@ egg_printer_option_widget_set_source (EggPrinterOptionWidget  *widget,
   widget->priv->source = source;
 
   if (source)
-    {
-      widget->priv->source_changed_handler =
-	g_signal_connect (source, "changed", G_CALLBACK (source_changed_cb), widget);
-    }
+    widget->priv->source_changed_handler =
+      g_signal_connect (source, "changed", G_CALLBACK (source_changed_cb), widget);
 
   construct_widgets (widget);
   update_widgets (widget);

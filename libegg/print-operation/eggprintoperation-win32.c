@@ -50,71 +50,77 @@ base64_encode_step (const guchar  *in,
 		    int           *state, 
 		    int           *save)
 {
-	register guchar *outptr;
-	register const guchar *inptr;
-
-	if (len <= 0)
-		return 0;
-
-	inptr = in;
-	outptr = out;
-
-	if (len + ((char *) save) [0] > 2) {
-		const guchar *inend = in+len-2;
-		register int c1, c2, c3;
-		register int already;
-
-		already = *state;
-
-		switch (((char *) save) [0]) {
-		case 1:	c1 = ((unsigned char *) save) [1]; goto skip1;
-		case 2:	c1 = ((unsigned char *) save) [1];
-			c2 = ((unsigned char *) save) [2]; goto skip2;
-		}
-		
-		/* 
-		 * yes, we jump into the loop, no i'm not going to change it, 
-		 * it's beautiful! 
-		 */
-		while (inptr < inend) {
-			c1 = *inptr++;
-		skip1:
-			c2 = *inptr++;
-		skip2:
-			c3 = *inptr++;
-			*outptr++ = base64_alphabet [ c1 >> 2 ];
-			*outptr++ = base64_alphabet [ c2 >> 4 | 
-						      ((c1&0x3) << 4) ];
-			*outptr++ = base64_alphabet [ ((c2 &0x0f) << 2) | 
-						      (c3 >> 6) ];
-			*outptr++ = base64_alphabet [ c3 & 0x3f ];
-			/* this is a bit ugly ... */
-			if (break_lines && (++already)>=19) {
-				*outptr++='\n';
-				already = 0;
-			}
-		}
-
-		((char *)save)[0] = 0;
-		len = 2-(inptr-inend);
-		*state = already;
+  register guchar *outptr;
+  register const guchar *inptr;
+  
+  if (len <= 0)
+    return 0;
+  
+  inptr = in;
+  outptr = out;
+  
+  if (len + ((char *) save) [0] > 2)
+    {
+      const guchar *inend = in+len-2;
+      register int c1, c2, c3;
+      register int already;
+      
+      already = *state;
+      
+      switch (((char *) save) [0])
+	{
+	case 1:	c1 = ((unsigned char *) save) [1]; goto skip1;
+	case 2:	c1 = ((unsigned char *) save) [1];
+	  c2 = ((unsigned char *) save) [2]; goto skip2;
 	}
-
-	if (len>0) {
-		register char *saveout;
-
-		/* points to the slot for the next char to save */
-		saveout = & (((char *)save)[1]) + ((char *)save)[0];
-
-		/* len can only be 0 1 or 2 */
-		switch(len) {
-		case 2:	*saveout++ = *inptr++;
-		case 1:	*saveout++ = *inptr++;
-		}
-		((char *)save)[0]+=len;
+      
+      /* 
+       * yes, we jump into the loop, no i'm not going to change it, 
+       * it's beautiful! 
+       */
+      while (inptr < inend)
+	{
+	  c1 = *inptr++;
+	skip1:
+	  c2 = *inptr++;
+	skip2:
+	  c3 = *inptr++;
+	  *outptr++ = base64_alphabet [ c1 >> 2 ];
+	  *outptr++ = base64_alphabet [ c2 >> 4 | 
+					((c1&0x3) << 4) ];
+	  *outptr++ = base64_alphabet [ ((c2 &0x0f) << 2) | 
+					(c3 >> 6) ];
+	  *outptr++ = base64_alphabet [ c3 & 0x3f ];
+	  /* this is a bit ugly ... */
+	  if (break_lines && (++already)>=19)
+	    {
+	      *outptr++='\n';
+	      already = 0;
+	    }
 	}
-
-	return outptr-out;
+      
+      ((char *)save)[0] = 0;
+      len = 2-(inptr-inend);
+      *state = already;
+    }
+  
+  if (len>0)
+    {
+      register char *saveout;
+      
+      /* points to the slot for the next char to save */
+      saveout = & (((char *)save)[1]) + ((char *)save)[0];
+      
+      /* len can only be 0 1 or 2 */
+      switch(len)
+	{
+	case 2:	*saveout++ = *inptr++;
+	case 1:	*saveout++ = *inptr++;
+	}
+      ((char *)save)[0]+=len;
+    }
+  
+  return outptr-out;
 }
 
 /* 
@@ -129,41 +135,42 @@ base64_encode_close (const guchar  *in,
 		     int           *state, 
 		     int           *save)
 {
-	int c1, c2;
-	unsigned char *outptr = out;
+  int c1, c2;
+  unsigned char *outptr = out;
 
-	if (inlen > 0)
-		outptr += base64_encode_step (in, 
-					      inlen, 
-					      break_lines, 
-					      outptr, 
-					      state, 
-					      save);
-
-	c1 = ((unsigned char *) save) [1];
-	c2 = ((unsigned char *) save) [2];
-	
-	switch (((char *) save) [0]) {
-	case 2:
-		outptr [2] = base64_alphabet[ ( (c2 &0x0f) << 2 ) ];
-		g_assert (outptr [2] != 0);
-		goto skip;
-	case 1:
-		outptr[2] = '=';
-	skip:
-		outptr [0] = base64_alphabet [ c1 >> 2 ];
-		outptr [1] = base64_alphabet [ c2 >> 4 | ( (c1&0x3) << 4 )];
-		outptr [3] = '=';
-		outptr += 4;
-		break;
-	}
-	if (break_lines)
-		*outptr++ = '\n';
-
-	*save = 0;
-	*state = 0;
-
-	return outptr-out;
+  if (inlen > 0)
+    outptr += base64_encode_step (in, 
+				  inlen, 
+				  break_lines, 
+				  outptr, 
+				  state, 
+				  save);
+  
+  c1 = ((unsigned char *) save) [1];
+  c2 = ((unsigned char *) save) [2];
+  
+  switch (((char *) save) [0])
+    {
+    case 2:
+      outptr [2] = base64_alphabet[ ( (c2 &0x0f) << 2 ) ];
+      g_assert (outptr [2] != 0);
+      goto skip;
+    case 1:
+      outptr[2] = '=';
+    skip:
+      outptr [0] = base64_alphabet [ c1 >> 2 ];
+      outptr [1] = base64_alphabet [ c2 >> 4 | ( (c1&0x3) << 4 )];
+      outptr [3] = '=';
+      outptr += 4;
+      break;
+    }
+  if (break_lines)
+    *outptr++ = '\n';
+  
+  *save = 0;
+  *state = 0;
+  
+  return outptr-out;
 }
 
 /**
@@ -179,38 +186,38 @@ base64_encode_close (const guchar  *in,
 static char *
 base64_encode (const char *text, int len)
 {
-        unsigned char *out;
-        int state = 0, outlen;
-        unsigned int save = 0;
-        
-        out = g_malloc (len * 4 / 3 + 5);
-        outlen = base64_encode_close (text, 
-				      len, 
-				      FALSE,
-				      out, 
-				      &state, 
-				      &save);
-        out[outlen] = '\0';
-        return (char *) out;
+  unsigned char *out;
+  int state = 0, outlen;
+  unsigned int save = 0;
+  
+  out = g_malloc (len * 4 / 3 + 5);
+  outlen = base64_encode_close (text, 
+				len, 
+				FALSE,
+				out, 
+				&state, 
+				&save);
+  out[outlen] = '\0';
+  return (char *) out;
 }
 
-static unsigned char camel_mime_base64_rank[256] = {
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255, 62,255,255,255, 63,
-	 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,255,255,255,  0,255,255,
-	255,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-	 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,255,255,255,255,255,
-	255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-	 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+static unsigned char mime_base64_rank[256] = {
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255, 62,255,255,255, 63,
+   52, 53, 54, 55, 56, 57, 58, 59, 60, 61,255,255,255,  0,255,255,
+  255,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+   15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,255,255,255,255,255,
+  255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+   41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 };
 
 /**
@@ -230,66 +237,71 @@ base64_decode_step (const guchar  *in,
 		    int           *state, 
 		    guint         *save)
 {
-	register const guchar *inptr;
-	register guchar *outptr;
-	const guchar *inend;
-	guchar c;
-	register unsigned int v;
-	int i;
-
-	inend = in+len;
-	outptr = out;
-
-	/* convert 4 base64 bytes to 3 normal bytes */
-	v=*save;
-	i=*state;
-	inptr = in;
-	while (inptr < inend) {
-		c = camel_mime_base64_rank [*inptr++];
-		if (c != 0xff) {
-			v = (v<<6) | c;
-			i++;
-			if (i==4) {
-				*outptr++ = v>>16;
-				*outptr++ = v>>8;
-				*outptr++ = v;
-				i=0;
-			}
-		}
+  register const guchar *inptr;
+  register guchar *outptr;
+  const guchar *inend;
+  guchar c;
+  register unsigned int v;
+  int i;
+  
+  inend = in+len;
+  outptr = out;
+  
+  /* convert 4 base64 bytes to 3 normal bytes */
+  v=*save;
+  i=*state;
+  inptr = in;
+  while (inptr < inend)
+    {
+      c = mime_base64_rank [*inptr++];
+      if (c != 0xff)
+	{
+	  v = (v<<6) | c;
+	  i++;
+	  if (i==4)
+	    {
+	      *outptr++ = v>>16;
+	      *outptr++ = v>>8;
+	      *outptr++ = v;
+	      i=0;
+	    }
 	}
-
-	*save = v;
-	*state = i;
-
-	/* quick scan back for '=' on the end somewhere */
-	/* fortunately we can drop 1 output char for each trailing = (upto 2) */
-	i=2;
-	while (inptr > in && i) {
-		inptr--;
-		if (camel_mime_base64_rank [*inptr] != 0xff) {
-			if (*inptr == '=')
-				outptr--;
-			i--;
-		}
+    }
+  
+  *save = v;
+  *state = i;
+  
+  /* quick scan back for '=' on the end somewhere */
+  /* fortunately we can drop 1 output char for each trailing = (upto 2) */
+  i=2;
+  while (inptr > in && i)
+    {
+      inptr--;
+      if (mime_base64_rank [*inptr] != 0xff)
+	{
+	  if (*inptr == '=')
+	    outptr--;
+	  i--;
 	}
+    }
 
-	/* if i!= 0 then there is a truncation error! */
-	return outptr - out;
+  /* if i!= 0 then there is a truncation error! */
+  return outptr - out;
 }
 
 static char *
 base64_decode (const char   *text,
 	       int          *out_len)
 {
-	char *ret;
-	int inlen, state = 0, save = 0;
-
-	inlen = strlen (text);
-	ret = g_malloc0 (inlen);
-
-	*out_len = base64_decode_step (text, inlen, ret, &state, &save);
-
-	return ret; 
+  char *ret;
+  int inlen, state = 0, save = 0;
+  
+  inlen = strlen (text);
+  ret = g_malloc0 (inlen);
+  
+  *out_len = base64_decode_step (text, inlen, ret, &state, &save);
+  
+  return ret; 
 }
 
 static EggPageOrientation
@@ -610,8 +622,6 @@ get_parent_hwnd (GtkWidget *widget)
   return gdk_win32_drawable_get_handle (widget->window);
 }
 
-
-
 static void
 dialog_to_print_settings (EggPrintOperation *op,
 			  LPPRINTDLGEXW printdlgex)
@@ -915,11 +925,8 @@ dialog_from_print_settings (EggPrintOperation *op,
   extras_len = 0;
   extras_base64 = egg_print_settings_get (settings, EGG_PRINT_SETTINGS_WIN32_DRIVER_EXTRA);
   if (extras_base64)
-    {
-      extras = base64_decode (extras_base64, &extras_len);
-    }
-  
-  
+    extras = base64_decode (extras_base64, &extras_len);
+
   printdlgex->hDevMode = GlobalAlloc (GMEM_MOVEABLE, 
 				      sizeof (DEVMODEW) + extras_len);
 

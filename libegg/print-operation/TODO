@@ -36,16 +36,11 @@ print preview ideas?
 <matthias> I think it would be good to have some overview notes in there somewhere, basically the contents of your email
 <matthias> since it can be a bit confusing that there are different layers which can be ported
 
-renaming:
-backendsetting -> option
-
 page setting dialog:
-* handle set page size not in availible list
-* sort paper lists
-* make sure we get good default for all settings
-* make sure we don't overwrite e.g. margins when setting initial dialog values
 * save the format-for printer
-* update format for printer when it change
-* update margins when paper size changes
+* land/port icons
+* auto-create a new size first time the custom size dialog is opened
+<mclasen> and since you can have multiple custom sizes, the combobox should say "Manage custom sizes..."
+
+* sort paper lists
 * nicer unit editor than spinbutton
-* Good page size selected after having run custom page size manager

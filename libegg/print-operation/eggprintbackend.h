@@ -105,19 +105,16 @@ struct _EggPrintBackendIface
 
 GType   egg_print_backend_get_type       (void) G_GNUC_CONST;
 
-GList      *egg_print_backend_get_printer_list                  (EggPrintBackend *print_backend);
-
-EggPrinter *egg_print_backend_find_printer                      (EggPrintBackend *print_backend,
-                                                                 const gchar *printer_name);
-							 
-void egg_print_backend_print_stream                             (EggPrintBackend *print_backend,
-                                                                 EggPrintJob *job,
-				                                 const gchar *title,
-				                                 gint data_fd,
-				                                 EggPrintJobCompleteFunc callback,
-				                                 gpointer user_data);
-
-GList *egg_print_backend_load_modules                            (void);
+GList      *egg_print_backend_get_printer_list (EggPrintBackend         *print_backend);
+EggPrinter *egg_print_backend_find_printer     (EggPrintBackend         *print_backend,
+						const gchar             *printer_name);
+void        egg_print_backend_print_stream     (EggPrintBackend         *print_backend,
+						EggPrintJob             *job,
+						const gchar             *title,
+						gint                     data_fd,
+						EggPrintJobCompleteFunc  callback,
+						gpointer                 user_data);
+GList *     egg_print_backend_load_modules     (void);
 
 
 G_END_DECLS

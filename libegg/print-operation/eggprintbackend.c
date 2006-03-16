@@ -61,8 +61,8 @@ struct _EggPrintBackendModuleClass
 };
 
 G_DEFINE_TYPE (EggPrintBackendModule, _egg_print_backend_module, G_TYPE_TYPE_MODULE);
-#define EGG_TYPE_PRINT_BACKEND_MODULE       (_egg_print_backend_module_get_type ())
-#define EGG_PRINT_BACKEND_MODULE(module)	  (G_TYPE_CHECK_INSTANCE_CAST ((module), EGG_TYPE_PRINT_BACKEND_MODULE, EggPrintBackendModule))
+#define EGG_TYPE_PRINT_BACKEND_MODULE      (_egg_print_backend_module_get_type ())
+#define EGG_PRINT_BACKEND_MODULE(module)   (G_TYPE_CHECK_INSTANCE_CAST ((module), EGG_TYPE_PRINT_BACKEND_MODULE, EggPrintBackendModule))
 
 static GSList *loaded_backends;
 
