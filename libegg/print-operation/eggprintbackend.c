@@ -269,6 +269,11 @@ egg_print_backend_load_modules ()
   if (backend)
     result = g_list_append (result, backend);
 
+  backend = _egg_print_backend_create ("lpr");
+
+  if (backend)
+    result = g_list_append (result, backend);
+
   backend = _egg_print_backend_create ("cups");
   
   if (backend)

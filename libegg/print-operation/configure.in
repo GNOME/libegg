@@ -123,4 +123,5 @@ modules/Makefile
 modules/printbackends/Makefile
 modules/printbackends/cups/Makefile
 modules/printbackends/pdf/Makefile
+modules/printbackends/lpr/Makefile
 ])

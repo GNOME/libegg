@@ -408,6 +408,20 @@ combo_changed_cb (GtkWidget *combo,
   emit_changed (widget);
 }
 
+static void
+entry_changed_cb (GtkWidget *entry,
+		  EggPrinterOptionWidget *widget)
+{
+  const char *value;
+  
+  g_signal_handler_block (widget->priv->source, widget->priv->source_changed_handler);
+  value = gtk_entry_get_text (entry);
+  if (value)
+    egg_printer_option_set (widget->priv->source, value);
+  g_signal_handler_unblock (widget->priv->source, widget->priv->source_changed_handler);
+  emit_changed (widget);
+}
+
 
 static void
 construct_widgets (EggPrinterOptionWidget *widget)
@@ -452,6 +466,19 @@ construct_widgets (EggPrinterOptionWidget *widget)
       g_free (text);
       gtk_widget_show (widget->priv->label);
       break;
+    case EGG_PRINTER_OPTION_TYPE_ENTRY:
+      widget->priv->entry = gtk_entry_new ();
+      gtk_widget_show (widget->priv->entry);
+      gtk_box_pack_start (GTK_BOX (widget), widget->priv->entry, TRUE, TRUE, 0);
+      g_signal_connect (widget->priv->entry, "changed", G_CALLBACK (entry_changed_cb), widget);
+
+      text = g_strdup_printf ("%s: ", source->display_text);
+      widget->priv->label = gtk_label_new_with_mnemonic (text);
+      g_free (text);
+      gtk_widget_show (widget->priv->label);
+
+      break;
+
     case EGG_PRINTER_OPTION_TYPE_FILESAVE:
       {
         GtkWidget *label;
