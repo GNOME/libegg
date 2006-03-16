@@ -454,7 +454,7 @@ egg_paper_size_get_default (void)
       return EGG_PAPER_NAME_A4;
     
     if (width == 216 && height == 279)
-      return EGG_PAPER_NAME_LEGAL;
+      return EGG_PAPER_NAME_LETTER;
   }
 #endif
 

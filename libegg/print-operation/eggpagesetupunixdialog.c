@@ -60,6 +60,9 @@ struct EggPageSetupUnixDialogPrivate
   guint request_details_tag;
   
   EggPrintSettings *print_settings;
+
+  /* Save last setup so we can re-set it after selecting manage custom sizes */
+  EggPageSetup *last_setup;
 };
 
 enum {
@@ -557,7 +560,14 @@ get_current_page_setup (EggPageSetupUnixDialog *dialog)
     gtk_tree_model_get (GTK_TREE_MODEL (dialog->priv->page_setup_list), &iter,
 			PAGE_SETUP_LIST_COL_PAGE_SETUP, &current_page_setup, -1);
 
-  return current_page_setup;
+  if (current_page_setup)
+    return current_page_setup;
+
+  /* No selected page size, return the default one.
+   * This is used to set the first page setup when the dialog is created
+   * as there is no selection on the first printer_changed.
+   */ 
+  return egg_page_setup_new ();
 }
 
 static gboolean
@@ -579,9 +589,11 @@ page_setup_is_same_size (EggPageSetup *a, EggPageSetup *b)
 				  egg_page_setup_get_paper_size (b));
 }
 
-static void
+static gboolean
 set_paper_size (EggPageSetupUnixDialog *dialog,
-		EggPageSetup *page_setup)
+		EggPageSetup *page_setup,
+		gboolean size_only,
+		gboolean add_item)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
@@ -598,12 +610,13 @@ set_paper_size (EggPageSetupUnixDialog *dialog,
 	  if (list_page_setup == NULL)
 	    continue;
 	  
-	  if (page_setup_is_equal (page_setup, list_page_setup))
+	  if ((size_only && page_setup_is_same_size (page_setup, list_page_setup)) ||
+	      (!size_only && page_setup_is_equal (page_setup, list_page_setup)))
 	    {
 	      gtk_combo_box_set_active_iter (GTK_COMBO_BOX (dialog->priv->paper_size_combo),
 					     &iter);
 	      g_object_unref (list_page_setup);
-	      return;
+	      return TRUE;
 	    }
 	      
 	  g_object_unref (list_page_setup);
@@ -611,16 +624,26 @@ set_paper_size (EggPageSetupUnixDialog *dialog,
 	} while (gtk_tree_model_iter_next (model, &iter));
     }
 
-  /* TODO: Maybe we should create a new row if the
-   * paper size is not in the list?
-   */
+  if (add_item)
+    {
+      gtk_list_store_append (dialog->priv->page_setup_list, &iter);
+      gtk_list_store_set (dialog->priv->page_setup_list, &iter,
+			  PAGE_SETUP_LIST_COL_IS_SEPARATOR, TRUE,
+			  -1);
+      gtk_list_store_append (dialog->priv->page_setup_list, &iter);
+      gtk_list_store_set (dialog->priv->page_setup_list, &iter,
+			  PAGE_SETUP_LIST_COL_PAGE_SETUP, page_setup,
+			  -1);
+      gtk_combo_box_set_active_iter (GTK_COMBO_BOX (dialog->priv->paper_size_combo),
+				     &iter);
+      return TRUE;
+    }
+
+  return FALSE;
 }
 
 static void
-fill_custom_paper_sizes (EggPageSetupUnixDialog *dialog,
-			 EggPageSetup *current_page_setup,
-			 GtkTreeIter *current_iter,
-			 gboolean *found_current)
+fill_custom_paper_sizes (EggPageSetupUnixDialog *dialog)
 {
   GtkTreeIter iter, paper_iter;
   GtkTreeModel *model;
@@ -641,13 +664,6 @@ fill_custom_paper_sizes (EggPageSetupUnixDialog *dialog,
 	  gtk_list_store_set (dialog->priv->page_setup_list, &paper_iter,
 			      PAGE_SETUP_LIST_COL_PAGE_SETUP, page_setup,
 			      -1);
-
-	  if (current_page_setup && !*found_current &&
-	      page_setup_is_same_size (current_page_setup, page_setup))
-	    {
-	      *current_iter = paper_iter;
-	      *found_current = TRUE;
-	    }
 
 	  g_object_unref (page_setup);
 	} while (gtk_tree_model_iter_next (model, &iter));
@@ -670,13 +686,10 @@ fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
   GList *list, *l;
   EggPageSetup *current_page_setup, *page_setup;
   EggPaperSize *paper_size;
-  GtkComboBox *combo_box;
-  GtkTreeIter iter, current_iter;
-  gboolean found_current;
+  GtkTreeIter iter;
   int i;
 
   current_page_setup = get_current_page_setup (dialog);
-  found_current = FALSE;
   
   gtk_list_store_clear (dialog->priv->page_setup_list);
 
@@ -695,12 +708,6 @@ fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
 	  gtk_list_store_set (dialog->priv->page_setup_list, &iter,
 			      PAGE_SETUP_LIST_COL_PAGE_SETUP, page_setup,
 			      -1);
-	  if (current_page_setup && !found_current &&
-	      page_setup_is_same_size (current_page_setup, page_setup))
-	    {
-	      current_iter = iter;
-	      found_current = TRUE;
-	    }
 	  g_object_unref (page_setup);
 	}
     }
@@ -716,27 +723,16 @@ fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
 	  gtk_list_store_set (dialog->priv->page_setup_list, &iter,
 			      PAGE_SETUP_LIST_COL_PAGE_SETUP, page_setup,
 			      -1);
-	  if (current_page_setup && !found_current &&
-	      page_setup_is_same_size (current_page_setup, page_setup))
-	    {
-	      current_iter = iter;
-	      found_current = TRUE;
-	    }
 	  g_object_unref (page_setup);
 	}
       g_list_free (list);
     }
 
-  fill_custom_paper_sizes (dialog, current_page_setup,
-			   &current_iter, &found_current);
+  fill_custom_paper_sizes (dialog);
   
-  combo_box = GTK_COMBO_BOX (dialog->priv->paper_size_combo);
-  if (found_current)
-    gtk_combo_box_set_active_iter (combo_box, &current_iter);
-  else
-    /* TODO: pick better default */
-    gtk_combo_box_set_active (combo_box, 0);
-      
+  if (!set_paper_size (dialog, current_page_setup, FALSE, FALSE))
+    set_paper_size (dialog, current_page_setup, TRUE, TRUE);
+  
   if (current_page_setup)
     g_object_unref (current_page_setup);
 }
@@ -828,7 +824,7 @@ static void
 paper_size_changed (GtkComboBox *combo_box, EggPageSetupUnixDialog *dialog)
 {
   GtkTreeIter iter;
-  EggPageSetup *page_setup;
+  EggPageSetup *page_setup, *last_page_setup;
   EggUnit unit;
   char *str, *w, *h;
   char *top, *bottom, *left, *right;
@@ -845,9 +841,28 @@ paper_size_changed (GtkComboBox *combo_box, EggPageSetupUnixDialog *dialog)
       if (page_setup == NULL)
 	{
 	  run_custom_paper_dialog (dialog);
+
+	  /* Save current last_setup as it is changed by updating the list */
+	  last_page_setup = NULL;
+	  if (dialog->priv->last_setup)
+	    last_page_setup = g_object_ref (dialog->priv->last_setup);
+
+	  /* Update printer page list */
 	  printer_changed_callback (GTK_COMBO_BOX (dialog->priv->printer_combo), dialog);
+
+	  /* Change from "manage" menu item to last value */
+	  if (last_page_setup == NULL)
+	    last_page_setup = egg_page_setup_new (); /* "good" default */
+	  set_paper_size (dialog, last_page_setup, FALSE, TRUE);
+	  g_object_unref (last_page_setup);
+	  
 	  return;
 	}
+
+      if (dialog->priv->last_setup)
+	g_object_unref (dialog->priv->last_setup);
+
+      dialog->priv->last_setup = g_object_ref (page_setup);
       
       unit = get_default_user_units ();
 
@@ -899,6 +914,9 @@ paper_size_changed (GtkComboBox *combo_box, EggPageSetupUnixDialog *dialog)
       gtk_label_set_text (label, "");
       gtk_tooltips_set_tip (GTK_TOOLTIPS (dialog->priv->tooltips),
 			    dialog->priv->paper_size_eventbox, NULL, NULL);
+      if (dialog->priv->last_setup)
+	g_object_unref (dialog->priv->last_setup);
+      dialog->priv->last_setup = NULL;
     }
 }
 
@@ -1115,10 +1133,9 @@ egg_page_setup_unix_dialog_set_page_setup (EggPageSetupUnixDialog *dialog,
 {
   if (page_setup)
     {
-      set_paper_size (dialog, page_setup);
+      set_paper_size (dialog, page_setup, FALSE, TRUE);
       set_orientation (dialog, egg_page_setup_get_orientation (page_setup));
     }
-  
 }
 
 EggPageSetup *

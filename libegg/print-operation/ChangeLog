@@ -1,5 +1,15 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
+	* eggpagesetupunixdialog.c:
+	Set back paper size combo after selecting "manage custom sizes"
+	Start up with good paper size default
+	Add extra paper in model if the selected one doesn't exist.
+	
+	* eggpapersize.c: (egg_paper_size_get_default):
+	LETTER, not LEGAL for default imperial paper size
+
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprinter.[ch]:
 	* eggprinter-private.h:
 	Add egg_printer_is_virtual
