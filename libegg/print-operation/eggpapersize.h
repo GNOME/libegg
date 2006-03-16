@@ -82,6 +82,15 @@ double   egg_paper_size_get_width        (EggPaperSize *size, EggUnit unit);
 double   egg_paper_size_get_height       (EggPaperSize *size, EggUnit unit);
 gboolean egg_paper_size_is_custom        (EggPaperSize *size);
 
+double egg_paper_size_get_default_top_margin    (EggPaperSize *size,
+						 EggUnit       unit);
+double egg_paper_size_get_default_bottom_margin (EggPaperSize *size,
+						 EggUnit       unit);
+double egg_paper_size_get_default_left_margin   (EggPaperSize *size,
+						 EggUnit       unit);
+double egg_paper_size_get_default_right_margin  (EggPaperSize *size,
+						 EggUnit       unit);
+
 /* Only for custom sizes: */
 void egg_paper_size_set_size (EggPaperSize *size, double width, double height, EggUnit unit);
 

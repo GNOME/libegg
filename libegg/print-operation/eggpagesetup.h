@@ -64,6 +64,8 @@ void               egg_page_setup_set_right_margin  (EggPageSetup       *setup,
 						     double              margin,
 						     EggUnit             unit);
 
+void               egg_page_setup_set_paper_size_and_default_margins (EggPageSetup *setup,
+								      EggPaperSize *size);
 
 /* These take orientation, but not margins into consideration */
 double             egg_page_setup_get_paper_width   (EggPageSetup       *setup,

@@ -699,10 +699,8 @@ fill_paper_sizes_from_printer (EggPageSetupUnixDialog *dialog,
 	{
 	  page_setup = egg_page_setup_new ();
 	  paper_size = egg_paper_size_new (common_paper_sizes[i]);
-	  egg_page_setup_set_paper_size (page_setup, paper_size);
+	  egg_page_setup_set_paper_size_and_default_margins (page_setup, paper_size);
 	  egg_paper_size_free (paper_size);
-	  
-	  /* TODO: Set any-printer better margins */
 	  
 	  gtk_list_store_append (dialog->priv->page_setup_list, &iter);
 	  gtk_list_store_set (dialog->priv->page_setup_list, &iter,

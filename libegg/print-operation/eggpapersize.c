@@ -472,3 +472,61 @@ egg_paper_size_get_default (void)
 
   return EGG_PAPER_NAME_A4;
 }
+
+/* These get the default margins used for the paper size. Its
+ * larger than most printers margins, so that it will be within
+ * the imageble area on any printer.
+ *
+ * I've taken the actual values used from the OSX page setup dialog.
+ * I'm not sure exactly where they got these values for, but might
+ * correspond to this (from ghostscript docs):
+ * 
+ * All DeskJets have 0.5 inches (1.27cm) of unprintable bottom margin,
+ * due to the mechanical arrangement used to grab the paper. Side margins
+ * are approximately 0.25 inches (0.64cm) for U.S. letter paper, and 0.15
+ * inches (0.38cm) for A4.
+ */
+
+double
+egg_paper_size_get_default_top_margin (EggPaperSize *size, EggUnit unit)
+{
+  double margin;
+
+  margin = to_mm (0.25, EGG_UNIT_INCH);
+  return from_mm (margin, unit);
+}
+
+double
+egg_paper_size_get_default_bottom_margin (EggPaperSize *size, EggUnit unit)
+{
+  double margin;
+  const char *name;
+
+  margin = to_mm (0.25, EGG_UNIT_INCH);
+
+  name = egg_paper_size_get_name (size);
+  if (strcmp (name, "na_letter") == 0 ||
+      strcmp (name, "na_legal") == 0 ||
+      strcmp (name, "iso_a4") == 0)
+    margin = to_mm (0.56, EGG_UNIT_INCH);
+  
+  return from_mm (margin, unit);
+}
+
+double
+egg_paper_size_get_default_left_margin (EggPaperSize *size, EggUnit unit)
+{
+  double margin;
+
+  margin = to_mm (0.25, EGG_UNIT_INCH);
+  return from_mm (margin, unit);
+}
+
+double
+egg_paper_size_get_default_right_margin (EggPaperSize *size, EggUnit unit)
+{
+  double margin;
+
+  margin = to_mm (0.25, EGG_UNIT_INCH);
+  return from_mm (margin, unit);
+}

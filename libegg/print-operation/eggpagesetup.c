@@ -97,10 +97,10 @@ egg_page_setup_init (EggPageSetup *setup)
 {
   setup->paper_size = egg_paper_size_new (NULL);
   setup->orientation = EGG_PAGE_ORIENTATION_PORTRAIT;
-  setup->top_margin = to_mm (0.25, EGG_UNIT_INCH);
-  setup->bottom_margin = to_mm (0.25, EGG_UNIT_INCH);
-  setup->left_margin = to_mm (0.25, EGG_UNIT_INCH);
-  setup->right_margin = to_mm (0.25, EGG_UNIT_INCH);
+  setup->top_margin = egg_paper_size_get_default_top_margin (setup->paper_size, EGG_UNIT_MM);
+  setup->bottom_margin = egg_paper_size_get_default_bottom_margin (setup->paper_size, EGG_UNIT_MM);
+  setup->left_margin = egg_paper_size_get_default_left_margin (setup->paper_size, EGG_UNIT_MM);
+  setup->right_margin = egg_paper_size_get_default_right_margin (setup->paper_size, EGG_UNIT_MM);
 }
 
 static void
@@ -110,7 +110,6 @@ egg_page_setup_class_init (EggPageSetupClass *class)
 
   gobject_class->finalize = egg_page_setup_finalize;
 }
-
   
 EggPageSetup *
 egg_page_setup_new (void)
@@ -141,81 +140,92 @@ egg_page_setup_get_orientation (EggPageSetup *setup)
 }
 
 void
-egg_page_setup_set_orientation (EggPageSetup    *setup,
-				EggPageOrientation  orientation)
+egg_page_setup_set_orientation (EggPageSetup *setup,
+				EggPageOrientation orientation)
 {
   setup->orientation = orientation;
 }
 
 EggPaperSize *
-egg_page_setup_get_paper_size (EggPageSetup    *setup)
+egg_page_setup_get_paper_size (EggPageSetup *setup)
 {
   return setup->paper_size;
 }
 
 void
-egg_page_setup_set_paper_size (EggPageSetup    *setup,
-			       EggPaperSize        *size)
+egg_page_setup_set_paper_size (EggPageSetup *setup,
+			       EggPaperSize *size)
 {
   setup->paper_size = egg_paper_size_copy (size);
 }
 
+void
+egg_page_setup_set_paper_size_and_default_margins (EggPageSetup *setup,
+						   EggPaperSize *size)
+{
+  setup->paper_size = egg_paper_size_copy (size);
+  setup->top_margin = egg_paper_size_get_default_top_margin (setup->paper_size, EGG_UNIT_MM);
+  setup->bottom_margin = egg_paper_size_get_default_bottom_margin (setup->paper_size, EGG_UNIT_MM);
+  setup->left_margin = egg_paper_size_get_default_left_margin (setup->paper_size, EGG_UNIT_MM);
+  setup->right_margin = egg_paper_size_get_default_right_margin (setup->paper_size, EGG_UNIT_MM);
+}
+
 double
 egg_page_setup_get_top_margin (EggPageSetup *setup,
-			       EggUnit          unit)
+			       EggUnit       unit)
 {
   return from_mm (setup->top_margin, unit);
 }
 
 void
-egg_page_setup_set_top_margin (EggPageSetup    *setup,
-			       double              margin,
-			       EggUnit             unit)
+egg_page_setup_set_top_margin (EggPageSetup *setup,
+			       double        margin,
+			       EggUnit       unit)
 {
   setup->top_margin = to_mm (margin, unit);
 }
 
 double
 egg_page_setup_get_bottom_margin (EggPageSetup *setup,
-				  EggUnit          unit)
+				  EggUnit       unit)
 {
   return from_mm (setup->bottom_margin, unit);
 }
 
 void
-egg_page_setup_set_bottom_margin (EggPageSetup    *setup,
-				  double              margin,
-				  EggUnit             unit)
+egg_page_setup_set_bottom_margin (EggPageSetup *setup,
+				  double        margin,
+				  EggUnit       unit)
 {
   setup->bottom_margin = to_mm (margin, unit);
 }
 
 double
 egg_page_setup_get_left_margin (EggPageSetup    *setup,
-				EggUnit             unit)
+				EggUnit          unit)
 {
   return from_mm (setup->left_margin, unit);
 }
 
 void
 egg_page_setup_set_left_margin (EggPageSetup    *setup,
-				double              margin,
-				EggUnit             unit)
+				double           margin,
+				EggUnit          unit)
 {
   setup->left_margin = to_mm (margin, unit);
 }
 
 double
 egg_page_setup_get_right_margin (EggPageSetup    *setup,
-				 EggUnit             unit)
+				 EggUnit          unit)
 {
   return from_mm (setup->right_margin, unit);
 }
 
 void
 egg_page_setup_set_right_margin (EggPageSetup    *setup,
-				 double              margin,
-				 EggUnit             unit)
+				 double           margin,
+				 EggUnit          unit)
 {
   setup->right_margin = to_mm (margin, unit);
 }
@@ -223,7 +233,7 @@ egg_page_setup_set_right_margin (EggPageSetup    *setup,
 /* These take orientation, but not margins into consideration */
 double
 egg_page_setup_get_paper_width (EggPageSetup *setup,
-				EggUnit          unit)
+				EggUnit       unit)
 {
   if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT) {
     return egg_paper_size_get_width (setup->paper_size, unit);
@@ -234,7 +244,7 @@ egg_page_setup_get_paper_width (EggPageSetup *setup,
 
 double
 egg_page_setup_get_paper_height (EggPageSetup  *setup,
-				 EggUnit           unit)
+				 EggUnit        unit)
 {
   if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT) {
     return egg_paper_size_get_height (setup->paper_size, unit);
@@ -246,7 +256,7 @@ egg_page_setup_get_paper_height (EggPageSetup  *setup,
 /* These take orientation, and margins into consideration */
 double
 egg_page_setup_get_page_width (EggPageSetup    *setup,
-			       EggUnit             unit)
+			       EggUnit          unit)
 {
   double width;
   
@@ -258,7 +268,7 @@ egg_page_setup_get_page_width (EggPageSetup    *setup,
 
 double
 egg_page_setup_get_page_height (EggPageSetup    *setup,
-				EggUnit             unit)
+				EggUnit          unit)
 {
   double height;
   

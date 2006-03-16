@@ -1,5 +1,17 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
+	* eggpapersize.[ch]:
+	Add getters for "default" printer margins for different paper sizes.
+	
+	* eggpagesetup.[ch]:
+	Add egg_page_setup_set_paper_size_and_default_margins().
+	Set up the default margins on init.
+	
+	* eggpagesetupunixdialog.c:
+	Get the default printer margins for the "any" printer.
+
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
 	* eggpagesetupunixdialog.c:
 	Set back paper size combo after selecting "manage custom sizes"
 	Start up with good paper size default
