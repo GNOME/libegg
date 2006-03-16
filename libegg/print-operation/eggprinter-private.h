@@ -42,7 +42,7 @@ struct _EggPrinterPrivate
   gchar *state_message;  
   gint job_count;
 
-  struct _EggPrintBackend *backend;
+  EggPrintBackend *backend;
 };
 
 

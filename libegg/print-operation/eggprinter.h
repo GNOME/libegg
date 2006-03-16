@@ -32,10 +32,11 @@ G_BEGIN_DECLS
 #define EGG_IS_PRINTER_CLASS(klass)       (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_PRINTER))
 #define EGG_PRINTER_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYPE_PRINTER, EggPrinterClass))
 
-
 typedef struct _EggPrinter          EggPrinter;
 typedef struct _EggPrinterClass     EggPrinterClass;
 typedef struct _EggPrinterPrivate   EggPrinterPrivate;
+typedef struct _EggPrintBackend     EggPrintBackend;
+typedef struct _EggPrintJob	     EggPrintJob;
 
 struct _EggPrintBackend;
 struct _EggPrintJob;
@@ -66,7 +67,7 @@ struct _EggPrinterClass
 GType                    egg_printer_get_type             (void) G_GNUC_CONST;
 EggPrinter              *egg_printer_new                  (void);
 
-struct _EggPrintBackend *egg_printer_get_backend          (EggPrinter *printer);
+EggPrintBackend         *egg_printer_get_backend          (EggPrinter *printer);
 
 const gchar             *egg_printer_get_name             (EggPrinter *printer);
 const gchar             *egg_printer_get_state_message    (EggPrinter *printer);
@@ -75,7 +76,7 @@ const gchar             *egg_printer_get_icon_name        (EggPrinter *printer);
 gint                     egg_printer_get_job_count        (EggPrinter *printer);
 gboolean                 egg_printer_is_virtual           (EggPrinter *printer);
 
-struct _EggPrintJob     *egg_printer_prep_job             (EggPrinter *printer,
+EggPrintJob             *egg_printer_prep_job             (EggPrinter *printer,
 							   EggPrintSettings *settings,
 		                                           const gchar *title,
                                                            double width, 

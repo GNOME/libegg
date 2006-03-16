@@ -1,5 +1,14 @@
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	* eggprinter.h:
+	* eggprintjob.h:
+	Use typedefs instead of "struct _Egg*" in code/headers.
+	This required moving some typedefs around.
+
+2006-03-16  Alexander Larsson  <alexl@redhat.com>
+
 	* README:
 	Remove old file reference
 	

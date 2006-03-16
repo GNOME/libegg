@@ -39,7 +39,6 @@
 #include "eggprintjob.h"
 
 G_BEGIN_DECLS
-typedef struct _EggPrintBackend       EggPrintBackend;
 typedef struct _EggPrintBackendIface  EggPrintBackendIface;
 
 #define EGG_PRINT_BACKEND_ERROR (egg_print_backend_error_quark ())

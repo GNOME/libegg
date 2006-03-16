@@ -35,7 +35,6 @@ G_BEGIN_DECLS
 #define EGG_PRINT_JOB_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYPE_PRINT_JOB, EggPrintJobClass))
 
 
-typedef struct _EggPrintJob	     EggPrintJob;
 typedef struct _EggPrintJobClass     EggPrintJobClass;
 typedef struct _EggPrintJobPrivate   EggPrintJobPrivate;
 
@@ -70,7 +69,7 @@ struct _EggPrintJobClass
 GType                    egg_print_job_get_type     (void) G_GNUC_CONST;
 EggPrintJob             *egg_print_job_new          (const gchar              *title,
 						     EggPrintSettings         *settings,
-						     struct _EggPrinter       *printer,
+						     EggPrinter               *printer,
 						     gdouble                   width,
 						     gdouble                   height);
 EggPrintSettings        *egg_print_job_get_settings (EggPrintJob              *print_job);
