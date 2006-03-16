@@ -46,7 +46,8 @@ typedef struct _EggPrinterOptionClass  EggPrinterOptionClass;
 typedef enum {
   EGG_PRINTER_OPTION_TYPE_BOOLEAN,
   EGG_PRINTER_OPTION_TYPE_PICKONE,
-  EGG_PRINTER_OPTION_TYPE_STRING
+  EGG_PRINTER_OPTION_TYPE_STRING,
+  EGG_PRINTER_OPTION_TYPE_FILESAVE
 } EggPrinterOptionType;
 
 struct _EggPrinterOption

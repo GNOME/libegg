@@ -24,6 +24,7 @@
 #include <gtk/gtk.h>
 
 #include "eggprinter.h"
+#include "eggprinteroption.h"
 
 G_BEGIN_DECLS
 
@@ -42,9 +43,7 @@ struct _EggPrinterPdf
 {
   EggPrinter parent_instance;
 
-  GtkWidget *fileentry;
-  GtkWidget *filebutton;
-  GtkWidget *filechooser;
+  EggPrinterOption *file_option;
 };
 
 struct _EggPrinterPdfClass

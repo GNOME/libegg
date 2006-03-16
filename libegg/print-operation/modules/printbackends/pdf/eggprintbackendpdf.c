@@ -88,7 +88,6 @@ static void                 pdf_printer_get_hard_margins          (EggPrinter   
                                                                    double                            *left,
                                                                    double                            *right);
 static void                 pdf_printer_request_details           (EggPrinter                        *printer);
-static GHashTable *         pdf_printer_get_custom_widgets        (EggPrinter                        *printer);
 static GList *              pdf_printer_list_papers               (EggPrinter                        *printer);
 
 static void
@@ -314,7 +313,6 @@ egg_print_backend_pdf_print_stream (EggPrintBackend *print_backend,
   EggPrintSettings *settings;
   GIOChannel *save_channel;  
   gchar *filename;
-  gchar *directory;
 
   pdf_printer = EGG_PRINTER_PDF (egg_print_job_get_printer (job));
   settings = egg_print_job_get_settings (job);
@@ -328,19 +326,9 @@ egg_print_backend_pdf_print_stream (EggPrintBackend *print_backend,
   ps->user_data = user_data;
   ps->job = job;
 
-  /* TODO: how do we support nonlocal file systems? */
-
-  directory = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (pdf_printer->filebutton));
-
-  
-  filename = g_strdup_printf ("%s/%s", 
-                              directory,
-                              gtk_entry_get_text (GTK_ENTRY (pdf_printer->fileentry))) ;
+  filename = pdf_printer->file_option->value;
   
   ps->target_fd = creat (filename, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-  g_free (directory);  
-  g_free (filename);
-
   ps->backend = print_backend;
 
   if (ps->target_fd == -1)
@@ -382,7 +370,6 @@ egg_print_backend_pdf_iface_init (EggPrintBackendIface *iface)
   iface->printer_prepare_for_print = pdf_printer_prepare_for_print;
   iface->printer_list_papers = pdf_printer_list_papers;
   iface->printer_get_hard_margins = pdf_printer_get_hard_margins;
-  iface->printer_get_custom_widgets = pdf_printer_get_custom_widgets;
 }
 
 static GList *
@@ -436,10 +423,13 @@ pdf_printer_request_details (EggPrinter *printer)
 static EggPrinterOptionSet *
 pdf_printer_get_options (EggPrinter *printer)
 {
+  EggPrinterPdf *pdf_printer;
   EggPrinterOptionSet *set;
   EggPrinterOption *option;
   char *n_up[] = {"1", "2", "4", "6", "9", "16" };
 
+  pdf_printer = EGG_PRINTER_PDF (printer);
+  
   set = egg_printer_option_set_new ();
 
   option = egg_printer_option_new ("gtk-n-up", _("Pages Per Sheet"), EGG_PRINTER_OPTION_TYPE_PICKONE);
@@ -448,6 +438,15 @@ pdf_printer_get_options (EggPrinter *printer)
   egg_printer_option_set (option, "1");
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
+
+  option = egg_printer_option_new ("main-page-custom-input", _("File"), EGG_PRINTER_OPTION_TYPE_FILESAVE);
+  option->group = g_strdup ("GtkPrintDialogExtention");
+  egg_printer_option_set_add (set, option);
+  
+  if (pdf_printer->file_option)
+    g_object_unref (pdf_printer->file_option);
+
+  pdf_printer->file_option = option;
 
   return set;
 }
@@ -509,21 +508,6 @@ pdf_printer_get_hard_margins (EggPrinter *printer,
   *bottom = 0;
   *left = 0;
   *right = 0;
-}
-
-static GHashTable *
-pdf_printer_get_custom_widgets (EggPrinter *printer)
-{
-  EggPrinterPdf *pdf_printer;
-  GHashTable *widget_table;
-
-  pdf_printer = EGG_PRINTER_PDF (printer);
-
-  widget_table = g_hash_table_new (g_str_hash, g_str_equal);
-
-  g_hash_table_insert (widget_table, "main-page-custom-input", pdf_printer->filechooser); 
-
-  return widget_table;
 }
 
 static GList *

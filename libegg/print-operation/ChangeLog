@@ -1,3 +1,18 @@
+2006-03-16  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprintbackend.[ch]:
+	* eggprinter.c:
+	* eggprintunixdialog.c:
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	* modules/printbackends/pdf/eggprintbackendpdf.c:
+	* modules/printbackends/pdf/eggprinterpdf.c:
+	Remove printer_get_custom_widgets interface
+	in favor of extending the Options interface
+
+	* eggprinteroptionwidget.c:
+	* eggprinteroption.c:
+	Add a EGG_PRINTER_OPTION_TYPE_FILESAVE type
+
 2006-03-16  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintbackend.h:

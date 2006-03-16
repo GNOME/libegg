@@ -39,48 +39,10 @@ static void
 egg_printer_pdf_init (EggPrinterPdf *printer)
 {
   EggPrinter *parent;
-  GtkWidget *label;
-  GtkWidget *align;
 
   parent = EGG_PRINTER (printer);
 
-  /* TODO: make this a gtkfilechooserentry once we move to GTK */
-  printer->fileentry = gtk_entry_new ();
-  gtk_entry_set_text (GTK_ENTRY (printer->fileentry), "newprintout.pdf");
-
-  printer->filebutton = gtk_file_chooser_button_new ("Print to PDF", 
-                                                     GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
-
-  printer->filechooser = gtk_table_new (2, 2, FALSE);
-
-  align = gtk_alignment_new (0, 0.5, 0, 0);
-  label = gtk_label_new ("Name:");
-  gtk_container_add (GTK_CONTAINER (align), label);
- 
-  gtk_table_attach (GTK_TABLE (printer->filechooser), align,
-                    0, 1, 0, 1, GTK_FILL, 0,
-                    0, 0);
-
-  gtk_table_attach (GTK_TABLE (printer->filechooser), printer->fileentry,
-                    1, 2, 0, 1, GTK_FILL, 0,
-                    0, 0);
-
-  align = gtk_alignment_new (0, 0.5, 0, 0);
-  label = gtk_label_new ("Save in folder:");
-  gtk_container_add (GTK_CONTAINER (align), label);
-  
-  gtk_table_attach (GTK_TABLE (printer->filechooser), align,
-                    0, 1, 1, 2, GTK_FILL, 0,
-                    0, 0);
-
-  gtk_table_attach (GTK_TABLE (printer->filechooser), printer->filebutton,
-                    1, 2, 1, 2, GTK_FILL, 0,
-                    0, 0);
-
-  
-  /* this is part of our custom widget API so keep a ref around
-     so we don't get destroyed by the dialog */
-  gtk_widget_ref (printer->filechooser);
+  printer->file_option = NULL;
 
   parent->priv->has_details = TRUE;
   parent->priv->is_virtual = TRUE;
@@ -94,8 +56,8 @@ egg_printer_pdf_finalize (GObject *object)
 
   EggPrinterPdf *printer = EGG_PRINTER_PDF (object);
 
-  if (printer->filechooser)
-    gtk_widget_destroy (printer->filechooser);
+  if (printer->file_option)
+    g_object_unref (printer->file_option);
 
   if (G_OBJECT_CLASS (egg_printer_pdf_parent_class)->finalize)
     G_OBJECT_CLASS (egg_printer_pdf_parent_class)->finalize (object);

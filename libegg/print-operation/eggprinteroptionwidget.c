@@ -47,6 +47,7 @@ struct EggPrinterOptionWidgetPrivate
   GtkWidget *entry;
   GtkWidget *image;
   GtkWidget *label;
+  GtkWidget *filechooser;
 };
 
 enum {
@@ -333,6 +334,14 @@ deconstruct_widgets (EggPrinterOptionWidget *widget)
       widget->priv->entry = NULL;
     }
 
+  /* make sure entry and combo are destroyed first */
+  /* as we use the two of them to create the filechooser */
+  if (widget->priv->filechooser)
+    {
+      gtk_widget_destroy (widget->priv->filechooser);
+      widget->priv->filechooser = NULL;
+    }
+
   if (widget->priv->image)
     {
       gtk_widget_destroy (widget->priv->image);
@@ -353,6 +362,33 @@ check_toggled_cb (GtkToggleButton *toggle_button,
   g_signal_handler_block (widget->priv->source, widget->priv->source_changed_handler);
   egg_printer_option_set_boolean (widget->priv->source,
 				  gtk_toggle_button_get_active (toggle_button));
+  g_signal_handler_unblock (widget->priv->source, widget->priv->source_changed_handler);
+  emit_changed (widget);
+}
+
+static void
+filesave_changed_cb (GtkWidget *w,
+                     EggPrinterOptionWidget *widget)
+{
+  char *value;
+  char *directory;
+  const char *file;
+
+  /* combine the value of the chooser with the value of the entry */
+  g_signal_handler_block (widget->priv->source, widget->priv->source_changed_handler);  
+  
+  /* TODO: how do we support nonlocal file systems? */
+  directory = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (widget->priv->combo));
+  file =  gtk_entry_get_text (GTK_ENTRY (widget->priv->entry));
+
+  value = g_build_filename (directory, file, NULL);
+
+  if (value)
+    egg_printer_option_set (widget->priv->source, value);
+
+  g_free (directory);
+  g_free (value);
+
   g_signal_handler_unblock (widget->priv->source, widget->priv->source_changed_handler);
   emit_changed (widget);
 }
@@ -415,6 +451,50 @@ construct_widgets (EggPrinterOptionWidget *widget)
       widget->priv->label = gtk_label_new_with_mnemonic (text);
       g_free (text);
       gtk_widget_show (widget->priv->label);
+      break;
+    case EGG_PRINTER_OPTION_TYPE_FILESAVE:
+      {
+        GtkWidget *label;
+        GtkWidget *align;
+        
+        widget->priv->filechooser = gtk_table_new (2, 2, FALSE);
+
+        /* TODO: make this a gtkfilechooserentry once we move to GTK */
+        widget->priv->entry = gtk_entry_new ();
+        widget->priv->combo = gtk_file_chooser_button_new ("Print to PDF", 
+                                                           GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
+        
+        align = gtk_alignment_new (0, 0.5, 0, 0);
+        label = gtk_label_new ("Name:");
+        gtk_container_add (GTK_CONTAINER (align), label);
+
+        gtk_table_attach (GTK_TABLE (widget->priv->filechooser), align,
+                          0, 1, 0, 1, GTK_FILL, 0,
+                          0, 0);
+
+        gtk_table_attach (GTK_TABLE (widget->priv->filechooser), widget->priv->entry,
+                          1, 2, 0, 1, GTK_FILL, 0,
+                          0, 0);
+
+        align = gtk_alignment_new (0, 0.5, 0, 0);
+        label = gtk_label_new ("Save in folder:");
+        gtk_container_add (GTK_CONTAINER (align), label);
+
+        gtk_table_attach (GTK_TABLE (widget->priv->filechooser), align,
+                          0, 1, 1, 2, GTK_FILL, 0,
+                          0, 0);
+
+        gtk_table_attach (GTK_TABLE (widget->priv->filechooser), widget->priv->combo,
+                          1, 2, 1, 2, GTK_FILL, 0,
+                          0, 0);
+
+        gtk_widget_show_all (widget->priv->filechooser);
+        gtk_box_pack_start (GTK_BOX (widget), widget->priv->filechooser, TRUE, TRUE, 0);
+
+        g_signal_connect (widget->priv->entry, "changed", G_CALLBACK (filesave_changed_cb), widget);
+
+        g_signal_connect (widget->priv->combo, "current-folder-changed", G_CALLBACK (filesave_changed_cb), widget);
+      }
       break;
     case EGG_PRINTER_OPTION_TYPE_STRING:
       break;

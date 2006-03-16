@@ -562,6 +562,28 @@ setup_option (EggPrintUnixDialog *dialog,
 }
 
 static void
+add_option_to_extention_point (EggPrinterOption *option,
+		               gpointer          user_data)
+{
+  GHashTable *extention_points = (GHashTable *) user_data;
+
+  GtkWidget *widget;
+  GtkBox *extention_hbox;
+
+  extention_hbox = (GtkBox *) g_hash_table_lookup (extention_points, option->name);
+
+  if (extention_hbox)
+    {
+      widget = egg_printer_option_widget_new (option);
+      gtk_widget_show (widget);
+   
+      gtk_box_pack_start (extention_hbox, widget, FALSE, FALSE, 6);
+    }
+  else
+    g_warning ("Extention point %s requested but not found.", option->name);
+}
+
+static void
 add_option_to_table (EggPrinterOption *option,
 		     gpointer          user_data)
 {
@@ -659,6 +681,15 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
 	  strcmp (group, "ColorPage") == 0 ||
 	  strcmp (group, "FinishingPage") == 0)
 	continue;
+
+      if (strcmp (group, "GtkPrintDialogExtention") == 0)
+        {
+          egg_printer_option_set_foreach_in_group (dialog->priv->options,
+					           group,
+					           add_option_to_extention_point,
+					           dialog->priv->extention_points);
+          continue;
+        }
 
       table = gtk_table_new (1, 2, FALSE);
       
@@ -809,45 +840,6 @@ printer_details_acquired (EggPrinter *printer,
     }
 }
 
-
-static void
-extention_point_add_from_hash (const gchar *key,
-                               GtkContainer *container,
-                               GHashTable *widget_table)
-{
-   GtkWidget *custom_widget;
-
-   custom_widget = g_hash_table_lookup (widget_table,
-                                        key);
-
-   if (custom_widget != NULL)
-     {
-       gtk_container_add (container, custom_widget);
-       gtk_widget_show_all (GTK_WIDGET (container));
-     }
-}
-
-static void
-add_custom_ui (EggPrintUnixDialog *dialog, 
-               EggPrinter *printer)
-{
-  GHashTable *widget_table;
-
-  widget_table = _egg_printer_get_custom_widgets (printer);
-
-  if (widget_table == NULL)
-    return;
-
-  /* TODO: define more extention points */
-  
-  /* Go through a list of known extention points */
-  g_hash_table_foreach (dialog->priv->extention_points,
-                        (GHFunc) extention_point_add_from_hash,
-                        widget_table);
-
-  g_hash_table_unref (widget_table);
-}
-
 static void
 selected_printer_changed (GtkTreeSelection *selection,
 			  EggPrintUnixDialog *dialog)
@@ -904,7 +896,6 @@ selected_printer_changed (GtkTreeSelection *selection,
     g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
   
   update_dialog_from_settings (dialog);
-  add_custom_ui (dialog, printer);
 }
 
 static void

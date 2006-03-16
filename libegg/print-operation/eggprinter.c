@@ -391,10 +391,3 @@ _egg_printer_get_hard_margins          (EggPrinter          *printer,
   backend_iface->printer_get_hard_margins (printer, top, bottom, left, right);
 }
 
-GHashTable *
-_egg_printer_get_custom_widgets (EggPrinter          *printer)
-{
-  EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
-
-  return backend_iface->printer_get_custom_widgets (printer);
-}

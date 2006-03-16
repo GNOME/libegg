@@ -93,8 +93,6 @@ struct _EggPrintBackendIface
 							      double     *left,
 							      double     *right);
 
-  GHashTable *          (*printer_get_custom_widgets)        (EggPrinter *printer);
-
   /* Signals 
    */
   void (*printer_added)          (EggPrinter *printer);

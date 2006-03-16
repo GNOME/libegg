@@ -129,7 +129,6 @@ static void                 cups_printer_get_hard_margins          (EggPrinter  
 								    double                            *bottom,
 								    double                            *left,
 								    double                            *right);
-static GHashTable *         cups_printer_get_custom_widgets        (EggPrinter *printer);
 
 static void
 egg_print_backend_register_type (GTypeModule *module)
@@ -380,7 +379,6 @@ egg_print_backend_cups_iface_init (EggPrintBackendIface *iface)
   iface->printer_prepare_for_print = cups_printer_prepare_for_print;
   iface->printer_list_papers = cups_printer_list_papers;
   iface->printer_get_hard_margins = cups_printer_get_hard_margins;
-  iface->printer_get_custom_widgets = cups_printer_get_custom_widgets;
 }
 
 static void
@@ -1835,10 +1833,4 @@ cups_printer_get_hard_margins (EggPrinter *printer,
   *bottom = ppd_file->custom_margins[1];
   *right = ppd_file->custom_margins[2];
   *top = ppd_file->custom_margins[3];
-}
-
-static GHashTable *
-cups_printer_get_custom_widgets (EggPrinter *printer)
-{
-  return NULL;
 }
