@@ -52,6 +52,8 @@ const char *      egg_print_settings_get        (EggPrintSettings     *settings,
 void              egg_print_settings_set        (EggPrintSettings     *settings,
 						 const char           *key,
 						 const char           *value);
+void              egg_print_settings_unset      (EggPrintSettings     *settings,
+						 const char           *key);
 void              egg_print_settings_foreach    (EggPrintSettings     *settings,
 						 EggPrintSettingsFunc  func,
 						 gpointer              user_data);

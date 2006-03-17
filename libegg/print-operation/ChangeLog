@@ -1,5 +1,22 @@
 2006-03-17  Alexander Larsson  <alexl@redhat.com>
 
+	* TODO:
+	Update
+	
+	* eggpagesetupunixdialog.c:
+	Support getting and setting format-for-printer.
+	Remove unused property code
+	Start custom size dialog with a new size if there are none.
+	
+	* eggprintbackend.c:
+	Only initialize gtk-setting once.
+	
+	* eggprintsettings.[ch]:
+	Add egg_print_settings_unset, and make setting a value to
+	NULL unset it.
+
+2006-03-17  Alexander Larsson  <alexl@redhat.com>
+
 	* eggpagesetupunixdialog.c (page_name_func):
 	Manage Custom Size -> Manage Custom Sizes
 

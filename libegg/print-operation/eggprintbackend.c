@@ -21,6 +21,8 @@
 #include <config.h>
 #include <gmodule.h>
 
+#include "eggintl.h"
+#include <gtk/gtkprivate.h>
 #include "eggprintbackend.h"
 
 #include <string.h>
@@ -142,7 +144,6 @@ _egg_print_backend_module_class_init (EggPrintBackendModuleClass *class)
   module_class->unload = egg_print_backend_module_unload;
 
   gobject_class->finalize = egg_print_backend_module_finalize;
-
 }
 
 static void
@@ -311,6 +312,23 @@ property_parse_list (const gchar *string)
   return results;
 }
 
+static void
+egg_print_backend_initialize (void)
+{
+  static gboolean initialized = FALSE;
+
+  if (!initialized)
+    {
+      gtk_settings_install_property (g_param_spec_string ("gtk-print-backends",
+							  P_("Default print backend"),
+							  P_("List of the GtkPrintBackend backends to use by default"),
+							  "{\"pdf\", \"cups\"}",
+							  GTK_PARAM_READWRITE));
+
+      initialized = TRUE;
+    }
+}
+
 
 
 GList *
@@ -321,15 +339,11 @@ egg_print_backend_load_modules ()
   gchar * s_backend_list;
   GList *backend_list, *node;
   GtkSettings *settings;
-  
 
   result = NULL;
 
-  gtk_settings_install_property (g_param_spec_string ("gtk-print-backends",
-			       	                      "Default print backend",
-						      "List of the GtkPrintBackend backends to use by default",
-						      "{\"pdf\", \"cups\"}",
-						      G_PARAM_READWRITE));
+  egg_print_backend_initialize ();
+  
   settings = gtk_settings_get_default ();
 
   g_object_get (settings, "gtk-print-backends", &s_backend_list, NULL);

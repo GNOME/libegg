@@ -160,9 +160,19 @@ egg_print_settings_set (EggPrintSettings *settings,
 			const char *key,
 			const char *value)
 {
-  g_hash_table_insert (settings->hash, 
-		       g_strdup (key), 
-		       g_strdup (value));
+  if (value == NULL)
+    egg_print_settings_unset (settings, key);
+  else
+    g_hash_table_insert (settings->hash, 
+			 g_strdup (key), 
+			 g_strdup (value));
+}
+
+void
+egg_print_settings_unset (EggPrintSettings *settings,
+			  const char *key)
+{
+  g_hash_table_remove (settings->hash, key);
 }
 
 gboolean        

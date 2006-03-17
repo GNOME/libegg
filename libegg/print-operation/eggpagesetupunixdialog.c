@@ -63,15 +63,13 @@ struct EggPageSetupUnixDialogPrivate
 
   /* Save last setup so we can re-set it after selecting manage custom sizes */
   EggPageSetup *last_setup;
-};
 
-enum {
-  PROP_0
+  char *waiting_for_printer;
 };
 
 enum {
   PRINTER_LIST_COL_NAME,
-  PRINTER_LIST_COL_PRINTER_OBJ,
+  PRINTER_LIST_COL_PRINTER,
   PRINTER_LIST_N_COLS
 };
 
@@ -87,14 +85,6 @@ G_DEFINE_TYPE (EggPageSetupUnixDialog, egg_page_setup_unix_dialog, GTK_TYPE_DIAL
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_PAGE_SETUP_UNIX_DIALOG, EggPageSetupUnixDialogPrivate))
 
 static void egg_page_setup_unix_dialog_finalize     (GObject                *object);
-static void egg_page_setup_unix_dialog_set_property (GObject                *object,
-						     guint                   prop_id,
-						     const GValue           *value,
-						     GParamSpec             *pspec);
-static void egg_page_setup_unix_dialog_get_property (GObject                *object,
-						     guint                   prop_id,
-						     GValue                 *value,
-						     GParamSpec             *pspec);
 static void populate_dialog                         (EggPageSetupUnixDialog *dialog);
 static void fill_paper_sizes_from_printer           (EggPageSetupUnixDialog *dialog,
 						     EggPrinter             *printer);
@@ -350,8 +340,6 @@ egg_page_setup_unix_dialog_class_init (EggPageSetupUnixDialogClass *class)
   widget_class = (GtkWidgetClass *) class;
 
   object_class->finalize = egg_page_setup_unix_dialog_finalize;
-  object_class->set_property = egg_page_setup_unix_dialog_set_property;
-  object_class->get_property = egg_page_setup_unix_dialog_get_property;
 
   g_type_class_add_private (class, sizeof (EggPageSetupUnixDialogPrivate));  
 }
@@ -371,7 +359,7 @@ egg_page_setup_unix_dialog_init (EggPageSetupUnixDialog *dialog)
   gtk_list_store_append (dialog->priv->printer_list, &iter);
   gtk_list_store_set (dialog->priv->printer_list, &iter,
                       PRINTER_LIST_COL_NAME, _("<b>Any Printer</b>\nFor portable documents"),
-                      PRINTER_LIST_COL_PRINTER_OBJ, NULL,
+                      PRINTER_LIST_COL_PRINTER, NULL,
                       -1);
   
   dialog->priv->page_setup_list = gtk_list_store_new (PAGE_SETUP_LIST_N_COLS,
@@ -414,6 +402,9 @@ egg_page_setup_unix_dialog_finalize (GObject *object)
       g_object_unref (dialog->priv->print_settings);
       dialog->priv->print_settings = NULL;
     }
+
+  g_free (dialog->priv->waiting_for_printer);
+  dialog->priv->waiting_for_printer = NULL;
   
   if (G_OBJECT_CLASS (egg_page_setup_unix_dialog_parent_class)->finalize)
     G_OBJECT_CLASS (egg_page_setup_unix_dialog_parent_class)->finalize (object);
@@ -429,7 +420,7 @@ _printer_added_cb (EggPrintBackend *backend,
 
   if (egg_printer_is_virtual (printer))
     return;
-  
+ 
   str = g_strdup_printf ("<b>%s</b>\n%s",
 			 egg_printer_get_name (printer),
 			 egg_printer_get_location (printer));
@@ -437,9 +428,18 @@ _printer_added_cb (EggPrintBackend *backend,
   gtk_list_store_append (dialog->priv->printer_list, &iter);
   gtk_list_store_set (dialog->priv->printer_list, &iter,
                       PRINTER_LIST_COL_NAME, str,
-                      PRINTER_LIST_COL_PRINTER_OBJ, printer,
+                      PRINTER_LIST_COL_PRINTER, printer,
                       -1);
   g_free (str);
+
+  if (dialog->priv->waiting_for_printer != NULL &&
+      strcmp (dialog->priv->waiting_for_printer,
+	      egg_printer_get_name (printer)) == 0)
+    {
+      gtk_combo_box_set_active_iter (GTK_COMBO_BOX (dialog->priv->printer_combo),
+				     &iter);
+      dialog->priv->waiting_for_printer = NULL;
+    }
 }
 
 static void
@@ -503,35 +503,6 @@ _load_print_backends (EggPageSetupUnixDialog *dialog)
 
   for (node = dialog->priv->print_backends; node != NULL; node = node->next)
     _printer_list_initialize (dialog, EGG_PRINT_BACKEND (node->data));
-}
-
-static void
-egg_page_setup_unix_dialog_set_property (GObject      *object,
-					 guint         prop_id,
-					 const GValue *value,
-					 GParamSpec   *pspec)
-
-{
-  switch (prop_id)
-    {
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-    }
-}
-
-static void
-egg_page_setup_unix_dialog_get_property (GObject    *object,
-					 guint       prop_id,
-					 GValue     *value,
-					 GParamSpec *pspec)
-{
-  switch (prop_id)
-    {
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-    }
 }
 
 static gboolean
@@ -753,6 +724,14 @@ printer_changed_callback (GtkComboBox *combo_box,
   EggPrinter *printer;
   GtkTreeIter iter;
 
+  /* If we're waiting for a specific printer but the user changed
+     to another printer, cancel that wait. */
+  if (dialog->priv->waiting_for_printer)
+    {
+      g_free (dialog->priv->waiting_for_printer);
+      dialog->priv->waiting_for_printer = NULL;
+    }
+  
   if (dialog->priv->request_details_tag)
     {
       g_source_remove (dialog->priv->request_details_tag);
@@ -762,7 +741,7 @@ printer_changed_callback (GtkComboBox *combo_box,
   if (gtk_combo_box_get_active_iter (combo_box, &iter))
     {
       gtk_tree_model_get (gtk_combo_box_get_model (combo_box), &iter,
-			  PRINTER_LIST_COL_PRINTER_OBJ, &printer, -1);
+			  PRINTER_LIST_COL_PRINTER, &printer, -1);
 
       if (printer == NULL || _egg_printer_has_details (printer))
 	fill_paper_sizes_from_printer (dialog, printer);
@@ -778,7 +757,16 @@ printer_changed_callback (GtkComboBox *combo_box,
       if (printer)
 	g_object_unref (printer);
 
-      /* TODO: Add format-for-printer to print_settings */
+      if (dialog->priv->print_settings)
+	{
+	  const char *name = NULL;
+
+	  if (printer)
+	    name = egg_printer_get_name (printer);
+	  
+	  egg_print_settings_set (dialog->priv->print_settings,
+				  "format-for-printer", name);
+	}
     }
 }
 
@@ -1149,19 +1137,64 @@ egg_page_setup_unix_dialog_get_page_setup (EggPageSetupUnixDialog *dialog)
   return page_setup;
 }
 
+static gboolean
+set_active_printer (EggPageSetupUnixDialog *dialog,
+		    const char *printer_name)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  EggPrinter *printer;
+
+  model = GTK_TREE_MODEL (dialog->priv->printer_list);
+
+  if (gtk_tree_model_get_iter_first (model, &iter))
+    {
+      do
+	{
+	  gtk_tree_model_get (GTK_TREE_MODEL (dialog->priv->printer_list), &iter,
+			      PRINTER_LIST_COL_PRINTER, &printer, -1);
+	  if (printer == NULL)
+	    continue;
+	  
+	  if (strcmp (egg_printer_get_name (printer), printer_name) == 0)
+	    {
+	      gtk_combo_box_set_active_iter (GTK_COMBO_BOX (dialog->priv->printer_combo),
+					     &iter);
+	      g_object_unref (printer);
+	      return TRUE;
+	    }
+	      
+	  g_object_unref (printer);
+	  
+	} while (gtk_tree_model_iter_next (model, &iter));
+    }
+  
+  return FALSE;
+}
+
 void
 egg_page_setup_unix_dialog_set_print_settings (EggPageSetupUnixDialog *dialog,
 					       EggPrintSettings       *print_settings)
 {
+  const char *format_for_printer;
+
   if (dialog->priv->print_settings)
     g_object_unref (dialog->priv->print_settings);
 
   dialog->priv->print_settings = print_settings;
 
   if (print_settings)
-    g_object_ref (print_settings);
+    {
+      g_object_ref (print_settings);
 
-  /* TODO: Set format-for-printer if set. Delayed... */
+      format_for_printer = egg_print_settings_get (print_settings, "format-for-printer");
+
+      /* Set printer if in list, otherwise set when that printer
+	 is added */
+      if (format_for_printer &&
+	  !set_active_printer (dialog, format_for_printer))
+	dialog->priv->waiting_for_printer = g_strdup (format_for_printer); 
+    }
 }
 
 EggPrintSettings *
@@ -1284,7 +1317,7 @@ custom_paper_printer_data_func (GtkCellLayout   *cell_layout,
 {
   EggPrinter *printer;
   gtk_tree_model_get (tree_model, iter,
-		      PRINTER_LIST_COL_PRINTER_OBJ, &printer, -1);
+		      PRINTER_LIST_COL_PRINTER, &printer, -1);
 
   if (printer)
     g_object_set (cell, "text",  egg_printer_get_name (printer), NULL);
@@ -1539,7 +1572,7 @@ margins_from_printer_changed (CustomPaperDialog *data)
   if (gtk_combo_box_get_active_iter  (combo, &iter))
     {
       gtk_tree_model_get (gtk_combo_box_get_model (combo), &iter,
-			  PRINTER_LIST_COL_PRINTER_OBJ, &printer, -1);
+			  PRINTER_LIST_COL_PRINTER, &printer, -1);
 
       if (printer)
 	{
@@ -1629,6 +1662,7 @@ run_custom_paper_dialog (EggPageSetupUnixDialog *dialog)
   GtkWidget *hbox, *vbox, *treeview, *scrolled, *button_box, *button;
   GtkCellRenderer *cell;
   GtkTreeViewColumn *column;
+  GtkTreeIter iter;
   GtkTreeSelection *selection;
   CustomPaperDialog *data;
   EggUnit user_units;
@@ -1823,6 +1857,15 @@ run_custom_paper_dialog (EggPageSetupUnixDialog *dialog)
   gtk_widget_show (frame);
 
   update_custom_widgets_from_list (data);
+
+  /* If no custom sizes, add one */
+  if (!gtk_tree_model_get_iter_first (GTK_TREE_MODEL (dialog->priv->custom_paper_list),
+				      &iter))
+    {
+      /* Need to realize treeview so we can start the rename */
+      gtk_widget_realize (treeview);
+      add_custom_paper (data);
+    }
   
   gtk_dialog_run (GTK_DIALOG (custom_dialog));
   gtk_widget_destroy (custom_dialog);

@@ -37,10 +37,7 @@ print preview ideas?
 <matthias> since it can be a bit confusing that there are different layers which can be ported
 
 page setting dialog:
-* save the format-for printer
 * land/port icons
-* auto-create a new size first time the custom size dialog is opened
-<mclasen> and since you can have multiple custom sizes, the combobox should say "Manage custom sizes..."
 
 * sort paper lists
 * nicer unit editor than spinbutton
