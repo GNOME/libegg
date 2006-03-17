@@ -936,7 +936,7 @@ page_name_func (GtkCellLayout   *cell_layout,
       g_object_unref (page_setup);
     }
   else
-    g_object_set (cell, "text",  _("Manage Custom Size..."), NULL);
+    g_object_set (cell, "text",  _("Manage Custom Sizes..."), NULL);
       
 }
 
