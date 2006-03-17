@@ -171,7 +171,6 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
           return EGG_PRINT_OPERATION_RESULT_ERROR;
 	}
 
-      g_object_unref (G_OBJECT (printer));
       op_unix->parent = parent;
 
       op->priv->surface = egg_print_job_get_surface (op_unix->job);

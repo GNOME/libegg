@@ -1862,7 +1862,7 @@ EggPrinter *
 egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog)
 {
   if (dialog->priv->current_printer)
-    return g_object_ref (dialog->priv->current_printer);
+    return dialog->priv->current_printer;
   
   return NULL; 
 }

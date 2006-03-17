@@ -340,7 +340,7 @@ egg_print_backend_pdf_print_stream (EggPrintBackend *print_backend,
       pdf_print_cb (EGG_PRINT_BACKEND_PDF (print_backend),
                     &error,
                     ps);
-      goto out;
+      return;
     }
   
   save_channel = g_io_channel_unix_new (data_fd);
@@ -350,9 +350,6 @@ egg_print_backend_pdf_print_stream (EggPrintBackend *print_backend,
                   (GIOFunc) pdf_write,
                   ps);
 
- out:
-  g_object_unref (settings);
-  g_object_unref (pdf_printer);
 }
 
 

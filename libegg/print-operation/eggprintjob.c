@@ -218,7 +218,7 @@ EggPrintSettings *
 egg_print_job_get_settings (EggPrintJob *print_job)
 {
   g_assert (EGG_IS_PRINT_SETTINGS (print_job->priv->settings));
-  return g_object_ref (print_job->priv->settings);
+  return print_job->priv->settings;
 }
 
 
@@ -227,7 +227,7 @@ egg_print_job_get_printer (EggPrintJob *print_job)
 {
   EGG_IS_PRINT_JOB (print_job);
   
-  return g_object_ref (print_job->priv->printer);
+  print_job->priv->printer;
 }
 
 
@@ -291,7 +291,7 @@ egg_print_job_set_property (GObject      *object,
     case EGG_PRINT_JOB_PROP_PRINTER:
       impl->priv->printer = EGG_PRINTER (g_value_dup_object (value));
       impl->priv->printer_set = TRUE;
-      impl->priv->backend = egg_printer_get_backend (impl->priv->printer);
+      impl->priv->backend = g_object_ref (egg_printer_get_backend (impl->priv->printer));
       break;
 
     case EGG_PRINT_JOB_PROP_SETTINGS:

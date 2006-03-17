@@ -329,10 +329,6 @@ egg_print_backend_lpr_print_stream (EggPrintBackend *print_backend,
 #endif
 
  /* TODO: spawn lpr with pipes and pipe ps file to lpr */
-
- out:
-  g_object_unref (settings);
-  g_object_unref (lpr_printer);
 }
 
 

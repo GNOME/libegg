@@ -237,7 +237,7 @@ egg_printer_get_backend (EggPrinter *printer)
 {
   g_return_val_if_fail (EGG_IS_PRINTER (printer), NULL);
   
-  return g_object_ref (G_OBJECT (printer->priv->backend));
+  return printer->priv->backend;
 }
 
 const gchar *

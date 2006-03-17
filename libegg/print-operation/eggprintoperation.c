@@ -187,7 +187,7 @@ egg_print_operation_get_print_settings (EggPrintOperation  *op)
   g_return_val_if_fail (op != NULL, NULL);
 
   if (op->priv->print_settings)
-    return g_object_ref (op->priv->print_settings);
+    return op->priv->print_settings;
   
   return NULL;
 }

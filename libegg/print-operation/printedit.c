@@ -394,7 +394,7 @@ do_print (GtkAction *action)
     {
       if (settings != NULL)
 	g_object_unref (settings);
-      settings = egg_print_operation_get_print_settings (print);
+      settings = g_object_ref (egg_print_operation_get_print_settings (print));
     }
 }
 

@@ -359,9 +359,6 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
                         ps,
                         NULL,
                         &error);
-
-  g_object_unref (settings);
-  g_object_unref (cups_printer);
 }
 
 
