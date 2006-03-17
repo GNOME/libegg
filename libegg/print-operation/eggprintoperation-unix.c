@@ -115,10 +115,22 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 {
   GtkWidget *pd;
   EggPrintOperationResult result;
+  EggPageSetup *page_setup;
   
   result = EGG_PRINT_OPERATION_RESULT_CANCEL;
-  
+
+  if (op->priv->default_page_setup)
+    page_setup = egg_page_setup_copy (op->priv->default_page_setup);
+  else
+    page_setup = egg_page_setup_new ();
+
   pd = egg_print_unix_dialog_new ("Print...", parent);
+
+  if (op->priv->print_settings)
+    egg_print_unix_dialog_set_settings (EGG_PRINT_UNIX_DIALOG (pd),
+					op->priv->print_settings);
+
+  egg_print_unix_dialog_set_page_setup (EGG_PRINT_UNIX_DIALOG (pd), page_setup);
   
   *do_print = FALSE; 
   if (gtk_dialog_run (GTK_DIALOG (pd)) == GTK_RESPONSE_ACCEPT)
@@ -126,7 +138,6 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
       EggPrintOperationUnix *op_unix;
       EggPrinter *printer;
       EggPrintSettings *settings;
-      EggPageSetup *page_setup;
       double width, height;
  
       *do_print = TRUE;
@@ -134,10 +145,6 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 
       printer = egg_print_unix_dialog_get_selected_printer (EGG_PRINT_UNIX_DIALOG (pd));
 
-      if (op->priv->default_page_setup)
-        page_setup = egg_page_setup_copy (op->priv->default_page_setup);
-      else
-        page_setup = egg_page_setup_new ();
 
       width = egg_page_setup_get_paper_width (page_setup, EGG_UNIT_POINTS);
       height = egg_page_setup_get_paper_height (page_setup, EGG_UNIT_POINTS);
@@ -145,7 +152,9 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 
 
       settings = egg_print_unix_dialog_get_settings (EGG_PRINT_UNIX_DIALOG (pd));
-      
+
+      egg_print_operation_set_print_settings (op, settings);
+
       op_unix = g_new (EggPrintOperationUnix, 1);
       op_unix->job = egg_printer_prep_job (printer,
 					   settings,

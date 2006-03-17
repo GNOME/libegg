@@ -77,6 +77,9 @@ struct EggPrintUnixDialogPrivate
   
   GtkTreeModel *printer_list;
 
+  EggPageSetup *page_setup;
+
+  GtkWidget *print_button;
   GtkWidget *all_pages_radio;
   GtkWidget *current_page_radio;
   GtkWidget *page_range_radio;
@@ -86,13 +89,11 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *collate_check;
   GtkWidget *reverse_check;
   GtkWidget *collate_image;
-  GtkWidget *orientation_combo;
   GtkWidget *page_layout_preview;
   GtkWidget *scale_spin;
   GtkWidget *page_set_combo;
   EggPrinterOptionWidget *pages_per_sheet;
   EggPrinterOptionWidget *duplex;
-  EggPrinterOptionWidget *paper_size;
   EggPrinterOptionWidget *paper_type;
   EggPrinterOptionWidget *paper_source;
   EggPrinterOptionWidget *output_tray;
@@ -331,6 +332,8 @@ egg_print_unix_dialog_init (EggPrintUnixDialog *dialog)
   dialog->priv->extention_points = g_hash_table_new (g_str_hash,
                                                      g_str_equal);
 
+  dialog->priv->page_setup = egg_page_setup_new ();
+
   populate_dialog (dialog);
 
   g_signal_connect (dialog, 
@@ -338,6 +341,9 @@ egg_print_unix_dialog_init (EggPrintUnixDialog *dialog)
 		    (GCallback) egg_print_unix_dialog_destroy, 
 		    NULL);
 
+  gtk_dialog_add_button (GTK_DIALOG (dialog), GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT);
+  dialog->priv->print_button = gtk_dialog_add_button (GTK_DIALOG (dialog), GTK_STOCK_PRINT, GTK_RESPONSE_ACCEPT);
+  gtk_widget_set_sensitive (dialog->priv->print_button, FALSE);
 }
 
 static void
@@ -386,6 +392,12 @@ egg_print_unix_dialog_finalize (GObject *object)
       dialog->priv->extention_points = NULL;
     }
  
+  if (dialog->priv->page_setup)
+    {
+      g_object_unref (dialog->priv->page_setup);
+      dialog->priv->page_setup = NULL;
+    }
+ 
   if (G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize)
     G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize (object);
 }
@@ -396,7 +408,6 @@ _printer_added_cb (EggPrintBackend *backend,
 		   EggPrintUnixDialog *impl)
 {
   GtkTreeIter iter;
-  GtkTreeSelection *selection;
 
   gtk_list_store_append (GTK_LIST_STORE (impl->priv->printer_list), &iter);
 
@@ -408,11 +419,6 @@ _printer_added_cb (EggPrintBackend *backend,
                       PRINTER_LIST_COL_LOCATION, egg_printer_get_location (printer),
                       PRINTER_LIST_COL_PRINTER_OBJ, printer,
                       -1);
-
-  /* If this is the first printer, select it */
-  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (impl->priv->printer_treeview));
-  if (!gtk_tree_selection_get_selected (selection, NULL, NULL))
-    gtk_tree_selection_select_iter (selection, &iter);
 }
 
 static void
@@ -646,7 +652,6 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   
   setup_option (dialog, "gtk-n-up", dialog->priv->pages_per_sheet);
   setup_option (dialog, "gtk-duplex", dialog->priv->duplex);
-  setup_option (dialog, "gtk-paper-size", dialog->priv->paper_size);
   setup_option (dialog, "gtk-paper-type", dialog->priv->paper_type);
   setup_option (dialog, "gtk-paper-source", dialog->priv->paper_source);
   setup_option (dialog, "gtk-output-tray", dialog->priv->output_tray);
@@ -859,8 +864,10 @@ selected_printer_changed (GtkTreeSelection *selection,
 			PRINTER_LIST_COL_PRINTER_OBJ, &printer,
 			-1);
 
+  
   if (printer != NULL && !_egg_printer_has_details (printer))
     {
+      gtk_widget_set_sensitive (dialog->priv->print_button, FALSE);
       dialog->priv->request_details_tag =
 	g_signal_connect (printer, "details-acquired",
 			  G_CALLBACK (printer_details_acquired), dialog);
@@ -888,6 +895,7 @@ selected_printer_changed (GtkTreeSelection *selection,
       g_object_unref (dialog->priv->current_printer);
     }
 
+  gtk_widget_set_sensitive (dialog->priv->print_button, TRUE);
   dialog->priv->current_printer = printer;
 
   dialog->priv->options = _egg_printer_get_options (printer);
@@ -1182,10 +1190,24 @@ dialog_get_scale (EggPrintUnixDialog *dialog)
   return gtk_spin_button_get_value (GTK_SPIN_BUTTON (dialog->priv->scale_spin));
 }
 
+static void
+dialog_set_scale (EggPrintUnixDialog *dialog, double val)
+{
+  return gtk_spin_button_set_value (GTK_SPIN_BUTTON (dialog->priv->scale_spin),
+				    val);
+}
+
 static EggPageSet
 dialog_get_page_set (EggPrintUnixDialog *dialog)
 {
-  return (EggPageOrientation)gtk_combo_box_get_active (GTK_COMBO_BOX (dialog->priv->page_set_combo));
+  return (EggPageSet)gtk_combo_box_get_active (GTK_COMBO_BOX (dialog->priv->page_set_combo));
+}
+
+static void
+dialog_set_page_set (EggPrintUnixDialog *dialog, EggPageSet val)
+{
+  gtk_combo_box_set_active (GTK_COMBO_BOX (dialog->priv->page_set_combo),
+			    (int)val);
 }
 
 static int
@@ -1194,10 +1216,24 @@ dialog_get_n_copies (EggPrintUnixDialog *dialog)
   return gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (dialog->priv->copies_spin));
 }
 
+static void
+dialog_set_n_copies (EggPrintUnixDialog *dialog, int n_copies)
+{
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (dialog->priv->copies_spin),
+			     n_copies);
+}
+
 static gboolean
 dialog_get_collate (EggPrintUnixDialog *dialog)
 {
   return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->collate_check));
+}
+
+static void
+dialog_set_collate (EggPrintUnixDialog *dialog, gboolean collate)
+{
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (dialog->priv->collate_check),
+				collate);
 }
 
 static gboolean
@@ -1206,11 +1242,11 @@ dialog_get_reverse (EggPrintUnixDialog *dialog)
   return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_check));
 }
 
-
-static EggPageOrientation
-dialog_get_orientation (EggPrintUnixDialog *dialog)
+static void
+dialog_set_reverse (EggPrintUnixDialog *dialog, gboolean reverse)
 {
-  return (EggPageOrientation)gtk_combo_box_get_active (GTK_COMBO_BOX (dialog->priv->orientation_combo));
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (dialog->priv->reverse_check),
+				reverse);
 }
 
 static int 
@@ -1250,7 +1286,7 @@ draw_page_cb (GtkWidget	     *widget,
   PangoFontDescription *font;
   char *text;
   
-  orientation = dialog_get_orientation (dialog);
+  orientation = egg_page_setup_get_orientation (dialog->priv->page_setup);
   landscape =
     (orientation == EGG_PAGE_ORIENTATION_LANDSCAPE) ||
     (orientation == EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE);
@@ -1435,28 +1471,6 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
   gtk_widget_show (label);
   gtk_box_pack_start (GTK_BOX (hbox2), label, FALSE, FALSE, 0);
 
-  label = gtk_label_new (_("Orientation:"));
-  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-  gtk_widget_show (label);
-  gtk_table_attach (GTK_TABLE (table), label,
-		    0, 1, 3, 4,  GTK_FILL, 0,
-		    0, 0);
-
-  combo = gtk_combo_box_new_text ();
-  g_signal_connect_swapped (combo, "changed",
-			    G_CALLBACK (redraw_page_layout_preview), dialog);
-  priv->orientation_combo = combo;
-  gtk_widget_show (combo);
-  gtk_table_attach (GTK_TABLE (table), combo,
-		    1, 2, 3, 4,  GTK_FILL, 0,
-		    0, 0);
-  /* In enum order: */
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Portrait"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Landscape"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Reverse Portrait"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Reverse Landscape"));  
-  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
-
   label = gtk_label_new (_("Only Print:"));
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
   gtk_widget_show (label);
@@ -1480,20 +1494,6 @@ create_page_setup_page (EggPrintUnixDialog *dialog)
   frame = wrap_in_frame (_("Paper"), table);
   gtk_box_pack_start (GTK_BOX (hbox), frame, TRUE, TRUE, 6);
   gtk_widget_show (table);
-
-  label = gtk_label_new (_("Paper size:"));
-  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-  gtk_widget_show (label);
-  gtk_table_attach (GTK_TABLE (table), label,
-		    0, 1, 0, 1,  GTK_FILL, 0,
-		    0, 0);
-
-  widget = egg_printer_option_widget_new (NULL);
-  priv->paper_size = EGG_PRINTER_OPTION_WIDGET (widget);
-  gtk_widget_show (widget);
-  gtk_table_attach (GTK_TABLE (table), widget,
-		    1, 2, 0, 1,  GTK_FILL, 0,
-		    0, 0);
 
   label = gtk_label_new (_("Paper Type:"));
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
@@ -1709,7 +1709,6 @@ create_optional_page (EggPrintUnixDialog *dialog,
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
 				  GTK_POLICY_NEVER,
 				  GTK_POLICY_AUTOMATIC);
-  gtk_widget_show (scrolled);
   
   table = gtk_table_new (1, 2, FALSE);
   gtk_widget_show (table);
@@ -1742,7 +1741,6 @@ create_advanced_page (EggPrintUnixDialog *dialog)
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
 				  GTK_POLICY_NEVER,
 				  GTK_POLICY_AUTOMATIC);
-  gtk_widget_show (scrolled);
 
   main_vbox = gtk_vbox_new (FALSE, 8);
   gtk_widget_show (main_vbox);
@@ -1857,11 +1855,6 @@ egg_print_unix_dialog_new (const gchar *title,
   if (parent)
     gtk_window_set_transient_for (GTK_WINDOW (result), parent);
 
-  gtk_dialog_add_buttons (GTK_DIALOG (result), 
-                          GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
-                          GTK_STOCK_PRINT, GTK_RESPONSE_ACCEPT,
-                          NULL);
-
   return result;
 }
 
@@ -1875,6 +1868,16 @@ egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog)
 }
 
 void
+egg_print_unix_dialog_set_page_setup (EggPrintUnixDialog *dialog,
+				      EggPageSetup       *page_setup)
+{
+  g_return_if_fail (EGG_IS_PAGE_SETUP (page_setup));
+
+  g_object_unref (dialog->priv->page_setup);
+  dialog->priv->page_setup = g_object_ref (page_setup);
+}
+
+void
 egg_print_unix_dialog_set_current_page (EggPrintUnixDialog *dialog,
 					int                 current_page)
 {
@@ -1884,6 +1887,20 @@ egg_print_unix_dialog_set_current_page (EggPrintUnixDialog *dialog,
     gtk_widget_set_sensitive (dialog->priv->current_page_radio, current_page != -1);
 }
 
+void
+egg_print_unix_dialog_set_settings (EggPrintUnixDialog *dialog,
+				    EggPrintSettings   *settings)
+{
+  dialog_set_collate (dialog, egg_print_settings_get_collate (settings));
+  dialog_set_reverse (dialog, egg_print_settings_get_reverse (settings));
+  dialog_set_n_copies (dialog, egg_print_settings_get_num_copies (settings));
+  dialog_set_scale (dialog, egg_print_settings_get_scale (settings));
+  dialog_set_page_set (dialog, egg_print_settings_get_page_set (settings));
+  
+  /* TODO: page ranges */
+
+  /* TODO: Handle printer choosen and printer-specific settings */
+}
 
 EggPrintSettings *
 egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
@@ -1900,9 +1917,6 @@ egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
     egg_print_settings_set_printer (settings, "default");
   
 
-  egg_print_settings_set_orientation (settings,
-				      dialog_get_orientation (dialog));
-
   egg_print_settings_set_collate (settings,
 				  dialog_get_collate (dialog));
   
@@ -1911,7 +1925,6 @@ egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
   
   egg_print_settings_set_num_copies (settings,
 				     dialog_get_n_copies (dialog));
-  
 
   egg_print_settings_set_scale (settings,
 				dialog_get_scale (dialog));

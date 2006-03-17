@@ -224,17 +224,25 @@ egg_print_settings_set_bool (EggPrintSettings *settings,
     egg_print_settings_set (settings, key, "false");
 }
 
-double
-egg_print_settings_get_double (EggPrintSettings *settings,
-			       const char *key)
+static double
+egg_print_settings_get_double_with_default (EggPrintSettings *settings,
+					    const char *key,
+					    double def)
 {
   const char *val;
 
   val = egg_print_settings_get (settings, key);
   if (val == NULL)
-    return 0.0;
+    return def;
 
   return g_ascii_strtod (val, NULL);
+}
+
+double
+egg_print_settings_get_double (EggPrintSettings *settings,
+			       const char *key)
+{
+  return egg_print_settings_get_double_with_default (settings, key, 0.0);
 }
 
 void
@@ -267,17 +275,25 @@ egg_print_settings_set_length (EggPrintSettings *settings,
 				 to_mm (length, unit));
 }
 
-int
-egg_print_settings_get_int (EggPrintSettings *settings,
-			    const char *key)
+static int
+egg_print_settings_get_int_with_default (EggPrintSettings *settings,
+					 const char *key,
+					 int def)
 {
   const char *val;
 
   val = egg_print_settings_get (settings, key);
   if (val == NULL)
-    return 0.0;
+    return def;
 
   return atoi (val);
+}
+
+int
+egg_print_settings_get_int (EggPrintSettings *settings,
+			    const char *key)
+{
+  return egg_print_settings_get_int_with_default (settings, key, 0);
 }
 
 void
@@ -632,7 +648,7 @@ egg_print_settings_set_page_set (EggPrintSettings *settings,
 int
 egg_print_settings_get_num_copies (EggPrintSettings *settings)
 {
-  return egg_print_settings_get_int (settings, EGG_PRINT_SETTINGS_NUM_COPIES);
+  return egg_print_settings_get_int_with_default (settings, EGG_PRINT_SETTINGS_NUM_COPIES, 1);
 }
 
 void
@@ -674,7 +690,9 @@ egg_print_settings_set_resolution (EggPrintSettings *settings,
 double
 egg_print_settings_get_scale (EggPrintSettings *settings)
 {
-  return egg_print_settings_get_double (settings, EGG_PRINT_SETTINGS_SCALE);
+  return egg_print_settings_get_double_with_default (settings,
+						     EGG_PRINT_SETTINGS_SCALE,
+						     100.0);
 }
 
 void

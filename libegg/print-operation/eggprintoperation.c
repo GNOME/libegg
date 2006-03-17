@@ -289,8 +289,10 @@ create_page_setup (EggPrintOperation  *op)
 
       paper_size = egg_print_settings_get_paper_size (settings);
       if (paper_size)
-	egg_page_setup_set_paper_size (page_setup, paper_size);
-      egg_paper_size_free (paper_size);
+	{
+	  egg_page_setup_set_paper_size (page_setup, paper_size);
+	  egg_paper_size_free (paper_size);
+	}
 
       /* TODO: Margins? */
     }

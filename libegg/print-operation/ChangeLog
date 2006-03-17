@@ -3,6 +3,32 @@
 	* TODO:
 	Update
 	
+	* eggprintoperation-unix.c:
+	Set and get the print settings on the dialog
+	Set the page setup on the dialog
+	
+	* eggprintoperation.c:
+	Fix NULL free
+	
+	* eggprintsettings.c:
+	Better defaults for some values
+	
+	* eggprintunixdialog.[ch]:
+	Add egg_print_unix_dialog_set_page_setup and
+	egg_print_unix_dialog_set_settings.
+	Remove paper size & orientation
+	Disable print button when no printer is selected.
+	Don't select a printer initially.
+	Hide extra tabs initially.
+	
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Remove PageSize handling.
+
+2006-03-17  Alexander Larsson  <alexl@redhat.com>
+
+	* TODO:
+	Update
+	
 	* eggpagesetupunixdialog.c:
 	Support getting and setting format-for-printer.
 	Remove unused property code

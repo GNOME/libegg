@@ -960,7 +960,6 @@ static const struct {
   const char *name;
 } option_names[] = {
   {"Duplex", "gtk-duplex"},
-  {"PageSize", "gtk-paper-size"},
   {"MediaType", "gtk-paper-type"},
   {"InputSlot", "gtk-paper-source"},
   {"OutputBin", "gtk-output-tray"},
@@ -1067,6 +1066,7 @@ static const char *cups_option_blacklist[] = {
   "Copies", 
   "OutputOrder",
   "PageRegion",
+  "PageSize",
 };
 
 char *

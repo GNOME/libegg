@@ -20,6 +20,7 @@
 #define __EGG_PRINT_UNIX_DIALOG_H__
 #include "eggprinter.h"
 #include "eggprintsettings.h"
+#include "eggpagesetup.h"
 
 #include <gtk/gtk.h>
 
@@ -63,13 +64,15 @@ GType		 egg_print_unix_dialog_get_type	   (void) G_GNUC_CONST;
 GtkWidget *      egg_print_unix_dialog_new         (const gchar *title,
                                                     GtkWindow *parent);
 
+void              egg_print_unix_dialog_set_page_setup       (EggPrintUnixDialog *dialog,
+							      EggPageSetup       *page_setup);
+void              egg_print_unix_dialog_set_current_page     (EggPrintUnixDialog *dialog,
+							      int                 current_page);
+void              egg_print_unix_dialog_set_settings         (EggPrintUnixDialog *dialog,
+							      EggPrintSettings   *settings);
+EggPrintSettings *egg_print_unix_dialog_get_settings         (EggPrintUnixDialog *dialog);
+EggPrinter *      egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog);
 
-void egg_print_unix_dialog_set_current_page   (EggPrintUnixDialog *dialog,
-					       int                 current_page);
-
-EggPrinter *egg_print_unix_dialog_get_selected_printer (EggPrintUnixDialog *dialog);
-
-EggPrintSettings *egg_print_unix_dialog_get_settings   (EggPrintUnixDialog *dialog);
 
 G_END_DECLS
 

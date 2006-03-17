@@ -26,10 +26,12 @@ PDF backend:
 Win32:
 * Use threads for the dialog, to allow repaints of other windows while they are up
 
-Remove page size & orientation from print dialog (is in page setup)
-Add nicer scaling to print dialog (scale to fit page size)
-add printer default option to InputSlot (see mail from m sweet)
-print preview ideas?
+print dialog:
+* conflicts with page size...
+* Remove page size & orientation from print dialog (is in page setup)
+* Add nicer scaling to print dialog (scale to fit page size)
+* add printer default option to InputSlot (see mail from m sweet)
+* print preview ideas?
 
 <matthias> - should base64 move to glib ?
 <matthias> must use themed icons, not xpms
@@ -41,3 +43,6 @@ page setting dialog:
 
 * sort paper lists
 * nicer unit editor than spinbutton
+
+
+
