@@ -1,5 +1,10 @@
 2006-03-16  John (J5) Palmieri  <johnp@redhat.com>
 
+	* eggprintbackend.c:
+	Get a list of backends from gtk_settings
+
+2006-03-16  John (J5) Palmieri  <johnp@redhat.com>
+
 	* modules/printbackends/lpr/*:
 	Beginnings of lpr support
 

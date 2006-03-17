@@ -142,13 +142,13 @@ _egg_print_backend_module_class_init (EggPrintBackendModuleClass *class)
   module_class->unload = egg_print_backend_module_unload;
 
   gobject_class->finalize = egg_print_backend_module_finalize;
+
 }
 
 static void
 _egg_print_backend_module_init (EggPrintBackendModule *pb_module)
 {
 }
-
 
 static EggPrintBackend *
 _egg_print_backend_module_create (EggPrintBackendModule *pb_module)
@@ -253,31 +253,106 @@ _egg_print_backend_create (const char *backend_name)
   return NULL;
 }
 
+static GList * 
+property_parse_list (const gchar *string)
+{
+  GScanner *scanner;
+  gboolean success = FALSE;
+  gboolean need_closing_brace = FALSE;
+  GList *results = NULL;
+
+  scanner = gtk_rc_scanner_new ();
+  g_scanner_input_text (scanner, string, strlen (string));
+
+  g_scanner_get_next_token (scanner);
+
+  if (scanner->token == G_TOKEN_LEFT_CURLY)
+    {
+      need_closing_brace = TRUE;
+      g_scanner_get_next_token (scanner);
+    }
+
+  while (scanner->token != G_TOKEN_EOF && scanner->token != G_TOKEN_RIGHT_CURLY)
+    {
+      if (scanner->token == G_TOKEN_STRING)
+        {
+          results = g_list_append (results, g_strdup (scanner->value.v_string));
+        }
+      else if (scanner->token == G_TOKEN_IDENTIFIER)
+        {
+          results = g_list_append (results, g_strdup (scanner->value.v_identifier));
+        }
+      else if (scanner->token == G_TOKEN_COMMA)
+        {
+          /* noop */
+        }
+      else
+        goto err;
+         
+      g_scanner_get_next_token (scanner);
+    }
+
+  if (scanner->token == G_TOKEN_RIGHT_CURLY && need_closing_brace)
+    success = TRUE;
+
+  if (scanner->token == G_TOKEN_RIGHT_CURLY && !need_closing_brace)
+    success = TRUE;
+
+ err:
+  if (!success)
+    if (results)
+      {
+        g_list_free (results);
+        results = NULL;
+      }
+
+  g_scanner_destroy (scanner);
+
+  return results;
+}
+
+
+
 GList *
 egg_print_backend_load_modules ()
 {
   GList *result;
   EggPrintBackend *backend;
-   
+  gchar * s_backend_list;
+  GList *backend_list, *node;
+  GtkSettings *settings;
+  
+
   result = NULL;
 
-  /* TODO: don't hardcode modules. 
-     Figure out how to specify which modules to load */
+  gtk_settings_install_property (g_param_spec_string ("gtk-print-backends",
+			       	                      "Default print backend",
+						      "List of the GtkPrintBackend backends to use by default",
+						      "{\"pdf\", \"cups\"}",
+						      G_PARAM_READWRITE));
+  settings = gtk_settings_get_default ();
 
-  backend = _egg_print_backend_create ("pdf");
+  g_object_get (settings, "gtk-print-backends", &s_backend_list, NULL);
 
-  if (backend)
-    result = g_list_append (result, backend);
+  backend_list = property_parse_list (s_backend_list);
 
-  backend = _egg_print_backend_create ("lpr");
+  node = backend_list;
+  while (node)
+    {
+      g_message ("node: %s", (char *)node->data);
 
-  if (backend)
-    result = g_list_append (result, backend);
+      backend = _egg_print_backend_create ((char *)node->data);
+      
+      if (backend)
+        result = g_list_append (result, backend);
 
-  backend = _egg_print_backend_create ("cups");
-  
-  if (backend)
-    result = g_list_append (result, backend);
+      node = node->next;
+    }
+
+  g_free (s_backend_list);
+
+  if (backend_list)
+    g_list_free (backend_list);
 
   return result;
 }
@@ -380,5 +455,4 @@ egg_print_backend_print_stream (EggPrintBackend *print_backend,
                                                                     callback,
                                                                     user_data);
 }
-
 
