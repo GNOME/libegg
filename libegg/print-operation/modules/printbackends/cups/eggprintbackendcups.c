@@ -106,8 +106,8 @@ static void                 egg_print_backend_cups_class_init      (EggPrintBack
 static void                 egg_print_backend_cups_iface_init      (EggPrintBackendIface              *iface);
 static void                 egg_print_backend_cups_init            (EggPrintBackendCups               *impl);
 static void                 egg_print_backend_cups_finalize        (GObject                           *object);
-static GList *              cups_request_printer_list             (EggPrintBackend                    *print_backend);
-static void                 cups_request_execute                  (EggPrintBackendCups               *print_backend,
+static GList *              cups_request_printer_list              (EggPrintBackend                    *print_backend);
+static void                 cups_request_execute                   (EggPrintBackendCups               *print_backend,
 								    EggCupsRequest                    *request,
 								    EggPrintCupsResponseCallbackFunc   callback,
 								    gpointer                           user_data,
@@ -228,7 +228,7 @@ _cairo_write_to_cups (void *cache_fd_as_pointer,
   cairo_status_t result;
   gint cache_fd;
   cache_fd = GPOINTER_TO_INT (cache_fd_as_pointer);
-  
+
   result = CAIRO_STATUS_WRITE_ERROR;
   
   /* write out the buffer */
@@ -245,8 +245,8 @@ cups_printer_create_cairo_surface (EggPrinter *printer,
 				   gdouble height,
 				   gint cache_fd)
 {
-  cairo_surface_t *surface;
-  
+  cairo_surface_t *surface; 
+ 
   /* TODO: check if it is a ps or pdf printer */
   
   surface = cairo_ps_surface_create_for_stream  (_cairo_write_to_cups, GINT_TO_POINTER (cache_fd), width, height);
@@ -275,7 +275,7 @@ typedef struct {
   gpointer user_data;
 } _PrintStreamData;
 
-void
+static void
 cups_print_cb (EggPrintBackendCups *print_backend,
                EggCupsResult *result,
                gpointer user_data)
@@ -301,7 +301,7 @@ add_cups_options (const char *key,
 		  gpointer  user_data)
 {
   EggCupsRequest *request = user_data;
-  
+
   if (!g_str_has_prefix (key, "cups-"))
     return;
 
@@ -323,7 +323,7 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
   _PrintStreamData *ps;
   EggCupsRequest *request;
   EggPrintSettings *settings;
-  
+
   cups_printer = EGG_PRINTER_CUPS (egg_print_job_get_printer (job));
   settings = egg_print_job_get_settings (job);
 
@@ -532,7 +532,7 @@ cups_request_execute (EggPrintBackendCups *print_backend,
   g_source_attach ((GSource *) dispatch, NULL);
 }
 
-void
+static void
 cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
                               EggCupsResult *result,
                               gpointer user_data)
@@ -551,7 +551,6 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
        hostname[HTTP_MAX_URI],	/* Hostname */
        resource[HTTP_MAX_URI];	/* Resource name */
   int  port;			/* Port number */
-
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
 
@@ -677,7 +676,7 @@ cups_request_printer_info (EggPrintBackendCups *print_backend,
  
 }
 
-void
+static void
 cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
                               EggCupsResult *result,
                               gpointer user_data)
@@ -797,7 +796,6 @@ cups_request_ppd_cb (EggPrintBackendCups *print_backend,
   if (egg_cups_result_is_error (result))
     {
       g_signal_emit_by_name (printer, "details-acquired", printer, FALSE);
-      g_object_unref (print_backend);
       return;
     }
 
@@ -806,8 +804,6 @@ cups_request_ppd_cb (EggPrintBackendCups *print_backend,
   data->printer->ppd_file = ppdOpenFile (data->ppd_filename);
   printer->priv->has_details = TRUE;
   g_signal_emit_by_name (printer, "details-acquired", printer, TRUE);
-
-  g_object_unref (print_backend);
 }
 
 static void
@@ -883,7 +879,7 @@ cups_printer_request_details (EggPrinter *printer)
     cups_request_ppd (printer); 
 }
 
-char *
+static char *
 ppd_text_to_utf8 (ppd_file_t *ppd_file, const char *text)
 {
   const char *encoding = NULL;
@@ -1066,7 +1062,7 @@ static const char *cups_option_blacklist[] = {
   "PageSize",
 };
 
-char *
+static char *
 get_option_text (ppd_file_t *ppd_file, ppd_option_t *option)
 {
   int i;
@@ -1086,7 +1082,7 @@ get_option_text (ppd_file_t *ppd_file, ppd_option_t *option)
   return utf8;
 }
 
-char *
+static char *
 get_choice_text (ppd_file_t *ppd_file, ppd_choice_t *choice)
 {
   int i;
@@ -1326,7 +1322,7 @@ create_boolean_option (ppd_file_t *ppd_file,
   return option;
 }
 
-char *
+static char *
 get_option_name (const char *keyword)
 {
   int i;
@@ -1810,7 +1806,7 @@ cups_printer_list_papers (EggPrinter *printer)
       l = g_list_prepend (l, page_setup);
     }
 
-  return g_list_reverse (l);;
+  return g_list_reverse (l);
 }
 
 static void

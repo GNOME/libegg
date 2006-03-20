@@ -225,16 +225,16 @@ egg_print_job_get_settings (EggPrintJob *print_job)
 EggPrinter *
 egg_print_job_get_printer (EggPrintJob *print_job)
 {
-  EGG_IS_PRINT_JOB (print_job);
+  g_return_val_if_fail (EGG_IS_PRINT_JOB (print_job), NULL);
   
-  print_job->priv->printer;
+  return print_job->priv->printer;
 }
 
 
 cairo_surface_t *
 egg_print_job_get_surface (EggPrintJob *print_job)
 {
-  EGG_IS_PRINT_JOB (print_job);
+  g_return_val_if_fail (EGG_IS_PRINT_JOB (print_job), NULL);
 
   return print_job->priv->surface;
 }

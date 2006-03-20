@@ -1,3 +1,13 @@
+2006-03-20  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprinteroptionwidget.c:
+	* eggprintjob.c (egg_print_job_get_printer):
+	Fix warning.
+
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Add missing statics to internal functions.
+	Don't unref backend.
+
 2006-03-17  John (J5) Palmieri  <johnp@redhat.com>
 
 	* eggprinter.c:

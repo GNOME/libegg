@@ -415,7 +415,7 @@ entry_changed_cb (GtkWidget *entry,
   const char *value;
   
   g_signal_handler_block (widget->priv->source, widget->priv->source_changed_handler);
-  value = gtk_entry_get_text (entry);
+  value = gtk_entry_get_text (GTK_ENTRY (entry));
   if (value)
     egg_printer_option_set (widget->priv->source, value);
   g_signal_handler_unblock (widget->priv->source, widget->priv->source_changed_handler);
