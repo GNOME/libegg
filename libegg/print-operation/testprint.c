@@ -112,5 +112,7 @@ main (int argc, char **argv)
   egg_print_operation_set_pdf_target (EGG_PRINT_OPERATION (print_file), "test2.pdf");
   res = egg_print_operation_run (EGG_PRINT_OPERATION (print_file), NULL, NULL);
 
+  gtk_main ();
+  
   return 0;
 }

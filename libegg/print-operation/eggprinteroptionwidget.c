@@ -466,7 +466,7 @@ construct_widgets (EggPrinterOptionWidget *widget)
       g_free (text);
       gtk_widget_show (widget->priv->label);
       break;
-    case EGG_PRINTER_OPTION_TYPE_ENTRY:
+    case EGG_PRINTER_OPTION_TYPE_STRING:
       widget->priv->entry = gtk_entry_new ();
       gtk_widget_show (widget->priv->entry);
       gtk_box_pack_start (GTK_BOX (widget), widget->priv->entry, TRUE, TRUE, 0);
@@ -523,8 +523,6 @@ construct_widgets (EggPrinterOptionWidget *widget)
         g_signal_connect (widget->priv->combo, "current-folder-changed", G_CALLBACK (filesave_changed_cb), widget);
       }
       break;
-    case EGG_PRINTER_OPTION_TYPE_STRING:
-      break;
     default:
       break;
     }
@@ -558,6 +556,7 @@ update_widgets (EggPrinterOptionWidget *widget)
       combo_box_set (widget->priv->combo, source->value);
       break;
     case EGG_PRINTER_OPTION_TYPE_STRING:
+      gtk_entry_set_text (GTK_ENTRY (widget->priv->entry), source->value);
       break;
     default:
       break;

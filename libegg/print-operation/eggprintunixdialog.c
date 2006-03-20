@@ -97,9 +97,14 @@ struct EggPrintUnixDialogPrivate
   EggPrinterOptionWidget *paper_type;
   EggPrinterOptionWidget *paper_source;
   EggPrinterOptionWidget *output_tray;
+  EggPrinterOptionWidget *job_prio;
+  EggPrinterOptionWidget *billing_info;
+  EggPrinterOptionWidget *cover_before;
+  EggPrinterOptionWidget *cover_after;
 
   GtkWidget *conflicts_widget;
 
+  GtkWidget *job_page;
   GtkWidget *finishing_table;
   GtkWidget *finishing_page;
   GtkWidget *image_quality_table;
@@ -556,7 +561,7 @@ wrap_in_frame (const char *label, GtkWidget *child)
   return frame;
 }
 
-static void
+static gboolean
 setup_option (EggPrintUnixDialog *dialog,
 	      const char *option_name,
 	      EggPrinterOptionWidget *widget)
@@ -565,6 +570,7 @@ setup_option (EggPrintUnixDialog *dialog,
 
   option = egg_printer_option_set_lookup (dialog->priv->options, option_name);
   egg_printer_option_widget_set_source (widget, option);
+  return option != NULL;
 }
 
 static void
@@ -648,7 +654,7 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   GList *groups, *l;
   char *group;
   GtkWidget *table, *frame;
-  gboolean has_advanced;
+  gboolean has_advanced, has_job;
   
   setup_option (dialog, "gtk-n-up", dialog->priv->pages_per_sheet);
   setup_option (dialog, "gtk-duplex", dialog->priv->duplex);
@@ -656,6 +662,18 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   setup_option (dialog, "gtk-paper-source", dialog->priv->paper_source);
   setup_option (dialog, "gtk-output-tray", dialog->priv->output_tray);
 
+  has_job = FALSE;
+  has_job |= setup_option (dialog, "gtk-job-prio", dialog->priv->job_prio);
+  has_job |= setup_option (dialog, "gtk-billing-info", dialog->priv->billing_info);
+  has_job |= setup_option (dialog, "gtk-cover-before", dialog->priv->cover_before);
+  has_job |= setup_option (dialog, "gtk-cover-after", dialog->priv->cover_after);
+
+  if (has_job)
+    gtk_widget_show (dialog->priv->job_page);
+  else
+    gtk_widget_hide (dialog->priv->job_page);
+
+  
   setup_page_table (dialog->priv->options,
 		    "ImageQualityPage",
 		    dialog->priv->image_quality_table,
@@ -1563,13 +1581,11 @@ create_job_page (EggPrintUnixDialog *dialog)
   EggPrintUnixDialogPrivate *priv;
   GtkWidget *main_table, *label;
   GtkWidget *frame, *table, *radio;
-  GtkWidget *combo, *entry;
+  GtkWidget *entry, *widget;
   
   priv = dialog->priv;
 
   main_table = gtk_table_new (2, 2, FALSE);
-  gtk_widget_show (main_table);
-
 
   table = gtk_table_new (2, 2, FALSE);
   frame = wrap_in_frame (_("Job Details"), table);
@@ -1585,16 +1601,12 @@ create_job_page (EggPrintUnixDialog *dialog)
 		    0, 1, 0, 1,  GTK_FILL, 0,
 		    0, 0);
 
-  combo = gtk_combo_box_new_text ();
-  gtk_widget_show (combo);
-  gtk_table_attach (GTK_TABLE (table), combo,
+  widget = egg_printer_option_widget_new (NULL);
+  priv->job_prio = EGG_PRINTER_OPTION_WIDGET (widget);
+  gtk_widget_show (widget);
+  gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 0, 1,  GTK_FILL, 0,
 		    0, 0);
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Urgent"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("High"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Medium"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Low"));  
-  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 2);
 
   label = gtk_label_new (_("Billing info:"));
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
@@ -1603,9 +1615,10 @@ create_job_page (EggPrintUnixDialog *dialog)
 		    0, 1, 1, 2,  GTK_FILL, 0,
 		    0, 0);
 
-  entry = gtk_entry_new ();
-  gtk_widget_show (entry);
-  gtk_table_attach (GTK_TABLE (table), entry,
+  widget = egg_printer_option_widget_new (NULL);
+  priv->billing_info = EGG_PRINTER_OPTION_WIDGET (widget);
+  gtk_widget_show (widget);
+  gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 1, 2,  GTK_FILL, 0,
 		    0, 0);
 
@@ -1655,17 +1668,12 @@ create_job_page (EggPrintUnixDialog *dialog)
 		    0, 1, 0, 1,  GTK_FILL, 0,
 		    0, 0);
 
-  combo = gtk_combo_box_new_text ();
-  gtk_widget_show (combo);
-  gtk_table_attach (GTK_TABLE (table), combo,
+  widget = egg_printer_option_widget_new (NULL);
+  priv->cover_before = EGG_PRINTER_OPTION_WIDGET (widget);
+  gtk_widget_show (widget);
+  gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 0, 1,  GTK_FILL, 0,
 		    0, 0);
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("None"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Standard"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Confidential"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Secret"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Classified"));  
-  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
 
   label = gtk_label_new (_("After:"));
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
@@ -1674,22 +1682,17 @@ create_job_page (EggPrintUnixDialog *dialog)
 		    0, 1, 1, 2,  GTK_FILL, 0,
 		    0, 0);
 
-  combo = gtk_combo_box_new_text ();
-  gtk_widget_show (combo);
-  gtk_table_attach (GTK_TABLE (table), combo,
+  widget = egg_printer_option_widget_new (NULL);
+  priv->cover_after = EGG_PRINTER_OPTION_WIDGET (widget);
+  gtk_widget_show (widget);
+  gtk_table_attach (GTK_TABLE (table), widget,
 		    1, 2, 1, 2,  GTK_FILL, 0,
 		    0, 0);
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("None"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Standard"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Confidential"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Secret"));  
-  gtk_combo_box_append_text (GTK_COMBO_BOX (combo), _("Classified"));  
-  gtk_combo_box_set_active (GTK_COMBO_BOX (combo), 0);
-
 
   label = gtk_label_new (_("Job"));
   gtk_widget_show (label);
-  
+
+  priv->job_page = main_table;
   gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook),
 			    main_table, label);
 }

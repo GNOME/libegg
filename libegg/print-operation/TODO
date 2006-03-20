@@ -28,9 +28,10 @@ Win32:
 
 print dialog:
 * conflicts with page size...
-* Remove page size & orientation from print dialog (is in page setup)
+* job page print at support
 * Add nicer scaling to print dialog (scale to fit page size)
 * add printer default option to InputSlot (see mail from m sweet)
+
 * print preview ideas?
 
 <matthias> - should base64 move to glib ?

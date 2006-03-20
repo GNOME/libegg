@@ -1,5 +1,23 @@
 2006-03-20  Alexander Larsson  <alexl@redhat.com>
 
+	* TODO:
+	Update
+	
+	* eggprinteroption.h:
+	* eggprinteroptionwidget.c:
+	* modules/printbackends/lpr/eggprintbackendlpr.c:
+	Remove EGG_PRINTER_OPTION_TYPE_ENTRY, we already had
+	EGG_PRINTER_OPTION_TYPE_STRING
+
+	* eggprintunixdialog.c:
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Implement some of the jobs page
+	
+	* modules/printbackends/pdf/eggprintbackendpdf.c:
+	Remove n-up option.
+
+2006-03-20  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprinteroptionwidget.c:
 	* eggprintjob.c (egg_print_job_get_printer):
 	Fix warning.

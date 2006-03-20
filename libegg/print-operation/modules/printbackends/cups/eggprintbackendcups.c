@@ -1439,18 +1439,55 @@ cups_printer_get_options (EggPrinter *printer)
   ppd_file_t *ppd_file;
   int i;
   char *n_up[] = {"1", "2", "4", "6", "9", "16" };
+  char *prio[] = {"100", "80", "50", "30" };
+  char *prio_display[] = {N_("Urgent"), N_("High"), N_("Medium"), N_("Low") };
+  char *cover[] = {"none", "classified", "confidential", "secret", "standard", "topsecret", "unclassified" };
+  char *cover_display[] = {N_("None"), N_("Classified"), N_("Confidential"), N_("Secret"), N_("Standard"), N_("Top Secret"), N_("Unclassified"),};
+
 
   set = egg_printer_option_set_new ();
 
   /* Cups specific, non-ppd related settings */
 
-  option = egg_printer_option_new ("gtk-n-up", _("Pages Per Sheet"), EGG_PRINTER_OPTION_TYPE_PICKONE);
+  option = egg_printer_option_new ("gtk-n-up", "Pages Per Sheet", EGG_PRINTER_OPTION_TYPE_PICKONE);
   egg_printer_option_choices_from_array (option, G_N_ELEMENTS (n_up),
 					 n_up, n_up);
   egg_printer_option_set (option, "1");
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
+  for (i = 0; i < G_N_ELEMENTS(prio_display); i++)
+    prio_display[i] = _(prio_display[i]);
+  
+  option = egg_printer_option_new ("gtk-job-prio", "Job Priority", EGG_PRINTER_OPTION_TYPE_PICKONE);
+  egg_printer_option_choices_from_array (option, G_N_ELEMENTS (prio),
+					 prio, prio_display);
+  egg_printer_option_set (option, "50");
+  egg_printer_option_set_add (set, option);
+  g_object_unref (option);
+
+  option = egg_printer_option_new ("gtk-billing-info", "Billing Info", EGG_PRINTER_OPTION_TYPE_STRING);
+  egg_printer_option_set (option, "");
+  egg_printer_option_set_add (set, option);
+  g_object_unref (option);
+
+  for (i = 0; i < G_N_ELEMENTS(cover_display); i++)
+    cover_display[i] = _(cover_display[i]);
+  
+  option = egg_printer_option_new ("gtk-cover-before", "Before", EGG_PRINTER_OPTION_TYPE_PICKONE);
+  egg_printer_option_choices_from_array (option, G_N_ELEMENTS (cover),
+					 cover, cover_display);
+  egg_printer_option_set (option, "none");
+  egg_printer_option_set_add (set, option);
+  g_object_unref (option);
+
+  option = egg_printer_option_new ("gtk-cover-after", "Before", EGG_PRINTER_OPTION_TYPE_PICKONE);
+  egg_printer_option_choices_from_array (option, G_N_ELEMENTS (cover),
+					 cover, cover_display);
+  egg_printer_option_set (option, "none");
+  egg_printer_option_set_add (set, option);
+  g_object_unref (option);
+  
   /* Printer (ppd) specific settings */
   ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
   if (ppd_file)
@@ -1698,15 +1735,14 @@ foreach_option (EggPrinterOption  *option,
 			 settings, EGG_PRINT_SETTINGS_MEDIA_TYPE, "MediaType");
     }
   else if (strcmp (option->name, "gtk-n-up") == 0)
-    {
-      egg_print_settings_set (settings, "cups-number-up", value);
-    }
+    egg_print_settings_set (settings, "cups-number-up", value);
+  else if (strcmp (option->name, "gtk-billing-info") == 0 && strlen (value) > 0)
+    egg_print_settings_set (settings, "cups-job-billing", value);
+  else if (strcmp (option->name, "gtk-job-prio") == 0)
+    egg_print_settings_set (settings, "cups-job-priority", value);
   else if (g_str_has_prefix (option->name, "cups-"))
-    {
-      egg_print_settings_set (settings, option->name, value);
-    }
+    egg_print_settings_set (settings, option->name, value);
 }
-
 
 static void
 cups_printer_get_settings_from_options (EggPrinter *printer,
@@ -1721,7 +1757,20 @@ cups_printer_get_settings_from_options (EggPrinter *printer,
   data.ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
  
   if (data.ppd_file != NULL)
-    egg_printer_option_set_foreach (options, foreach_option, &data);
+    {
+      EggPrinterOption *cover_before, *cover_after;
+      
+      egg_printer_option_set_foreach (options, foreach_option, &data);
+
+      cover_before = egg_printer_option_set_lookup (options, "gtk-cover-before");
+      cover_after = egg_printer_option_set_lookup (options, "gtk-cover-after");
+      if (cover_before && cover_after)
+	{
+	  char *value = g_strdup_printf ("%s,%s", cover_before->value, cover_after->value);
+	  egg_print_settings_set (settings, "cups-job-sheets", value);
+	  g_free (value);
+	}
+    }
 }
 
 static void

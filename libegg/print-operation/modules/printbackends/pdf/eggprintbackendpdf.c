@@ -423,7 +423,7 @@ pdf_printer_get_options (EggPrinter *printer)
   EggPrinterPdf *pdf_printer;
   EggPrinterOptionSet *set;
   EggPrinterOption *option;
-  char *n_up[] = {"1", "2", "4", "6", "9", "16" };
+  char *n_up[] = {"1" };
 
   pdf_printer = EGG_PRINTER_PDF (printer);
   

@@ -415,7 +415,7 @@ lpr_printer_get_options (EggPrinter *printer)
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
-  option = egg_printer_option_new ("main-page-custom-input", _("Command Line Options"), EGG_PRINTER_OPTION_TYPE_ENTRY);
+  option = egg_printer_option_new ("main-page-custom-input", _("Command Line Options"), EGG_PRINTER_OPTION_TYPE_STRING);
   option->group = g_strdup ("GtkPrintDialogExtention");
   egg_printer_option_set_add (set, option);
   
