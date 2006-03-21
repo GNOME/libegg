@@ -74,6 +74,7 @@ const gchar             *egg_printer_get_state_message    (EggPrinter *printer);
 const gchar             *egg_printer_get_location         (EggPrinter *printer);
 const gchar             *egg_printer_get_icon_name        (EggPrinter *printer);
 gint                     egg_printer_get_job_count        (EggPrinter *printer);
+gboolean                 egg_printer_is_active            (EggPrinter *printer);
 gboolean                 egg_printer_is_virtual           (EggPrinter *printer);
 
 EggPrintJob             *egg_printer_prep_job             (EggPrinter *printer,

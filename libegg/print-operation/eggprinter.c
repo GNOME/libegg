@@ -289,6 +289,15 @@ _egg_printer_has_details (EggPrinter *printer)
 }
 
 gboolean
+egg_printer_is_active (EggPrinter *printer)
+{
+  g_return_val_if_fail (EGG_IS_PRINTER (printer), TRUE);
+  
+  return printer->priv->is_active;
+}
+
+
+gboolean
 egg_printer_is_virtual (EggPrinter *printer)
 {
   g_return_val_if_fail (EGG_IS_PRINTER (printer), TRUE);

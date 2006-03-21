@@ -76,6 +76,7 @@ struct EggPrintUnixDialogPrivate
   GtkWidget *printer_treeview;
   
   GtkTreeModel *printer_list;
+  GtkTreeModelFilter *printer_list_filter;
 
   EggPageSetup *page_setup;
 
@@ -384,7 +385,14 @@ egg_print_unix_dialog_finalize (GObject *object)
       g_object_unref (dialog->priv->printer_list);
       dialog->priv->printer_list = NULL;
     }
-  
+ 
+  if (dialog->priv->printer_list_filter)
+    {
+      g_object_unref (dialog->priv->printer_list_filter);
+      dialog->priv->printer_list_filter = NULL;
+    }
+
+ 
   if (dialog->priv->options)
     {
       g_object_unref (dialog->priv->options);
@@ -523,20 +531,111 @@ egg_print_unix_dialog_get_property (GObject    *object,
     }
 }
 
+static gboolean
+is_printer_active (GtkTreeModel *model,
+                   GtkTreeIter *iter,
+		   EggPrintUnixDialog *dialog)
+{
+  gboolean result;
+  EggPrinter *printer;
+
+  gtk_tree_model_get (model,
+		      iter,
+		      PRINTER_LIST_COL_PRINTER_OBJ,
+                      &printer,
+		      -1);
+  
+  if (printer == NULL)
+    return FALSE;
+
+  result = egg_printer_is_active (printer);
+
+  g_object_unref (printer);
+
+  return result;
+}
+
+static gint
+default_printer_list_sort_func (GtkTreeModel *model,
+                                GtkTreeIter *a,
+                                GtkTreeIter *b,
+                                gpointer user_data)
+{
+  gchar *a_name;
+  gchar *b_name;
+  EggPrinter *a_printer;
+  EggPrinter *b_printer;
+  gint result;
+
+  gtk_tree_model_get (model, a, 
+                      PRINTER_LIST_COL_NAME, &a_name, 
+		      PRINTER_LIST_COL_PRINTER_OBJ, &a_printer,
+		      -1);
+  gtk_tree_model_get (model, b, 
+                      PRINTER_LIST_COL_NAME, &b_name,
+		      PRINTER_LIST_COL_PRINTER_OBJ, &b_printer,
+		      -1);
+
+  g_assert (a_printer != NULL);
+  g_assert (b_printer != NULL);
+
+  if (egg_printer_is_virtual (a_printer) && egg_printer_is_virtual (b_printer))
+    result = 0;
+  else if (egg_printer_is_virtual (a_printer) && !egg_printer_is_virtual (b_printer))
+    result = G_MININT;
+  else if (!egg_printer_is_virtual (a_printer) && egg_printer_is_virtual (b_printer))
+    result = G_MAXINT;
+  else if (a_name == NULL && b_name == NULL)
+    result = 0;
+  else if (a_name == NULL && b_name != NULL)
+    result = 1;
+  else if (a_name != NULL && b_name == NULL)
+    result = -1;
+  else
+    result = g_ascii_strcasecmp (a_name, b_name);
+
+  g_free (a_name);
+  g_free (b_name);
+  g_object_unref (a_printer);
+  g_object_unref (b_printer);
+
+  return result;
+}
+
+
 static void
 _create_printer_list_model (EggPrintUnixDialog *dialog)
 {
   GtkListStore *model;
+  GtkTreeSortable *sort;
 
   model = gtk_list_store_new (PRINTER_LIST_N_COLS,
                               G_TYPE_STRING,
                               G_TYPE_STRING, 
                               G_TYPE_STRING, 
                               G_TYPE_INT, 
-                              G_TYPE_STRING, 
+                              G_TYPE_STRING,
                               G_TYPE_OBJECT);
 
   dialog->priv->printer_list = (GtkTreeModel *)model;
+  dialog->priv->printer_list_filter = (GtkTreeModelFilter *) gtk_tree_model_filter_new ((GtkTreeModel *)model,
+                                                                 NULL);
+
+  gtk_tree_model_filter_set_visible_func (dialog->priv->printer_list_filter,
+					  (GtkTreeModelFilterVisibleFunc) is_printer_active,
+					  dialog,
+					  NULL);
+
+  sort = GTK_TREE_SORTABLE (model);
+  gtk_tree_sortable_set_default_sort_func (sort,
+					   default_printer_list_sort_func,
+					   NULL,
+					   NULL);
+ 
+  gtk_tree_sortable_set_sort_column_id (sort,
+					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
+					GTK_SORT_ASCENDING);
+
 }
 
 
@@ -669,7 +768,20 @@ update_dialog_from_settings (EggPrintUnixDialog *dialog)
   char *group;
   GtkWidget *table, *frame;
   gboolean has_advanced, has_job;
-  
+ 
+  if (dialog->priv->current_printer == NULL)
+    {
+       clear_per_printer_ui (dialog);
+       gtk_widget_hide (dialog->priv->job_page);
+       gtk_widget_hide (dialog->priv->advanced_page);
+       gtk_widget_hide (dialog->priv->image_quality_page);
+       gtk_widget_hide (dialog->priv->finishing_page);
+       gtk_widget_hide (dialog->priv->color_page);
+       gtk_widget_set_sensitive (dialog->priv->print_button, FALSE);
+
+       return;
+    }
+ 
   setup_option (dialog, "gtk-n-up", dialog->priv->pages_per_sheet);
   setup_option (dialog, "gtk-duplex", dialog->priv->duplex);
   setup_option (dialog, "gtk-paper-type", dialog->priv->paper_type);
@@ -882,7 +994,7 @@ selected_printer_changed (GtkTreeSelection *selection,
 			  EggPrintUnixDialog *dialog)
 {
   EggPrinter *printer;
-  GtkTreeIter iter;
+  GtkTreeIter iter, filter_iter;
 
   if (dialog->priv->request_details_tag)
     {
@@ -891,10 +1003,16 @@ selected_printer_changed (GtkTreeSelection *selection,
     }
   
   printer = NULL;
-  if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-    gtk_tree_model_get (dialog->priv->printer_list, &iter,
-			PRINTER_LIST_COL_PRINTER_OBJ, &printer,
-			-1);
+  if (gtk_tree_selection_get_selected (selection, NULL, &filter_iter))
+    {
+      gtk_tree_model_filter_convert_iter_to_child_iter (dialog->priv->printer_list_filter,
+							&iter,
+							&filter_iter);
+
+      gtk_tree_model_get (dialog->priv->printer_list, &iter,
+  			  PRINTER_LIST_COL_PRINTER_OBJ, &printer,
+			  -1);
+    }
   
   if (printer != NULL && !_egg_printer_has_details (printer))
     {
@@ -929,11 +1047,14 @@ selected_printer_changed (GtkTreeSelection *selection,
   gtk_widget_set_sensitive (dialog->priv->print_button, TRUE);
   dialog->priv->current_printer = printer;
 
-  dialog->priv->options = _egg_printer_get_options (printer);
+  if (printer != NULL)
+    {
+      dialog->priv->options = _egg_printer_get_options (printer);
   
-  dialog->priv->options_changed_handler = 
-    g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
-  
+      dialog->priv->options_changed_handler = 
+        g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
+    }
+
   update_dialog_from_settings (dialog);
 }
 
@@ -995,9 +1116,11 @@ create_main_page (EggPrintUnixDialog *dialog)
   gtk_widget_show (scrolled);
   gtk_box_pack_start (GTK_BOX (main_vbox), scrolled, TRUE, TRUE, 6);
 
-  treeview = gtk_tree_view_new_with_model (priv->printer_list);
+  treeview = gtk_tree_view_new_with_model ((GtkTreeModel *) priv->printer_list_filter);
   priv->printer_treeview = treeview;
   gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview), TRUE);
+  gtk_tree_view_set_search_column (GTK_TREE_VIEW (treeview), PRINTER_LIST_COL_NAME);
+  gtk_tree_view_set_enable_search (GTK_TREE_VIEW (treeview), TRUE);
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
   gtk_tree_selection_set_mode (selection, GTK_SELECTION_BROWSE);
   g_signal_connect (selection, "changed", G_CALLBACK (selected_printer_changed), dialog);

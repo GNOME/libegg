@@ -1,6 +1,17 @@
 2006-03-21  John (J5) Palmieri <johnp@redhat.com>
 
 	* eggprintunixdialog.c:
+	Wrap the printer list store in a filter model
+	Sort printer list
+	Fix crasher when printer is unselected
+	Enable searching on printer name
+
+	* eggprinter.c:
+	add egg_printer_is_active accessor API
+
+2006-03-21  John (J5) Palmieri <johnp@redhat.com>
+
+	* eggprintunixdialog.c:
 	Show labels in extention area if a label exists in the option widget
 
 2006-03-20  John (J5) Palmieri <johnp@redhat.com>
