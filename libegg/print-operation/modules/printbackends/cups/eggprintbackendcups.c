@@ -498,6 +498,12 @@ cups_dispatch_watch_finalize (GSource *source)
 
   egg_cups_request_free (dispatch->request);
 
+  if (dispatch->backend)
+    {
+      g_object_unref (dispatch->backend);
+      dispatch->backend = NULL;
+    }
+
   if (dispatch->data_poll != NULL)
     g_free (dispatch->data_poll);
 }
@@ -524,7 +530,7 @@ cups_request_execute (EggPrintBackendCups *print_backend,
                                                          sizeof (EggPrintCupsDispatchWatch));
 
   dispatch->request = request;
-  dispatch->backend = print_backend;
+  dispatch->backend = g_object_ref (print_backend);
   dispatch->data_poll = NULL;
 
   g_source_set_callback ((GSource *) dispatch, (GSourceFunc) callback, user_data, notify);

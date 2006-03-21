@@ -100,7 +100,7 @@ unix_end_run (EggPrintOperation *op)
   EggPrintOperationUnix *op_unix = op->priv->platform_data;
  
   /* TODO: Check for error */
-  egg_print_job_send (op_unix->job,
+  egg_print_job_send (g_object_ref (op_unix->job),
                       unix_finish_send, 
                       op_unix, NULL);
 
@@ -163,7 +163,7 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
                                            height,
 					   error);
 
-      g_object_unref (settings);
+      //g_object_unref (settings);
     
       if (error != NULL && *error != NULL)
         {

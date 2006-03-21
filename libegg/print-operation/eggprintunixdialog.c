@@ -881,7 +881,6 @@ selected_printer_changed (GtkTreeSelection *selection,
     gtk_tree_model_get (dialog->priv->printer_list, &iter,
 			PRINTER_LIST_COL_PRINTER_OBJ, &printer,
 			-1);
-
   
   if (printer != NULL && !_egg_printer_has_details (printer))
     {

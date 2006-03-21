@@ -246,6 +246,9 @@ pdf_print_cb (EggPrintBackendPdf *print_backend,
 {
   _PrintStreamData *ps = (_PrintStreamData *) user_data;
 
+  if (ps->target_fd > 0)
+    close (ps->target_fd);
+
   if (ps->callback)
     ps->callback (ps->job, ps->user_data, error);
 
@@ -340,13 +343,14 @@ egg_print_backend_pdf_print_stream (EggPrintBackend *print_backend,
       pdf_print_cb (EGG_PRINT_BACKEND_PDF (print_backend),
                     &error,
                     ps);
+
       return;
     }
   
   save_channel = g_io_channel_unix_new (data_fd);
 
   g_io_add_watch (save_channel, 
-                  G_IO_IN | G_IO_PRI | G_IO_ERR,
+                  G_IO_IN | G_IO_PRI | G_IO_ERR | G_IO_HUP,
                   (GIOFunc) pdf_write,
                   ps);
 

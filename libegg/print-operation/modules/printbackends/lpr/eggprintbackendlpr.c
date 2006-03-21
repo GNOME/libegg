@@ -235,8 +235,12 @@ typedef struct {
   EggPrintBackend *backend;
   EggPrintJobCompleteFunc callback;
   EggPrintJob *job;
-  gint target_fd;
   gpointer user_data;
+
+  gint in;
+  gint out;
+  gint err;
+
 } _PrintStreamData;
 
 static void
@@ -245,6 +249,15 @@ lpr_print_cb (EggPrintBackendLpr *print_backend,
               gpointer user_data)
 {
   _PrintStreamData *ps = (_PrintStreamData *) user_data;
+
+  if (ps->in > 0)
+    close (ps->in);
+
+  if (ps->out > 0)
+    close (ps->out);
+
+  if (ps->err > 0)
+    close (ps->err);
 
   if (ps->callback)
     ps->callback (ps->job, ps->user_data, error);
@@ -271,11 +284,9 @@ lpr_write (GIOChannel *source,
                      buf,
                      _LPR_MAX_CHUNK_SIZE);
 
-   
-
   if (bytes_read > 0)
     {
-      if (write (ps->target_fd, buf, bytes_read) == -1)
+      if (write (ps->in, buf, bytes_read) == -1)
         {
           error = g_error_new (EGG_PRINT_ERROR,
                            EGG_PRINT_ERROR_INTERNAL_ERROR, 
@@ -299,6 +310,8 @@ lpr_write (GIOChannel *source,
   return TRUE;
 }
 
+#define LPR_COMMAND "/usr/bin/lpr"
+
 static void
 egg_print_backend_lpr_print_stream (EggPrintBackend *print_backend,
                                      EggPrintJob *job,
@@ -311,8 +324,10 @@ egg_print_backend_lpr_print_stream (EggPrintBackend *print_backend,
   EggPrinterLpr *lpr_printer;
   _PrintStreamData *ps;
   EggPrintSettings *settings;
-  GIOChannel *save_channel;  
-  gchar *filename;
+  GIOChannel *send_channel;
+  gint argc;  
+  gchar **argv;
+  gchar *cmd_line;
 
   lpr_printer = EGG_PRINTER_LPR (egg_print_job_get_printer (job));
   settings = egg_print_job_get_settings (job);
@@ -321,14 +336,63 @@ egg_print_backend_lpr_print_stream (EggPrintBackend *print_backend,
 
   //egg_print_settings_foreach (settings, add_lpr_options, request);
 
-#if 0  
   ps = g_new0 (_PrintStreamData, 1);
   ps->callback = callback;
   ps->user_data = user_data;
   ps->job = job;
-#endif
+  ps->in = 0;
+  ps->out = 0;
+  ps->err = 0;
 
- /* TODO: spawn lpr with pipes and pipe ps file to lpr */
+ /* spawn lpr with pipes and pipe ps file to lpr */
+  cmd_line = g_strdup_printf ("%s %s", 
+                              LPR_COMMAND, 
+                              lpr_printer->options->value);
+
+  if (!g_shell_parse_argv (cmd_line,
+                           &argc,
+                           &argv,
+                           &error))
+    {
+      lpr_print_cb (EGG_PRINT_BACKEND_LPR (print_backend),
+                    &error,
+                    ps);
+
+      g_free (cmd_line);
+      return;
+    }
+
+  g_free (cmd_line);
+
+  if (!g_spawn_async_with_pipes (NULL,
+                                 argv,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 &ps->in,
+                                 &ps->out,
+                                 &ps->err,
+                                 &error))
+    {
+       lpr_print_cb (EGG_PRINT_BACKEND_LPR (print_backend),
+                    &error,
+                    ps);
+
+      goto out;
+
+    }
+
+  send_channel = g_io_channel_unix_new (data_fd);
+ 
+  g_io_add_watch (send_channel, 
+                  G_IO_IN | G_IO_PRI | G_IO_ERR | G_IO_HUP,
+                  (GIOFunc) lpr_write,
+                  ps);
+
+ out:
+  g_strfreev (argv);
 }
 
 
