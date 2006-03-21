@@ -586,10 +586,24 @@ add_option_to_extention_point (EggPrinterOption *option,
 
   if (extention_hbox)
     {
+
       widget = egg_printer_option_widget_new (option);
       gtk_widget_show (widget);
    
-      gtk_box_pack_start (extention_hbox, widget, FALSE, FALSE, 6);
+      if (egg_printer_option_widget_has_external_label (EGG_PRINTER_OPTION_WIDGET (widget)))
+        {
+          GtkWidget *label;
+
+          label = egg_printer_option_widget_get_external_label (EGG_PRINTER_OPTION_WIDGET (widget));
+          gtk_widget_show (label);
+          gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+
+          gtk_box_pack_start (extention_hbox, label, FALSE, FALSE, 6);
+          gtk_box_pack_start (extention_hbox, widget, FALSE, FALSE, 6);
+
+        }
+      else
+        gtk_box_pack_start (extention_hbox, widget, FALSE, FALSE, 6);
     }
   else
     g_warning ("Extention point %s requested but not found.", option->name);
