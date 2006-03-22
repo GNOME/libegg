@@ -25,6 +25,7 @@
 #include "eggprinter.h"
 #include "eggprintsettings.h"
 #include "eggprinteroptionset.h"
+#include "eggpagesetup.h"
 
 G_BEGIN_DECLS
 struct _EggPrinterPrivate
@@ -48,7 +49,8 @@ struct _EggPrinterPrivate
 
 gboolean             _egg_printer_has_details               (EggPrinter          *printer);
 void                 _egg_printer_request_details           (EggPrinter          *printer);
-EggPrinterOptionSet *_egg_printer_get_options               (EggPrinter          *printer);
+EggPrinterOptionSet *_egg_printer_get_options               (EggPrinter          *printer,
+							     EggPageSetup        *page_setup);
 gboolean             _egg_printer_mark_conflicts            (EggPrinter          *printer,
 							     EggPrinterOptionSet *options);
 void                 _egg_printer_get_settings_from_options (EggPrinter          *printer,

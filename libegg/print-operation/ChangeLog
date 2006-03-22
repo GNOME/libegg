@@ -1,3 +1,19 @@
+2006-03-22  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	* eggprinter.c:
+	* eggprintunixdialog.c:
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Add page_setup to printer_get_options.
+	Avoid setting values that that conflict with the current page size.
+
+2006-03-21  Alexander Larsson  <alexl@redhat.com>
+
+	* modules/printbackends/cups/eggprintbackendcups.c (available_choices):
+	* TODO:
+	Remove options that conflict with the selected paper size.
+
 2006-03-21  John (J5) Palmieri <johnp@redhat.com>
 
 	* eggprintunixdialog.c:

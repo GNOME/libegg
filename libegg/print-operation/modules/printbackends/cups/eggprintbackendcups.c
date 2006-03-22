@@ -118,7 +118,8 @@ static void                 cups_printer_get_settings_from_options (EggPrinter  
 								    EggPrintSettings                  *settings);
 static gboolean             cups_printer_mark_conflicts            (EggPrinter                        *printer,
 								    EggPrinterOptionSet               *options);
-static EggPrinterOptionSet *cups_printer_get_options               (EggPrinter                        *printer);
+static EggPrinterOptionSet *cups_printer_get_options               (EggPrinter                        *printer,
+								    EggPageSetup                      *page_setup);
 static void                 cups_printer_prepare_for_print         (EggPrinter                        *printer,
 								    EggPrintSettings                  *settings);
 static GList *              cups_printer_list_papers               (EggPrinter                        *printer);
@@ -1188,8 +1189,10 @@ available_choices (ppd_file_t *ppd,
       else
 	continue;
 
-      /* We only care of conflicts with installed_options */
-      if (!group_has_option (installed_options, other_option))
+      /* We only care of conflicts with installed_options and
+         PageSize */
+      if (!group_has_option (installed_options, other_option) &&
+	  (strcmp (other_option->keyword, "PageSize") != 0))
 	continue;
 
       if (*other_choice == 0)
@@ -1438,7 +1441,8 @@ handle_group (EggPrinterOptionSet *set,
 }
 
 static EggPrinterOptionSet *
-cups_printer_get_options (EggPrinter *printer)
+cups_printer_get_options (EggPrinter *printer,
+			  EggPageSetup *page_setup)
 {
   EggPrinterOptionSet *set;
   EggPrinterOption *option;
@@ -1498,7 +1502,16 @@ cups_printer_get_options (EggPrinter *printer)
   ppd_file = egg_printer_cups_get_ppd (EGG_PRINTER_CUPS (printer));
   if (ppd_file)
     {
+      EggPaperSize *paper_size;
+      ppd_option_t *option;
+      
       ppdMarkDefaults (ppd_file);
+
+      paper_size = egg_page_setup_get_paper_size (page_setup);
+
+      option = ppdFindOption(ppd_file, "PageSize");
+      strncpy (option->defchoice, egg_paper_size_get_ppd_name (paper_size),
+	       PPD_MAX_NAME);
 
       for (i = 0; i < ppd_file->num_groups; i++)
         handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);

@@ -1049,7 +1049,7 @@ selected_printer_changed (GtkTreeSelection *selection,
 
   if (printer != NULL)
     {
-      dialog->priv->options = _egg_printer_get_options (printer);
+      dialog->priv->options = _egg_printer_get_options (printer, dialog->priv->page_setup);
   
       dialog->priv->options_changed_handler = 
         g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);

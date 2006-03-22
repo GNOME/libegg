@@ -338,10 +338,11 @@ _egg_printer_request_details (EggPrinter *printer)
 }
 
 EggPrinterOptionSet *
-_egg_printer_get_options (EggPrinter *printer)
+_egg_printer_get_options (EggPrinter *printer,
+			  EggPageSetup *page_setup)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
-  return backend_iface->printer_get_options (printer);
+  return backend_iface->printer_get_options (printer, page_setup);
 }
 
 gboolean
