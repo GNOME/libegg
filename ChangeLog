@@ -1,5 +1,17 @@
 2006-03-22  Emmanuele Bassi  <ebassi@gmail.com>
 
+	* libegg/bookmarkfile/eggbookmarkfile.c: Remove the Egg prefix from the
+	private data structures and related function names in order to ease
+	the merging. Remove the unused "dirty" flag. Remove a bunch of
+	redundant checks.
+	(egg_bookmark_file_load_from_file): Do not leak the file contents.
+	(error_cb): Conditionally compile the function, so that it's easier
+	to remove when merging.
+	(egg_bookmark_file_init), (egg_bookmark_file_clear): Use g_new/g_free
+	instead of g_slice_new/g_slice_free.
+
+2006-03-22  Emmanuele Bassi  <ebassi@gmail.com>
+
 	* libegg/recentchooser/eggrecentchooserdefault.c:
 	(load_recent_items): exit from the idle function if no items are
 	returned by the recent manager.

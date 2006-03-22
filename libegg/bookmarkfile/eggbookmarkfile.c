@@ -108,12 +108,12 @@
 #define MIME_TYPE_ATTRIBUTE	"type"
 
 
-typedef struct _EggBookmarkAppInfo  EggBookmarkAppInfo;
-typedef struct _EggBookmarkMetadata EggBookmarkMetadata;
-typedef struct _EggBookmarkItem     EggBookmarkItem;
-typedef struct _ParseData           ParseData;
+typedef struct _BookmarkAppInfo  BookmarkAppInfo;
+typedef struct _BookmarkMetadata BookmarkMetadata;
+typedef struct _BookmarkItem     BookmarkItem;
+typedef struct _ParseData        ParseData;
 
-struct _EggBookmarkAppInfo
+struct _BookmarkAppInfo
 {
   gchar *name;
   gchar *exec;
@@ -123,7 +123,7 @@ struct _EggBookmarkAppInfo
   time_t stamp;
 };
 
-struct _EggBookmarkMetadata
+struct _BookmarkMetadata
 {
   gchar *mime_type;
   
@@ -138,7 +138,7 @@ struct _EggBookmarkMetadata
   guint is_private : 1;
 };
 
-struct _EggBookmarkItem
+struct _BookmarkItem
 {
   gchar *uri;
 
@@ -149,7 +149,7 @@ struct _EggBookmarkItem
   time_t modified;
   time_t visited;
 
-  EggBookmarkMetadata *metadata;
+  BookmarkMetadata *metadata;
 };
 
 struct _EggBookmarkFile
@@ -162,8 +162,6 @@ struct _EggBookmarkFile
    */
   GList *items;
   GHashTable *items_by_uri;
-
-  guint is_dirty : 1;
 };
 
 /* parser state machine */
@@ -385,38 +383,38 @@ do_profile_vprintf (const gchar *section,
 }
 #endif /* DO_PROFILE */
 
-static void             egg_bookmark_file_init        (EggBookmarkFile  *bookmark);
-static void             egg_bookmark_file_clear       (EggBookmarkFile  *bookmark);
-static gboolean         egg_bookmark_file_parse       (EggBookmarkFile  *bookmark,
-						       const gchar      *buffer,
-						       gsize             length,
-						       GError          **error);
-static gchar *          egg_bookmark_file_dump        (EggBookmarkFile  *bookmark,
-						       gsize            *length,
-						       GError          **error);
-static EggBookmarkItem *egg_bookmark_file_lookup_item (EggBookmarkFile  *bookmark,
-						       const gchar      *uri);
-static void             egg_bookmark_file_add_item    (EggBookmarkFile  *bookmark,
-						       EggBookmarkItem  *item,
-						       GError          **error);
+static void          egg_bookmark_file_init        (EggBookmarkFile  *bookmark);
+static void          egg_bookmark_file_clear       (EggBookmarkFile  *bookmark);
+static gboolean      egg_bookmark_file_parse       (EggBookmarkFile  *bookmark,
+						    const gchar      *buffer,
+						    gsize             length,
+						    GError          **error);
+static gchar *       egg_bookmark_file_dump        (EggBookmarkFile  *bookmark,
+						    gsize            *length,
+						    GError          **error);
+static BookmarkItem *egg_bookmark_file_lookup_item (EggBookmarkFile  *bookmark,
+						    const gchar      *uri);
+static void          egg_bookmark_file_add_item    (EggBookmarkFile  *bookmark,
+						    BookmarkItem     *item,
+						    GError          **error);
 						       
 static time_t  timestamp_from_iso8601 (const gchar *iso_date);
 static gchar * timestamp_to_iso8601   (time_t       timestamp);
 
 /********************************
- * EggBookmarkAppInfo           *
+ * BookmarkAppInfo           *
  *                              *
  * Application metadata storage *
  ********************************/
 
-static EggBookmarkAppInfo *
-egg_bookmark_app_info_new (const gchar *name)
+static BookmarkAppInfo *
+bookmark_app_info_new (const gchar *name)
 {
-  EggBookmarkAppInfo *retval;
+  BookmarkAppInfo *retval;
  
   g_assert (name != NULL);
   
-  retval = g_slice_new (EggBookmarkAppInfo);
+  retval = g_slice_new (BookmarkAppInfo);
   
   retval->name = g_strdup (name);
   retval->exec = NULL;
@@ -427,7 +425,7 @@ egg_bookmark_app_info_new (const gchar *name)
 }
 
 static void
-egg_bookmark_app_info_free (EggBookmarkAppInfo *app_info)
+bookmark_app_info_free (BookmarkAppInfo *app_info)
 {
   if (!app_info)
     return;
@@ -438,17 +436,14 @@ egg_bookmark_app_info_free (EggBookmarkAppInfo *app_info)
   if (app_info->exec)
     g_free (app_info->exec);
   
-  g_slice_free (EggBookmarkAppInfo, app_info);
+  g_slice_free (BookmarkAppInfo, app_info);
 }
 
 static gchar *
-egg_bookmark_app_info_dump (EggBookmarkAppInfo *app_info)
+bookmark_app_info_dump (BookmarkAppInfo *app_info)
 {
   gchar *retval;
  
-  if (G_UNLIKELY (!app_info))
-    return NULL;
-  
   retval = g_strdup_printf ("          <%s:%s %s=\"%s\" %s=\"%s\" %s=\"%ld\" %s=\"%u\"/>\n",
                             BOOKMARK_NAMESPACE_NAME,
                             BOOKMARK_APPLICATION_ELEMENT,
@@ -462,16 +457,16 @@ egg_bookmark_app_info_dump (EggBookmarkAppInfo *app_info)
 
 
 /***********************
- * EggBookmarkMetadata *
+ * BookmarkMetadata *
  *                     *
  * Metadata storage    *
  ***********************/
-static EggBookmarkMetadata *
-egg_bookmark_metadata_new (void)
+static BookmarkMetadata *
+bookmark_metadata_new (void)
 {
-  EggBookmarkMetadata *retval;
+  BookmarkMetadata *retval;
   
-  retval = g_slice_new (EggBookmarkMetadata);
+  retval = g_slice_new (BookmarkMetadata);
 
   retval->mime_type = NULL;
   
@@ -492,7 +487,7 @@ egg_bookmark_metadata_new (void)
 }
 
 static void
-egg_bookmark_metadata_free (EggBookmarkMetadata *metadata)
+bookmark_metadata_free (BookmarkMetadata *metadata)
 {
   if (!metadata)
     return;
@@ -511,7 +506,7 @@ egg_bookmark_metadata_free (EggBookmarkMetadata *metadata)
   if (metadata->applications)
     {
       g_list_foreach (metadata->applications,
-		      (GFunc) egg_bookmark_app_info_free,
+		      (GFunc) bookmark_app_info_free,
 		      NULL);
       g_list_free (metadata->applications);
       
@@ -524,17 +519,14 @@ egg_bookmark_metadata_free (EggBookmarkMetadata *metadata)
   if (metadata->icon_mime)
     g_free (metadata->icon_mime);
   
-  g_slice_free (EggBookmarkMetadata, metadata);
+  g_slice_free (BookmarkMetadata, metadata);
 }
 
 static gchar *
-egg_bookmark_metadata_dump (EggBookmarkMetadata *metadata)
+bookmark_metadata_dump (BookmarkMetadata *metadata)
 {
   GString *retval;
  
-  if (G_UNLIKELY (!metadata))
-    return NULL;
-  
   if (!metadata->applications)
     return NULL;
   
@@ -596,14 +588,19 @@ egg_bookmark_metadata_dump (EggBookmarkMetadata *metadata)
       
       for (l = g_list_last (metadata->applications); l != NULL; l = l->prev)
         {
-          EggBookmarkAppInfo *app_info = (EggBookmarkAppInfo *) l->data;
+          BookmarkAppInfo *app_info = (BookmarkAppInfo *) l->data;
           gchar *app_data;
+
+	  g_assert (app_info != NULL);
           
-          app_data = egg_bookmark_app_info_dump (app_info);
-          
-          retval = g_string_append (retval, app_data);
-          
-          g_free (app_data);
+          app_data = bookmark_app_info_dump (app_info);
+
+	  if (app_data)
+            {
+              retval = g_string_append (retval, app_data);
+
+	      g_free (app_data);
+	    }
         }
       
       /* close applications container */
@@ -641,18 +638,18 @@ egg_bookmark_metadata_dump (EggBookmarkMetadata *metadata)
 }
 
 /******************************************************
- * EggBookmarkItem                                    *
+ * BookmarkItem                                    *
  *                                                    *
  * Storage for a single bookmark item inside the list *
  ******************************************************/
-static EggBookmarkItem *
-egg_bookmark_item_new (const gchar *uri)
+static BookmarkItem *
+bookmark_item_new (const gchar *uri)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
  
   g_assert (uri != NULL);
   
-  item = g_slice_new (EggBookmarkItem);
+  item = g_slice_new (BookmarkItem);
   item->uri = g_strdup (uri);
   
   item->title = NULL;
@@ -668,7 +665,7 @@ egg_bookmark_item_new (const gchar *uri)
 }
 
 static void
-egg_bookmark_item_free (EggBookmarkItem *item)
+bookmark_item_free (BookmarkItem *item)
 {
   if (!item)
     return;
@@ -683,21 +680,18 @@ egg_bookmark_item_free (EggBookmarkItem *item)
     g_free (item->description);
   
   if (item->metadata)
-    egg_bookmark_metadata_free (item->metadata);
+    bookmark_metadata_free (item->metadata);
   
-  g_slice_free (EggBookmarkItem, item);
+  g_slice_free (BookmarkItem, item);
 }
 
 static gchar *
-egg_bookmark_item_dump (EggBookmarkItem *item)
+bookmark_item_dump (BookmarkItem *item)
 {
   GString *retval;
   gchar *added, *visited, *modified;
   gchar *escaped_uri;
  
-  if (G_UNLIKELY (!item))
-    return NULL;
-
   /* at this point, we must have at least a registered application; if we don't
    * we don't screw up the bookmark file, and just skip this item
    */
@@ -775,11 +769,13 @@ egg_bookmark_item_dump (EggBookmarkItem *item)
       /* open info container */
       g_string_append_printf (retval, "    <%s>\n", XBEL_INFO_ELEMENT);
       
-      metadata = egg_bookmark_metadata_dump (item->metadata);
-      
-      retval = g_string_append (retval, metadata);
-      
-      g_free (metadata);
+      metadata = bookmark_metadata_dump (item->metadata);
+      if (metadata)
+        {
+          retval = g_string_append (retval, metadata);
+
+	  g_free (metadata);
+	}
       
       /* close info container */
       g_string_append_printf (retval, "    </%s>\n", XBEL_INFO_ELEMENT);
@@ -790,13 +786,12 @@ egg_bookmark_item_dump (EggBookmarkItem *item)
   return g_string_free (retval, FALSE);
 }
 
-static EggBookmarkAppInfo *
-egg_bookmark_item_lookup_app_info (EggBookmarkItem *item,
-				   const gchar	   *app_name)
+static BookmarkAppInfo *
+bookmark_item_lookup_app_info (BookmarkItem *item,
+			       const gchar  *app_name)
 {
-  g_return_val_if_fail (item != NULL, NULL);
-  g_return_val_if_fail (app_name != NULL, NULL);
-  
+  g_assert (item != NULL && app_name != NULL);
+
   if (!item->metadata)
     return NULL;
   
@@ -818,35 +813,30 @@ egg_bookmark_file_init (EggBookmarkFile *bookmark)
                                                   g_str_equal,
                                                   NULL,
                                                   NULL);
-  
-  bookmark->is_dirty = FALSE;
 }
 
 static void
 egg_bookmark_file_clear (EggBookmarkFile *bookmark)
 {
-  if (G_UNLIKELY (!bookmark))
-    return;
-  
   g_free (bookmark->title);
   g_free (bookmark->description);
 
   if (bookmark->items)
     {
       g_list_foreach (bookmark->items,
-		      (GFunc) egg_bookmark_item_free,
+		      (GFunc) bookmark_item_free,
 		      NULL);
       g_list_free (bookmark->items);
+      
       bookmark->items = NULL;
     }
   
   if (bookmark->items_by_uri)
     {
       g_hash_table_destroy (bookmark->items_by_uri);
+      
       bookmark->items_by_uri = NULL;
     }
-  
-  bookmark->is_dirty = FALSE;
 }
 
 struct _ParseData
@@ -856,7 +846,7 @@ struct _ParseData
   GHashTable *namespaces;
   
   EggBookmarkFile *bookmark_file;
-  EggBookmarkItem *current_item;
+  BookmarkItem *current_item;
 };
 
 static ParseData *
@@ -864,7 +854,7 @@ parse_data_new (void)
 {
   ParseData *retval;
   
-  retval = g_slice_new (ParseData);
+  retval = g_new (ParseData, 1);
   
   retval->state = STATE_STARTED;
   retval->namespaces = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -879,12 +869,9 @@ parse_data_new (void)
 static void
 parse_data_free (ParseData *parse_data)
 {
-  if (G_UNLIKELY (!parse_data))
-    return;
-  
   g_hash_table_destroy (parse_data->namespaces);
   
-  g_slice_free (ParseData, parse_data);
+  g_free (parse_data);
 }
 
 #define IS_ATTRIBUTE(s,a)	((0 == strcmp ((s), (a))))
@@ -899,7 +886,7 @@ parse_bookmark_element (GMarkupParseContext  *context,
   const gchar *uri, *added, *modified, *visited;
   const gchar *attr;
   gint i;
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   GError *add_error;
  
   g_assert ((parse_data != NULL) && (parse_data->state == STATE_BOOKMARK));
@@ -939,7 +926,7 @@ parse_bookmark_element (GMarkupParseContext  *context,
   
   g_assert (parse_data->current_item == NULL);
   
-  item = egg_bookmark_item_new (uri);
+  item = bookmark_item_new (uri);
   
   if (added)
     item->added = timestamp_from_iso8601 (added);
@@ -971,7 +958,7 @@ parse_bookmark_element (GMarkupParseContext  *context,
   			      &add_error);
   if (add_error)
     {
-      egg_bookmark_item_free (item);
+      bookmark_item_free (item);
       
       g_propagate_error (error, add_error);
       
@@ -991,8 +978,8 @@ parse_application_element (GMarkupParseContext  *context,
   const gchar *name, *exec, *count, *stamp;
   const gchar *attr;
   gint i;
-  EggBookmarkItem *item;
-  EggBookmarkAppInfo *ai;
+  BookmarkItem *item;
+  BookmarkAppInfo *ai;
   
   g_assert ((parse_data != NULL) && (parse_data->state == STATE_APPLICATION));
 
@@ -1042,13 +1029,13 @@ parse_application_element (GMarkupParseContext  *context,
   g_assert (parse_data->current_item != NULL);  
   item = parse_data->current_item;
     
-  ai = egg_bookmark_item_lookup_app_info (item, name);
+  ai = bookmark_item_lookup_app_info (item, name);
   if (!ai)
     {
-      ai = egg_bookmark_app_info_new (name);
+      ai = bookmark_app_info_new (name);
       
       if (!item->metadata)
-	item->metadata = egg_bookmark_metadata_new ();
+	item->metadata = bookmark_metadata_new ();
       
       item->metadata->applications = g_list_prepend (item->metadata->applications, ai);
       g_hash_table_replace (item->metadata->apps_by_name, ai->name, ai);
@@ -1077,7 +1064,7 @@ parse_mime_type_element (GMarkupParseContext  *context,
   const gchar *type;
   const gchar *attr;
   gint i;
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_assert ((parse_data != NULL) && (parse_data->state == STATE_MIME));
   
@@ -1105,7 +1092,7 @@ parse_mime_type_element (GMarkupParseContext  *context,
   item = parse_data->current_item;
     
   if (!item->metadata)
-    item->metadata = egg_bookmark_metadata_new ();
+    item->metadata = bookmark_metadata_new ();
   
   item->metadata->mime_type = g_strdup (type);
 }
@@ -1121,7 +1108,7 @@ parse_icon_element (GMarkupParseContext  *context,
   const gchar *type;
   const gchar *attr;
   gint i;
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_assert ((parse_data != NULL) && (parse_data->state == STATE_ICON));
   
@@ -1162,7 +1149,7 @@ parse_icon_element (GMarkupParseContext  *context,
   item = parse_data->current_item;
     
   if (!item->metadata)
-    item->metadata = egg_bookmark_metadata_new ();
+    item->metadata = bookmark_metadata_new ();
   
   item->metadata->icon_href = g_strdup (href);
   item->metadata->icon_mime = g_strdup (type);
@@ -1179,7 +1166,7 @@ parse_icon_element (GMarkupParseContext  *context,
  * a namespace inside an inner node; this does *not* conform to the
  * XML-NS standard, although is a close approximation.  In order to make this
  * conformant to the XML-NS specification we should use a per-element
- * namespace table inside GMarkup.
+ * namespace table inside GMarkup and ask it to resolve the namespaces for us.
  */
 static void
 map_namespace_to_name (ParseData    *parse_data,
@@ -1324,7 +1311,12 @@ start_element_raw_cb (GMarkupParseContext *context,
   	   element_name);
 #endif
   
-  /* we must check for namespace declarations first */
+  /* we must check for namespace declarations first
+   * 
+   * XXX - we could speed up things by checking for namespace declarations
+   * only on the root node, where they usually are; this would probably break
+   * on streams not produced by us or by "smart" generators
+   */
   map_namespace_to_name (parse_data, attribute_names, attribute_values);
   
   switch (parse_data->state)
@@ -1393,7 +1385,7 @@ start_element_raw_cb (GMarkupParseContext *context,
                   parse_data->state = STATE_METADATA;
                   
                   if (!parse_data->current_item->metadata)
-                    parse_data->current_item->metadata = egg_bookmark_metadata_new ();
+                    parse_data->current_item->metadata = bookmark_metadata_new ();
                 }
             }
         }
@@ -1593,7 +1585,7 @@ text_raw_cb (GMarkupParseContext *context,
       g_assert (parse_data->current_item != NULL);
       
       if (!parse_data->current_item->metadata)
-        parse_data->current_item->metadata = egg_bookmark_metadata_new ();
+        parse_data->current_item->metadata = bookmark_metadata_new ();
       
       groups = parse_data->current_item->metadata->groups;
       parse_data->current_item->metadata->groups = g_list_prepend (groups, g_strdup (payload));
@@ -1621,12 +1613,12 @@ text_raw_cb (GMarkupParseContext *context,
   g_free (payload);
 }
 
+#ifdef DO_DEBUG 
 static void
 error_cb (GMarkupParseContext *context,
           GError              *error,
           gpointer             user_data)
 {
-#ifdef DO_DEBUG 
   ParseData *parse_data = (ParseData *) user_data;
   
   g_warning ("* error:\n"
@@ -1636,8 +1628,8 @@ error_cb (GMarkupParseContext *context,
              stata[parse_data->state],
              (parse_data->current_item ? parse_data->current_item->uri : "<null>"),
              error->message);
-#endif
 }
+#endif
 
 static GMarkupParser markup_parser =
 {
@@ -1645,7 +1637,11 @@ static GMarkupParser markup_parser =
   end_element_raw_cb,   /* end_element */
   text_raw_cb,          /* text */
   NULL,                 /* passthrough */
+#ifdef DO_DEBUG
   error_cb              /* error */
+#else
+  NULL
+#endif
 };
 
 static gboolean
@@ -1784,10 +1780,10 @@ egg_bookmark_file_dump (EggBookmarkFile  *bookmark,
        l != NULL;
        l = l->prev)
     {
-      EggBookmarkItem *item = (EggBookmarkItem *) l->data;
+      BookmarkItem *item = (BookmarkItem *) l->data;
       gchar *item_dump;
       
-      item_dump = egg_bookmark_item_dump (item);
+      item_dump = bookmark_item_dump (item);
       if (!item_dump)
         continue;
       
@@ -1978,7 +1974,7 @@ egg_bookmark_file_new (void)
 {
   EggBookmarkFile *bookmark;
   
-  bookmark = g_slice_new (EggBookmarkFile);
+  bookmark = g_new (EggBookmarkFile, 1);
   
   egg_bookmark_file_init (bookmark);
   
@@ -1996,11 +1992,12 @@ egg_bookmark_file_new (void)
 void
 egg_bookmark_file_free (EggBookmarkFile *bookmark)
 {
-  g_return_if_fail (bookmark != NULL);
+  if (!bookmark)
+    return;
   
   egg_bookmark_file_clear (bookmark);
   
-  g_slice_free (EggBookmarkFile, bookmark);  
+  g_free (bookmark);  
 }
 
 /**
@@ -2042,8 +2039,6 @@ egg_bookmark_file_load_from_data (EggBookmarkFile  *bookmark,
     {
       egg_bookmark_file_clear (bookmark);
       egg_bookmark_file_init (bookmark);
-      
-      bookmark->is_dirty = TRUE;
     }
   
   parse_error = NULL;
@@ -2114,9 +2109,13 @@ egg_bookmark_file_load_from_file (EggBookmarkFile  *bookmark,
   if (read_error)
     {
       g_propagate_error (error, read_error);
-      
+
+      g_free (buffer);
+
       return FALSE;
     }
+
+  g_free (buffer);
 
 #ifdef DO_PROFILE
   do_profile_end ("load_from_file", "done loading from file '%s'", filename);
@@ -2186,7 +2185,8 @@ find_file_in_data_dirs (const gchar   *file,
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
                    EGG_BOOKMARK_FILE_ERROR_FILE_NOT_FOUND,
-                   _("Valid bookmark file could not be found in data dirs")); 
+                   _("No valid bookmark file was be found in data dirs"));
+      
       return NULL;
     }
   
@@ -2331,6 +2331,7 @@ egg_bookmark_file_to_file (EggBookmarkFile  *bookmark,
   gchar *data;
   GError *data_error, *write_error;
   gsize len;
+  gboolean retval;
 
   g_return_val_if_fail (bookmark != NULL, FALSE);
   g_return_val_if_fail (filename != NULL, FALSE);
@@ -2349,33 +2350,30 @@ egg_bookmark_file_to_file (EggBookmarkFile  *bookmark,
   if (write_error)
     {
       g_propagate_error (error, write_error);
-
-      g_free (data);
       
-      return FALSE;
+      retval = FALSE;
     }
+  else
+    retval = TRUE;
 
   g_free (data);
-	
-  return TRUE;
+  
+  return retval;
 }
 
-static EggBookmarkItem *
+static BookmarkItem *
 egg_bookmark_file_lookup_item (EggBookmarkFile *bookmark,
 			       const gchar     *uri)
 {
   g_assert (bookmark != NULL);
   
-  if (G_UNLIKELY (!uri))
-    return NULL;
-    
   return g_hash_table_lookup (bookmark->items_by_uri, uri);
 }
 
 /* this function adds a new item to the list */
 static void
 egg_bookmark_file_add_item (EggBookmarkFile  *bookmark,
-			    EggBookmarkItem  *item,
+			    BookmarkItem  *item,
 			    GError          **error)
 {
   g_assert (bookmark != NULL);
@@ -2404,8 +2402,6 @@ egg_bookmark_file_add_item (EggBookmarkFile  *bookmark,
   
   if (item->modified == (time_t) -1)
     item->modified = time (NULL);
-
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -2423,7 +2419,7 @@ egg_bookmark_file_remove_item (EggBookmarkFile  *bookmark,
 			       const gchar      *uri,
 			       GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -2442,9 +2438,7 @@ egg_bookmark_file_remove_item (EggBookmarkFile  *bookmark,
   bookmark->items = g_list_remove (bookmark->items, item);
   g_hash_table_remove (bookmark->items_by_uri, item->uri);  
   
-  egg_bookmark_item_free (item);
-  
-  bookmark->is_dirty = TRUE;
+  bookmark_item_free (item);
 }
 
 /**
@@ -2499,7 +2493,7 @@ egg_bookmark_file_get_uris (EggBookmarkFile *bookmark,
        l != NULL;
        l = l->prev)
     {
-      EggBookmarkItem *item = (EggBookmarkItem *) l->data;
+      BookmarkItem *item = (BookmarkItem *) l->data;
       
       g_assert (item != NULL);
       
@@ -2544,12 +2538,12 @@ egg_bookmark_file_set_title (EggBookmarkFile *bookmark,
     }
   else
     {
-      EggBookmarkItem *item;
+      BookmarkItem *item;
       
       item = egg_bookmark_file_lookup_item (bookmark, uri);
       if (!item)
         {
-          item = egg_bookmark_item_new (uri);
+          item = bookmark_item_new (uri);
           egg_bookmark_file_add_item (bookmark, item, NULL);
         }
       
@@ -2560,8 +2554,6 @@ egg_bookmark_file_set_title (EggBookmarkFile *bookmark,
       
       item->modified = time (NULL);
     }
-  
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -2587,7 +2579,7 @@ egg_bookmark_file_get_title (EggBookmarkFile  *bookmark,
 			     const gchar      *uri,
 			     GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, NULL);
   
@@ -2637,12 +2629,12 @@ egg_bookmark_file_set_description (EggBookmarkFile *bookmark,
     }
   else
     {
-      EggBookmarkItem *item;
+      BookmarkItem *item;
       
       item = egg_bookmark_file_lookup_item (bookmark, uri);
       if (!item)
         {
-          item = egg_bookmark_item_new (uri);
+          item = bookmark_item_new (uri);
           egg_bookmark_file_add_item (bookmark, item, NULL);
         }
       
@@ -2653,8 +2645,6 @@ egg_bookmark_file_set_description (EggBookmarkFile *bookmark,
       
       item->modified = time (NULL);
     }
-  
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -2678,7 +2668,7 @@ egg_bookmark_file_get_description (EggBookmarkFile  *bookmark,
 				   const gchar      *uri,
 				   GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, NULL);
 
@@ -2715,7 +2705,7 @@ egg_bookmark_file_set_mime_type (EggBookmarkFile *bookmark,
 				 const gchar     *uri,
 				 const gchar     *mime_type)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -2724,20 +2714,18 @@ egg_bookmark_file_set_mime_type (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
   if (!item->metadata)
-    item->metadata = egg_bookmark_metadata_new ();
+    item->metadata = bookmark_metadata_new ();
   
   if (item->metadata->mime_type != NULL)
     g_free (item->metadata->mime_type);
   
   item->metadata->mime_type = g_strdup (mime_type);
   item->modified = time (NULL);
-  
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -2763,7 +2751,7 @@ egg_bookmark_file_get_mime_type (EggBookmarkFile  *bookmark,
 				 const gchar      *uri,
 				 GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, NULL);
   g_return_val_if_fail (uri != NULL, NULL);
@@ -2807,7 +2795,7 @@ egg_bookmark_file_set_is_private (EggBookmarkFile *bookmark,
 				  const gchar     *uri,
 				  gboolean         is_private)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -2815,17 +2803,15 @@ egg_bookmark_file_set_is_private (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
   if (!item->metadata)
-    item->metadata = egg_bookmark_metadata_new ();
+    item->metadata = bookmark_metadata_new ();
   
   item->metadata->is_private = (is_private == TRUE);
   item->modified = time (NULL);
-  
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -2850,7 +2836,7 @@ egg_bookmark_file_get_is_private (EggBookmarkFile  *bookmark,
 				  const gchar      *uri,
 				  GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
   g_return_val_if_fail (uri != NULL, FALSE);
@@ -2894,7 +2880,7 @@ egg_bookmark_file_set_added (EggBookmarkFile *bookmark,
 			     const gchar     *uri,
 			     time_t           added)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -2902,7 +2888,7 @@ egg_bookmark_file_set_added (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
 
@@ -2911,8 +2897,6 @@ egg_bookmark_file_set_added (EggBookmarkFile *bookmark,
   
   item->added = added;
   item->modified = added;
-  
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -2935,7 +2919,7 @@ egg_bookmark_file_get_added (EggBookmarkFile  *bookmark,
 			     const gchar      *uri,
 			     GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, (time_t) -1);
   g_return_val_if_fail (uri != NULL, (time_t) -1);
@@ -2975,7 +2959,7 @@ egg_bookmark_file_set_modified (EggBookmarkFile *bookmark,
 				const gchar     *uri,
 				time_t           modified)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -2983,7 +2967,7 @@ egg_bookmark_file_set_modified (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
@@ -2991,8 +2975,6 @@ egg_bookmark_file_set_modified (EggBookmarkFile *bookmark,
     time (&modified);
   
   item->modified = modified;
-
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -3015,7 +2997,7 @@ egg_bookmark_file_get_modified (EggBookmarkFile  *bookmark,
 				const gchar      *uri,
 				GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, (time_t) -1);
   g_return_val_if_fail (uri != NULL, (time_t) -1);
@@ -3056,7 +3038,7 @@ egg_bookmark_file_set_visited (EggBookmarkFile *bookmark,
 			       const gchar     *uri,
 			       time_t           visited)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -3064,7 +3046,7 @@ egg_bookmark_file_set_visited (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
 
@@ -3072,8 +3054,6 @@ egg_bookmark_file_set_visited (EggBookmarkFile *bookmark,
     time (&visited);
   
   item->visited = visited;
-  
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -3096,7 +3076,7 @@ egg_bookmark_file_get_visited (EggBookmarkFile  *bookmark,
 			       const gchar      *uri,
 			       GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, (time_t) -1);
   g_return_val_if_fail (uri != NULL, (time_t) -1);
@@ -3137,7 +3117,7 @@ egg_bookmark_file_has_group (EggBookmarkFile  *bookmark,
 			     const gchar      *group,
 			     GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   GList *l;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
@@ -3184,7 +3164,7 @@ egg_bookmark_file_add_group (EggBookmarkFile *bookmark,
 			     const gchar     *uri,
 			     const gchar     *group)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -3193,12 +3173,12 @@ egg_bookmark_file_add_group (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
   if (!item->metadata)
-    item->metadata = egg_bookmark_metadata_new ();
+    item->metadata = bookmark_metadata_new ();
   
   if (!egg_bookmark_file_has_group (bookmark, uri, group, NULL))
     {
@@ -3206,7 +3186,6 @@ egg_bookmark_file_add_group (EggBookmarkFile *bookmark,
                                                g_strdup (group));
       
       item->modified = time (NULL);
-      bookmark->is_dirty = TRUE;
     }
 }
 
@@ -3235,7 +3214,7 @@ egg_bookmark_file_remove_group (EggBookmarkFile  *bookmark,
 				const gchar      *group,
 				GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   GList *l;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
@@ -3268,7 +3247,6 @@ egg_bookmark_file_remove_group (EggBookmarkFile  *bookmark,
           g_list_free_1 (l);
           
           item->modified = time (NULL);          
-          bookmark->is_dirty = TRUE;
           
           return TRUE;
         }
@@ -3288,6 +3266,8 @@ egg_bookmark_file_remove_group (EggBookmarkFile  *bookmark,
  * set group name list is removed.
  *
  * If @uri cannot be found then an item for it is created.
+ *
+ * Since: 2.12
  */
 void
 egg_bookmark_file_set_groups (EggBookmarkFile  *bookmark,
@@ -3295,7 +3275,7 @@ egg_bookmark_file_set_groups (EggBookmarkFile  *bookmark,
 			      const gchar     **groups,
 			      gsize             length)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   gsize i;
   
   g_return_if_fail (bookmark != NULL);
@@ -3305,12 +3285,12 @@ egg_bookmark_file_set_groups (EggBookmarkFile  *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
   if (!item->metadata)
-    item->metadata = egg_bookmark_metadata_new ();
+    item->metadata = bookmark_metadata_new ();
 
   if (item->metadata->groups != NULL)
     {
@@ -3329,7 +3309,6 @@ egg_bookmark_file_set_groups (EggBookmarkFile  *bookmark,
     }
 
   item->modified = time (NULL);
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -3356,7 +3335,7 @@ egg_bookmark_file_get_groups (EggBookmarkFile  *bookmark,
 			      gsize            *length,
 			      GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   GList *l;
   gsize len, i;
   gchar **retval;
@@ -3421,9 +3400,10 @@ egg_bookmark_file_get_groups (EggBookmarkFile  *bookmark,
  * time the application registered this bookmark.
  *
  * If @name is %NULL, the name of the application will be the
- * same returned by g_get_application(). If @exec is %NULL, the
+ * same returned by g_get_application(); if @exec is %NULL, the
  * command line will be a composition of the program name as
- * returned by g_get_prgname() and the "%u" modifier.
+ * returned by g_get_prgname() and the "%u" modifier, which will be
+ * expanded to the bookmark's URI.
  *
  * This function will automatically take care of updating the
  * registrations count and timestamping in case an application
@@ -3440,7 +3420,7 @@ egg_bookmark_file_add_application (EggBookmarkFile *bookmark,
 				   const gchar     *name,
 				   const gchar     *exec)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   gchar *app_name, *app_exec;
   
   g_return_if_fail (bookmark != NULL);
@@ -3449,7 +3429,7 @@ egg_bookmark_file_add_application (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
@@ -3547,7 +3527,7 @@ egg_bookmark_file_has_application (EggBookmarkFile  *bookmark,
 				   const gchar      *name,
 				   GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
   g_return_val_if_fail (uri != NULL, FALSE);
@@ -3563,7 +3543,7 @@ egg_bookmark_file_has_application (EggBookmarkFile  *bookmark,
       return FALSE;
     }
   
-  return (NULL != egg_bookmark_item_lookup_app_info (item, name));
+  return (NULL != bookmark_item_lookup_app_info (item, name));
 }
 
 /**
@@ -3619,8 +3599,8 @@ egg_bookmark_file_set_app_info (EggBookmarkFile  *bookmark,
 				time_t            stamp,
 				GError          **error)
 {
-  EggBookmarkItem *item;
-  EggBookmarkAppInfo *ai;
+  BookmarkItem *item;
+  BookmarkAppInfo *ai;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
   g_return_val_if_fail (uri != NULL, FALSE);
@@ -3640,12 +3620,12 @@ egg_bookmark_file_set_app_info (EggBookmarkFile  *bookmark,
 	}
       else
         {
-          item = egg_bookmark_item_new (uri);
+          item = bookmark_item_new (uri);
 	  egg_bookmark_file_add_item (bookmark, item, NULL);
 	}
     }
   
-  ai = egg_bookmark_item_lookup_app_info (item, name);
+  ai = bookmark_item_lookup_app_info (item, name);
   if (!ai)
     {
       if (count == 0)
@@ -3659,7 +3639,7 @@ egg_bookmark_file_set_app_info (EggBookmarkFile  *bookmark,
         }
       else
         {
-          ai = egg_bookmark_app_info_new (name);
+          ai = bookmark_app_info_new (name);
           
           item->metadata->applications = g_list_prepend (item->metadata->applications, ai);
           g_hash_table_replace (item->metadata->apps_by_name, ai->name, ai);
@@ -3672,7 +3652,6 @@ egg_bookmark_file_set_app_info (EggBookmarkFile  *bookmark,
       g_hash_table_remove (item->metadata->apps_by_name, ai->name);
           
       item->modified = time (NULL);
-      bookmark->is_dirty = TRUE;
           
       return TRUE;
     }
@@ -3693,7 +3672,6 @@ egg_bookmark_file_set_app_info (EggBookmarkFile  *bookmark,
     }
   
   item->modified = time (NULL);
-  bookmark->is_dirty = TRUE;
   
   return TRUE;
 }
@@ -3773,8 +3751,8 @@ egg_bookmark_file_get_app_info (EggBookmarkFile  *bookmark,
 				time_t           *stamp,
 				GError          **error)
 {
-  EggBookmarkItem *item;
-  EggBookmarkAppInfo *ai;
+  BookmarkItem *item;
+  BookmarkAppInfo *ai;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
   g_return_val_if_fail (uri != NULL, FALSE);
@@ -3790,7 +3768,7 @@ egg_bookmark_file_get_app_info (EggBookmarkFile  *bookmark,
       return FALSE;
     }
   
-  ai = egg_bookmark_item_lookup_app_info (item, app_name);
+  ai = bookmark_item_lookup_app_info (item, app_name);
   if (!ai)
     {
       g_set_error (error, EGG_BOOKMARK_FILE_ERROR,
@@ -3837,7 +3815,7 @@ egg_bookmark_file_get_applications (EggBookmarkFile  *bookmark,
 				    gsize            *length,
 				    GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   GList *l;
   gchar **apps;
   gsize i, n_apps;
@@ -3870,9 +3848,9 @@ egg_bookmark_file_get_applications (EggBookmarkFile  *bookmark,
        l != NULL;
        l = l->prev)
     {
-      EggBookmarkAppInfo *ai;
+      BookmarkAppInfo *ai;
       
-      ai = (EggBookmarkAppInfo *) l->data;
+      ai = (BookmarkAppInfo *) l->data;
       
       g_assert (ai != NULL);
       g_assert (ai->name != NULL);
@@ -3928,7 +3906,7 @@ egg_bookmark_file_move_item (EggBookmarkFile  *bookmark,
 			     const gchar      *new_uri,
 			     GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   GError *remove_error;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
@@ -3972,8 +3950,6 @@ egg_bookmark_file_move_item (EggBookmarkFile  *bookmark,
       item->uri = g_strdup (new_uri);
       item->modified = time (NULL);
       
-      bookmark->is_dirty = TRUE;
-      
       return TRUE;
     }
   else
@@ -4011,7 +3987,7 @@ egg_bookmark_file_set_icon (EggBookmarkFile *bookmark,
 			    const gchar     *href,
 			    const gchar     *mime_type)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_if_fail (bookmark != NULL);
   g_return_if_fail (uri != NULL);
@@ -4019,12 +3995,12 @@ egg_bookmark_file_set_icon (EggBookmarkFile *bookmark,
   item = egg_bookmark_file_lookup_item (bookmark, uri);
   if (!item)
     {
-      item = egg_bookmark_item_new (uri);
+      item = bookmark_item_new (uri);
       egg_bookmark_file_add_item (bookmark, item, NULL);
     }
   
   if (!item->metadata)
-    item->metadata = egg_bookmark_metadata_new ();
+    item->metadata = bookmark_metadata_new ();
   
   g_free (item->metadata->icon_href);
   g_free (item->metadata->icon_mime);
@@ -4038,7 +4014,6 @@ egg_bookmark_file_set_icon (EggBookmarkFile *bookmark,
     item->metadata->icon_mime = g_strdup ("application/octet-stream");
   
   item->modified = time (NULL);
-  bookmark->is_dirty = TRUE;
 }
 
 /**
@@ -4066,7 +4041,7 @@ egg_bookmark_file_get_icon (EggBookmarkFile  *bookmark,
 			    gchar           **mime_type,
 			    GError          **error)
 {
-  EggBookmarkItem *item;
+  BookmarkItem *item;
   
   g_return_val_if_fail (bookmark != NULL, FALSE);
   g_return_val_if_fail (uri != NULL, FALSE);
