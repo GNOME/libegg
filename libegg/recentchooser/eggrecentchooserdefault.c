@@ -772,8 +772,10 @@ load_recent_items (gpointer user_data)
       if (!impl->recent_items)
         {
           GDK_THREADS_LEAVE ();
+
+	  impl->load_state = LOAD_FINISHED;
           
-          return TRUE;
+          return FALSE;
         }
         
       impl->n_recent_items = g_list_length (impl->recent_items);
@@ -1296,7 +1298,11 @@ egg_recent_chooser_default_get_items (EggRecentChooser *chooser)
   
   if (!impl->manager)
     return NULL;
-  
+
+  items = egg_recent_manager_get_items (impl->manager);
+  if (!items)
+    return NULL;
+ 
   limit = egg_recent_chooser_get_limit (chooser);
   sort_type = egg_recent_chooser_get_sort_type (chooser);
 
@@ -1318,10 +1324,6 @@ egg_recent_chooser_default_get_items (EggRecentChooser *chooser)
       g_assert_not_reached ();
       break;
     }
-  
-  items = egg_recent_manager_get_items (impl->manager);
-  if (!items)
-    return NULL;
   
   /* sort the items; the filtering will be dealt with using
    * the treeview's own filter object

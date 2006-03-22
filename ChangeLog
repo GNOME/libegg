@@ -1,3 +1,12 @@
+2006-03-22  Emmanuele Bassi  <ebassi@gmail.com>
+
+	* libegg/recentchooser/eggrecentchooserdefault.c:
+	(load_recent_items): exit from the idle function if no items are
+	returned by the recent manager.
+	(egg_recent_chooser_default_get_items): move up the request to the
+	recent manager for the items, in order to return faster if no
+	items are found.
+
 2006-03-21  Emmanuele Bassi  <ebassi@gmail.com>
 
 	* libegg/recentchooser/eggrecentmanager.c:
