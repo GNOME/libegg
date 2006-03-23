@@ -1,5 +1,14 @@
 2006-03-23  Alexander Larsson  <alexl@redhat.com>
 
+	* TODO:
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Add "Printer Default" option for InputSlot if there wasn't an
+	auto option already. This will result in no value sent for InputSlot.
+	Without this you can't use auto-pick by page size in these cases.
+	(This was recommended by Michael Sweet.)
+
+2006-03-23  Alexander Larsson  <alexl@redhat.com>
+
 	* eggprintbackend.h:
 	* eggprinter-private.h:
 	* eggprinter.c: (_egg_printer_get_options):

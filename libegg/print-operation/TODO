@@ -28,7 +28,6 @@ Win32:
 
 print dialog:
 * Make sure we handle margins/orientation/paper size correctly
-* add printer default option to InputSlot (see mail from m sweet)
 * Finish the various manual_* stuff
 * job page print at support
 * Add nicer scaling to print dialog (scale to fit page size)

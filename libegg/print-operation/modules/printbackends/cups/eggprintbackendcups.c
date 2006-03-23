@@ -309,6 +309,9 @@ add_cups_options (const char *key,
   if (!g_str_has_prefix (key, "cups-"))
     return;
 
+  if (strcmp (value, "gtk-ignore-value") == 0)
+    return;
+  
   key = key + strlen("cups-");
 
   egg_cups_request_encode_option (request, key, value);
@@ -956,6 +959,12 @@ static const struct {
   const char *translation;
 } cups_choice_translations[] = {
   { "Duplex", "None", N_("One Sided") },
+  { "InputSlot", "Auto", N_("Auto Select") },
+  { "InputSlot", "AutoSelect", N_("Auto Select") },
+  { "InputSlot", "Default", N_("Printer Default") },
+  { "InputSlot", "None", N_("Printer Default") },
+  { "InputSlot", "PrinterDefault", N_("Printer Default") },
+  { "InputSlot", "Unspecified", N_("Auto Select") },
 };
 
 static const struct {
@@ -1161,6 +1170,7 @@ available_choices (ppd_file_t *ppd,
   ppd_group_t *installed_options;
   int num_conflicts;
   gboolean all_default;
+  int add_auto;
 
   if (available)
     *available = NULL;
@@ -1252,21 +1262,60 @@ available_choices (ppd_file_t *ppd,
   
   if (num_conflicts == option->num_choices)
     return 0;
-    
+
+
+  /* Some ppds don't have a "use printer default" option for
+     InputSlot. This means you always have to select a particular slot,
+     and you can't auto-pick source based on the paper size. To support
+     this we always add an auto option if there isn't one already. If
+     the user chooses the generated option we don't send any InputSlot
+     value when printing. The way we detect existing auto-cases is based
+     on feedback from Michael Sweet of cups fame.
+  */
+  add_auto = 0;
+  if (strcmp (option->keyword, "InputSlot") == 0)
+    {
+      gboolean found_auto = FALSE;
+      for (j = 0; j < option->num_choices; j++)
+	{
+	  if (!conflicts[j])
+	    {
+	      if (strcmp (option->choices[j].choice, "Auto") == 0 ||
+		  strcmp (option->choices[j].choice, "AutoSelect") == 0 ||
+		  strcmp (option->choices[j].choice, "Default") == 0 ||
+		  strcmp (option->choices[j].choice, "None") == 0 ||
+		  strcmp (option->choices[j].choice, "PrinterDefault") == 0 ||
+		  strcmp (option->choices[j].choice, "Unspecified") == 0 ||
+		  option->choices[j].code == NULL ||
+		  option->choices[j].code[0] == 0)
+		{
+		  found_auto = TRUE;
+		  break;
+		}
+	    }
+	}
+
+      if (!found_auto)
+	add_auto = 1;
+    }
+  
   if (available)
     {
-      *available = g_new (ppd_choice_t *, option->num_choices - num_conflicts);
+      
+      *available = g_new (ppd_choice_t *, option->num_choices - num_conflicts + add_auto);
 
       i = 0;
       for (j = 0; j < option->num_choices; j++)
 	{
-	  if (!conflicts[j]) {
+	  if (!conflicts[j])
 	    (*available)[i++] = &option->choices[j];
-	  }
 	}
+
+      if (add_auto) 
+	(*available)[i++] = NULL;
     }
   
-  return option->num_choices - num_conflicts;
+  return option->num_choices - num_conflicts + add_auto;
 }
 
 static EggPrinterOption *
@@ -1295,8 +1344,17 @@ create_pickone_option (ppd_file_t *ppd_file,
       egg_printer_option_allocate_choices (option, n_choices);
       for (i = 0; i < n_choices; i++)
 	{
-	  option->choices[i] = g_strdup (available[i]->choice);
-	  option->choices_display[i] = get_choice_text (ppd_file, available[i]);
+	  if (available[i] == NULL)
+	    {
+	      /* This was auto-added */
+	      option->choices[i] = g_strdup ("gtk-ignore-value");
+	      option->choices_display[i] = g_strdup (_("Printer Default"));
+	    }
+	  else
+	    {
+	      option->choices[i] = g_strdup (available[i]->choice);
+	      option->choices_display[i] = get_choice_text (ppd_file, available[i]);
+	    }
 	}
       egg_printer_option_set (option, ppd_option->defchoice);
     }
