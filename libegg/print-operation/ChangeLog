@@ -1,6 +1,14 @@
 2006-03-23  John (J5) Palmieri  <johnp@redhat.com>
 
 	* modules/printbackends/cups/eggprintbackendcups.c:
+	(cups_request_printer_info_cb):
+	Use httpSeparateURI instead of httpSeparate if cups >= 1.2
+	Use g_ascii_strcasecmp instead of g_str_equals to fix printer removal
+	bug
+
+2006-03-23  John (J5) Palmieri  <johnp@redhat.com>
+
+	* modules/printbackends/cups/eggprintbackendcups.c:
 	Emit the printer-status-changed signal when status has changed
 	Fix memleak with printer object properties being filled in
 

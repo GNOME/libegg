@@ -641,10 +641,13 @@ default_printer_list_sort_func (GtkTreeModel *model,
 		      PRINTER_LIST_COL_PRINTER_OBJ, &b_printer,
 		      -1);
 
-  g_assert (a_printer != NULL);
-  g_assert (b_printer != NULL);
-
-  if (egg_printer_is_virtual (a_printer) && egg_printer_is_virtual (b_printer))
+  if (a_printer == NULL && b_printer == NULL)
+    result = 0;
+  else if (a_printer == NULL)
+   result = G_MAXINT;
+  else if (b_printer == NULL)
+   result = G_MININT;
+  else if (egg_printer_is_virtual (a_printer) && egg_printer_is_virtual (b_printer))
     result = 0;
   else if (egg_printer_is_virtual (a_printer) && !egg_printer_is_virtual (b_printer))
     result = G_MININT;

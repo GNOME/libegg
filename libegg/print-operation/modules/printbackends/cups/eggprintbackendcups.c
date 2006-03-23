@@ -667,8 +667,22 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   status_changed = status_changed | swap_str_if_changed (&printer->priv->description, desc);
   status_changed = status_changed | swap_str_if_changed (&printer->priv->state_message, state_msg);
 
-  httpSeparate(cups_printer->printer_uri, method, username, hostname,
-	       &port, resource);
+#if (CUPS_VERSION_MAJOR == 1 && CUPS_VERSION_MINOR >= 2) || CUPS_VERSION_MAJOR > 1
+  httpSeparateURI (HTTP_URI_CODING_ALL, cups_printer->printer_uri, 
+                   method, sizeof (method), 
+                   username, sizeof (username),
+                   hostname, sizeof (hostname),
+	           &port, 
+                   resource, sizeof (resource));
+
+#else
+  httpSeparate (cups_printer->printer_uri, 
+                method, 
+                username, 
+                hostname,
+	        &port, 
+                resource);
+#endif
 
   gethostname(uri, sizeof(uri));
 
@@ -806,9 +820,11 @@ cups_request_printer_list_cb (EggPrintBackendCups *cups_backend,
 
   cups_backend->list_printers_pending = FALSE;
 
-  /* TODO: Throw up error dialog? */
   if (egg_cups_result_is_error (result))
-    return;
+    {
+      g_warning ("Error getting printer list: %s", egg_cups_result_get_error_string (result));
+      return;
+    }
 
   /* gether the names of the printers in the current queue
      so we may check to see if they were removed */
@@ -821,6 +837,7 @@ cups_request_printer_list_cb (EggPrintBackendCups *cups_backend,
   response = egg_cups_result_get_response (result);
 
   attr = ippFindAttribute (response, "printer-name", IPP_TAG_NAME);
+
   while (attr) 
     {
       EggPrinterCups *cups_printer;
@@ -830,7 +847,7 @@ cups_request_printer_list_cb (EggPrintBackendCups *cups_backend,
 
       printer_name = attr->values[0].string.text;
       /* remove name from checklist if it was found */
-      node = g_list_find_custom (removed_printer_checklist, printer_name, g_str_equal);
+      node = g_list_find_custom (removed_printer_checklist, printer_name, (GCompareFunc) g_ascii_strcasecmp);
       removed_printer_checklist = g_list_delete_link (removed_printer_checklist, node);
  
       cups_printer = (EggPrinterCups *) g_hash_table_lookup (cups_backend->printers, 
