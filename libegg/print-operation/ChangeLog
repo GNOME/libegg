@@ -1,3 +1,20 @@
+2006-03-23  John (J5) Palmieri  <johnp@redhat.com>
+
+	* eggprintbackend.c:
+	Add printer-list-changed signal for those who don't care
+	about individual printers being added or removed
+
+	* eggprintunixdialog.c:
+	(printer_removed_cb):
+	Hooked up printer removal
+	(printer_added_cb):
+	Add the printer's iterator in the list store as data to the 
+	printer's GObject so we can access it quickly
+	
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Add 3 second polling of the printer list
+	Figure out which printers are added and removed and emit signals
+	
 2006-03-23  Alexander Larsson  <alexl@redhat.com>
 
 	* eggpagesetup.c:

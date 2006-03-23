@@ -444,14 +444,29 @@ egg_print_unix_dialog_finalize (GObject *object)
 }
 
 static void
-_printer_added_cb (EggPrintBackend *backend, 
-                   EggPrinter *printer, 
-		   EggPrintUnixDialog *dialog)
+printer_removed_cb (EggPrintBackend *backend, 
+                    EggPrinter *printer, 
+		    EggPrintUnixDialog *dialog)
+{
+  GtkTreeIter *iter;
+  iter = g_object_get_data (G_OBJECT (printer), "gtk-print-tree-iter");
+  gtk_list_store_remove (GTK_LIST_STORE (dialog->priv->printer_list), iter);
+}
+
+static void
+printer_added_cb (EggPrintBackend *backend, 
+                  EggPrinter *printer, 
+		  EggPrintUnixDialog *dialog)
 {
   GtkTreeIter iter, filter_iter;
   GtkTreeSelection *selection;
 
   gtk_list_store_append (GTK_LIST_STORE (dialog->priv->printer_list), &iter);
+  
+  g_object_set_data_full (G_OBJECT (printer), 
+                         "gtk-print-tree-iter", 
+                          gtk_tree_iter_copy (&iter),
+                          (GDestroyNotify) gtk_tree_iter_free);
 
   gtk_list_store_set (GTK_LIST_STORE (dialog->priv->printer_list), &iter,
                       PRINTER_LIST_COL_ICON, egg_printer_get_icon_name (printer),
@@ -487,22 +502,14 @@ _printer_added_cb (EggPrintBackend *backend,
 }
 
 static void
-_printer_removed_cb (EggPrintBackend *backend, 
-		     EggPrinter *printer, 
-		     EggPrintUnixDialog *impl)
-{
-}
-
-
-static void
-_printer_status_cb (EggPrintBackend *backend, 
+printer_status_cb (EggPrintBackend *backend, 
 		    EggPrinter *printer, 
 		    EggPrintUnixDialog *impl)
 {
 }
 
 static void
-_printer_list_initialize (EggPrintUnixDialog *impl,
+printer_list_initialize (EggPrintUnixDialog *impl,
                           EggPrintBackend *print_backend)
 {
   GList *list;
@@ -513,17 +520,17 @@ _printer_list_initialize (EggPrintUnixDialog *impl,
 
   g_signal_connect (print_backend, 
                     "printer-added", 
-		    (GCallback) _printer_added_cb, 
+		    (GCallback) printer_added_cb, 
 		    impl);
 
   g_signal_connect (print_backend, 
                     "printer-removed", 
-		    (GCallback) _printer_removed_cb, 
+		    (GCallback) printer_removed_cb, 
 		    impl);
 
   g_signal_connect (print_backend, 
                     "printer-status-changed", 
-		    (GCallback) _printer_status_cb, 
+		    (GCallback) printer_status_cb, 
 		    impl);
 
   list = egg_print_backend_get_printer_list (print_backend);
@@ -531,7 +538,7 @@ _printer_list_initialize (EggPrintUnixDialog *impl,
   node = list;
   while (node != NULL)
     {
-      _printer_added_cb (print_backend, node->data, impl);
+      printer_added_cb (print_backend, node->data, impl);
       node = node->next;
     }
 
@@ -547,7 +554,7 @@ _load_print_backends (EggPrintUnixDialog *impl)
     impl->priv->print_backends = egg_print_backend_load_modules ();
 
   for (node = impl->priv->print_backends; node != NULL; node = node->next)
-    _printer_list_initialize (impl, EGG_PRINT_BACKEND (node->data));
+    printer_list_initialize (impl, EGG_PRINT_BACKEND (node->data));
 }
 
 static void

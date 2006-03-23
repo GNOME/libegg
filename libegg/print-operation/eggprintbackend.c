@@ -407,6 +407,13 @@ egg_print_backend_base_init (gpointer g_class)
     {
       GType iface_type = G_TYPE_FROM_INTERFACE (g_class);
 
+      g_signal_new ("printer-list-changed",
+		    iface_type,
+		    G_SIGNAL_RUN_LAST,
+		    G_STRUCT_OFFSET (EggPrintBackendIface, printer_list_changed),
+		    NULL, NULL,
+		    g_cclosure_marshal_VOID__VOID,
+		    G_TYPE_NONE, 0);
       g_signal_new ("printer-added",
 		    iface_type,
 		    G_SIGNAL_RUN_LAST,

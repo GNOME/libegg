@@ -98,6 +98,7 @@ struct _EggPrintBackendIface
 
   /* Signals 
    */
+  void (*printer_list_changed)   (void);
   void (*printer_added)          (EggPrinter *printer);
   void (*printer_removed)        (EggPrinter *printer);
   void (*printer_status_changed) (EggPrinter *printer);

@@ -465,6 +465,7 @@ _printer_list_initialize (EggPageSetupUnixDialog *impl,
   
   g_return_if_fail (print_backend != NULL);
 
+  
   g_signal_connect (print_backend, 
                     "printer-added", 
 		    (GCallback) _printer_added_cb, 
@@ -474,7 +475,7 @@ _printer_list_initialize (EggPageSetupUnixDialog *impl,
                     "printer-removed", 
 		    (GCallback) _printer_removed_cb, 
 		    impl);
-
+  
   g_signal_connect (print_backend, 
                     "printer-status-changed", 
 		    (GCallback) _printer_status_cb, 

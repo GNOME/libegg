@@ -98,6 +98,9 @@ struct _EggPrintBackendCups
   GObject parent_instance;
 
   GHashTable *printers;
+
+  gint list_printers_poll;
+  gint list_printers_pending : 1; 
 };
 
 static GObjectClass *backend_parent_class;
@@ -106,7 +109,7 @@ static void                 egg_print_backend_cups_class_init      (EggPrintBack
 static void                 egg_print_backend_cups_iface_init      (EggPrintBackendIface              *iface);
 static void                 egg_print_backend_cups_init            (EggPrintBackendCups               *impl);
 static void                 egg_print_backend_cups_finalize        (GObject                           *object);
-static GList *              cups_request_printer_list              (EggPrintBackend                   *print_backend);
+static GList *              cups_get_printer_list              (EggPrintBackend                    *print_backend);
 static void                 cups_request_execute                   (EggPrintBackendCups               *print_backend,
 								    EggCupsRequest                    *request,
 								    EggPrintCupsResponseCallbackFunc   callback,
@@ -373,7 +376,7 @@ egg_print_backend_cups_print_stream (EggPrintBackend *print_backend,
 static void
 egg_print_backend_cups_iface_init (EggPrintBackendIface *iface)
 {
-  iface->get_printer_list = cups_request_printer_list; 
+  iface->get_printer_list = cups_get_printer_list; 
   iface->find_printer = egg_print_backend_cups_find_printer;
   iface->print_stream = egg_print_backend_cups_print_stream;
   iface->printer_request_details = cups_printer_request_details;
@@ -389,6 +392,8 @@ egg_print_backend_cups_iface_init (EggPrintBackendIface *iface)
 static void
 egg_print_backend_cups_init (EggPrintBackendCups *backend_cups)
 {
+  backend_cups->list_printers_poll = 0;  
+  backend_cups->list_printers_pending = FALSE;
   backend_cups->printers = g_hash_table_new_full (g_str_hash, 
                                                   g_str_equal, 
                                                  (GDestroyNotify) g_free,
@@ -402,6 +407,9 @@ egg_print_backend_cups_finalize (GObject *object)
   EggPrintBackendCups *backend_cups;
 
   backend_cups = EGG_PRINT_BACKEND_CUPS (object);
+
+  if (backend_cups->list_printers_poll > 0)
+    g_source_remove (backend_cups->list_printers_poll);
 
   if (backend_cups->printers)
     g_hash_table_unref (backend_cups->printers);
@@ -651,10 +659,8 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   cups_printer->port = port;
 
   if (printer->priv->is_new)
-    {
-      g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-added", printer);
       printer->priv->is_new = FALSE;
-    }
+   
 }
 
 static void
@@ -690,19 +696,105 @@ cups_request_printer_info (EggPrintBackendCups *print_backend,
  
 }
 
+static gint
+printer_cmp (EggPrinter *a, EggPrinter *b)
+{
+  g_assert (EGG_IS_PRINTER (a) && EGG_IS_PRINTER (b));
+
+  if (a->priv->name == NULL  && b->priv->name == NULL)
+    return 0;
+  else if (a->priv->name == NULL)
+    return G_MAXINT;
+  else if (b->priv->name == NULL)
+    return G_MININT;
+  else
+    return g_ascii_strcasecmp (a->priv->name, b->priv->name);
+}
+
 static void
-cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
+printer_hash_to_sorted_active_list (const gchar *key,
+                                    gpointer value,
+                                    GList **out_list)
+{
+  EggPrinter *printer;
+
+  printer = EGG_PRINTER (value);
+
+  if (printer->priv->name == NULL)
+    return;
+
+  if (!printer->priv->is_active)
+    return;
+
+  *out_list = g_list_insert_sorted (*out_list, value, (GCompareFunc) printer_cmp);
+}
+
+static void
+printer_hash_to_sorted_active_name_list (const gchar *key,
+                                         gpointer value,
+                                         GList **out_list)
+{
+  EggPrinter *printer;
+
+  printer = EGG_PRINTER (value);
+
+  if (printer->priv->name == NULL)
+    return;
+
+  if (!printer->priv->is_active)
+    return;
+
+  if (printer->priv->is_active)
+    *out_list = g_list_insert_sorted (*out_list, printer->priv->name, g_str_equal);
+}
+
+static void
+mark_printer_inactive (const gchar *printer_name, 
+                       EggPrintBackendCups *cups_backend)
+{
+  EggPrinter *printer;
+  GHashTable *printer_hash;
+
+  printer_hash = cups_backend->printers;
+
+  printer = (EggPrinter *) g_hash_table_lookup (printer_hash, 
+                                                printer_name);
+
+  if (printer == NULL)
+    return;
+
+  printer->priv->is_active = FALSE;
+
+  g_signal_emit_by_name (EGG_PRINT_BACKEND (cups_backend), "printer-removed", printer);
+}
+
+static void
+cups_request_printer_list_cb (EggPrintBackendCups *cups_backend,
                               EggCupsResult *result,
                               gpointer user_data)
 {
   ipp_attribute_t *attr;
   ipp_t *response;
+  gboolean list_has_changed;
+  GList *removed_printer_checklist;
 
-  g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
+  list_has_changed = FALSE;
+
+  g_assert (EGG_IS_PRINT_BACKEND_CUPS (cups_backend));
+
+  cups_backend->list_printers_pending = FALSE;
 
   /* TODO: Throw up error dialog? */
   if (egg_cups_result_is_error (result))
     return;
+
+  /* gether the names of the printers in the current queue
+     so we may check to see if they were removed */
+  removed_printer_checklist = NULL;
+  if (cups_backend->printers != NULL)
+    g_hash_table_foreach (cups_backend->printers,
+                          (GHFunc) printer_hash_to_sorted_active_name_list,
+                          &removed_printer_checklist);
 
   response = egg_cups_result_get_response (result);
 
@@ -711,49 +803,79 @@ cups_request_printer_list_cb (EggPrintBackendCups *print_backend,
     {
       EggPrinterCups *cups_printer;
       EggPrinter *printer;
-      
-      cups_printer = (EggPrinterCups *) g_hash_table_lookup (print_backend->printers, 
-                                                             attr->values[0].string.text);
+      const gchar *printer_name;
+      GList *node;
+
+      printer_name = attr->values[0].string.text;
+      /* remove name from checklist if it was found */
+      node = g_list_find_custom (removed_printer_checklist, printer_name, g_str_equal);
+      removed_printer_checklist = g_list_delete_link (removed_printer_checklist, node);
+ 
+      cups_printer = (EggPrinterCups *) g_hash_table_lookup (cups_backend->printers, 
+                                                             printer_name);
       printer = cups_printer ? EGG_PRINTER (cups_printer) : NULL;
 
       if (!cups_printer)
         {
+          list_has_changed = TRUE;
 	  cups_printer = egg_printer_cups_new ();
 	  printer = EGG_PRINTER (cups_printer);
           printer->priv->name = g_strdup (attr->values[0].string.text);
-          printer->priv->backend = EGG_PRINT_BACKEND (print_backend);
+          printer->priv->backend = EGG_PRINT_BACKEND (cups_backend);
 
-          g_hash_table_insert (print_backend->printers,
+          g_hash_table_insert (cups_backend->printers,
                                g_strdup (printer->priv->name), 
                                cups_printer);
         }
     
-      cups_request_printer_info (print_backend, egg_printer_get_name (printer));
+      if (!printer->priv->is_active)
+        {
+          printer->priv->is_active = TRUE;
+          printer->priv->is_new = TRUE;
+          list_has_changed = TRUE;
+        }
+
+      if (printer->priv->is_new)
+        {
+           g_signal_emit_by_name (EGG_PRINT_BACKEND (cups_backend), 
+                                  "printer-added",
+                                  printer);
+
+          printer->priv->is_new = FALSE;
+        }
+
+      cups_request_printer_info (cups_backend, egg_printer_get_name (printer));
       
       attr = ippFindNextAttribute (response, 
                                    "printer-name",
                                    IPP_TAG_NAME);
     }
 
+    /* look at the removed printers checklist and mark any printer
+       as inactive if it is in the list, emitting a printer_removed signal */
+
+    if (removed_printer_checklist != NULL)
+      {
+        g_list_foreach (removed_printer_checklist, (GFunc) mark_printer_inactive, cups_backend);
+        g_list_free (removed_printer_checklist);
+        list_has_changed = TRUE;
+      }
+
+    if (list_has_changed)
+       g_signal_emit_by_name (EGG_PRINT_BACKEND (cups_backend), "printer-list-changed");
+
 }
 
-static void
-_hash_values_to_list (const gchar *key,
-                      gpointer value,
-                      GList **out_list)
-{
-  *out_list = g_list_append (*out_list, value);
-}
-
-static GList * 
-cups_request_printer_list (EggPrintBackend *print_backend)
+static gboolean
+cups_request_printer_list (EggPrintBackendCups *cups_backend)
 {
   GError *error;
   EggCupsRequest *request;
-  EggPrintBackendCups *cups_backend;
-  GList *result;
 
-  cups_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
+  if (cups_backend->list_printers_pending)
+    return TRUE;
+
+  cups_backend->list_printers_pending = TRUE;
 
   error = NULL;
 
@@ -771,11 +893,31 @@ cups_request_printer_list (EggPrintBackend *print_backend)
 		        NULL,
                         &error);
 
+
+  return TRUE;
+}
+
+static GList * 
+cups_get_printer_list (EggPrintBackend *print_backend)
+{
+  EggPrintBackendCups *cups_backend;
+  GList *result;
+
+  cups_backend = EGG_PRINT_BACKEND_CUPS (print_backend);
+
   result = NULL;
   if (cups_backend->printers != NULL)
     g_hash_table_foreach (cups_backend->printers,
-                          (GHFunc) _hash_values_to_list,
+                          (GHFunc) printer_hash_to_sorted_active_list,
                           &result);
+
+  if (cups_backend->list_printers_poll == 0)
+    {
+      cups_request_printer_list (cups_backend);
+      cups_backend->list_printers_poll = g_timeout_add (3000,
+                                                        (GSourceFunc) cups_request_printer_list,
+                                                        print_backend);
+    }
  
   return result;
 }
