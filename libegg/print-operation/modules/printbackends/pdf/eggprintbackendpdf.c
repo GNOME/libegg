@@ -447,6 +447,7 @@ pdf_printer_get_options (EggPrinter *printer,
 
   /* TODO: read initial value from settings if != NULL */
   option = egg_printer_option_new ("gtk-main-page-custom-input", _("File"), EGG_PRINTER_OPTION_TYPE_FILESAVE);
+  egg_printer_option_set (option, "output.pdf");
   option->group = g_strdup ("GtkPrintDialogExtention");
   egg_printer_option_set_add (set, option);
   
@@ -503,6 +504,8 @@ pdf_printer_prepare_for_print (EggPrinter *printer,
     egg_print_settings_set (settings, "manual-page-set", "even");
   else if (page_set == EGG_PAGE_SET_ODD)
     egg_print_settings_set (settings, "manual-page-set", "odd");
+
+  egg_print_settings_set_bool (settings, "manual-orientation", TRUE);
 }
 
 static void

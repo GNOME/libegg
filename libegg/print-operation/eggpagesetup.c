@@ -237,7 +237,8 @@ double
 egg_page_setup_get_paper_width (EggPageSetup *setup,
 				EggUnit       unit)
 {
-  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT)
+  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT ||
+      setup->orientation == EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT)
     return egg_paper_size_get_width (setup->paper_size, unit);
   else
     return egg_paper_size_get_height (setup->paper_size, unit);
@@ -247,7 +248,8 @@ double
 egg_page_setup_get_paper_height (EggPageSetup  *setup,
 				 EggUnit        unit)
 {
-  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT)
+  if (setup->orientation == EGG_PAGE_ORIENTATION_PORTRAIT ||
+      setup->orientation == EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT)
     return egg_paper_size_get_height (setup->paper_size, unit);
   else
     return egg_paper_size_get_width (setup->paper_size, unit);

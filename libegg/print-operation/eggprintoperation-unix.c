@@ -108,25 +108,6 @@ unix_end_run (EggPrintOperation *op)
   op->priv->platform_data = NULL;
 }
 
-static EggPageOrientation
-orientation_from_name (const char *val)
-{
-  if (val == NULL || strcmp (val, "portrait") == 0)
-    return EGG_PAGE_ORIENTATION_PORTRAIT;
-
-  if (strcmp (val, "landscape") == 0)
-    return EGG_PAGE_ORIENTATION_LANDSCAPE;
-  
-  if (strcmp (val, "reverse_portrait") == 0)
-    return EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT;
-  
-  if (strcmp (val, "reverse_landscape") == 0)
-    return EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE;
-  
-  return EGG_PAGE_ORIENTATION_PORTRAIT;
-}
-
-
 EggPrintOperationResult
 _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 						  GtkWindow *parent,
@@ -208,7 +189,7 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
       op->priv->manual_scale =
 	egg_print_settings_get_double_with_default (settings, "manual-scale", 100.0);
       op->priv->manual_orientation =
-	orientation_from_name (egg_print_settings_get (settings, "manual-orientation"));
+	egg_print_settings_get_bool (settings, "manual-orientation");
     } 
 
   op->priv->start_page = unix_start_page;

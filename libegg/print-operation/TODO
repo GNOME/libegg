@@ -18,7 +18,6 @@ Win32:
 * Use threads for the dialog, to allow repaints of other windows while they are up
 
 Cups/Unix print dialog:
-* Handle orientation
 * page setup layout-for-printer isn't saved
 * Finish the various manual_* stuff
 * job page print at support

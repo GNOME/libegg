@@ -227,6 +227,7 @@ egg_print_job_prep (EggPrintJob *job,
 {
   char *filename;
   double width, height;
+  EggPaperSize *paper_size;
   
   /* TODO: populate GError */
   if (!(job->priv->printer_set &&
@@ -244,8 +245,9 @@ egg_print_job_prep (EggPrintJob *job,
   if (error != NULL && *error != NULL)
     return FALSE;
 
-  width = egg_page_setup_get_paper_width (job->priv->page_setup, EGG_UNIT_POINTS);
-  height = egg_page_setup_get_paper_height (job->priv->page_setup, EGG_UNIT_POINTS);
+  paper_size = egg_page_setup_get_paper_size (job->priv->page_setup);
+  width = egg_paper_size_get_width (paper_size, EGG_UNIT_POINTS);
+  height = egg_paper_size_get_height (paper_size, EGG_UNIT_POINTS);
 
   job->priv->surface = _egg_printer_create_cairo_surface (job->priv->printer,
 							  width, height,

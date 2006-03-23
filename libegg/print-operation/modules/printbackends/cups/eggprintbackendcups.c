@@ -2008,24 +2008,6 @@ cups_printer_get_settings_from_options (EggPrinter *printer,
     }
 }
 
-static const char *
-get_orientation_name (EggPageOrientation orientation)
-{
-  switch (orientation)
-    {
-    case EGG_PAGE_ORIENTATION_LANDSCAPE:
-      return "landscape";
-    default:
-    case EGG_PAGE_ORIENTATION_PORTRAIT:
-      return "portrait";
-    case EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE:
-      return "reverse_landscape";
-    case EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT:
-      return "reverse_portrait";
-    }
-}
-
-
 static void
 cups_printer_prepare_for_print (EggPrinter *printer,
 				EggPrintSettings *settings,
@@ -2069,8 +2051,7 @@ cups_printer_prepare_for_print (EggPrinter *printer,
       g_free (custom_name);
     }
 
-  egg_print_settings_set (settings, "manual-orientation",
-			  get_orientation_name (egg_page_setup_get_orientation (page_setup)));
+  egg_print_settings_set_boolean (settings, "manual-orientation", TRUE);
 }
 
 static GList *

@@ -542,6 +542,8 @@ lpr_printer_prepare_for_print (EggPrinter *printer,
     egg_print_settings_set (settings, "manual-page-set", "even");
   else if (page_set == EGG_PAGE_SET_ODD)
     egg_print_settings_set (settings, "manual-page-set", "odd");
+
+  egg_print_settings_set_boolean (settings, "manual-orientation", TRUE);
 }
 
 static void

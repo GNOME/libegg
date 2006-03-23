@@ -43,7 +43,7 @@ struct _EggPrintOperationPrivate
 
   int manual_num_copies;
   gboolean manual_collation;
-  EggPageOrientation manual_orientation;
+  gboolean manual_orientation;
   double manual_scale;
  
   void *platform_data;
@@ -65,10 +65,11 @@ EggPrintOperationResult _egg_print_operation_platform_backend_run_dialog (EggPri
 
 /* EggPrintContext private functions: */
 
-EggPrintContext *_egg_print_context_new                   (EggPrintOperation *op);
-void             _egg_print_context_set_page_setup        (EggPrintContext   *context,
-							   EggPageSetup      *page_setup);
-void             _egg_print_context_translate_into_margin (EggPrintContext   *context);
+EggPrintContext *_egg_print_context_new                             (EggPrintOperation *op);
+void             _egg_print_context_set_page_setup                  (EggPrintContext   *context,
+								     EggPageSetup      *page_setup);
+void             _egg_print_context_translate_into_margin           (EggPrintContext   *context);
+void             _egg_print_context_rotate_according_to_orientation (EggPrintContext   *context);
 
 G_END_DECLS
 

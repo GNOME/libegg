@@ -398,7 +398,7 @@ egg_print_operation_run (EggPrintOperation  *op,
   EggPageRange *ranges;
   int num_ranges;
   EggPrintOperationResult result;
-
+  
   result = run_print_dialog (op, parent, &do_print, error);
   if (!do_print)
     return result;
@@ -471,21 +471,28 @@ egg_print_operation_run (EggPrintOperation  *op,
 		  _egg_print_context_set_page_setup (print_context, page_setup);
 		  op->priv->start_page (op, print_context, page_setup);
 		  
-		  g_object_unref (page_setup);
-		  
 		  cr = egg_print_context_get_cairo (print_context);
-		  
+
 		  cairo_save (cr);
+		  if (op->priv->manual_scale != 100.0)
+		    cairo_scale (cr,
+				 op->priv->manual_scale / 100.0,
+				 op->priv->manual_scale / 100.0);
 		  
+		  if (op->priv->manual_orientation)
+		    _egg_print_context_rotate_according_to_orientation (print_context);
+
 		  if (!op->priv->use_full_page)
 		    _egg_print_context_translate_into_margin (print_context);
-		  
+	  
 		  g_signal_emit (op, signals[DRAW_PAGE], 0, 
 				 print_context, page);
 		  
 		  op->priv->end_page (op, print_context);
 		  
 		  cairo_restore (cr);
+		  
+		  g_object_unref (page_setup);
 		}
 	    }
 	}

@@ -558,6 +558,18 @@ update_widgets (EggPrinterOptionWidget *widget)
     case EGG_PRINTER_OPTION_TYPE_STRING:
       gtk_entry_set_text (GTK_ENTRY (widget->priv->entry), source->value);
       break;
+    case EGG_PRINTER_OPTION_TYPE_FILESAVE:
+      {
+	char *basename = g_path_get_basename (source->value);
+	char *dirname = g_path_get_dirname (source->value);
+	gtk_entry_set_text (GTK_ENTRY (widget->priv->entry), basename);
+	if (g_path_is_absolute (dirname))
+	  gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (widget->priv->combo),
+					       dirname);
+	g_free (basename);
+	g_free (dirname);
+	break;
+      }
     default:
       break;
     }

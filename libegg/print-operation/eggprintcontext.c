@@ -118,11 +118,56 @@ _egg_print_context_new (EggPrintOperation *op)
   pango_cairo_font_map_set_resolution (PANGO_CAIRO_FONT_MAP (context->fontmap),
 				       op->priv->dpi_y / context->pixels_per_unit_y);
   
-
-  /* TODO: Should we rotate the space if we're on landscape? */
-  
   return context;
 }
+
+void
+_egg_print_context_rotate_according_to_orientation (EggPrintContext *context)
+{
+  cairo_t *cr = context->cr;
+  cairo_matrix_t matrix;
+  EggPaperSize *paper_size;
+  double width, height;
+
+  paper_size = egg_page_setup_get_paper_size (context->page_setup);
+
+  width = egg_paper_size_get_width (paper_size, EGG_UNIT_INCH);
+  width = width * context->op->priv->dpi_x / context->pixels_per_unit_x;
+  height = egg_paper_size_get_height (paper_size, EGG_UNIT_INCH);
+  height = height * context->op->priv->dpi_y / context->pixels_per_unit_y;
+  
+  switch (egg_page_setup_get_orientation (context->page_setup))
+    {
+    default:
+    case EGG_PAGE_ORIENTATION_PORTRAIT:
+      break;
+    case EGG_PAGE_ORIENTATION_LANDSCAPE:
+      cairo_translate (cr, width, 0);
+      cairo_matrix_init (&matrix,
+			  0,  1,
+			 -1,  0,
+			  0,  0);
+      cairo_transform (cr, &matrix);
+      break;
+    case EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT:
+      cairo_translate (cr, width, height);
+      cairo_matrix_init (&matrix,
+			 -1,  0,
+			  0, -1,
+			  0,  0);
+      cairo_transform (cr, &matrix);
+      break;
+    case EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE:
+      cairo_translate (cr, 0, height);
+      cairo_matrix_init (&matrix,
+			 0, -1,
+			 1,  0,
+			 0,  0);
+      cairo_transform (cr, &matrix);
+      break;
+    }
+}
+
 
 void
 _egg_print_context_translate_into_margin (EggPrintContext *context)

@@ -1,5 +1,35 @@
 2006-03-23  Alexander Larsson  <alexl@redhat.com>
 
+	* eggpagesetup.c:
+	Handle reverse portrait too.
+	
+	* eggprintcontext.c:
+	* eggprintoperation-private.h:
+	Add _egg_print_context_rotate_according_to_orientation.
+	
+	* eggprinteroptionwidget.c:
+	Initialize FILESAVE widget on update.
+	
+	* eggprintjob.c:
+	Don't rotate the size for the paper from the orientation.
+	We rotate in cairo instead.
+	
+	* eggprintoperation-unix.c:
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	manual_orientation is just a boolean now.
+	
+	* eggprintoperation.c:
+	Implement manual_orientation and manual_scale.
+
+	* modules/printbackends/lpr/eggprintbackendlpr.c:
+	* modules/printbackends/pdf/eggprintbackendpdf.c:
+	Set manual-orientation to TRUE.
+	
+	* TODO:
+	Update
+
+2006-03-23  Alexander Larsson  <alexl@redhat.com>
+
 	* printedit.c:
 	Position text correctly, was drawing with baseline at top of page.
 	
