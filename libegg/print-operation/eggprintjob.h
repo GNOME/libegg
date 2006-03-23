@@ -69,9 +69,8 @@ struct _EggPrintJobClass
 GType                    egg_print_job_get_type     (void) G_GNUC_CONST;
 EggPrintJob             *egg_print_job_new          (const gchar              *title,
 						     EggPrintSettings         *settings,
-						     EggPrinter               *printer,
-						     gdouble                   width,
-						     gdouble                   height);
+						     EggPageSetup             *page_setup,
+						     EggPrinter               *printer);
 EggPrintSettings        *egg_print_job_get_settings (EggPrintJob              *print_job);
 EggPrinter              *egg_print_job_get_printer  (EggPrintJob              *print_job);
 cairo_surface_t         *egg_print_job_get_surface  (EggPrintJob              *print_job);

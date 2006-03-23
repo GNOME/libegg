@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
 
 typedef struct {
   EggPrintJob *job;         /* the job we are sending to the printer */
@@ -107,6 +108,25 @@ unix_end_run (EggPrintOperation *op)
   op->priv->platform_data = NULL;
 }
 
+static EggPageOrientation
+orientation_from_name (const char *val)
+{
+  if (val == NULL || strcmp (val, "portrait") == 0)
+    return EGG_PAGE_ORIENTATION_PORTRAIT;
+
+  if (strcmp (val, "landscape") == 0)
+    return EGG_PAGE_ORIENTATION_LANDSCAPE;
+  
+  if (strcmp (val, "reverse_portrait") == 0)
+    return EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT;
+  
+  if (strcmp (val, "reverse_landscape") == 0)
+    return EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE;
+  
+  return EGG_PAGE_ORIENTATION_PORTRAIT;
+}
+
+
 EggPrintOperationResult
 _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
 						  GtkWindow *parent,
@@ -124,7 +144,7 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
   else
     page_setup = egg_page_setup_new ();
 
-  pd = egg_print_unix_dialog_new ("Print...", parent);
+  pd = egg_print_unix_dialog_new (NULL, parent);
 
   if (op->priv->print_settings)
     egg_print_unix_dialog_set_settings (EGG_PRINT_UNIX_DIALOG (pd),
@@ -137,38 +157,38 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
     {
       EggPrintOperationUnix *op_unix;
       EggPrinter *printer;
-      EggPrintSettings *settings;
-      double width, height;
- 
-      *do_print = TRUE;
+      EggPrintSettings *settings, *settings_copy;
+
       result = EGG_PRINT_OPERATION_RESULT_APPLY;
-
+      
       printer = egg_print_unix_dialog_get_selected_printer (EGG_PRINT_UNIX_DIALOG (pd));
-
-
-      width = egg_page_setup_get_paper_width (page_setup, EGG_UNIT_POINTS);
-      height = egg_page_setup_get_paper_height (page_setup, EGG_UNIT_POINTS);
-      g_object_unref (page_setup); 
-
+      if (printer == NULL)
+	goto out;
+      
+      *do_print = TRUE;
 
       settings = egg_print_unix_dialog_get_settings (EGG_PRINT_UNIX_DIALOG (pd));
 
-      egg_print_operation_set_print_settings (op, settings);
+      /* We save a copy to return to the user to avoid exposing
+	 the extra settings preparint the printer job adds. */
+      settings_copy = egg_print_settings_copy (settings);
+      egg_print_operation_set_print_settings (op, settings_copy);
+      g_object_unref (settings_copy);
 
       op_unix = g_new (EggPrintOperationUnix, 1);
       op_unix->job = egg_printer_prep_job (printer,
 					   settings,
+					   page_setup,
                                            "Title",
-                                           width, 
-                                           height,
 					   error);
-
-      //g_object_unref (settings);
+      g_object_unref (settings);
     
       if (error != NULL && *error != NULL)
         {
+	  *do_print = FALSE;
 	  _op_unix_free (op_unix);
-          return EGG_PRINT_OPERATION_RESULT_ERROR;
+	  result = EGG_PRINT_OPERATION_RESULT_ERROR;
+	  goto out;
 	}
 
       op_unix->parent = parent;
@@ -181,14 +201,23 @@ _egg_print_operation_platform_backend_run_dialog (EggPrintOperation *op,
       op->priv->platform_data = op_unix;
 
       /* TODO: hook up to dialog elements */
-      op->priv->manual_num_copies = 1;
-      op->priv->manual_collation = FALSE;
+      op->priv->manual_num_copies =
+	egg_print_settings_get_int_with_default (settings, "manual-num-copies", 1);
+      op->priv->manual_collation =
+	egg_print_settings_get_bool (settings, "manual-collate");
+      op->priv->manual_scale =
+	egg_print_settings_get_double_with_default (settings, "manual-scale", 100.0);
+      op->priv->manual_orientation =
+	orientation_from_name (egg_print_settings_get (settings, "manual-orientation"));
     } 
 
   op->priv->start_page = unix_start_page;
   op->priv->end_page = unix_end_page;
   op->priv->end_run = unix_end_run;
 
+ out:
+  g_object_unref (page_setup); 
+  
   gtk_widget_destroy (pd);
 
   return result;

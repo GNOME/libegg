@@ -87,7 +87,8 @@ struct _EggPrintBackendIface
 							      EggPrinterOptionSet *options,
 							      EggPrintSettings *settings);
   void                  (*printer_prepare_for_print)         (EggPrinter *printer,
-							      EggPrintSettings *settings);
+							      EggPrintSettings *settings,
+							      EggPageSetup *page_setup);
   GList  *              (*printer_list_papers)               (EggPrinter *printer);
   void                  (*printer_get_hard_margins)          (EggPrinter *printer,
 							      double     *top,

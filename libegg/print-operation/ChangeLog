@@ -1,5 +1,41 @@
 2006-03-23  Alexander Larsson  <alexl@redhat.com>
 
+	* printedit.c:
+	Position text correctly, was drawing with baseline at top of page.
+	
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	* eggprinter.[ch]:
+	* eggprintjob.[ch]:
+	Add PageSetup object to printer_prepare_for_print and PrintJob.
+	Remove width/height from PrintJob (we use the PageSetup for that)
+	
+	* eggprintoperation-private.h:
+	Add more manual_* settings
+	
+	* eggprintoperation-unix.c:
+	Handle paper sizes and orientation.
+	Set some more manual_* settings for the generic code.
+	
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Implement page size handling.
+	Set manual-orientation to the right value.
+	
+	* modules/printbackends/lpr/eggprintbackendlpr.c:
+	* modules/printbackends/pdf/eggprintbackendpdf.c:
+	Update for API Change
+
+	* eggprintsettings.[ch]:
+	Export the set_*_with_default methods.
+	
+	* eggprintunixdialog.c:
+	Update TODO
+	
+	* TODO:
+	Update
+	
+2006-03-23  Alexander Larsson  <alexl@redhat.com>
+
 	* TODO:
 	* modules/printbackends/cups/eggprintbackendcups.c:
 	Add "Printer Default" option for InputSlot if there wasn't an

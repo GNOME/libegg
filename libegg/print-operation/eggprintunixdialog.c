@@ -2225,8 +2225,7 @@ egg_print_unix_dialog_get_settings (EggPrintUnixDialog *dialog)
       g_free (ranges);
     }
 
-  /* TODO: prio, billing, print when, cover page (before/after)
-     How to handle? */
+  /* TODO: print when. How to handle? */
 
   if (dialog->priv->current_printer)
     _egg_printer_get_settings_from_options (dialog->priv->current_printer,

@@ -302,7 +302,8 @@ draw_page (EggPrintOperation *operation,
   cairo_t *cr;
   GList *pagebreak;
   int start, end, i;
-
+  PangoLayoutIter *iter;
+  double start_pos;
   if (page_nr == 0)
     start = 0;
   else
@@ -319,20 +320,35 @@ draw_page (EggPrintOperation *operation,
     
   cr = egg_print_context_get_cairo (context);
 
-  cairo_move_to (cr, 0, 0);
-  for (i = start; i < end; i++)
+  cairo_set_source_rgb (cr, 0, 0, 0);
+  
+  i = 0;
+  start_pos = 0;
+  iter = pango_layout_get_iter (print_data->layout);
+  do
     {
-      PangoLayoutLine *layout_line;
-      PangoRectangle ink_rect, logical_rect;
-      double line_height;
-      
-      layout_line = pango_layout_get_line (print_data->layout, i);
-      pango_cairo_show_layout_line  (cr, layout_line);
-      
-      pango_layout_line_get_extents (layout_line, &ink_rect, &logical_rect);
-      line_height = logical_rect.height / 1024.0;
-      cairo_rel_move_to (cr, 0, line_height);
+      PangoRectangle   logical_rect;
+      PangoLayoutLine *line;
+      int              baseline;
+
+      if (i >= start)
+	{
+	  line = pango_layout_iter_get_line (iter);
+
+	  pango_layout_iter_get_line_extents (iter, NULL, &logical_rect);
+	  baseline = pango_layout_iter_get_baseline (iter);
+	  
+	  if (i == start)
+	    start_pos = logical_rect.y / 1024.0;
+	  
+	  cairo_move_to (cr, logical_rect.x / 1024.0, baseline / 1024.0 - start_pos);
+	  
+	  pango_cairo_show_layout_line  (cr, line);
+	}
+      i++;
     }
+  while (i < end &&
+	 pango_layout_iter_next_line (iter));
 }
 
 static void

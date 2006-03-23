@@ -69,28 +69,29 @@ struct _EggPrintBackendPdf
 
 static GObjectClass *backend_parent_class;
 
-static void                 egg_print_backend_pdf_class_init      (EggPrintBackendPdfClass           *class);
-static void                 egg_print_backend_pdf_iface_init      (EggPrintBackendIface              *iface);
-static void                 egg_print_backend_pdf_init            (EggPrintBackendPdf                *impl);
-static void                 egg_print_backend_pdf_finalize        (GObject                           *object);
-static GList *              pdf_request_printer_list              (EggPrintBackend                   *print_backend);
-static void                 pdf_printer_get_settings_from_options (EggPrinter                        *printer,
-								   EggPrinterOptionSet               *options,
-								   EggPrintSettings                  *settings);
-static gboolean             pdf_printer_mark_conflicts            (EggPrinter                        *printer,
-								   EggPrinterOptionSet               *options);
-static EggPrinterOptionSet *pdf_printer_get_options               (EggPrinter                        *printer,
-								   EggPrintSettings                  *settings,
-								   EggPageSetup                      *page_setup);
-static void                 pdf_printer_prepare_for_print         (EggPrinter                        *printer,
-								   EggPrintSettings                  *settings);
-static void                 pdf_printer_get_hard_margins          (EggPrinter                        *printer,
-                                                                   double                            *top,
-                                                                   double                            *bottom,
-                                                                   double                            *left,
-                                                                   double                            *right);
-static void                 pdf_printer_request_details           (EggPrinter                        *printer);
-static GList *              pdf_printer_list_papers               (EggPrinter                        *printer);
+static void                 egg_print_backend_pdf_class_init      (EggPrintBackendPdfClass *class);
+static void                 egg_print_backend_pdf_iface_init      (EggPrintBackendIface    *iface);
+static void                 egg_print_backend_pdf_init            (EggPrintBackendPdf      *impl);
+static void                 egg_print_backend_pdf_finalize        (GObject                 *object);
+static GList *              pdf_request_printer_list              (EggPrintBackend         *print_backend);
+static void                 pdf_printer_get_settings_from_options (EggPrinter              *printer,
+								   EggPrinterOptionSet     *options,
+								   EggPrintSettings        *settings);
+static gboolean             pdf_printer_mark_conflicts            (EggPrinter              *printer,
+								   EggPrinterOptionSet     *options);
+static EggPrinterOptionSet *pdf_printer_get_options               (EggPrinter              *printer,
+								   EggPrintSettings        *settings,
+								   EggPageSetup            *page_setup);
+static void                 pdf_printer_prepare_for_print         (EggPrinter              *printer,
+								   EggPrintSettings        *settings,
+								   EggPageSetup            *page_setup);
+static void                 pdf_printer_get_hard_margins          (EggPrinter              *printer,
+								   double                  *top,
+								   double                  *bottom,
+								   double                  *left,
+								   double                  *right);
+static void                 pdf_printer_request_details           (EggPrinter              *printer);
+static GList *              pdf_printer_list_papers               (EggPrinter              *printer);
 
 static void
 egg_print_backend_register_type (GTypeModule *module)
@@ -475,7 +476,8 @@ pdf_printer_get_settings_from_options (EggPrinter *printer,
 
 static void
 pdf_printer_prepare_for_print (EggPrinter *printer,
-			       EggPrintSettings *settings)
+			       EggPrintSettings *settings,
+			       EggPageSetup *page_setup)
 {
   EggPageSet page_set;
   double scale;

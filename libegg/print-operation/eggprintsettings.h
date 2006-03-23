@@ -44,41 +44,47 @@ typedef struct {
 GType             egg_print_settings_get_type (void);
 EggPrintSettings *egg_print_settings_new      (void);
 
-EggPrintSettings *egg_print_settings_copy       (EggPrintSettings     *other);
-gboolean          egg_print_settings_has_key    (EggPrintSettings     *settings,
-						 const char           *key);
-const char *      egg_print_settings_get        (EggPrintSettings     *settings,
-						 const char           *key);
-void              egg_print_settings_set        (EggPrintSettings     *settings,
-						 const char           *key,
-						 const char           *value);
-void              egg_print_settings_unset      (EggPrintSettings     *settings,
-						 const char           *key);
-void              egg_print_settings_foreach    (EggPrintSettings     *settings,
-						 EggPrintSettingsFunc  func,
-						 gpointer              user_data);
-gboolean          egg_print_settings_get_bool   (EggPrintSettings     *settings,
-						 const char           *key);
-void              egg_print_settings_set_bool   (EggPrintSettings     *settings,
-						 const char           *key,
-						 gboolean              value);
-double            egg_print_settings_get_double (EggPrintSettings     *settings,
-						 const char           *key);
-void              egg_print_settings_set_double (EggPrintSettings     *settings,
-						 const char           *key,
-						 double                value);
-double            egg_print_settings_get_length (EggPrintSettings     *settings,
-						 const char           *key,
-						 EggUnit               unit);
-void              egg_print_settings_set_length (EggPrintSettings     *settings,
-						 const char           *key,
-						 double                value,
-						 EggUnit               unit);
-int               egg_print_settings_get_int    (EggPrintSettings     *settings,
-						 const char           *key);
-void              egg_print_settings_set_int    (EggPrintSettings     *settings,
-						 const char           *key,
-						 int                   value);
+EggPrintSettings *egg_print_settings_copy                    (EggPrintSettings     *other);
+gboolean          egg_print_settings_has_key                 (EggPrintSettings     *settings,
+							      const char           *key);
+const char *      egg_print_settings_get                     (EggPrintSettings     *settings,
+							      const char           *key);
+void              egg_print_settings_set                     (EggPrintSettings     *settings,
+							      const char           *key,
+							      const char           *value);
+void              egg_print_settings_unset                   (EggPrintSettings     *settings,
+							      const char           *key);
+void              egg_print_settings_foreach                 (EggPrintSettings     *settings,
+							      EggPrintSettingsFunc  func,
+							      gpointer              user_data);
+gboolean          egg_print_settings_get_bool                (EggPrintSettings     *settings,
+							      const char           *key);
+void              egg_print_settings_set_bool                (EggPrintSettings     *settings,
+							      const char           *key,
+							      gboolean              value);
+double            egg_print_settings_get_double              (EggPrintSettings     *settings,
+							      const char           *key);
+double            egg_print_settings_get_double_with_default (EggPrintSettings     *settings,
+							      const char           *key,
+							      double                def);
+void              egg_print_settings_set_double              (EggPrintSettings     *settings,
+							      const char           *key,
+							      double                value);
+double            egg_print_settings_get_length              (EggPrintSettings     *settings,
+							      const char           *key,
+							      EggUnit               unit);
+void              egg_print_settings_set_length              (EggPrintSettings     *settings,
+							      const char           *key,
+							      double                value,
+							      EggUnit               unit);
+int               egg_print_settings_get_int                 (EggPrintSettings     *settings,
+							      const char           *key);
+int               egg_print_settings_get_int_with_default    (EggPrintSettings     *settings,
+							      const char           *key,
+							      int                   def);
+void              egg_print_settings_set_int                 (EggPrintSettings     *settings,
+							      const char           *key,
+							      int                   value);
 
 #define EGG_PRINT_SETTINGS_PRINTER "printer"
 #define EGG_PRINT_SETTINGS_ORIENTATION "orientation"

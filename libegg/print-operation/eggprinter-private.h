@@ -58,7 +58,8 @@ void                 _egg_printer_get_settings_from_options (EggPrinter         
 							     EggPrinterOptionSet *options,
 							     EggPrintSettings    *settings);
 void                 _egg_printer_prepare_for_print         (EggPrinter          *printer,
-							     EggPrintSettings    *settings);
+							     EggPrintSettings    *settings,
+							     EggPageSetup        *page_setup);
 cairo_surface_t *    _egg_printer_create_cairo_surface      (EggPrinter          *printer,
 							     gdouble              width,
 							     gdouble              height,

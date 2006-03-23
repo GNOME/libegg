@@ -224,7 +224,7 @@ egg_print_settings_set_bool (EggPrintSettings *settings,
     egg_print_settings_set (settings, key, "false");
 }
 
-static double
+double
 egg_print_settings_get_double_with_default (EggPrintSettings *settings,
 					    const char *key,
 					    double def)
@@ -275,7 +275,7 @@ egg_print_settings_set_length (EggPrintSettings *settings,
 				 to_mm (length, unit));
 }
 
-static int
+int
 egg_print_settings_get_int_with_default (EggPrintSettings *settings,
 					 const char *key,
 					 int def)
@@ -336,7 +336,7 @@ egg_print_settings_get_orientation (EggPrintSettings *settings)
 
   val = egg_print_settings_get (settings, EGG_PRINT_SETTINGS_ORIENTATION);
 
-  if (val == NULL && strcmp (val, "portrait") == 0)
+  if (val == NULL || strcmp (val, "portrait") == 0)
     return EGG_PAGE_ORIENTATION_PORTRAIT;
 
   if (strcmp (val, "landscape") == 0)

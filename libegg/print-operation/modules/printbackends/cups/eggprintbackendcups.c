@@ -122,7 +122,8 @@ static EggPrinterOptionSet *cups_printer_get_options               (EggPrinter  
 								    EggPrintSettings                  *settings,
 								    EggPageSetup                      *page_setup);
 static void                 cups_printer_prepare_for_print         (EggPrinter                        *printer,
-								    EggPrintSettings                  *settings);
+								    EggPrintSettings                  *settings,
+								    EggPageSetup                      *page_setup);
 static GList *              cups_printer_list_papers               (EggPrinter                        *printer);
 static void                 cups_printer_request_details           (EggPrinter                        *printer);
 static void                 cups_request_ppd                       (EggPrinter                        *printer);
@@ -2007,15 +2008,34 @@ cups_printer_get_settings_from_options (EggPrinter *printer,
     }
 }
 
+static const char *
+get_orientation_name (EggPageOrientation orientation)
+{
+  switch (orientation)
+    {
+    case EGG_PAGE_ORIENTATION_LANDSCAPE:
+      return "landscape";
+    default:
+    case EGG_PAGE_ORIENTATION_PORTRAIT:
+      return "portrait";
+    case EGG_PAGE_ORIENTATION_REVERSE_LANDSCAPE:
+      return "reverse_landscape";
+    case EGG_PAGE_ORIENTATION_REVERSE_PORTRAIT:
+      return "reverse_portrait";
+    }
+}
+
+
 static void
 cups_printer_prepare_for_print (EggPrinter *printer,
-				EggPrintSettings *settings)
+				EggPrintSettings *settings,
+				EggPageSetup *page_setup)
 {
   EggPageSet page_set;
+  EggPaperSize *paper_size;
+  const char *ppd_paper_name;
   double scale;
   
-  /* TODO: paper size & orientation */
-
   if (egg_print_settings_get_collate (settings))
     egg_print_settings_set (settings, "cups-Collate", "True");
 
@@ -2035,6 +2055,22 @@ cups_printer_prepare_for_print (EggPrinter *printer,
     egg_print_settings_set (settings, "cups-page-set", "even");
   else if (page_set == EGG_PAGE_SET_ODD)
     egg_print_settings_set (settings, "cups-page-set", "odd");
+
+  paper_size = egg_page_setup_get_paper_size (page_setup);
+  ppd_paper_name = egg_paper_size_get_ppd_name (paper_size);
+  if (ppd_paper_name != NULL)
+    egg_print_settings_set (settings, "cups-PageSize", ppd_paper_name);
+  else
+    {
+      char *custom_name = g_strdup_printf ("Custom.%2fx%.2f",
+					   egg_paper_size_get_width (paper_size, EGG_UNIT_POINTS),
+					   egg_paper_size_get_height (paper_size, EGG_UNIT_POINTS));
+      egg_print_settings_set (settings, "cups-PageSize", custom_name);
+      g_free (custom_name);
+    }
+
+  egg_print_settings_set (settings, "manual-orientation",
+			  get_orientation_name (egg_page_setup_get_orientation (page_setup)));
 }
 
 static GList *

@@ -43,6 +43,8 @@ struct _EggPrintOperationPrivate
 
   int manual_num_copies;
   gboolean manual_collation;
+  EggPageOrientation manual_orientation;
+  double manual_scale;
  
   void *platform_data;
 

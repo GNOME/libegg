@@ -22,6 +22,7 @@
 #include <glib-object.h>
 #include <cairo.h>
 #include "eggprintsettings.h"
+#include "eggpagesetup.h"
 
 G_BEGIN_DECLS
 
@@ -79,9 +80,8 @@ gboolean                 egg_printer_is_virtual           (EggPrinter *printer);
 
 EggPrintJob             *egg_printer_prep_job             (EggPrinter *printer,
 							   EggPrintSettings *settings,
+							   EggPageSetup *page_setup,
 		                                           const gchar *title,
-                                                           double width, 
-                                                           double height,
 	                                                   GError **error);
 
 G_END_DECLS

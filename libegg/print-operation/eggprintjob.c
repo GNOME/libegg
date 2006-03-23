@@ -40,16 +40,13 @@ struct _EggPrintJobPrivate
   gint cache_fd;
   cairo_surface_t *surface;
 
-  gdouble width;
-  gdouble height;
-
   EggPrintSettings *settings;
+  EggPageSetup *page_setup;
   EggPrintBackend *backend;  
   EggPrinter *printer;
 
   gint printer_set : 1;
-  gint width_set   : 1;
-  gint height_set  : 1;
+  gint page_setup_set : 1;
   gint settings_set  : 1;
   gint prepped     : 1;
 };
@@ -72,8 +69,7 @@ enum {
   PROP_0,
   EGG_PRINT_JOB_PROP_TITLE,
   EGG_PRINT_JOB_PROP_PRINTER,
-  EGG_PRINT_JOB_PROP_WIDTH,
-  EGG_PRINT_JOB_PROP_HEIGHT,
+  EGG_PRINT_JOB_PROP_PAGE_SETUP,
   EGG_PRINT_JOB_PROP_SETTINGS
 };
 
@@ -119,28 +115,13 @@ egg_print_job_class_init (EggPrintJobClass *class)
 						        G_PARAM_CONSTRUCT_ONLY));
 
   g_object_class_install_property (G_OBJECT_CLASS (class),
-                                   EGG_PRINT_JOB_PROP_WIDTH,
-                                   g_param_spec_double ("width",
-						        P_("Width"),
-						        P_("Width of job in points"),
-						        0.0,
-							99999999.0,
-							612.0,
-							GTK_PARAM_WRITABLE |
+                                   EGG_PRINT_JOB_PROP_PAGE_SETUP,
+                                   g_param_spec_object ("page-setup",
+						        P_("Page Setup"),
+						        P_("Page Setup"),
+						        EGG_TYPE_PAGE_SETUP,
+							GTK_PARAM_READWRITE |
 						        G_PARAM_CONSTRUCT_ONLY));
-
-
-  g_object_class_install_property (G_OBJECT_CLASS (class),
-                                   EGG_PRINT_JOB_PROP_HEIGHT,
-                                   g_param_spec_double ("height",
-						        P_("Height"),
-						        P_("Height of job in points"),
-							0.0,
-							99999999.0,
-						        792.0,
-							GTK_PARAM_WRITABLE |
-						        G_PARAM_CONSTRUCT_ONLY));
-
 }
 
 static void
@@ -155,8 +136,8 @@ egg_print_job_init (EggPrintJob *print_job)
   print_job->priv->printer = NULL;
 
   print_job->priv->printer_set = FALSE;
-  print_job->priv->width_set = FALSE;
-  print_job->priv->height_set = FALSE;
+  print_job->priv->settings_set = FALSE;
+  print_job->priv->page_setup_set = FALSE;
 }
 
 static void
@@ -181,6 +162,9 @@ egg_print_job_finalize (GObject *object)
   if (print_job->priv->settings)
     g_object_unref (print_job->priv->settings);
   
+  if (print_job->priv->page_setup)
+    g_object_unref (print_job->priv->page_setup);
+  
   if (G_OBJECT_CLASS (egg_print_job_parent_class)->finalize)
     G_OBJECT_CLASS (egg_print_job_parent_class)->finalize (object);
 }
@@ -197,9 +181,8 @@ egg_print_job_finalize (GObject *object)
 EggPrintJob *
 egg_print_job_new (const gchar *title,
 		   EggPrintSettings *settings,
-                   EggPrinter *printer,
-                   double width,
-		   double height)
+		   EggPageSetup *page_setup,
+                   EggPrinter *printer)
 {
   GObject *result;
   
@@ -207,8 +190,7 @@ egg_print_job_new (const gchar *title,
                          "title", title,
 			 "printer", printer,
 			 "settings", settings,
-			 "width", width,
-			 "height", height,
+			 "page-setup", page_setup,
 			 NULL);
 
   return (EggPrintJob *) result;
@@ -244,12 +226,12 @@ egg_print_job_prep (EggPrintJob *job,
                     GError **error)
 {
   char *filename;
+  double width, height;
   
   /* TODO: populate GError */
   if (!(job->priv->printer_set &&
 	job->priv->settings_set &&
-	job->priv->width_set &&
-	job->priv->height_set))
+	job->priv->page_setup_set))
     return FALSE;
 
   job->priv->prepped = TRUE;
@@ -262,13 +244,16 @@ egg_print_job_prep (EggPrintJob *job,
   if (error != NULL && *error != NULL)
     return FALSE;
 
+  width = egg_page_setup_get_paper_width (job->priv->page_setup, EGG_UNIT_POINTS);
+  height = egg_page_setup_get_paper_height (job->priv->page_setup, EGG_UNIT_POINTS);
+
   job->priv->surface = _egg_printer_create_cairo_surface (job->priv->printer,
-							  job->priv->width,
-							  job->priv->height,
+							  width, height,
 							  job->priv->cache_fd);
 
   _egg_printer_prepare_for_print (job->priv->printer,
-				  job->priv->settings);
+				  job->priv->settings,
+				  job->priv->page_setup);
   
   return TRUE;
 }
@@ -294,22 +279,16 @@ egg_print_job_set_property (GObject      *object,
       impl->priv->backend = g_object_ref (egg_printer_get_backend (impl->priv->printer));
       break;
 
+    case EGG_PRINT_JOB_PROP_PAGE_SETUP:
+      impl->priv->page_setup = EGG_PAGE_SETUP (g_value_dup_object (value));
+      impl->priv->page_setup_set = TRUE;
+      break;
+      
     case EGG_PRINT_JOB_PROP_SETTINGS:
       impl->priv->settings = EGG_PRINT_SETTINGS (g_value_dup_object (value));
-      g_assert (EGG_IS_PRINT_SETTINGS (impl->priv->settings));
       impl->priv->settings_set = TRUE;
       break;
 
-    case EGG_PRINT_JOB_PROP_WIDTH:
-      impl->priv->width = g_value_get_double (value);
-      impl->priv->width_set = TRUE;
-      break;
-
-    case EGG_PRINT_JOB_PROP_HEIGHT:
-      impl->priv->height = g_value_get_double (value);
-      impl->priv->height_set = TRUE;
-      break;
-      
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -331,6 +310,9 @@ egg_print_job_get_property (GObject    *object,
       break;
     case EGG_PRINT_JOB_PROP_SETTINGS:
       g_value_set_object (value, impl->priv->settings);
+      break;
+    case EGG_PRINT_JOB_PROP_PAGE_SETUP:
+      g_value_set_object (value, impl->priv->page_setup);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);

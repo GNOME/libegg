@@ -308,18 +308,16 @@ egg_printer_is_virtual (EggPrinter *printer)
 EggPrintJob *
 egg_printer_prep_job (EggPrinter *printer,
 		      EggPrintSettings *settings,
+		      EggPageSetup *page_setup,
 		      const gchar *title,
-                      double width, 
-                      double height,
 	              GError **error)
 {
   EggPrintJob *job;
 
   job = egg_print_job_new (title,
 			   settings,
-                           printer,
-                           width,
-                           height);
+			   page_setup,
+                           printer);
 
   if (!egg_print_job_prep (job, error))
     {
@@ -365,10 +363,11 @@ _egg_printer_get_settings_from_options (EggPrinter          *printer,
 
 void
 _egg_printer_prepare_for_print (EggPrinter *printer,
-				EggPrintSettings *settings)
+				EggPrintSettings *settings,
+				EggPageSetup *page_setup)
 {
   EggPrintBackendIface *backend_iface = EGG_PRINT_BACKEND_GET_IFACE (printer->priv->backend);
-  return backend_iface->printer_prepare_for_print (printer, settings);
+  return backend_iface->printer_prepare_for_print (printer, settings, page_setup);
 }
 
 cairo_surface_t *
