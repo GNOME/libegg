@@ -105,10 +105,29 @@ void
 egg_printer_option_set (EggPrinterOption *option,
 			const char *value)
 {
+  
   if ((option->value == NULL && value == NULL) ||
       (option->value != NULL && value != NULL &&
        strcmp (option->value, value) == 0))
     return;
+
+  if (option->type == EGG_PRINTER_OPTION_TYPE_PICKONE &&
+      value != NULL)
+    {
+      int i;
+      
+      for (i = 0; i < option->num_choices; i++)
+	{
+	  if (g_ascii_strcasecmp (value, option->choices[i]) == 0)
+	    {
+	      value = option->choices[i];
+	      break;
+	    }
+	}
+
+      if (i == option->num_choices)
+	return; /* Not found in availible choices */
+    }
   
   g_free (option->value);
   option->value = g_strdup (value);

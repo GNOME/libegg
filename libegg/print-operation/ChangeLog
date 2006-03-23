@@ -1,3 +1,30 @@
+2006-03-23  Alexander Larsson  <alexl@redhat.com>
+
+	* eggprintbackend.h:
+	* eggprinter-private.h:
+	* eggprinter.c: (_egg_printer_get_options):
+	Add print settings argument to get_options so that backends can
+	pre-fill the previously returned settings.
+	
+	* eggprinteroption.c: (egg_printer_option_set):
+	For PICKONE types, only set if the choice was allowed.
+	Also handle case-differences.
+	
+	* eggprintunixdialog.c:
+	Set the printer from the user supplied settings or the default.
+	Set the user supplied settings on the printer object.
+	Note: The "default" printer is just hardcoded for now.
+	
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Support setting initial option state from passed in settings
+	
+	* modules/printbackends/lpr/eggprintbackendlpr.c:
+	* modules/printbackends/pdf/eggprintbackendpdf.c:
+	Update to new API.
+
+	* TODO:
+	Update
+	
 2006-03-22  Alexander Larsson  <alexl@redhat.com>
 
 	* eggprintbackend.h:

@@ -79,7 +79,9 @@ static void                 lpr_printer_get_settings_from_options (EggPrinter   
 								   EggPrintSettings                  *settings);
 static gboolean             lpr_printer_mark_conflicts            (EggPrinter                        *printer,
 								   EggPrinterOptionSet               *options);
-static EggPrinterOptionSet *lpr_printer_get_options               (EggPrinter                        *printer);
+static EggPrinterOptionSet *lpr_printer_get_options               (EggPrinter                        *printer,
+								   EggPrintSettings                  *settings,
+								   EggPageSetup                      *page_setup);
 static void                 lpr_printer_prepare_for_print         (EggPrinter                        *printer,
 								   EggPrintSettings                  *settings);
 static void                 lpr_printer_get_hard_margins          (EggPrinter                        *printer,
@@ -461,7 +463,9 @@ lpr_printer_request_details (EggPrinter *printer)
 }
 
 static EggPrinterOptionSet *
-lpr_printer_get_options (EggPrinter *printer)
+lpr_printer_get_options (EggPrinter *printer,
+			 EggPrintSettings  *settings,
+			 EggPageSetup *page_setup)
 {
   EggPrinterLpr *lpr_printer;
   EggPrinterOptionSet *set;
@@ -479,7 +483,8 @@ lpr_printer_get_options (EggPrinter *printer)
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
-  option = egg_printer_option_new ("main-page-custom-input", _("Command Line Options"), EGG_PRINTER_OPTION_TYPE_STRING);
+  /* TODO: read initial value from settings if != NULL */
+  option = egg_printer_option_new ("gtk-main-page-custom-input", _("Command Line Options"), EGG_PRINTER_OPTION_TYPE_STRING);
   option->group = g_strdup ("GtkPrintDialogExtention");
   egg_printer_option_set_add (set, option);
   

@@ -79,7 +79,9 @@ static void                 pdf_printer_get_settings_from_options (EggPrinter   
 								   EggPrintSettings                  *settings);
 static gboolean             pdf_printer_mark_conflicts            (EggPrinter                        *printer,
 								   EggPrinterOptionSet               *options);
-static EggPrinterOptionSet *pdf_printer_get_options               (EggPrinter                        *printer);
+static EggPrinterOptionSet *pdf_printer_get_options               (EggPrinter                        *printer,
+								   EggPrintSettings                  *settings,
+								   EggPageSetup                      *page_setup);
 static void                 pdf_printer_prepare_for_print         (EggPrinter                        *printer,
 								   EggPrintSettings                  *settings);
 static void                 pdf_printer_get_hard_margins          (EggPrinter                        *printer,
@@ -422,7 +424,9 @@ pdf_printer_request_details (EggPrinter *printer)
 }
 
 static EggPrinterOptionSet *
-pdf_printer_get_options (EggPrinter *printer)
+pdf_printer_get_options (EggPrinter *printer,
+			 EggPrintSettings *settings,
+			 EggPageSetup *page_setup)
 {
   EggPrinterPdf *pdf_printer;
   EggPrinterOptionSet *set;
@@ -440,7 +444,8 @@ pdf_printer_get_options (EggPrinter *printer)
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
-  option = egg_printer_option_new ("main-page-custom-input", _("File"), EGG_PRINTER_OPTION_TYPE_FILESAVE);
+  /* TODO: read initial value from settings if != NULL */
+  option = egg_printer_option_new ("gtk-main-page-custom-input", _("File"), EGG_PRINTER_OPTION_TYPE_FILESAVE);
   option->group = g_strdup ("GtkPrintDialogExtention");
   egg_printer_option_set_add (set, option);
   

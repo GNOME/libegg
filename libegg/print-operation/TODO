@@ -27,23 +27,28 @@ Win32:
 * Use threads for the dialog, to allow repaints of other windows while they are up
 
 print dialog:
-* conflicts with page size...
+* Make sure we handle margins/orientation/paper size correctly
+* add printer default option to InputSlot (see mail from m sweet)
+* Finish the various manual_* stuff
 * job page print at support
 * Add nicer scaling to print dialog (scale to fit page size)
-* add printer default option to InputSlot (see mail from m sweet)
+* Use themed icons
+* HIG spacing
+* More ppd string translations
+* Don't select default for a short while, so that we can avoid flashing if the selected printer appears
+* Actually get default printer from somewhere
 
-* print preview ideas?
-
-<matthias> - should base64 move to glib ?
-<matthias> must use themed icons, not xpms
-<matthias> I think it would be good to have some overview notes in there somewhere, basically the contents of your email
-<matthias> since it can be a bit confusing that there are different layers which can be ported
+General:
+* print preview?
+* should base64 move to glib ?
 
 page setting dialog:
 * land/port icons
+* HIG spacing
 
 * sort paper lists
 * nicer unit editor than spinbutton
 
-
-
+code:
+remove initial _ for static funcs
+s/impl/dialog/

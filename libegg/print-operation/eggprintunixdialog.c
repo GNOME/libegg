@@ -67,7 +67,7 @@ enum {
   PRINTER_LIST_N_COLS
 };
 
-#define _EXTENTION_POINT_MAIN_PAGE_CUSTOM_INPUT "main-page-custom-input"
+#define _EXTENTION_POINT_MAIN_PAGE_CUSTOM_INPUT "gtk-main-page-custom-input"
 
 struct EggPrintUnixDialogPrivate
 {
@@ -118,6 +118,18 @@ struct EggPrintUnixDialogPrivate
 
   GHashTable *extention_points;  
 
+  /* These are set initially on selected printer (either default printer, printer
+   * taken from set settings, or user-selected), but when any setting is changed
+   * by the user it is cleared */
+  EggPrintSettings *initial_settings;
+  
+  /* This is the initial printer set by set_settings. We look for it in the
+   * added printers. We clear this whenever the user manually changes
+   * to another printer, when the user changes a setting or when we find
+   * this printer */
+  char *waiting_for_printer;
+  gboolean internal_printer_change;
+  
   GList *print_backends;
   
   EggPrinter *current_printer;
@@ -312,6 +324,13 @@ static const char *nocollate_reverse_xpm[] = {
 "....................              ....................           "};
 
 
+static const char *
+get_default_printer (void)
+{
+  /* TODO: use something better */
+  return "printer";
+}
+
 static void
 egg_print_unix_dialog_class_init (EggPrintUnixDialogClass *class)
 {
@@ -410,7 +429,16 @@ egg_print_unix_dialog_finalize (GObject *object)
       g_object_unref (dialog->priv->page_setup);
       dialog->priv->page_setup = NULL;
     }
- 
+
+  if (dialog->priv->initial_settings)
+    {
+      g_object_unref (dialog->priv->initial_settings);
+      dialog->priv->initial_settings = NULL;
+    }
+
+  g_free (dialog->priv->waiting_for_printer);
+  dialog->priv->waiting_for_printer = NULL;
+  
   if (G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize)
     G_OBJECT_CLASS (egg_print_unix_dialog_parent_class)->finalize (object);
 }
@@ -418,13 +446,14 @@ egg_print_unix_dialog_finalize (GObject *object)
 static void
 _printer_added_cb (EggPrintBackend *backend, 
                    EggPrinter *printer, 
-		   EggPrintUnixDialog *impl)
+		   EggPrintUnixDialog *dialog)
 {
-  GtkTreeIter iter;
+  GtkTreeIter iter, filter_iter;
+  GtkTreeSelection *selection;
 
-  gtk_list_store_append (GTK_LIST_STORE (impl->priv->printer_list), &iter);
+  gtk_list_store_append (GTK_LIST_STORE (dialog->priv->printer_list), &iter);
 
-  gtk_list_store_set (GTK_LIST_STORE (impl->priv->printer_list), &iter,
+  gtk_list_store_set (GTK_LIST_STORE (dialog->priv->printer_list), &iter,
                       PRINTER_LIST_COL_ICON, egg_printer_get_icon_name (printer),
                       PRINTER_LIST_COL_NAME, egg_printer_get_name (printer),
                       PRINTER_LIST_COL_STATE, egg_printer_get_state_message (printer),
@@ -432,6 +461,29 @@ _printer_added_cb (EggPrintBackend *backend,
                       PRINTER_LIST_COL_LOCATION, egg_printer_get_location (printer),
                       PRINTER_LIST_COL_PRINTER_OBJ, printer,
                       -1);
+
+  gtk_tree_model_filter_convert_child_iter_to_iter (dialog->priv->printer_list_filter,
+						    &filter_iter, &iter);
+  
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
+  
+  if (dialog->priv->waiting_for_printer != NULL &&
+      strcmp (egg_printer_get_name (printer),
+	      dialog->priv->waiting_for_printer) == 0)
+    {
+      dialog->priv->internal_printer_change = TRUE;
+      gtk_tree_selection_select_iter (selection, &filter_iter);
+      dialog->priv->internal_printer_change = FALSE;
+      g_free (dialog->priv->waiting_for_printer);
+      dialog->priv->waiting_for_printer = NULL;
+    }
+  else if (strcmp (egg_printer_get_name (printer), get_default_printer ()) == 0 &&
+	   gtk_tree_selection_count_selected_rows (selection) == 0)
+    {
+      dialog->priv->internal_printer_change = TRUE;
+      gtk_tree_selection_select_iter (selection, &filter_iter);
+      dialog->priv->internal_printer_change = FALSE;
+    }
 }
 
 static void
@@ -505,8 +557,6 @@ egg_print_unix_dialog_set_property (GObject      *object,
 				    GParamSpec   *pspec)
 
 {
-  //EggPrintUnixDialog *impl = EGG_PRINT_UNIX_DIALOG (object);
-
   switch (prop_id)
     {
     default:
@@ -521,8 +571,6 @@ egg_print_unix_dialog_get_property (GObject    *object,
 				    GValue     *value,
 				    GParamSpec *pspec)
 {
-  /* EggPrintUnixDialog *impl = EGG_PRINT_UNIX_DIALOG (object); */
-
   switch (prop_id)
     {
     default:
@@ -619,7 +667,7 @@ _create_printer_list_model (EggPrintUnixDialog *dialog)
 
   dialog->priv->printer_list = (GtkTreeModel *)model;
   dialog->priv->printer_list_filter = (GtkTreeModelFilter *) gtk_tree_model_filter_new ((GtkTreeModel *)model,
-                                                                 NULL);
+											NULL);
 
   gtk_tree_model_filter_set_visible_func (dialog->priv->printer_list_filter,
 					  (GtkTreeModelFilterVisibleFunc) is_printer_active,
@@ -934,6 +982,21 @@ schedule_idle_mark_conflicts (EggPrintUnixDialog *dialog)
 }
 
 static void
+options_changed_cb (EggPrintUnixDialog *dialog)
+{
+  schedule_idle_mark_conflicts (dialog);
+
+  if (dialog->priv->initial_settings)
+    {
+      g_object_unref (dialog->priv->initial_settings);
+      dialog->priv->initial_settings = NULL;
+    }
+
+  g_free (dialog->priv->waiting_for_printer);
+  dialog->priv->waiting_for_printer = NULL;
+}
+
+static void
 remove_custom_widget (GtkWidget *widget,
                       GtkContainer *container)
 {
@@ -996,6 +1059,15 @@ selected_printer_changed (GtkTreeSelection *selection,
   EggPrinter *printer;
   GtkTreeIter iter, filter_iter;
 
+  /* Whenever the user selects a printer we stop looking for
+     the printer specified in the initial settings */
+  if (dialog->priv->waiting_for_printer &&
+      !dialog->priv->internal_printer_change)
+    {
+      g_free (dialog->priv->waiting_for_printer);
+      dialog->priv->waiting_for_printer = NULL;
+    }
+  
   if (dialog->priv->request_details_tag)
     {
       g_source_remove (dialog->priv->request_details_tag);
@@ -1049,10 +1121,11 @@ selected_printer_changed (GtkTreeSelection *selection,
 
   if (printer != NULL)
     {
-      dialog->priv->options = _egg_printer_get_options (printer, dialog->priv->page_setup);
+      dialog->priv->options = _egg_printer_get_options (printer, dialog->priv->initial_settings,
+							dialog->priv->page_setup);
   
       dialog->priv->options_changed_handler = 
-        g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (schedule_idle_mark_conflicts), dialog);
+        g_signal_connect_swapped (dialog->priv->options, "changed", G_CALLBACK (options_changed_cb), dialog);
     }
 
   update_dialog_from_settings (dialog);
@@ -2026,19 +2099,86 @@ egg_print_unix_dialog_set_current_page (EggPrintUnixDialog *dialog,
     gtk_widget_set_sensitive (dialog->priv->current_page_radio, current_page != -1);
 }
 
+static gboolean
+set_active_printer (EggPrintUnixDialog *dialog,
+		    const char *printer_name)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter, filter_iter;
+  GtkTreeSelection *selection;
+  EggPrinter *printer;
+
+  model = GTK_TREE_MODEL (dialog->priv->printer_list);
+
+  if (gtk_tree_model_get_iter_first (model, &iter))
+    {
+      do
+	{
+	  gtk_tree_model_get (GTK_TREE_MODEL (dialog->priv->printer_list), &iter,
+			      PRINTER_LIST_COL_PRINTER_OBJ, &printer, -1);
+	  if (printer == NULL)
+	    continue;
+	  
+	  if (strcmp (egg_printer_get_name (printer), printer_name) == 0)
+	    {
+	      gtk_tree_model_filter_convert_child_iter_to_iter (dialog->priv->printer_list_filter,
+								&filter_iter, &iter);
+	      
+	      selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->printer_treeview));
+	      dialog->priv->internal_printer_change = TRUE;
+	      gtk_tree_selection_select_iter (selection, &filter_iter);
+	      dialog->priv->internal_printer_change = FALSE;
+	      g_free (dialog->priv->waiting_for_printer);
+	      dialog->priv->waiting_for_printer = NULL;
+	      
+	      g_object_unref (printer);
+	      return TRUE;
+	    }
+	      
+	  g_object_unref (printer);
+	  
+	} while (gtk_tree_model_iter_next (model, &iter));
+    }
+  
+  return FALSE;
+}
+
 void
 egg_print_unix_dialog_set_settings (EggPrintUnixDialog *dialog,
 				    EggPrintSettings   *settings)
 {
-  dialog_set_collate (dialog, egg_print_settings_get_collate (settings));
-  dialog_set_reverse (dialog, egg_print_settings_get_reverse (settings));
-  dialog_set_n_copies (dialog, egg_print_settings_get_num_copies (settings));
-  dialog_set_scale (dialog, egg_print_settings_get_scale (settings));
-  dialog_set_page_set (dialog, egg_print_settings_get_page_set (settings));
+  const char *printer;
+  
+  if (settings != NULL)
+    {
+      dialog_set_collate (dialog, egg_print_settings_get_collate (settings));
+      dialog_set_reverse (dialog, egg_print_settings_get_reverse (settings));
+      dialog_set_n_copies (dialog, egg_print_settings_get_num_copies (settings));
+      dialog_set_scale (dialog, egg_print_settings_get_scale (settings));
+      dialog_set_page_set (dialog, egg_print_settings_get_page_set (settings));
+    }
   
   /* TODO: page ranges */
 
   /* TODO: Handle printer choosen and printer-specific settings */
+
+  if (dialog->priv->initial_settings)
+    g_object_unref (dialog->priv->initial_settings);
+
+  dialog->priv->initial_settings = settings;
+
+  g_free (dialog->priv->waiting_for_printer);
+  dialog->priv->waiting_for_printer = NULL;
+  
+  if (settings)
+    {
+      g_object_ref (settings);
+
+      printer = egg_print_settings_get_printer (settings);
+      
+      if (printer && !set_active_printer (dialog, printer))
+	dialog->priv->waiting_for_printer = g_strdup (printer); 
+    }
 }
 
 EggPrintSettings *

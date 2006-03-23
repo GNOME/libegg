@@ -79,6 +79,7 @@ struct _EggPrintBackendIface
 							      gdouble width,
 							      gint cache_fd);
   EggPrinterOptionSet * (*printer_get_options)               (EggPrinter *printer,
+							      EggPrintSettings *settings,
 							      EggPageSetup *page_setup);
   gboolean              (*printer_mark_conflicts)            (EggPrinter *printer,
 							      EggPrinterOptionSet *options);

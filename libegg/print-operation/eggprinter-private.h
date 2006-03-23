@@ -50,6 +50,7 @@ struct _EggPrinterPrivate
 gboolean             _egg_printer_has_details               (EggPrinter          *printer);
 void                 _egg_printer_request_details           (EggPrinter          *printer);
 EggPrinterOptionSet *_egg_printer_get_options               (EggPrinter          *printer,
+							     EggPrintSettings *settings,
 							     EggPageSetup        *page_setup);
 gboolean             _egg_printer_mark_conflicts            (EggPrinter          *printer,
 							     EggPrinterOptionSet *options);

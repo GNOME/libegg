@@ -106,7 +106,7 @@ static void                 egg_print_backend_cups_class_init      (EggPrintBack
 static void                 egg_print_backend_cups_iface_init      (EggPrintBackendIface              *iface);
 static void                 egg_print_backend_cups_init            (EggPrintBackendCups               *impl);
 static void                 egg_print_backend_cups_finalize        (GObject                           *object);
-static GList *              cups_request_printer_list              (EggPrintBackend                    *print_backend);
+static GList *              cups_request_printer_list              (EggPrintBackend                   *print_backend);
 static void                 cups_request_execute                   (EggPrintBackendCups               *print_backend,
 								    EggCupsRequest                    *request,
 								    EggPrintCupsResponseCallbackFunc   callback,
@@ -119,6 +119,7 @@ static void                 cups_printer_get_settings_from_options (EggPrinter  
 static gboolean             cups_printer_mark_conflicts            (EggPrinter                        *printer,
 								    EggPrinterOptionSet               *options);
 static EggPrinterOptionSet *cups_printer_get_options               (EggPrinter                        *printer,
+								    EggPrintSettings                  *settings,
 								    EggPageSetup                      *page_setup);
 static void                 cups_printer_prepare_for_print         (EggPrinter                        *printer,
 								    EggPrintSettings                  *settings);
@@ -130,6 +131,8 @@ static void                 cups_printer_get_hard_margins          (EggPrinter  
 								    double                            *bottom,
 								    double                            *left,
 								    double                            *right);
+static void                 set_option_from_settings               (EggPrinterOption                  *option,
+								    EggPrintSettings                  *setting);
 
 static void
 egg_print_backend_register_type (GTypeModule *module)
@@ -959,7 +962,7 @@ static const struct {
   const char *ppd_keyword;
   const char *name;
 } option_names[] = {
-  {"Duplex", "gtk-duplex"},
+  {"Duplex", "gtk-duplex" },
   {"MediaType", "gtk-paper-type"},
   {"InputSlot", "gtk-paper-source"},
   {"OutputBin", "gtk-output-tray"},
@@ -1123,6 +1126,16 @@ group_has_option (ppd_group_t *group, ppd_option_t *option)
 	return TRUE;
     }
   return FALSE;
+}
+
+static void
+set_option_off (EggPrinterOption *option)
+{
+  /* Any of these will do, _set only applies the value
+   * if its allowed of the option */
+  egg_printer_option_set (option, "False");
+  egg_printer_option_set (option, "Off");
+  egg_printer_option_set (option, "None");
 }
 
 static gboolean
@@ -1364,7 +1377,8 @@ static void
 handle_option (EggPrinterOptionSet *set,
 	       ppd_file_t *ppd_file,
 	       ppd_option_t *ppd_option,
-	       ppd_group_t *toplevel_group)
+	       ppd_group_t *toplevel_group,
+	       EggPrintSettings *settings)
 {
   EggPrinterOption *option;
   char *name;
@@ -1414,6 +1428,9 @@ handle_option (EggPrinterOptionSet *set,
 	{
 	  option->group = g_strdup (toplevel_group->text);
 	}
+
+      set_option_from_settings (option, settings);
+      
       egg_printer_option_set_add (set, option);
     }
   
@@ -1424,7 +1441,8 @@ static void
 handle_group (EggPrinterOptionSet *set,
 	      ppd_file_t *ppd_file,
 	      ppd_group_t *group,
-	      ppd_group_t *toplevel_group)
+	      ppd_group_t *toplevel_group,
+	      EggPrintSettings *settings)
 {
   int i;
 
@@ -1433,16 +1451,17 @@ handle_group (EggPrinterOptionSet *set,
     return;
   
   for (i = 0; i < group->num_options; i++)
-    handle_option (set, ppd_file, &group->options[i], toplevel_group);
+    handle_option (set, ppd_file, &group->options[i], toplevel_group, settings);
 
   for (i = 0; i < group->num_subgroups; i++)
-    handle_group (set, ppd_file, &group->subgroups[i], toplevel_group);
+    handle_group (set, ppd_file, &group->subgroups[i], toplevel_group, settings);
 
 }
 
 static EggPrinterOptionSet *
 cups_printer_get_options (EggPrinter *printer,
-			  EggPageSetup *page_setup)
+			  EggPrintSettings                  *settings,
+			  EggPageSetup                      *page_setup)
 {
   EggPrinterOptionSet *set;
   EggPrinterOption *option;
@@ -1463,6 +1482,7 @@ cups_printer_get_options (EggPrinter *printer,
   egg_printer_option_choices_from_array (option, G_N_ELEMENTS (n_up),
 					 n_up, n_up);
   egg_printer_option_set (option, "1");
+  set_option_from_settings (option, settings);
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
@@ -1473,11 +1493,13 @@ cups_printer_get_options (EggPrinter *printer,
   egg_printer_option_choices_from_array (option, G_N_ELEMENTS (prio),
 					 prio, prio_display);
   egg_printer_option_set (option, "50");
+  set_option_from_settings (option, settings);
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
   option = egg_printer_option_new ("gtk-billing-info", "Billing Info", EGG_PRINTER_OPTION_TYPE_STRING);
   egg_printer_option_set (option, "");
+  set_option_from_settings (option, settings);
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
@@ -1488,13 +1510,15 @@ cups_printer_get_options (EggPrinter *printer,
   egg_printer_option_choices_from_array (option, G_N_ELEMENTS (cover),
 					 cover, cover_display);
   egg_printer_option_set (option, "none");
+  set_option_from_settings (option, settings);
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
 
-  option = egg_printer_option_new ("gtk-cover-after", "Before", EGG_PRINTER_OPTION_TYPE_PICKONE);
+  option = egg_printer_option_new ("gtk-cover-after", "After", EGG_PRINTER_OPTION_TYPE_PICKONE);
   egg_printer_option_choices_from_array (option, G_N_ELEMENTS (cover),
 					 cover, cover_display);
   egg_printer_option_set (option, "none");
+  set_option_from_settings (option, settings);
   egg_printer_option_set_add (set, option);
   g_object_unref (option);
   
@@ -1514,7 +1538,7 @@ cups_printer_get_options (EggPrinter *printer,
 	       PPD_MAX_NAME);
 
       for (i = 0; i < ppd_file->num_groups; i++)
-        handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i]);
+        handle_group (set, ppd_file, &ppd_file->groups[i], &ppd_file->groups[i], settings);
     }
 
   return set;
@@ -1629,12 +1653,62 @@ typedef struct {
 } NameMapping;
 
 static void
-map_cups_settings (const char *value,
-		   NameMapping table[],
-		   int n_elements,
-		   EggPrintSettings *settings,
-		   const char *standard_name,
-		   const char *cups_name)
+map_settings_to_option (EggPrinterOption *option,
+			const NameMapping table[],
+			int n_elements,
+			EggPrintSettings *settings,
+			const char *standard_name,
+			const char *cups_name)
+{
+  int i;
+  char *name;
+  const char *cups_value;
+  const char *standard_value;
+
+  /* If the cups-specific setting is set, always use that */
+
+  name = g_strdup_printf ("cups-%s", cups_name);
+  cups_value = egg_print_settings_get (settings, name);
+  g_free (name);
+  
+  if (cups_value != 0) {
+    egg_printer_option_set (option, cups_value);
+    return;
+  }
+
+  /* Otherwise we try to convert from the general setting */
+  standard_value = egg_print_settings_get (settings, standard_name);
+  if (standard_value == NULL)
+    return;
+
+  for (i = 0; i < n_elements; i++)
+    {
+      if (table[i].cups == NULL && table[i].standard == NULL)
+	{
+	  egg_printer_option_set (option, standard_value);
+	  break;
+	}
+      else if (table[i].cups == NULL &&
+	       strcmp (table[i].standard, standard_value) == 0)
+	{
+	  set_option_off (option);
+	  break;
+	}
+      else if (strcmp (table[i].standard, standard_value) == 0)
+	{
+	  egg_printer_option_set (option, table[i].cups);
+	  break;
+	}
+    }
+}
+
+static void
+map_option_to_settings (const char *value,
+			const NameMapping table[],
+			int n_elements,
+			EggPrintSettings *settings,
+			const char *standard_name,
+			const char *cups_name)
 {
   int i;
   char *name;
@@ -1672,11 +1746,133 @@ map_cups_settings (const char *value,
   egg_print_settings_set (settings, name, value);
   g_free (name);
 }
-      
+
+
+static const NameMapping paper_source_map[] = {
+  { "Lower", "lower"},
+  { "Middle", "middle"},
+  { "Upper", "upper"},
+  { "Rear", "rear"},
+  { "Envelope", "envelope"},
+  { "Cassette", "cassette"},
+  { "LargeCapacity", "large-capacity"},
+  { "AnySmallFormat", "small-format"},
+  { "AnyLargeFormat", "large-format"},
+  { NULL, NULL}
+};
+
+static const NameMapping output_tray_map[] = {
+  { "Upper", "upper"},
+  { "Lower", "lower"},
+  { "Rear", "rear"},
+  { NULL, NULL}
+};
+
+static const NameMapping duplex_map[] = {
+  { "DuplexTumble", "vertical" },
+  { "DuplexNoTumble", "horizontal" },
+  { NULL, "simplex" }
+};
+
+static const NameMapping output_mode_map[] = {
+  { "Standard", "normal" },
+  { "Normal", "normal" },
+  { "Draft", "draft" },
+  { "Fast", "draft" },
+};
+
+static const NameMapping media_type_map[] = {
+  { "Transparency", "transparency"},
+  { "Standard", "stationery"},
+  { NULL, NULL}
+};
+
+static const NameMapping all_map[] = {
+  { NULL, NULL}
+};
+
 
 static void
-foreach_option (EggPrinterOption  *option,
-		gpointer          user_data)
+set_option_from_settings (EggPrinterOption *option,
+			  EggPrintSettings *settings)
+{
+  const char *cups_value;
+  char *value;
+  
+  if (settings == NULL)
+    return;
+
+  if (strcmp (option->name, "gtk-paper-source") == 0)
+    map_settings_to_option (option, paper_source_map, G_N_ELEMENTS (paper_source_map),
+			     settings, EGG_PRINT_SETTINGS_DEFAULT_SOURCE, "InputSlot");
+  else if (strcmp (option->name, "gtk-output-tray") == 0)
+    map_settings_to_option (option, output_tray_map, G_N_ELEMENTS (output_tray_map),
+			    settings, EGG_PRINT_SETTINGS_OUTPUT_BIN, "OutputBin");
+  else if (strcmp (option->name, "gtk-duplex") == 0)
+    map_settings_to_option (option, duplex_map, G_N_ELEMENTS (duplex_map),
+			    settings, EGG_PRINT_SETTINGS_DUPLEX, "Duplex");
+  else if (strcmp (option->name, "cups-OutputMode") == 0)
+    map_settings_to_option (option, output_mode_map, G_N_ELEMENTS (output_mode_map),
+			    settings, EGG_PRINT_SETTINGS_QUALITY, "OutputMode");
+  else if (strcmp (option->name, "cups-Resolution") == 0)
+    {
+      cups_value = egg_print_settings_get (settings, option->name);
+      if (cups_value)
+	egg_printer_option_set (option, cups_value);
+      else
+	{
+	  int res = egg_print_settings_get_resolution (settings);
+	  if (res != 0)
+	    {
+	      value = g_strdup_printf ("%ddpi", res);
+	      egg_printer_option_set (option, value);
+	      g_free (value);
+	    }
+	}
+    }
+  else if (strcmp (option->name, "gtk-paper-type") == 0)
+    map_settings_to_option (option, media_type_map, G_N_ELEMENTS (media_type_map),
+			    settings, EGG_PRINT_SETTINGS_MEDIA_TYPE, "MediaType");
+  else if (strcmp (option->name, "gtk-n-up") == 0)
+    {
+      map_settings_to_option (option, all_map, G_N_ELEMENTS (all_map),
+			      settings, EGG_PRINT_SETTINGS_NUMBER_UP, "number-up");
+    }
+  else if (strcmp (option->name, "gtk-billing-info") == 0 && strlen (value) > 0)
+    {
+      cups_value = egg_print_settings_get (settings, "cups-job-billing");
+      if (cups_value)
+	egg_printer_option_set (option, cups_value);
+    } 
+  else if (strcmp (option->name, "gtk-job-prio") == 0)
+    {
+      cups_value = egg_print_settings_get (settings, "cups-job-priority");
+      if (cups_value)
+	egg_printer_option_set (option, cups_value);
+    } 
+  else if (strcmp (option->name, "gtk-cover-before") == 0)
+    {
+      cups_value = egg_print_settings_get (settings, "cover-before");
+      if (cups_value)
+	egg_printer_option_set (option, cups_value);
+    } 
+  else if (strcmp (option->name, "gtk-cover-after") == 0)
+    {
+      cups_value = egg_print_settings_get (settings, "cover-after");
+      if (cups_value)
+	egg_printer_option_set (option, cups_value);
+    } 
+  else if (g_str_has_prefix (option->name, "cups-"))
+    {
+      cups_value = egg_print_settings_get (settings, option->name);
+      if (cups_value)
+	egg_printer_option_set (option, cups_value);
+    } 
+}
+
+static void
+foreach_option_get_settings (EggPrinterOption  *option,
+			     gpointer          user_data)
 {
   struct OptionData *data = user_data;
   EggPrintSettings *settings = data->settings;
@@ -1687,54 +1883,17 @@ foreach_option (EggPrinterOption  *option,
   /* TODO: paper size, margin */
   
   if (strcmp (option->name, "gtk-paper-source") == 0)
-    {
-      NameMapping map[] = {
-	{ "Lower", "lower"},
-	{ "Middle", "middle"},
-	{ "Upper", "upper"},
-	{ "Rear", "rear"},
-	{ "Envelope", "envelope"},
-	{ "Cassette", "cassette"},
-	{ "LargeCapacity", "large-capacity"},
-	{ "AnySmallFormat", "small-format"},
-	{ "AnyLargeFormat", "large-format"},
-	{ NULL, NULL}
-      };
-      map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINT_SETTINGS_DEFAULT_SOURCE, "InputSlot");
-    }
+    map_option_to_settings (value, paper_source_map, G_N_ELEMENTS (paper_source_map),
+			    settings, EGG_PRINT_SETTINGS_DEFAULT_SOURCE, "InputSlot");
   else if (strcmp (option->name, "gtk-output-tray") == 0)
-    {
-      NameMapping map[] = {
-	{ "Upper", "upper"},
-	{ "Lower", "lower"},
-	{ "Rear", "rear"},
-	{ NULL, NULL}
-      };
-      map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINT_SETTINGS_OUTPUT_BIN, "OutputBin");
-    }
+    map_option_to_settings (value, output_tray_map, G_N_ELEMENTS (output_tray_map),
+			    settings, EGG_PRINT_SETTINGS_OUTPUT_BIN, "OutputBin");
   else if (strcmp (option->name, "gtk-duplex") == 0)
-    {
-      NameMapping map[] = {
-	{ "DuplexTumble", "vertical" },
-	{ "DuplexNoTumble", "horizontal" },
-	{ NULL, "simplex" }
-      };
-      map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINT_SETTINGS_DUPLEX, "Duplex");
-    }
+    map_option_to_settings (value, duplex_map, G_N_ELEMENTS (duplex_map),
+			    settings, EGG_PRINT_SETTINGS_DUPLEX, "Duplex");
   else if (strcmp (option->name, "cups-OutputMode") == 0)
-    {
-      NameMapping map[] = {
-	{ "Standard", "normal" },
-	{ "Normal", "normal" },
-	{ "Draft", "draft" },
-	{ "Fast", "draft" },
-      };
-      map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINT_SETTINGS_QUALITY, "OutputMode");
-    }
+    map_option_to_settings (value, output_mode_map, G_N_ELEMENTS (output_mode_map),
+			    settings, EGG_PRINT_SETTINGS_QUALITY, "OutputMode");
   else if (strcmp (option->name, "cups-Resolution") == 0)
     {
       int res = atoi (value);
@@ -1743,22 +1902,20 @@ foreach_option (EggPrinterOption  *option,
 	egg_print_settings_set_resolution (settings, res);
       egg_print_settings_set (settings, option->name, value);
     }
-  else if (strcmp (option->name, "cups-MediaType") == 0)
-    {
-      NameMapping map[] = {
-	{ "Transparency", "transparency"},
-	{ "Standard", "stationery"},
-	{ NULL, NULL}
-      };
-      map_cups_settings (value, map, G_N_ELEMENTS (map),
-			 settings, EGG_PRINT_SETTINGS_MEDIA_TYPE, "MediaType");
-    }
+  else if (strcmp (option->name, "gtk-paper-type") == 0)
+    map_option_to_settings (value, media_type_map, G_N_ELEMENTS (media_type_map),
+			    settings, EGG_PRINT_SETTINGS_MEDIA_TYPE, "MediaType");
   else if (strcmp (option->name, "gtk-n-up") == 0)
-    egg_print_settings_set (settings, "cups-number-up", value);
+    map_option_to_settings (value, all_map, G_N_ELEMENTS (all_map),
+			    settings, EGG_PRINT_SETTINGS_NUMBER_UP, "number-up");
   else if (strcmp (option->name, "gtk-billing-info") == 0 && strlen (value) > 0)
     egg_print_settings_set (settings, "cups-job-billing", value);
   else if (strcmp (option->name, "gtk-job-prio") == 0)
     egg_print_settings_set (settings, "cups-job-priority", value);
+  else if (strcmp (option->name, "gtk-cover-before") == 0)
+    egg_print_settings_set (settings, "cover-before", value);
+  else if (strcmp (option->name, "gtk-cover-after") == 0)
+    egg_print_settings_set (settings, "cover-after", value);
   else if (g_str_has_prefix (option->name, "cups-"))
     egg_print_settings_set (settings, option->name, value);
 }
@@ -1779,7 +1936,7 @@ cups_printer_get_settings_from_options (EggPrinter *printer,
     {
       EggPrinterOption *cover_before, *cover_after;
       
-      egg_printer_option_set_foreach (options, foreach_option, &data);
+      egg_printer_option_set_foreach (options, foreach_option_get_settings, &data);
 
       cover_before = egg_printer_option_set_lookup (options, "gtk-cover-before");
       cover_after = egg_printer_option_set_lookup (options, "gtk-cover-after");
