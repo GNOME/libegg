@@ -454,6 +454,23 @@ printer_removed_cb (EggPrintBackend *backend,
 }
 
 static void
+printer_status_cb (EggPrintBackend *backend, 
+		   EggPrinter *printer, 
+		   EggPrintUnixDialog *impl)
+{
+  GtkTreeIter *iter;
+  iter = g_object_get_data (G_OBJECT (printer), "gtk-print-tree-iter");
+
+  gtk_list_store_set (GTK_LIST_STORE (impl->priv->printer_list), iter,
+                      PRINTER_LIST_COL_ICON, egg_printer_get_icon_name (printer),
+                      PRINTER_LIST_COL_STATE, egg_printer_get_state_message (printer),
+                      PRINTER_LIST_COL_JOBS, egg_printer_get_job_count (printer),
+                      PRINTER_LIST_COL_LOCATION, egg_printer_get_location (printer),
+                      -1);
+
+}
+
+static void
 printer_added_cb (EggPrintBackend *backend, 
                   EggPrinter *printer, 
 		  EggPrintUnixDialog *dialog)
@@ -499,13 +516,6 @@ printer_added_cb (EggPrintBackend *backend,
       gtk_tree_selection_select_iter (selection, &filter_iter);
       dialog->priv->internal_printer_change = FALSE;
     }
-}
-
-static void
-printer_status_cb (EggPrintBackend *backend, 
-		    EggPrinter *printer, 
-		    EggPrintUnixDialog *impl)
-{
 }
 
 static void

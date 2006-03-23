@@ -554,6 +554,27 @@ cups_request_execute (EggPrintBackendCups *print_backend,
   g_source_attach ((GSource *) dispatch, NULL);
 }
 
+static gboolean
+swap_str_if_changed (gchar **target, 
+                     gchar  *source)
+{
+  gboolean changed;
+
+  if (*target)
+    {
+      if (!(source && strcmp (source, *target) == 0))
+        changed = TRUE;
+
+      g_free (*target);
+    }
+  else if (source != NULL)
+    changed = TRUE;
+
+  *target = source;
+
+  return changed;
+}
+
 static void
 cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
                               EggCupsResult *result,
@@ -566,6 +587,9 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   EggPrinter *printer;
   gchar *printer_uri;
   gchar *member_printer_uri;
+  gchar *loc;
+  gchar *desc;
+  gchar *state_msg;
 
   char uri[HTTP_MAX_URI],	/* Printer URI */
        method[HTTP_MAX_URI],	/* Method/scheme name */
@@ -573,6 +597,7 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
        hostname[HTTP_MAX_URI],	/* Hostname */
        resource[HTTP_MAX_URI];	/* Resource name */
   int  port;			/* Port number */
+  gboolean status_changed;  
 
   g_assert (EGG_IS_PRINT_BACKEND_CUPS (print_backend));
 
@@ -602,43 +627,34 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   response = egg_cups_result_get_response (result);
 
   /* TODO: determine printer type and use correct icon */
-  printer->priv->icon_name = g_strdup ("printer-inkjet");
+  if (printer->priv->icon_name)
+    g_free (printer->priv->icon_name);
+
+  printer->priv->icon_name = g_strdup ("printer");
   
   cups_printer->device_uri = g_strdup_printf ("/printers/%s", printer_name);
 
-  for (attr = response->attrs; attr != NULL; attr = attr->next) {
-    if (!attr->name)
-      continue;
+  for (attr = response->attrs; attr != NULL; attr = attr->next) 
+    {
+      if (!attr->name)
+        continue;
 
-#if 0 
-    //debug stuff
-    if (strcmp (attr->name, "device-uri") == 0 ||
-        strcmp (attr->name, "printer-uri-supported") == 0 || 
-        strcmp (attr->name, "member-uris") == 0 || 
-        strcmp (attr->name, "printer-location")==0 ||
-        strcmp (attr->name, "printer-info")==0 ||
-        strcmp (attr->name, "printer-more-info")==0) ||
+      _CUPS_MAP_ATTR_STR (attr, loc, "printer-location");
+      _CUPS_MAP_ATTR_STR (attr, desc, "printer-info");
+      _CUPS_MAP_ATTR_STR (attr, state_msg, "printer-state-message");
+      _CUPS_MAP_ATTR_STR (attr, printer_uri, "printer-uri-supported");
+      _CUPS_MAP_ATTR_STR (attr, member_printer_uri, "member-uris");
+      _CUPS_MAP_ATTR_INT (attr, cups_printer->state, "printer-state");
+      _CUPS_MAP_ATTR_INT (attr, printer->priv->job_count, "queued-job-count");
 
-      {
-        int i;
-        for (i=0; i < attr->num_values; i++)
-         g_message ("%s = %s", attr->name, attr->values[i].string.text);
-      } else  g_message ("%s", attr->name);
-#endif /* debug stuff */
-
-    _CUPS_MAP_ATTR_STR (attr, printer->priv->location, "printer-location");
-    _CUPS_MAP_ATTR_STR (attr, printer->priv->description, "printer-info");
-
-    _CUPS_MAP_ATTR_STR (attr, printer_uri, "printer-uri-supported");
-    _CUPS_MAP_ATTR_STR (attr, member_printer_uri, "member-uris");
-    _CUPS_MAP_ATTR_STR (attr, printer->priv->state_message, "printer-state-message");
-    _CUPS_MAP_ATTR_INT (attr, cups_printer->state, "printer-state");
-    _CUPS_MAP_ATTR_INT (attr, printer->priv->job_count, "queued-job-count");
-
-  }
+    }
 
   /* if we got a member_printer_uri then this printer is part of a class
      so use member_printer_uri, else user printer_uri */
+
+  if (cups_printer->printer_uri)
+    g_free (cups_printer->printer_uri);
+
   if (member_printer_uri)
     {
       g_free (printer_uri);
@@ -646,6 +662,10 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
     }
   else
     cups_printer->printer_uri = printer_uri;
+
+  status_changed = swap_str_if_changed (&printer->priv->location, loc);
+  status_changed = status_changed | swap_str_if_changed (&printer->priv->description, desc);
+  status_changed = status_changed | swap_str_if_changed (&printer->priv->state_message, state_msg);
 
   httpSeparate(cups_printer->printer_uri, method, username, hostname,
 	       &port, resource);
@@ -655,12 +675,14 @@ cups_request_printer_info_cb (EggPrintBackendCups *print_backend,
   if (strcasecmp(uri, hostname) == 0)
     strcpy(hostname, "localhost");
 
+  if (cups_printer->hostname)
+    g_free (cups_printer->hostname);
+
   cups_printer->hostname = g_strdup (hostname);
   cups_printer->port = port;
 
-  if (printer->priv->is_new)
-      printer->priv->is_new = FALSE;
-   
+  if (status_changed)
+    g_signal_emit_by_name (EGG_PRINT_BACKEND (print_backend), "printer-status-changed", printer); 
 }
 
 static void

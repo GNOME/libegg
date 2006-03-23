@@ -1,5 +1,14 @@
 2006-03-23  John (J5) Palmieri  <johnp@redhat.com>
 
+	* modules/printbackends/cups/eggprintbackendcups.c:
+	Emit the printer-status-changed signal when status has changed
+	Fix memleak with printer object properties being filled in
+
+	* eggprintunixdialog.c:
+	Listen for printer-status-changed and update the list store
+
+2006-03-23  John (J5) Palmieri  <johnp@redhat.com>
+
 	* eggprintbackend.c:
 	Add printer-list-changed signal for those who don't care
 	about individual printers being added or removed
