@@ -1,3 +1,10 @@
+2006-05-04  Emmanuele Bassi  <ebassi@gmail.com>
+
+	* libegg/bookmarkfile/README: Add a notice about the BookmarkFile
+	code being included into GLib 2.11; the code in libegg stays for
+	testing/profiling, as the profiling stuff has been removed for
+	size constraints.
+
 2006-03-22  Emmanuele Bassi  <ebassi@gmail.com>
 
 	* libegg/bookmarkfile/eggbookmarkfile.c: Remove the Egg prefix from the

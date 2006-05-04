@@ -1,6 +1,13 @@
 EggBookmarkFile
 ===============
 
+*** NOTICE ***
+
+  This code has been included in GLib 2.11.  Use this code for
+  testing and profiling only.
+
+*** NOTICE ***
+
 This is a parser/writer object for accessing the desktop bookmark storage
 files.
 
