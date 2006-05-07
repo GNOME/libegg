@@ -4,6 +4,10 @@
 
 #include "egg-recent-item.h"
 
+#ifndef EGG_ENABLE_RECENT_FILES
+#error "EggRecent has been DEPRECATED by the new recent files code inside GTK 2.9.0.  Use EGG_ENABLE_RECENT_FILES to compile this code, but you are using it at your own risk."
+#endif
+
 G_BEGIN_DECLS
 
 #define EGG_TYPE_RECENT_MODEL		(egg_recent_model_get_type ())

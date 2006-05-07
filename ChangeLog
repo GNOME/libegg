@@ -1,3 +1,16 @@
+2006-05-07  Emmanuele Bassi  <ebassi@gmail.com>
+
+	Finally deprecate EggRecent.  So long, and thanks for all the bugs.
+
+	* libegg/recent-files/THIS_IS_DEPRECATED_USE_GTK_RECENT_CHOOSER:
+	* libegg/recent-files/egg-recent-model.h: Deprecate the EggRecent
+	code, now that GTK 2.9.0 is out; if you want to compile it, you
+	must define EGG_ENABLE_RECENT_FILES before including
+	egg-recent-model.h.
+
+	* libegg/recentchooser/README: Add a notice about the RecentChooser
+	code being included into GTK 2.9.0.
+
 2006-05-04  Emmanuele Bassi  <ebassi@gmail.com>
 
 	* libegg/bookmarkfile/README: Add a notice about the BookmarkFile

@@ -1,6 +1,12 @@
 libegg/recentchooser/README:
 ============================
 
+*** NOTICE ***
+
+  This code has been included in GTK 2.9.0.
+
+*** NOTICE ***
+
 ** About **
 
 This is the proposed replacement for the recent-files module that lives in
