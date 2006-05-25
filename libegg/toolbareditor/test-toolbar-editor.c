@@ -52,7 +52,6 @@ edit (GtkWidget *button, EggEditableToolbar *toolbar)
 
   editor = egg_toolbar_editor_new (manager, model);
   gtk_container_add (GTK_CONTAINER (GTK_DIALOG (dialog)->vbox), editor);
-  egg_toolbar_editor_load_actions (EGG_TOOLBAR_EDITOR (editor), "test-toolbar.xml");
   gtk_widget_show (editor);
   g_signal_connect (editor, "destroy", G_CALLBACK (editor_destroy_cb), toolbar);
   egg_editable_toolbar_set_edit_mode (toolbar, TRUE);
@@ -91,9 +90,10 @@ main (int argc, char **argv)
   g_object_unref (action_group);
 
   model = egg_toolbars_model_new ();
-  egg_toolbars_model_load (model, "test-toolbar.xml");
+  egg_toolbars_model_load_toolbars (model, "test-toolbar.xml");
+  egg_toolbars_model_load_names (model, "test-toolbar.xml");
 
-  toolbar = egg_editable_toolbar_new_with_model (manager, model);
+  toolbar = egg_editable_toolbar_new_with_model (manager, model, NULL);
   gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
   gtk_widget_show (toolbar);
   egg_editable_toolbar_show (EGG_EDITABLE_TOOLBAR (toolbar), "Toolbar1");
