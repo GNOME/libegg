@@ -1,5 +1,20 @@
 2006-07-28  Vincent Untz  <vuntz@gnome.org>
 
+	Transparent icons. Yay.
+	Patch by Dan Winship <danw@novell.com>
+	Fix bug #150726.
+
+	* libegg/tray/eggtrayicon.c: (egg_tray_icon_class_init): overload the
+	add method
+	(transparent_expose_event): new
+	(make_transparent_again): new
+	(make_transparent): new, do some magic
+	(egg_tray_icon_realize): make the icon transparent
+	(egg_tray_icon_add): when adding a widget to the tray, connect to the
+	realize signal to make it transparent
+
+2006-07-28  Vincent Untz  <vuntz@gnome.org>
+
 	* libegg/tray/eggtrayicon.c: (egg_tray_icon_send_message): make
 	sending of messages work
 	Patch by Matthias Clasen <mclasen@redhat.com>
