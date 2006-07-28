@@ -452,7 +452,7 @@ egg_tray_icon_send_message (EggTrayIcon *icon,
 #ifdef GDK_WINDOWING_X11
   /* Get ready to send the message */
   egg_tray_icon_send_manager_message (icon, SYSTEM_TRAY_BEGIN_MESSAGE,
-				      (Window)gtk_plug_get_id (GTK_PLUG (icon)),
+				      icon->manager_window,
 				      timeout, len, stamp);
 
   /* Now to send the actual message */
@@ -465,7 +465,7 @@ egg_tray_icon_send_message (EggTrayIcon *icon,
       xdisplay = GDK_DISPLAY_XDISPLAY (gtk_widget_get_display (GTK_WIDGET (icon)));
       
       ev.type = ClientMessage;
-      ev.window = (Window)gtk_plug_get_id (GTK_PLUG (icon));
+      ev.window = icon->manager_window;
       ev.format = 8;
       ev.message_type = XInternAtom (xdisplay,
 				     "_NET_SYSTEM_TRAY_MESSAGE_DATA", False);

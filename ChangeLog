@@ -1,5 +1,12 @@
 2006-07-28  Vincent Untz  <vuntz@gnome.org>
 
+	* libegg/tray/eggtrayicon.c: (egg_tray_icon_send_message): make
+	sending of messages work
+	Patch by Matthias Clasen <mclasen@redhat.com>
+	Fix bug #314292
+
+2006-07-28  Vincent Untz  <vuntz@gnome.org>
+
 	* libegg/tray/eggstatusicon.c: use gobject instance private data
 	(egg_status_icon_init): updated
 	Patch from Christian Persch <chpe@gnome.org>
