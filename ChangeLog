@@ -1,5 +1,11 @@
 2006-07-28  Vincent Untz  <vuntz@gnome.org>
 
+	* libegg/tray/README:
+	* libegg/tray/THIS_IS_DEPRECATED_USE_GTK_STATUS_ICON: add notes about
+	deprecation of the tray code in libegg
+
+2006-07-28  Vincent Untz  <vuntz@gnome.org>
+
 	* libegg/tray/eggstatusicon.c: (egg_status_icon_init): ref the tray
 	icon.
 	Patch from Christian Persch <chpe@gnome.org>
