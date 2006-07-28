@@ -1,5 +1,12 @@
 2006-07-28  Vincent Untz  <vuntz@gnome.org>
 
+	* libegg/tray/eggstatusicon.c: (egg_status_icon_init): ref the tray
+	icon.
+	Patch from Christian Persch <chpe@gnome.org>
+	Fix bug #166143?
+
+2006-07-28  Vincent Untz  <vuntz@gnome.org>
+
 	Transparent icons. Yay.
 	Patch by Dan Winship <danw@novell.com>
 	Fix bug #150726.
