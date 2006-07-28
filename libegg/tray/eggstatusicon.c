@@ -58,6 +58,8 @@ enum {
   LAST_SIGNAL
 };
 
+#define EGG_STATUS_ICON_GET_PRIVATE(object)(G_TYPE_INSTANCE_GET_PRIVATE ((object), EGG_TYPE_STATUS_ICON, EggStatusIconPrivate))
+
 struct _EggStatusIconPrivate
 {
   GtkWidget    *tray_icon;
@@ -239,12 +241,14 @@ egg_status_icon_class_init (EggStatusIconClass *klass)
 		  G_TYPE_NONE,
 		  1,
 		  G_TYPE_INT);
+
+  g_type_class_add_private (gobject_class, sizeof (EggStatusIconPrivate));
 }
 
 static void
 egg_status_icon_init (EggStatusIcon *status_icon)
 {
-  status_icon->priv = g_new0 (EggStatusIconPrivate, 1);
+  status_icon->priv = EGG_STATUS_ICON_GET_PRIVATE (status_icon);
 
   status_icon->priv->image_type = GTK_IMAGE_EMPTY;
   status_icon->priv->size       = G_MAXINT;
@@ -290,8 +294,6 @@ egg_status_icon_finalize (GObject *object)
   status_icon->priv->tooltips = NULL;
 
   gtk_widget_destroy (status_icon->priv->tray_icon);
-
-  g_free (status_icon->priv);
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }

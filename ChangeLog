@@ -1,3 +1,10 @@
+2006-07-28  Vincent Untz  <vuntz@gnome.org>
+
+	* libegg/tray/eggstatusicon.c: use gobject instance private data
+	(egg_status_icon_init): updated
+	Patch from Christian Persch <chpe@gnome.org>
+	Fix bug #150370
+
 2006-06-22  Emmanuele Bassi  <ebassi@cvs.gnome.org>
 
 	* libegg/recent-files/Makefile.am: Fix compilation to make
