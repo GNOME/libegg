@@ -1,3 +1,15 @@
+2006-07-30  Vincent Untz  <vuntz@gnome.org>
+
+	* libegg/sidebar/eggsidebar.c: don't keep the group in memory, but
+	only the last button
+	(egg_sidebar_append): updated for this
+	(egg_sidebar_remove): ditto
+	Fix bug #90483
+	* libegg/sidebar/eggsidebarbutton.c: (egg_sidebar_button_class_init):
+	don't mark the static property as construct only
+	(egg_sidebar_button_popup_delete_cb): remove the button from the
+	sidebar here. Don't know why it wasn't done before :-)
+
 2006-07-28  Vincent Untz  <vuntz@gnome.org>
 
 	* libegg/tray/README:

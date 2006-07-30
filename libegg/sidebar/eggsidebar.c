@@ -38,7 +38,7 @@ struct _EggSidebarPriv
 	GtkWidget *event_box;
 	GtkWidget *vbox;
 
-	GSList *radiogroup;
+	GtkWidget *lastbutton;
 
 	GtkWidget *dnd_hint;
 };
@@ -301,6 +301,8 @@ void
 egg_sidebar_append (EggSidebar *sidebar,
 		   EggSidebarButton *button)
 {
+	GSList *group;
+
 	g_return_if_fail (EGG_IS_SIDEBAR (sidebar));
 	g_return_if_fail (EGG_IS_SIDEBAR_BUTTON (button));
 
@@ -308,8 +310,13 @@ egg_sidebar_append (EggSidebar *sidebar,
 	sidebar->priv->buttons = g_list_append (sidebar->priv->buttons,
 						button);
 
-	gtk_radio_button_set_group (GTK_RADIO_BUTTON (button), sidebar->priv->radiogroup);
-	sidebar->priv->radiogroup = gtk_radio_button_get_group (GTK_RADIO_BUTTON (button));
+	if (sidebar->priv->lastbutton != NULL)
+		group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (sidebar->priv->lastbutton));
+	else
+		group = NULL;
+
+	gtk_radio_button_set_group (GTK_RADIO_BUTTON (button), group);
+	sidebar->priv->lastbutton = GTK_WIDGET (button);
 
 	gtk_widget_show_all (GTK_WIDGET (button));
 	
@@ -327,19 +334,25 @@ void
 egg_sidebar_remove (EggSidebar *sidebar,
 		   EggSidebarButton *button)
 {
+	GList *l;
+	GList *next;
+
 	g_return_if_fail (EGG_IS_SIDEBAR (sidebar));
 	g_return_if_fail (EGG_IS_SIDEBAR_BUTTON (button));
 
+	l = g_list_find (sidebar->priv->buttons, button);		
+
+	next = g_list_next (l);
+	if (next == NULL)
+		next = g_list_previous (l);
+
 	/* if this one was selected, we select another one */
-	if (GTK_TOGGLE_BUTTON (button)->active == TRUE)
-	{
-		GList *l = g_list_find (sidebar->priv->buttons, button);		
-		GList *next = g_list_next (l);
-		if (next == NULL)
-			next = g_list_previous (l);
-		if (next != NULL)
-			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (next->data), TRUE);
-	}
+	if (GTK_TOGGLE_BUTTON (button)->active == TRUE && next != NULL)
+		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (next->data),
+					      TRUE);
+
+	if (sidebar->priv->lastbutton == GTK_WIDGET (button))
+		sidebar->priv->lastbutton = next ? next->data : NULL;
 
 	g_hash_table_remove (sidebar->priv->id_to_button, button->unique_id);
 	sidebar->priv->buttons = g_list_remove (sidebar->priv->buttons,
