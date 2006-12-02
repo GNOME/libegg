@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <glib.h>
 #include "eggsequence.h"
 #include <stdlib.h>
@@ -221,23 +222,6 @@ get_random_iter (SequenceInfo  *seq,
     return iter;
 }
 
-static void single_tests (void);
-
-static guint32
-get_seed (int argc, char **argv)
-{
-    if (argc > 1)
-    {
-	char *endptr;
-	
-	return strtol (argv[1], &endptr, 0);
-    }
-    else
-    {
-	return g_random_int();
-    }
-}
-
 static void
 dump_info (SequenceInfo *seq)
 {
@@ -269,24 +253,19 @@ queue_insert_before (SequenceInfo *seq, GList *link, gpointer data)
 	g_queue_push_tail (seq->queue, data);
 }
 
-int
-main (int argc,
-      char **argv)
+static void
+run_random_tests (guint32 seed)
 {
-    int k;
-    guint32 seed = get_seed (argc, argv);
-
-    single_tests();
-
-    g_print ("seed: %u\n", seed);
-
-    g_random_set_seed (seed);
-    
-#define N_ITERATIONS 50000
+#define N_ITERATIONS 20000
 #define N_SEQUENCES 8
     
     SequenceInfo sequences[N_SEQUENCES];
+    int k;
 
+    g_print ("    seed: %u\n", seed);
+
+    g_random_set_seed (seed);
+    
     for (k = 0; k < N_SEQUENCES; ++k)
     {
 	sequences[k].queue = g_queue_new ();
@@ -961,6 +940,62 @@ main (int argc,
 	
 	check_integrity (seq);
     }
+}
+
+/* Random seeds known to have failed at one point
+ */
+static gulong seeds[] =
+{
+     801678400u,
+     1477639090u,
+     3369132895u,
+     1192944867u,
+     770458294u,
+     1099575817u,
+     590523467u,
+     3583571454u,
+     579241222u
+};
+
+static void standalone_tests (void);
+
+static guint32
+get_seed (int argc, char **argv)
+{
+    if (argc > 1)
+    {
+	char *endptr;
+	
+	return strtol (argv[1], &endptr, 0);
+    }
+    else
+    {
+	return g_random_int();
+    }
+}
+
+int
+main (int argc,
+      char **argv)
+{
+    guint32 seed = get_seed (argc, argv);
+    int i;
+
+    /* Run stand alone tests */
+    g_print ("running standalone tests\n");
+    standalone_tests();
+
+    g_print ("running regression tests:\n");
+    /* Run regression tests */
+    for (i = 0; i < G_N_ELEMENTS (seeds); ++i)
+    {
+	run_random_tests (seeds[i]);
+    }
+    
+    /* Run with a new random seed */
+    g_print ("random seed:\n");
+    run_random_tests (seed);
+
     
     return 0;
 }
@@ -980,21 +1015,47 @@ test_out_of_range_jump (void)
     g_assert (egg_sequence_iter_is_end (iter));
 }
 
-static void
-single_tests (void)
+static int
+compare (gconstpointer a, gconstpointer b, gpointer userdata)
 {
-    test_out_of_range_jump ();
+    int ai, bi;
+    
+    ai = GPOINTER_TO_INT (a);
+    bi = GPOINTER_TO_INT (b);
+    
+    if (ai < bi)
+	return -1;
+    else if (ai > bi)
+	return 1;
+    else
+	return 0;
 }
 
-/* seeds known to have failed at some point:
+static void
+test_insert_sorted_non_pointer (void)
+{
+    int i;
+    
+    for (i = 0; i < 10; i++)
+    {
+	EggSequence *seq = egg_sequence_new (NULL);
+	int j;
+	
+	for (j = 0; j < 10000; j++)
+	{
+	    egg_sequence_insert_sorted (
+		seq, GINT_TO_POINTER (g_random_int()),
+		compare, NULL);
+	}
+	
+	egg_sequence_free (seq);
+    }
+}
 
-801678400
-1477639090
-3369132895
-1192944867
-770458294
-1099575817
-590523467
-3583571454
+static void
+standalone_tests (void)
+{
+    test_out_of_range_jump ();
+    test_insert_sorted_non_pointer ();
+}
 
-*/
