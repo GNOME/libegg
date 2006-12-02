@@ -1,0 +1,19 @@
+- Inserting integers into a sequence doesn't work, since iter_compare() will call is_end() on the
+  new node, which is not yet in a sequence. This causes the data pointer to be dereferenced.
+
+- I claim in iter_compare, that:
+
+    /* If the nodes are different, but the user-supplied compare function
+     * compares them equal, force an arbitrary (but consistent) order
+     * on them, so that our sorts will be stable
+     */
+
+  This is bogus. Stable sort means that the order of equal items will not be *changed*.
+  But the above *will* change the order of equal items depending on their pointer values.
+
+  A correct fix will be to:
+
+	- make sure sorts proceeds by moving from first to last, inserting as we go
+	- if inserting an equal node, insert it *after* the existing one
+
+  

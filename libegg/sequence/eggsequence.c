@@ -70,6 +70,8 @@ static void             node_insert_sorted (EggSequenceNode   *node,
 static EggSequence *
 get_sequence (EggSequenceNode *node)
 {
+    EggSequence *seq = node_get_last (node)->data;
+
     return (EggSequence *)node_get_last (node)->data;
 }
 
@@ -432,8 +434,8 @@ iter_compare (EggSequenceIter *node1,
     
     retval = info->cmp_func (node1->data, node2->data, info->cmp_data);
     
-    /* If the nodes are different, but the user supplied compare function
-     * compares them equal, then force an arbitrary (but consistent) order
+    /* If the nodes are different, but the user-supplied compare function
+     * compares them equal, force an arbitrary (but consistent) order
      * on them, so that our sorts will be stable
      */
     if (retval == 0 && node1 != node2)
