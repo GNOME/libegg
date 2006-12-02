@@ -980,48 +980,10 @@ test_out_of_range_jump (void)
     g_assert (egg_sequence_iter_is_end (iter));
 }
 
-static int
-compare (gconstpointer a, gconstpointer b, gpointer userdata)
-{
-	int ai, bi;
-
-	ai = GPOINTER_TO_INT (a);
-	bi = GPOINTER_TO_INT (b);
-
-	if (ai < bi)
-		return -1;
-	else if (ai > bi)
-		return 1;
-	else
-		return 0;
-}
-
-static void
-test_insert_sorted_non_pointer (void)
-{
-    int i;
-
-    for (i = 0; i < 10; i++)
-    {
-	EggSequence *seq = egg_sequence_new (NULL);
-	int j;
-	
-	for (j = 0; j < 10000; j++)
-	{
-	    egg_sequence_insert_sorted (
-		seq, GINT_TO_POINTER (g_random_int()),
-		compare, NULL);
-	}
-	
-	egg_sequence_free (seq);
-    }
-}
-
 static void
 single_tests (void)
 {
     test_out_of_range_jump ();
-    test_insert_sorted_non_pointer ();
 }
 
 /* seeds known to have failed at some point:

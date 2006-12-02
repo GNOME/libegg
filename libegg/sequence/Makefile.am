@@ -14,8 +14,7 @@ libeggsequence_la_SOURCES =	\
 	eggsequence.c
 
 noinst_PROGRAMS = \
-	testsequence \
-	benchsortedsequence
+	testsequence
 
 testsequence_CFLAGS = \
 	-DSYSCONFDIR=\""$(sysconfdir)"\" \
@@ -29,13 +28,6 @@ testsequence_LDADD = \
 
 testsequence_SOURCES = \
 	testsequence.c
-
-benchsortedsequence_LDADD = \
-	$(EGG_LIBS) \
-	$(top_builddir)/libegg/sequence/libeggsequence.la
-
-benchsortedsequence_SOURCES = \
-	benchsortedsequence.c
 
 EXTRA_DIST = \
 	README \
