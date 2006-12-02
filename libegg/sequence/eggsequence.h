@@ -66,6 +66,8 @@ EggSequenceIter *egg_sequence_insert_before        (EggSequenceIter *        ite
 						   gpointer                data);
 void		 egg_sequence_move		  (EggSequenceIter *	   src,
 						   EggSequenceIter *	   dest);
+void		 egg_sequence_swap                (EggSequenceIter *       a,
+						   EggSequenceIter *       b);
 EggSequenceIter *egg_sequence_insert_sorted        (EggSequence            *seq,
 						   gpointer                data,
 						   GCompareDataFunc        cmp_func,

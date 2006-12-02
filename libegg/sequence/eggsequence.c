@@ -51,6 +51,7 @@ static EggSequenceNode *node_get_by_pos    (EggSequenceNode   *node,
 					    gint               pos);
 static EggSequenceNode *node_find_closest  (EggSequenceNode   *haystack,
 					    EggSequenceNode   *needle,
+					    EggSequenceNode   *end,
 					    EggSequenceIterCompareFunc cmp,
 					    gpointer           user_data);
 static gint             node_get_length    (EggSequenceNode   *node);
@@ -64,6 +65,7 @@ static void             node_insert_before (EggSequenceNode   *node,
 static void             node_unlink        (EggSequenceNode   *node);
 static void             node_insert_sorted (EggSequenceNode   *node,
 					    EggSequenceNode   *new,
+					    EggSequenceNode   *end,
 					    EggSequenceIterCompareFunc cmp_func,
 					    gpointer           cmp_data);
 
@@ -411,6 +413,7 @@ typedef struct
 {
     GCompareDataFunc    cmp_func;
     gpointer		cmp_data;
+    EggSequenceNode	*end_node;
 } SortInfo;
 
 /* This function compares two iters using a normal compare
@@ -424,10 +427,10 @@ iter_compare (EggSequenceIter *node1,
     const SortInfo *info = data;
     gint retval;
     
-    if (is_end (node1))
+    if (node1 == info->end_node)
 	return 1;
     
-    if (is_end (node2))
+    if (node2 == info->end_node)
 	return -1;
     
     retval = info->cmp_func (node1->data, node2->data, info->cmp_data);
@@ -452,7 +455,7 @@ egg_sequence_sort (EggSequence      *seq,
 		   GCompareDataFunc  cmp_func,
 		   gpointer          cmp_data)
 {
-    SortInfo info = { cmp_func, cmp_data };
+    SortInfo info = { cmp_func, cmp_data, seq->end_node };
     
     check_seq_access (seq);
     
@@ -480,11 +483,12 @@ egg_sequence_insert_sorted (EggSequence       *seq,
 			    GCompareDataFunc   cmp_func,
 			    gpointer           cmp_data)
 {
-    SortInfo info = { cmp_func, cmp_data };
+    SortInfo info = { cmp_func, cmp_data, NULL };
     
     g_return_val_if_fail (seq != NULL, NULL);
     g_return_val_if_fail (cmp_func != NULL, NULL);
     
+    info.end_node = seq->end_node;
     check_seq_access (seq);
     
     return egg_sequence_insert_sorted_iter (seq, data, iter_compare, &info);
@@ -495,10 +499,11 @@ egg_sequence_sort_changed (EggSequenceIter  *iter,
 			   GCompareDataFunc  cmp_func,
 			   gpointer          cmp_data)
 {
-    SortInfo info = { cmp_func, cmp_data };
+    SortInfo info = { cmp_func, cmp_data, NULL };
     
     g_return_if_fail (!is_end (iter));
     
+    info.end_node = get_sequence (iter)->end_node;
     check_iter_access (iter);
     
     egg_sequence_sort_changed_iter (iter, iter_compare, &info);
@@ -533,7 +538,7 @@ egg_sequence_sort_iter (EggSequence                *seq,
 	
 	node_unlink (node);
 	
-	node_insert_sorted (seq->end_node, node, cmp_func, cmp_data);
+	node_insert_sorted (seq->end_node, node, seq->end_node, cmp_func, cmp_data);
     }
     
     tmp->access_prohibited = FALSE;
@@ -558,7 +563,7 @@ egg_sequence_sort_changed_iter (EggSequenceIter            *iter,
     seq->access_prohibited = TRUE;
     
     node_unlink (iter);
-    node_insert_sorted (seq->end_node, iter, iter_cmp, cmp_data);
+    node_insert_sorted (seq->end_node, iter, seq->end_node, iter_cmp, cmp_data);
     
     seq->access_prohibited = FALSE;
 }
@@ -574,7 +579,7 @@ egg_sequence_insert_sorted_iter   (EggSequence                *seq,
     check_seq_access (seq);
     
     new_node = node_new (data);
-    node_insert_sorted (seq->end_node, new_node, iter_cmp, cmp_data);
+    node_insert_sorted (seq->end_node, new_node, seq->end_node, iter_cmp, cmp_data);
     return new_node;
 }
 
@@ -595,7 +600,7 @@ egg_sequence_search_iter (EggSequence                *seq,
 
     dummy = node_new (data);
     
-    node = node_find_closest (seq->end_node, dummy, cmp_func, cmp_data);
+    node = node_find_closest (seq->end_node, dummy, seq->end_node, cmp_func, cmp_data);
 
     node_free (dummy, NULL);
     
@@ -624,10 +629,11 @@ egg_sequence_search (EggSequence      *seq,
 		     GCompareDataFunc  cmp_func,
 		     gpointer          cmp_data)
 {
-    SortInfo info = { cmp_func, cmp_data };
+    SortInfo info = { cmp_func, cmp_data, NULL };
     
     g_return_val_if_fail (seq != NULL, NULL);
     
+    info.end_node = seq->end_node;
     check_seq_access (seq);
     
     return egg_sequence_search_iter (seq, data, iter_compare, &info);
@@ -1109,6 +1115,7 @@ node_get_pos (EggSequenceNode    *node)
 static EggSequenceNode *
 node_find_closest (EggSequenceNode	      *haystack,
 		   EggSequenceNode	      *needle,
+		   EggSequenceNode            *end,
 		   EggSequenceIterCompareFunc  cmp_func,
 		   gpointer		       cmp_data)
 {
@@ -1123,7 +1130,7 @@ node_find_closest (EggSequenceNode	      *haystack,
     {
 	best = haystack;
 	
-	if (is_end (haystack))
+	if (haystack == end)
 	    c = 1;
 	else
 	    c = cmp_func (haystack, needle, cmp_data);
@@ -1285,12 +1292,13 @@ node_unlink (EggSequenceNode *node)
 static void
 node_insert_sorted (EggSequenceNode *node,
 		    EggSequenceNode *new,
+		    EggSequenceNode *end,
 		    EggSequenceIterCompareFunc cmp_func,
 		    gpointer cmp_data)
 {
     EggSequenceNode *closest;
     
-    closest = node_find_closest (node, new, cmp_func, cmp_data);
+    closest = node_find_closest (node, new, end, cmp_func, cmp_data);
     
     node_insert_before (closest, new);
 }
