@@ -435,18 +435,6 @@ iter_compare (EggSequenceIter *node1,
     
     retval = info->cmp_func (node1->data, node2->data, info->cmp_data);
     
-    /* If the nodes are different, but the user supplied compare function
-     * compares them equal, then force an arbitrary (but consistent) order
-     * on them, so that our sorts will be stable
-     */
-    if (retval == 0 && node1 != node2)
-    {
-	if (node1 > node2)
-	    return 1;
-	else
-	    return -1;
-    }
-    
     return retval;
 }
 
@@ -553,10 +541,25 @@ egg_sequence_sort_changed_iter (EggSequenceIter            *iter,
 				gpointer		    cmp_data)
 {
     EggSequence *seq;
+    EggSequenceIter *next, *prev;
     
     g_return_if_fail (!is_end (iter));
     
     check_iter_access (iter);
+
+    /* If one of the neighbours is equal to iter, then
+     * don't move it. This ensures that sort_changed() is
+     * a stable operation.
+     */
+
+    next = node_get_next (iter);
+    prev = node_get_prev (iter);
+
+    if (prev != iter && iter_cmp (prev, iter, cmp_data) == 0)
+	return;
+
+    if (!is_end (next) && iter_cmp (next, iter, cmp_data) == 0)
+	return;
     
     seq = get_sequence (iter);
     
@@ -579,7 +582,8 @@ egg_sequence_insert_sorted_iter   (EggSequence                *seq,
     check_seq_access (seq);
     
     new_node = node_new (data);
-    node_insert_sorted (seq->end_node, new_node, seq->end_node, iter_cmp, cmp_data);
+    node_insert_sorted (seq->end_node, new_node,
+			seq->end_node, iter_cmp, cmp_data);
     return new_node;
 }
 
@@ -600,7 +604,8 @@ egg_sequence_search_iter (EggSequence                *seq,
 
     dummy = node_new (data);
     
-    node = node_find_closest (seq->end_node, dummy, seq->end_node, cmp_func, cmp_data);
+    node = node_find_closest (seq->end_node, dummy,
+			      seq->end_node, cmp_func, cmp_data);
 
     node_free (dummy, NULL);
     
@@ -1109,8 +1114,8 @@ node_get_pos (EggSequenceNode    *node)
     return get_n_nodes (node->left);
 }
 
-/* Return closest node bigger than @needle (does always exist because there
- * is an end_node)
+/* Return closest node _strictly_ bigger than @needle (does always exist because
+ * there is an end_node)
  */
 static EggSequenceNode *
 node_find_closest (EggSequenceNode	      *haystack,
@@ -1129,23 +1134,28 @@ node_find_closest (EggSequenceNode	      *haystack,
     do
     {
 	best = haystack;
-	
+
+	/* cmp_func can't be called with the end node (it may be user-supplied) */
 	if (haystack == end)
 	    c = 1;
 	else
 	    c = cmp_func (haystack, needle, cmp_data);
-	
+
+	/* In the following we don't break even if c == 0. Instaed we go on searching
+	 * along the 'bigger' nodes, so that we find the last one that is equal
+	 * to the needle.
+	 */
 	if (c > 0)
 	    haystack = haystack->left;
-	else if (c < 0)
+	else
 	    haystack = haystack->right;
     }
-    while (c != 0 && haystack != NULL);
+    while (haystack != NULL);
     
-    /* If the best node is smaller than the data, then move one step
-     * to the right
+     /* If the best node is smaller or equal to the data, then move one step
+     * to the right to make sure the best one is strictly bigger than the data
      */
-    if (!is_end (best) && c < 0)
+    if (best != end && c <= 0)
 	best = node_get_next (best);
     
     return best;

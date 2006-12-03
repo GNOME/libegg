@@ -123,18 +123,26 @@ check_sorted (SequenceInfo *info)
 {
     GList *list;
     int last;
+    EggSequenceIter *last_iter;
 
     check_integrity (info);
 
     last = G_MININT;
+    last_iter = NULL;
     for (list = info->queue->head; list != NULL; list = list->next)
     {
 	EggSequenceIter *iter = list->data;
 	Item *item = egg_sequence_get (iter);
 	
 	g_assert (item->number >= last);
+	/* Check that the ordering is the same as that of the queue,
+	 * ie. that the sort is stable
+	 */
+	if (last_iter)
+	    g_assert (iter == egg_sequence_iter_next (last_iter));
 
 	last = item->number;
+	last_iter = iter;
     }
 }
 
@@ -236,7 +244,7 @@ dump_info (SequenceInfo *seq)
     {
 	Item *item = egg_sequence_get (iter);
 	g_print ("%p  %p    %d\n", list->data, iter, item->number);
-	
+
 	iter = egg_sequence_iter_next (iter);
 	list = list->next;
     }
@@ -256,7 +264,7 @@ queue_insert_before (SequenceInfo *seq, GList *link, gpointer data)
 static void
 run_random_tests (guint32 seed)
 {
-#define N_ITERATIONS 20000
+#define N_ITERATIONS 30000
 #define N_SEQUENCES 8
     
     SequenceInfo sequences[N_SEQUENCES];
@@ -1053,9 +1061,58 @@ test_insert_sorted_non_pointer (void)
 }
 
 static void
+test_stable_sort (void)
+{
+    int i;
+    EggSequence *seq = egg_sequence_new (NULL);
+
+#define N_ITEMS 1000
+    
+    EggSequenceIter *iters[N_ITEMS];
+    EggSequenceIter *iter;
+
+    for (i = 0; i < N_ITEMS; ++i)
+	iters[i] = egg_sequence_append (seq, GINT_TO_POINTER (3000));
+
+    i = 0;
+    iter = egg_sequence_get_begin_iter (seq);
+    while (!egg_sequence_iter_is_end (iter))
+    {
+	g_assert (iters[i++] == iter);
+	
+	iter = egg_sequence_iter_next (iter);
+    }
+    
+    egg_sequence_sort (seq, compare, NULL);
+
+    i = 0;
+    iter = egg_sequence_get_begin_iter (seq);
+    while (!egg_sequence_iter_is_end (iter))
+    {
+	g_assert (iters[i++] == iter);
+	
+	iter = egg_sequence_iter_next (iter);
+    }
+
+    for (i = N_ITEMS - 1; i >= 0; --i)
+	egg_sequence_sort_changed (iters[i], compare, NULL);
+    
+    i = 0;
+    iter = egg_sequence_get_begin_iter (seq);
+    while (!egg_sequence_iter_is_end (iter))
+    {
+	g_assert (iters[i++] == iter);
+	
+	iter = egg_sequence_iter_next (iter);
+    }
+
+}
+
+static void
 standalone_tests (void)
 {
     test_out_of_range_jump ();
     test_insert_sorted_non_pointer ();
+    test_stable_sort ();
 }
 
