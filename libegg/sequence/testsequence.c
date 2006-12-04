@@ -1039,6 +1039,16 @@ compare (gconstpointer a, gconstpointer b, gpointer userdata)
 	return 0;
 }
 
+static int
+compare_iter (EggSequenceIter *a,
+	      EggSequenceIter *b,
+	      gpointer data)
+{
+    return compare (egg_sequence_get (a),
+		    egg_sequence_get (b),
+		    data);
+}
+
 static void
 test_insert_sorted_non_pointer (void)
 {
@@ -1054,6 +1064,10 @@ test_insert_sorted_non_pointer (void)
 	    egg_sequence_insert_sorted (
 		seq, GINT_TO_POINTER (g_random_int()),
 		compare, NULL);
+
+	    egg_sequence_insert_sorted_iter (
+		seq, GINT_TO_POINTER (g_random_int()),
+		compare_iter, NULL);
 	}
 	
 	egg_sequence_free (seq);
@@ -1105,7 +1119,6 @@ test_stable_sort (void)
 	
 	iter = egg_sequence_iter_next (iter);
     }
-
 }
 
 static void

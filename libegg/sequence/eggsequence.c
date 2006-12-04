@@ -992,10 +992,11 @@ splay (EggSequenceNode *node)
 }
 
 static EggSequenceNode *
-node_new (gpointer          data)
+node_new (gpointer data)
 {
     EggSequenceNode *node = g_new0 (EggSequenceNode, 1);
-    
+
+    node->parent = NULL;
     node->parent = NULL;
     node->left = NULL;
     node->right = NULL;
