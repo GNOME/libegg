@@ -95,6 +95,10 @@ PKG_CHECK_MODULES(EGG_RECENT, gtk+-2.0 >= 2.0.0 gnome-vfs-2.0 libbonoboui-2.0 li
 AC_SUBST(EGG_RECENT_LIBS)
 AC_SUBST(EGG_RECENT_CFLAGS)
 
+PKG_CHECK_MODULES(EGG_LIBGNOMEUI, libgnomeui-2.0)
+AC_SUBST(EGG_LIBGNOMEUI_LIBS)
+AC_SUBST(EGG_LIBGNOMEUI_CFLAGS)
+
 ## check if we have gtk+ 2.1.x
 AM_CONDITIONAL(HAVE_GTK21, $PKG_CONFIG --atleast-version=2.1.0 gtk+-2.0)
 
@@ -169,5 +173,6 @@ libegg/iconchooser/Makefile
 libegg/bookmarkfile/Makefile
 libegg/recentchooser/Makefile
 libegg/recentchooser/xdgmime/Makefile
+libegg/smclient/Makefile
 doc/Makefile
 ])

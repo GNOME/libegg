@@ -1,3 +1,8 @@
+2007-01-13  Dan Winship  <danw@novell.com>
+
+	* libegg/smclient: add EggSMClient, a proposed replacement for
+	GnomeClient.
+
 2006-07-30  Vincent Untz  <vuntz@gnome.org>
 
 	* libegg/sidebar/eggsidebar.c: don't keep the group in memory, but

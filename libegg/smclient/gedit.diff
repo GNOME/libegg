@@ -1,0 +1,375 @@
+Index: gedit/Makefile.am
+===================================================================
+--- gedit/Makefile.am	(revision 5440)
++++ gedit/Makefile.am	(working copy)
+@@ -8,6 +8,7 @@
+ INCLUDES =							\
+ 	-I$(top_srcdir)						\
+ 	-I$(srcdir)						\
++	-I$(srcdir)/smclient					\
+ 	$(GEDIT_CFLAGS)						\
+ 	$(WARN_CFLAGS)						\
+ 	$(DISABLE_DEPRECATED_CFLAGS)				\
+@@ -28,7 +29,7 @@
+ endif
+ 
+ gedit_SOURCES = gedit.c
+-gedit_LDADD = libgedit.la $(GEDIT_LIBS)
++gedit_LDADD = libgedit.la smclient/libeggsmclient-gnome.la $(GEDIT_LIBS)
+ 
+ gedit_LDFLAGS = -export-dynamic -no-undefined -export-symbols-regex "^[[^_]].*"
+ 
+Index: gedit/gedit.c
+===================================================================
+--- gedit/gedit.c	(revision 5440)
++++ gedit/gedit.c	(working copy)
+@@ -54,6 +54,8 @@
+ #include "gedit-window.h"
+ 
+ #include "bacon-message-connection.h"
++#include "eggsmclient.h"
++#include "eggsmclient-libgnomeui.h"
+ 
+ static guint32 startup_timestamp = 0;
+ static BaconMessageConnection *connection;
+@@ -457,7 +459,7 @@
+ 	
+ 	/* Initialize gnome program */
+ 	program = gnome_program_init ("gedit", VERSION,
+-			    LIBGNOMEUI_MODULE, argc, argv,
++			    EGGSMCLIENT_LIBGNOMEUI_MODULE, argc, argv,
+ 			    GNOME_PARAM_GOPTION_CONTEXT, context,
+ 			    GNOME_PARAM_HUMAN_READABLE_NAME,
+ 		            _("Text Editor"),
+@@ -525,7 +527,7 @@
+ 	
+ 	/* Initialize session management */
+ 	gedit_debug_message (DEBUG_APP, "Init session manager");		
+-	gedit_session_init (argv[0]);
++	gedit_session_init ();
+ 
+ 	if (gedit_session_is_restored ())
+ 		restored = gedit_session_load ();
+Index: gedit/gedit-session.h
+===================================================================
+--- gedit/gedit-session.h	(revision 5440)
++++ gedit/gedit-session.h	(working copy)
+@@ -38,7 +38,7 @@
+ 
+ G_BEGIN_DECLS
+ 
+-void		gedit_session_init 		(const char *argv0);
++void		gedit_session_init 		(void);
+ gboolean	gedit_session_is_restored 	(void);
+ gboolean 	gedit_session_load 		(void);
+ 
+Index: gedit/gedit-session.c
+===================================================================
+--- gedit/gedit-session.c	(revision 5440)
++++ gedit/gedit-session.c	(working copy)
+@@ -55,16 +55,12 @@
+ #include "gedit-commands.h"
+ #include "dialogs/gedit-close-confirmation-dialog.h"
+ 
++#include "eggsmclient.h"
++
+ /* The master client we use for SM */
+-static GnomeClient *master_client = NULL;
++static EggSMClient *master_client = NULL;
+ 
+-/* argv[0] from main(); used as the command to restart the program */
+-static const char *program_argv0 = NULL;
+-
+-/* globals vars used during the interaction. We are
+- * assuming there can only be one interaction at a time
+- */
+-static gint interaction_key;
++/* global var used during quit_requested */
+ static GSList *window_dirty_list;
+ 
+ static void	ask_next_confirmation	(void);
+@@ -72,7 +68,7 @@
+ #define GEDIT_SESSION_LIST_OF_DOCS_TO_SAVE "gedit-session-list-of-docs-to-save-key"
+ 
+ static gchar *
+-get_session_dir ()
++get_legacy_session_dir ()
+ {
+ 	gchar *gedit_dir;
+ 	gchar *session_dir;
+@@ -85,20 +81,16 @@
+ }
+ 
+ static gchar *
+-get_session_file_path (GnomeClient *client)
++get_legacy_session_file_path (const char *prefix)
+ {
+-	const gchar *prefix;
+ 	gchar *session_dir;
+ 	gchar *session_file;
+ 	gchar *session_path;
+ 
+-	prefix = gnome_client_get_config_prefix (client);
+-	gedit_debug_message (DEBUG_SESSION, "Prefix: %s", prefix);
+-
+ 	session_file = g_strndup (prefix, strlen (prefix) - 1);
+ 	gedit_debug_message (DEBUG_SESSION, "Session File: %s", session_file);
+ 
+-	session_dir = get_session_dir ();
++	session_dir = get_legacy_session_dir ();
+ 
+ 	session_path = g_build_filename (session_dir,
+ 					 session_file,
+@@ -112,20 +104,15 @@
+ 	return session_path;
+ }
+ 
+-static gboolean
+-ensure_session_dir (void)
++static gchar *
++get_session_file_path (const char *session_dir)
+ {
+-	gboolean ret = TRUE;
+-	gchar *dir;
++	gchar *session_path;
+ 
+-	dir = get_session_dir ();
++	session_path = g_build_filename (session_dir, "session.xml", NULL);
++	gedit_debug_message (DEBUG_SESSION, "Session Path: %s", session_path);
+ 
+-	if (g_file_test (dir, G_FILE_TEST_IS_DIR) == FALSE)
+-		ret = (g_mkdir_with_parents (dir, 488) == 0);
+-
+-	g_free (dir);
+-
+-	return ret;
++	return session_path;
+ }
+ 
+ static int
+@@ -231,23 +218,17 @@
+ }
+ 
+ static void
+-save_session ()
++client_save_state_cb (EggSMClient *client, const char *state_dir)
+ {
+ 	int ret;
+ 	gchar *fname;
+ 	xmlTextWriterPtr writer;
+ 	const GList *windows;
+ 
+-	fname = get_session_file_path (master_client);
++	fname = get_session_file_path (state_dir);
+ 
+ 	gedit_debug_message (DEBUG_SESSION, "Session file: %s", fname);
+ 
+-	if (!ensure_session_dir ())
+-	{
+-		g_warning ("Cannot create or write in session directory");
+-		return;
+-	}
+-
+ 	writer = xmlNewTextWriterFilename (fname, 0);
+ 	if (writer == NULL)
+ 	{
+@@ -295,25 +276,13 @@
+ }
+ 
+ static void
+-finish_interaction (gboolean cancel_shutdown)
+-{
+-	/* save session file even if shutdown was cancelled */
+-	save_session ();
+-
+-	gnome_interaction_key_return (interaction_key,
+-				      cancel_shutdown);
+-
+-	interaction_key = 0;
+-}
+-
+-static void
+ window_handled (GeditWindow *window)
+ {
+ 	window_dirty_list = g_slist_remove (window_dirty_list, window);
+ 
+ 	/* whee... we made it! */
+ 	if (window_dirty_list == NULL)
+-		finish_interaction (FALSE);
++		egg_sm_client_will_quit (master_client, TRUE);
+ 	else
+ 		ask_next_confirmation ();
+ }
+@@ -413,7 +382,7 @@
+ 			window_dirty_list = NULL;
+ 
+ 			/* cancel shutdown */
+-			finish_interaction (TRUE);
++			egg_sm_client_will_quit (master_client, FALSE);
+ 
+ 			break;
+ 	}
+@@ -480,12 +449,15 @@
+ 	show_confirmation_dialog (GEDIT_WINDOW (window_dirty_list->data));
+ }
+ 
++/* quit_requested handler for the master client */
+ static void
+-save_all_docs_and_save_session ()
++client_quit_requested_cb (EggSMClient *client, gpointer data)
+ {
+ 	GeditApp *app;
+ 	const GList *l;
+ 
++	gedit_debug (DEBUG_SESSION);
++
+ 	app = gedit_app_get_default ();
+ 
+ 	if (window_dirty_list != NULL)
+@@ -502,86 +474,22 @@
+ 		}
+ 	}
+ 
+-	/* no modified docs, go on and save session */
++	/* no modified docs */
+ 	if (window_dirty_list == NULL)
+ 	{
+-		finish_interaction (FALSE);
++		egg_sm_client_will_quit (client, TRUE);
+ 
+ 		return;
+ 	}
+ 
+ 	ask_next_confirmation ();
+-}
+ 
+-static void
+-interaction_function (GnomeClient     *client,
+-		      gint             key,
+-		      GnomeDialogType  dialog_type,
+-		      gpointer         shutdown)
+-{
+-	gedit_debug (DEBUG_SESSION);
+-
+-	/* sanity checks */
+-	g_return_if_fail (client == master_client);
+-
+-	if (interaction_key != 0)
+-		g_critical ("global variable interaction_key not NULL");
+-	interaction_key = key;
+-
+-	/* If we are shutting down, give the user the chance to save
+-	 * first, otherwise just ignore untitled documents documents.
+-	 */
+-	if (GPOINTER_TO_INT (shutdown))
+-	{
+-		save_all_docs_and_save_session ();
+-	}
+-	else
+-	{
+-		finish_interaction (FALSE);
+-	}
+-}
+-
+-/* save_yourself handler for the master client */
+-static gboolean
+-client_save_yourself_cb (GnomeClient        *client,
+-			 gint                phase,
+-			 GnomeSaveStyle      save_style,
+-			 gboolean            shutdown,
+-			 GnomeInteractStyle  interact_style,
+-			 gboolean            fast,
+-			 gpointer            data)
+-{
+-	gchar *argv[] = { "rm", "-f", NULL };
+-
+-	gedit_debug (DEBUG_SESSION);
+-
+-	gnome_client_request_interaction (client, 
+-					  GNOME_DIALOG_NORMAL, 
+-					  interaction_function,
+-					  GINT_TO_POINTER (shutdown));
+-
+-	/* Tell the session manager how to discard this save */
+-	argv[2] = get_session_file_path (client);
+-	gnome_client_set_discard_command (client, 3, argv);
+-
+-	g_free (argv[2]);
+-
+-	/* Tell the session manager how to clone or restart this instance */
+-
+-	argv[0] = (char *) program_argv0;
+-	argv[1] = NULL;
+-
+-	gnome_client_set_clone_command (client, 1, argv);
+-	gnome_client_set_restart_command (client, 1, argv);
+-
+ 	gedit_debug_message (DEBUG_SESSION, "END");
+-
+-	return TRUE;
+ }
+ 
+-/* die handler for the master client */
++/* quit handler for the master client */
+ static void
+-client_die_cb (GnomeClient *client, gpointer data)
++client_quit_cb (EggSMClient *client, gpointer data)
+ {
+ #if 0
+ 	gedit_debug (DEBUG_SESSION);
+@@ -616,24 +524,26 @@
+  * the beginning of the program.
+  **/
+ void
+-gedit_session_init (const char *argv0)
++gedit_session_init (void)
+ {
+ 	gedit_debug (DEBUG_SESSION);
+ 	
+ 	if (master_client)
+ 		return;
+ 
+-	program_argv0 = argv0;
+-	
+-	master_client = gnome_master_client ();
++	master_client = egg_sm_client_register (DATADIR "/applications/gedit.desktop");
+ 
+ 	g_signal_connect (master_client,
+-			  "save_yourself",
+-			  G_CALLBACK (client_save_yourself_cb),
++			  "save_state",
++			  G_CALLBACK (client_save_state_cb),
+ 			  NULL);
+ 	g_signal_connect (master_client,
+-			  "die",
+-			  G_CALLBACK (client_die_cb),
++			  "quit_requested",
++			  G_CALLBACK (client_quit_requested_cb),
++			  NULL);
++	g_signal_connect (master_client,
++			  "quit",
++			  G_CALLBACK (client_quit_cb),
+ 			  NULL);		  
+ }
+ 
+@@ -656,7 +566,7 @@
+ 	if (!master_client)
+ 		return FALSE;
+ 
+-	restored = (gnome_client_get_flags (master_client) & GNOME_CLIENT_RESTORED) != 0;
++	restored = egg_sm_client_is_resumed (master_client);
+ 
+ 	gedit_debug_message (DEBUG_SESSION, restored ? "RESTORED" : "NOT RESTORED");
+ 
+@@ -793,7 +703,10 @@
+ 
+ 	gedit_debug (DEBUG_SESSION);
+ 
+-	fname = get_session_file_path (master_client);
++	if (egg_sm_client_get_state_dir (master_client))
++		fname = get_session_file_path (egg_sm_client_get_state_dir (master_client));
++	else
++		fname = get_legacy_session_file_path (egg_sm_client_get_config_prefix (master_client));
+ 	gedit_debug_message (DEBUG_SESSION, "Session file: %s", fname);
+ 	
+ 	doc = xmlParseFile (fname);

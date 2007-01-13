@@ -22,7 +22,7 @@ endif
 SUBDIRS = util column-chooser treeviewutils toolbar menu iconlist sidebar druid \
   filesystem $(background_monitor_SUBDIRS) recent-files $(tray_SUBDIRS) dock \
   datetime desktopentries $(thumbnail_SUBDIRS) $(iconchooser_SUBDIRS) \
-  bookmarkfile recentchooser regex sequence
+  bookmarkfile recentchooser regex sequence smclient
 
 INCLUDES = \
   $(EGG_CFLAGS)  \
