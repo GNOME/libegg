@@ -1,3 +1,10 @@
+2007-01-14  Soren Sandmann  <sandmann@daimi.au.dk>
+
+	* libegg/sequence/eggsequence.c (egg_sequence_insert_sorted_iter): 
+	Insert the new node into a temporary sequence, so that things like
+	is_end() will work correctly when the user compare function calls
+	them on the new node.
+	
 2007-01-13  Dan Winship  <danw@novell.com>
 
 	* libegg/smclient: add EggSMClient, a proposed replacement for

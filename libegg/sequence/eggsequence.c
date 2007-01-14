@@ -578,12 +578,30 @@ egg_sequence_insert_sorted_iter   (EggSequence                *seq,
 				   gpointer		       cmp_data)
 {
     EggSequenceNode *new_node;
+    EggSequence *tmp_seq;
     
     check_seq_access (seq);
-    
-    new_node = node_new (data);
+
+    /* Create a new temporary sequence and put the new node into
+     * that. The reason for this is that the user compare function
+     * will be called with the new node, and if it dereferences, 
+     * "is_end" will be called on it. But that will crash if the
+     * node is not actually in a sequence.
+     *
+     * node_insert_sorted() makes sure the node is unlinked before
+     * is is inserted.
+     *
+     * The reason we need the "iter" versions at all is that that
+     * is the only kind of compare functions GtkTreeView can use.
+     */
+    tmp_seq = egg_sequence_new (NULL);
+    new_node = egg_sequence_append (tmp_seq, data);
+
     node_insert_sorted (seq->end_node, new_node,
 			seq->end_node, iter_cmp, cmp_data);
+
+    egg_sequence_free (tmp_seq);
+    
     return new_node;
 }
 
@@ -1310,6 +1328,8 @@ node_insert_sorted (EggSequenceNode *node,
     EggSequenceNode *closest;
     
     closest = node_find_closest (node, new, end, cmp_func, cmp_data);
+
+    node_unlink (new);
     
     node_insert_before (closest, new);
 }

@@ -264,7 +264,7 @@ queue_insert_before (SequenceInfo *seq, GList *link, gpointer data)
 static void
 run_random_tests (guint32 seed)
 {
-#define N_ITERATIONS 30000
+#define N_ITERATIONS 60000
 #define N_SEQUENCES 8
     
     SequenceInfo sequences[N_SEQUENCES];
