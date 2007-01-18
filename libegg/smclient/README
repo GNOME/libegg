@@ -73,16 +73,37 @@ There's no way to manually set most of the XSMP properties using
 EggSMClient (and no need to). Program, ProcessID, and UserID are set
 automatically. RestartCommand and CloneCommand are set from the
 .desktop file passed to egg_sm_client_register() (or from a call to
-egg_sm_client_set_restart_command). RestartStyleHint is set based on
-whether or not you call egg_sm_client_register() and whether or not
-your .desktop file has an "X-GNOME-AutoRestart" key set (if you want
-to be automatically restarted when it crashes, like the panel).
-DiscardCommand is set automatically as needed after save_state is
-emitted.
+egg_sm_client_set_restart_command), and DiscardCommand is set
+automatically as needed after save_state is emitted.
 
-(There may need to be a way to set _GSM_Priority, for compatibility
-with the current gnome-session; this could perhaps be done via another
-.desktop key?)
+RestartStyleHint is set automatically based on how
+egg_sm_client_register() is called:
+
+	- SmRestartNever if you don't call egg_sm_client_register()
+
+	- SmRestartImmediately if you call it with a desktop file
+	  containing the entry "X-GNOME-AutoRestart=true"
+
+	- SmRestartIfRunning if you call it with no desktop_file, or
+	  with a desktop_file that doesn't set
+	  "X-GNOME-AutoRestart=true". (This is the normal case.)
+
+There's no way to set the restart style hint to SmRestartAnyway
+("restart the client in the resumed session even if it wasn't running
+in the saved session"). FDO Autostart is a much better solution for
+that class of program. If your program is configured to do autostart,
+you don't need to also register for XSMP restart (unless you want to
+have it save and resume its state as well).
+
+CurrentDirectory and Environment are never set. GnomeClient sets
+CurrentDirectory, but KDE doesn't restore either of those properties
+when resuming a saved session, so it's better for apps to not depend
+on them. (If the application must have its working directory restored,
+it can just save and restore it itself.)
+
+(There probably needs to be a way to set _GSM_Priority, for
+compatibility with the current gnome-session; this will probably be
+done via another .desktop key.)
 
 The "save_yourself" signal/callback is split into two signals in
 EggSMClient: save_state and quit_requested. Most GnomeClient-based
@@ -114,6 +135,43 @@ chooses the "save current session" option when logging out,
 EggSMClient will emit quit_requested, let you deal with all of that,
 and *then* after you're done, it will emit save_state to give you a
 chance to deal with saving the state as well.
+
+There are a bunch of other bits of GnomeClient API with no analogs:
+
+	- GNOME_CLIENT_IS_CONNECTED - Is this really ever needed?
+
+	- gnome_client_request_phase_2 - This is only needed by window
+          managers... if someone really wanted it, it could be added
+          as an EggSMClientXSMP-specific call. (You'd just call it
+          once, at startup time, to register the fact that you were a
+          phase2 client, and then when EggSMClientXSMP got a
+          SaveYourself, it would automatically respond with a
+          SaveYourselfPhase2Request, and it wouldn't emit the
+          quit_requested/save_state signals until phase 2.)
+
+	- gnome_client_request_save - There is no way to request a
+          SmSaveLocal save, either for yourself, or for the whole
+          session. However, requesting a local SaveYourself for
+          yourself won't actually have any effect under most session
+          managers, and requesting it for the whole session is
+          something that only a program directly associated with the
+          session manager ought to do, so there doesn't seem to be a
+          need for a public API for this.
+
+	- gnome_client_flush - In most cases this is a no-op. Where
+          it's not, EggSMClientXSMP should do it automatically
+          whenever you change anything. (FIXME!)
+
+	- gnome_client_disable_master_connection - Irrelevant; if you
+          don't want to use EggSMClient, just don't initialize it. And
+          if EggSMClient becomes GtkSMClient, then for
+          backward-compatibility reasons we will need to make sure
+          that either (a) it doesn't connect by default like
+          GnomeClient does, or (b) it doesn't cause any problems if
+          you do let it connect by default, and so there's no reason
+          you'd want to disable it.
+
+	- gnome_client_get_id - Why would you need to know?
 
 
 More notes
