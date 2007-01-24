@@ -149,14 +149,15 @@ There are a bunch of other bits of GnomeClient API with no analogs:
           SaveYourselfPhase2Request, and it wouldn't emit the
           quit_requested/save_state signals until phase 2.)
 
-	- gnome_client_request_save - There is no way to request a
-          SmSaveLocal save, either for yourself, or for the whole
-          session. However, requesting a local SaveYourself for
-          yourself won't actually have any effect under most session
-          managers, and requesting it for the whole session is
-          something that only a program directly associated with the
-          session manager ought to do, so there doesn't seem to be a
-          need for a public API for this.
+	- gnome_client_request_save - Shutdown saves are now done via
+	  egg_sm_client_end_session. There is no way to request a
+	  non-shutdown save, either for yourself, or for the whole
+	  session. (Requesting a local SaveYourself for yourself won't
+	  actually have any effect under most session managers, and
+	  requesting it for the whole session is something that only a
+	  program directly associated with the session manager ought
+	  to do, so there doesn't seem to be a need for a public API
+	  for this.)
 
 	- gnome_client_flush - In most cases this is a no-op. Where
           it's not, EggSMClientXSMP should do it automatically
