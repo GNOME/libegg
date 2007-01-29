@@ -1,3 +1,8 @@
+Mon Jan 29 16:06:55 2007  Søren Sandmann  <sandmann@redhat.com>
+
+	* libegg/sequence/eggsequence.c: Add API documentation
+	* libegg/sequence/eggsequence.h: Various cleanups.
+
 2007-01-14  Soren Sandmann  <sandmann@daimi.au.dk>
 
 	* libegg/sequence/eggsequence.c (egg_sequence_insert_sorted_iter): 

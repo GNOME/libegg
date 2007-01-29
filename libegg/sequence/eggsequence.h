@@ -1,5 +1,5 @@
 /* GLIB - Library of useful routines for C programming
- * Copyright (C) 2002, 2003, 2004, 2005  Soeren Sandmann (sandmann@daimi.au.dk)
+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007  Soeren Sandmann (sandmann@daimi.au.dk)
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,10 +30,6 @@ typedef struct _EggSequenceNode  EggSequenceIter;
 typedef gint (* EggSequenceIterCompareFunc) (EggSequenceIter *a,
 					     EggSequenceIter *b,
 					     gpointer	      data);
-
-typedef gpointer (* EggSequenceAggregateFunction) (gconstpointer   before,
-						   EggSequenceIter *mid,
-						   gconstpointer   after);
 
 /* EggSequence */
 EggSequence *   egg_sequence_new                  (GDestroyNotify          data_destroy);
@@ -120,22 +116,5 @@ gint            egg_sequence_iter_compare         (EggSequenceIter *a,
 						   EggSequenceIter *        b);
 EggSequenceIter *egg_sequence_range_get_midpoint   (EggSequenceIter *        begin,
 						   EggSequenceIter *        end);
-
-/* debug */
-gint          egg_sequence_calc_tree_height    (EggSequence                  *seq);
-void	      egg_sequence_self_test           (EggSequence                  *seq);
-
-#if 0
-/* aggregates */
-void          egg_sequence_set_aggregator   (EggSequence                  *seq,
-					     EggSequenceAggregateFunction  func,
-					     GDestroyNotify                destroy);
-gconstpointer egg_sequence_get_aggregate    (EggSequenceIter *              begin,
-					     EggSequenceIter *              end);
-void          egg_sequence_update_aggregate (EggSequenceIter *              iter);
-
-
-#endif
-
 
 #endif /* __GSEQUENCE_H__ */
