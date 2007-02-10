@@ -1,5 +1,16 @@
 2007-02-10  Dan Winship  <danw@novell.com>
 
+	* egglauncher.c: New, replaces EggDesktopFile (as a replacement
+	for GnomeDesktopItem...)
+
+	* eggdesktopfile.c: gone
+
+	* egg-launch.c: test program
+
+	* eggsmclient-xsmp.c (set_restart_properties): use EggLauncher
+
+2007-02-10  Dan Winship  <danw@novell.com>
+
 	* eggsmclient-win32.c: Make this compile and at least partially
 	work (quit_requested doesn't work and probably needs to be
 	rewritten using a second thread as suggested in the comments in

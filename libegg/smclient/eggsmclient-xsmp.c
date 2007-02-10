@@ -26,7 +26,7 @@
 #include "eggsmclient.h"
 #include "eggsmclient-private.h"
 
-#include "eggdesktopfile.h"
+#include "egglauncher.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -846,12 +846,12 @@ set_restart_properties (EggSMClientXSMP *xsmp)
 {
   if (xsmp->desktop_file)
     {
-      EggDesktopFile *desktop;
+      EggLauncher *launcher;
       GError *err = NULL;
       char *cmdline, **argv;
       int argc;
 
-      desktop = egg_desktop_file_new (xsmp->desktop_file, &err);
+      launcher = egg_launcher_new (xsmp->desktop_file, &err);
       if (err)
 	{
 	  g_warning ("Could not open desktop file '%s': %s",
@@ -860,15 +860,24 @@ set_restart_properties (EggSMClientXSMP *xsmp)
 	}
       else
 	{
+	  GKeyFile *desktop = egg_launcher_get_key_file (launcher);
+
 	  set_properties (xsmp,
 			  string_prop ("_GSM_DesktopFile", xsmp->desktop_file),
 			  NULL);
-	  if (egg_desktop_file_get_boolean (desktop, "X-GNOME-AutoRestart", NULL))
-	    xsmp->restart_style = SmRestartImmediately;
+	  
+	  if (g_key_file_has_key (desktop, EGG_LAUNCHER_DESKTOP_FILE_GROUP,
+				  "X-GNOME-AutoRestart", NULL))
+	    {
+	      if (g_key_file_get_boolean (desktop,
+					  EGG_LAUNCHER_DESKTOP_FILE_GROUP,
+					  "X-GNOME-AutoRestart", NULL))
+		xsmp->restart_style = SmRestartImmediately;
+	    }
 
 	  if (!xsmp->set_restart_command)
 	    {
-	      cmdline = egg_desktop_file_exec_line (desktop, &err);
+	      cmdline = egg_launcher_get_command (launcher, &err);
 	      if (cmdline && g_shell_parse_argv (cmdline, &argc, &argv, &err))
 		{
 		  egg_sm_client_set_restart_command (EGG_SM_CLIENT (xsmp),
@@ -882,6 +891,8 @@ set_restart_properties (EggSMClientXSMP *xsmp)
 		  g_error_free (err);
 		}
 	    }
+
+	  egg_launcher_free (launcher);
 	}
     }
 
