@@ -31,10 +31,10 @@ void  egg_sm_client_quit_cancelled (EggSMClient *client);
 void  egg_sm_client_quit           (EggSMClient *client);
 
 #if defined (GDK_WINDOWING_X11)
-# ifdef HAVE_XSMP
+# ifdef EGG_SM_CLIENT_BACKEND_XSMP
 EggSMClient *egg_sm_client_xsmp_new (void);
 # endif
-# ifdef HAVE_DBUS
+# ifdef EGG_SM_CLIENT_BACKEND_DBUS
 EggSMClient *egg_sm_client_dbus_new (void);
 # endif
 #elif defined (GDK_WINDOWING_WIN32)

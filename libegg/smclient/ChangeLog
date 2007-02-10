@@ -1,0 +1,28 @@
+2007-02-10  Dan Winship  <danw@novell.com>
+
+	* eggsmclient-win32.c: Make this compile and at least partially
+	work (quit_requested doesn't work and probably needs to be
+	rewritten using a second thread as suggested in the comments in
+	will_quit()). Patch from Yevgen Muntyan, #399315.
+
+	* eggsmclient-xsmp.c: Use gdk_threads_enter/_leave around gtk
+	calls and EggSMClient signal emissions. Based on a patch from
+	Yevgen Muntyan.
+
+	* Makefile.am:
+	* eggsmclient.c (egg_sm_client_get): Change the #defines from
+	HAVE_XSMP and HAVE_DBUS to EGG_SM_CLIENT_BACKEND_XSMP and
+	EGG_SM_CLIENT_BACKEND_DBUS, to avoid being tricked by the app
+	having its own HAVE_DBUS define. Needs to be fixed better though.
+	Also change the win32 check from G_OS_WIN32 to
+	GDK_WINDOWING_WIN32, since it assumes the win32 gdk backend.
+
+	* logout-test.c: New test program to test logout
+	notification/cancellation support (and demonstrate that it doesn't
+	really work on Windows).
+
+2007-01-18  Dan Winship  <danw@novell.com>
+
+	* README: add more GnomeClient porting notes based on an email
+	exchange with Jani Monoses
+

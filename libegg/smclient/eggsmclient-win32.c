@@ -19,9 +19,10 @@
 
 #include "config.h"
 
-#define	G_LOG_DOMAIN "EggSMClient"
-
-#include "eggsmclient.h"
+#include "eggsmclient-private.h"
+#include <gtk/gtk.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #define EGG_TYPE_SM_CLIENT_WIN32            (egg_sm_client_win32_get_type ())
 #define EGG_SM_CLIENT_WIN32(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_SM_CLIENT_WIN32, EggSMClientWin32))
@@ -42,9 +43,10 @@ struct _EggSMClientWin32 {
   char *state_dir;
 #endif
 
+  gboolean in_filter;
   gboolean will_quit;
   gboolean will_quit_set;
-}
+};
 
 struct _EggSMClientWin32Class
 {
@@ -67,9 +69,9 @@ static gboolean sm_client_win32_end_session (EggSMClient         *client,
 					     EggSMClientEndStyle  style,
 					     gboolean  request_confirmation);
 
-static GdkFilterReturn sm_client_win32_filter (GdkXEvent *xevent,
-					       GdkEvent  *event,
-					       gpointer   data);
+static GdkFilterReturn egg_sm_client_win32_filter (GdkXEvent *xevent,
+						   GdkEvent  *event,
+						   gpointer   data);
 
 G_DEFINE_TYPE (EggSMClientWin32, egg_sm_client_win32, EGG_TYPE_SM_CLIENT)
 
@@ -80,7 +82,7 @@ egg_sm_client_win32_init (EggSMClientWin32 *win32)
 }
 
 static void
-egg_sm_client_win32_class_init (EggSMClientWIN32Class *klass)
+egg_sm_client_win32_class_init (EggSMClientWin32Class *klass)
 {
   EggSMClientClass *sm_client_class = EGG_SM_CLIENT_CLASS (klass);
 
@@ -100,9 +102,10 @@ egg_sm_client_win32_new (void)
 }
 
 static void
-sm_client_win32_startup (EggSMClient *client)
+sm_client_win32_startup (EggSMClient *client,
+			 const char  *client_id)
 {
-  gdk_window_add_filter (NULL, sm_client_win32_filter, client);
+  gdk_window_add_filter (NULL, egg_sm_client_win32_filter, client);
 }
 
 #ifdef VISTA
@@ -149,7 +152,7 @@ sm_client_win32_set_restart_command (EggSMClient  *client,
 }
 #endif
 
-void
+static void
 sm_client_win32_will_quit (EggSMClient *client,
 			   gboolean     will_quit)
 {
@@ -159,32 +162,56 @@ sm_client_win32_will_quit (EggSMClient *client,
   win32->will_quit_set = TRUE;
 }
 
-void
+static gboolean
 sm_client_win32_end_session (EggSMClient         *client,
 			     EggSMClientEndStyle  style,
 			     gboolean             request_confirmation)
 {
   EggSMClientWin32 *win32 = (EggSMClientWin32 *)client;
-  UINT uFlags;
+  UINT uFlags = EWX_LOGOFF;
 
   switch (style)
     {
     case EGG_SM_CLIENT_END_SESSION_DEFAULT:
-    case EGG_SM_CLIENT_END_LOGOUT:
-      uFlags = EXW_LOGOFF;
+    case EGG_SM_CLIENT_LOGOUT:
+      uFlags = EWX_LOGOFF;
       break;
-    case EGG_SM_CLIENT_END_REBOOT:
-      uFlags = EXW_REBOOT;
+    case EGG_SM_CLIENT_REBOOT:
+      uFlags = EWX_REBOOT;
       break;
-    case EGG_SM_CLIENT_END_SHUTDOWN:
-      uFlags = EXW_POWEROFF;
+    case EGG_SM_CLIENT_SHUTDOWN:
+      uFlags = EWX_POWEROFF;
       break;
     }
 
   if (!request_confirmation)
-    uFlags |= EXW_FORCE;
+    uFlags |= EWX_FORCE;
 
+#ifdef SHTDN_REASON_FLAG_PLANNED
   ExitWindowsEx (uFlags, SHTDN_REASON_FLAG_PLANNED);
+#else
+  ExitWindowsEx (uFlags, 0);
+#endif
+
+  return TRUE;
+}
+
+static gboolean
+will_quit (EggSMClientWin32 *win32)
+{
+  /* Will this really work? Or do we need to do something kinky like
+   * arrange to have at least one WM_QUERYENDSESSION message delivered
+   * to another thread and then have that thread wait for the main
+   * thread to process the quit_requested signal asynchronously before
+   * returning? FIXME
+   */
+  win32->will_quit_set = FALSE;
+
+  egg_sm_client_quit_requested ((EggSMClient *)win32);
+  while (!win32->will_quit_set)
+    gtk_main_iteration ();
+
+  return win32->will_quit;
 }
 
 static GdkFilterReturn
@@ -195,11 +222,20 @@ egg_sm_client_win32_filter (GdkXEvent *xevent,
   EggSMClientWin32 *win32 = data;
   EggSMClient *client = data;
   MSG *msg = (MSG *)xevent;
+  GdkFilterReturn retval;
+
+  if (win32->in_filter)
+    {
+      g_message ("win32->in_filter");
+      return GDK_FILTER_CONTINUE;
+    }
 
   /* FIXME: I think these messages are delivered per-window, not
    * per-app, so we need to make sure we only act on them once. (Does
    * the win32 backend have client leader windows like x11?)
    */
+
+  win32->in_filter = TRUE;
 
   switch (msg->message)
     {
@@ -211,7 +247,8 @@ egg_sm_client_win32_filter (GdkXEvent *xevent,
        * its default value, 0, aka FALSE, causing the logout to be
        * aborted.
        */
-      return will_quit (win32) ? GDK_FILTER_CONTINUE : GDK_FILTER_REMOVE;
+      retval = will_quit (win32) ? GDK_FILTER_CONTINUE : GDK_FILTER_REMOVE;
+      break;
 
     case WM_ENDSESSION:
       if (msg->wParam)
@@ -239,29 +276,16 @@ egg_sm_client_win32_filter (GdkXEvent *xevent,
        * to return, although the docs don't say what happens if you return
        * any other value.
        */
-      return GDK_FILTER_REMOVE;
+      retval = GDK_FILTER_REMOVE;
+      break;
 
     default:
-      return GDK_FILTER_CONTINUE;
+      retval = GDK_FILTER_CONTINUE;
+      break;
     }
-}
 
-static gboolean
-will_quit (EggSMClientWin32 *win32)
-{
-  /* Will this really work? Or do we need to do something kinky like
-   * arrange to have at least one WM_QUERYENDSESSION message delivered
-   * to another thread and then have that thread wait for the main
-   * thread to process the quit_requested signal asynchronously before
-   * returning? FIXME
-   */
-  win32->will_quit_set = FALSE;
-
-  egg_sm_client_quit_requested ((EggSMClient *)win32);
-  while (!win32->will_quit_set)
-    gtk_main_iteration ();
-
-  return win32->will_quit;
+  win32->in_filter = FALSE;
+  return retval;
 }
 
 #ifdef VISTA

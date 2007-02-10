@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #include <glib/gi18n.h>
@@ -286,7 +287,7 @@ egg_sm_client_get (void)
 {
   if (!global_client)
     {
-#if defined (G_OS_WIN32)
+#if defined (GDK_WINDOWING_WIN32)
       global_client = egg_sm_client_win32_new ();
 #elif defined (GDK_WINDOWING_QUARTZ)
       global_client = egg_sm_client_osx_new ();
@@ -294,10 +295,10 @@ egg_sm_client_get (void)
       /* If both D-Bus and XSMP are compiled in, try D-Bus first and fall
        * back to XSMP if D-Bus session management isn't available.
        */
-# ifdef HAVE_DBUS
+# ifdef EGG_SM_CLIENT_BACKEND_DBUS
       global_client = egg_sm_client_dbus_new ();
 # endif
-# ifdef HAVE_XSMP
+# ifdef EGG_SM_CLIENT_BACKEND_XSMP
       if (!global_client)
 	global_client = egg_sm_client_xsmp_new ();
 # endif

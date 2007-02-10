@@ -1,6 +1,6 @@
 INCLUDES =                               \
 	-DG_LOG_DOMAIN=\""EggSMClient"\" \
-	-DHAVE_XSMP                      \
+	-DEGG_SM_CLIENT_BACKEND_XSMP     \
 	$(EGG_LIBGNOMEUI_CFLAGS)
 
 noinst_LTLIBRARIES =                     \
@@ -36,12 +36,19 @@ libeggsmclient_gnome_la_SOURCES =        \
 	eggsmclient-xsmp.h
 
 noinst_PROGRAMS =                        \
-	egg-session-end
+	egg-session-end                  \
+	logout-test
 
 egg_session_end_SOURCES =                \
 	egg-session-end.c
 
 egg_session_end_LDADD =                  \
+	libeggsmclient.la
+
+logout_test_SOURCES =                    \
+	logout-test.c
+
+logout_test_LDADD =                      \
 	libeggsmclient.la
 
 EXTRA_DIST =                             \

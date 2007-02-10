@@ -33,8 +33,7 @@
 #include <unistd.h>
 #include <X11/SM/SMlib.h>
 
-/* for gdk_set_sm_client_id */
-#include <gdk/gdkwindow.h>
+#include <gdk/gdk.h>
 
 #define EGG_TYPE_SM_CLIENT_XSMP            (egg_sm_client_xsmp_get_type ())
 #define EGG_SM_CLIENT_XSMP(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_SM_CLIENT_XSMP, EggSMClientXSMP))
@@ -260,7 +259,10 @@ sm_client_xsmp_connect (gpointer user_data)
       xsmp->client_id = g_strdup (client_id);
       free (client_id);
 
+      gdk_threads_enter ();
       gdk_set_sm_client_id (xsmp->client_id);
+      gdk_threads_leave ();
+
       g_debug ("Got client ID \"%s\"", xsmp->client_id);
     }
 
@@ -494,13 +496,15 @@ idle_do_pending_events (gpointer data)
   EggSMClientXSMP *xsmp = data;
   EggSMClient *client = data;
 
+  gdk_threads_enter ();
+
   xsmp->idle = 0;
 
   if (xsmp->waiting_to_emit_quit)
     {
       xsmp->waiting_to_emit_quit = FALSE;
       egg_sm_client_quit (client);
-      return FALSE;
+      goto out;
     }
 
   if (xsmp->waiting_to_emit_quit_cancelled)
@@ -516,6 +520,8 @@ idle_do_pending_events (gpointer data)
       do_save_yourself (xsmp);
     }
 
+ out:
+  gdk_threads_leave ();
   return FALSE;
 }
 
@@ -1152,7 +1158,13 @@ ice_init (void)
 static gboolean
 process_ice_messages (IceConn ice_conn)
 {
-  switch (IceProcessMessages (ice_conn, NULL, NULL))
+  IceProcessMessagesStatus status;
+
+  gdk_threads_enter ();
+  status = IceProcessMessages (ice_conn, NULL, NULL);
+  gdk_threads_leave ();
+
+  switch (status)
     {
     case IceProcessMessagesSuccess:
       return TRUE;
