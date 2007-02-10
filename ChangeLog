@@ -1,3 +1,8 @@
+2007-02-10  Dan Winship  <danw@novell.com>
+
+	* configure.in: add EGG_LAUNCHER_LIBS/CFLAGS, for EggLauncher in
+	libegg/smclient
+
 Mon Jan 29 16:06:55 2007  Søren Sandmann  <sandmann@redhat.com>
 
 	* libegg/sequence/eggsequence.c: Add API documentation
