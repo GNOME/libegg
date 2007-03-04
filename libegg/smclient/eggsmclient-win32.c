@@ -20,8 +20,10 @@
 #include "config.h"
 
 #include "eggsmclient-private.h"
-#include <gtk/gtk.h>
+#include <gdk/gdk.h>
+
 #define WIN32_LEAN_AND_MEAN
+#define UNICODE
 #include <windows.h>
 
 #define EGG_TYPE_SM_CLIENT_WIN32            (egg_sm_client_win32_get_type ())
@@ -43,9 +45,7 @@ struct _EggSMClientWin32 {
   char *state_dir;
 #endif
 
-  gboolean in_filter;
-  gboolean will_quit;
-  gboolean will_quit_set;
+  GAsyncQueue *msg_queue;
 };
 
 struct _EggSMClientWin32Class
@@ -69,9 +69,7 @@ static gboolean sm_client_win32_end_session (EggSMClient         *client,
 					     EggSMClientEndStyle  style,
 					     gboolean  request_confirmation);
 
-static GdkFilterReturn egg_sm_client_win32_filter (GdkXEvent *xevent,
-						   GdkEvent  *event,
-						   gpointer   data);
+static gpointer sm_client_thread (gpointer data);
 
 G_DEFINE_TYPE (EggSMClientWin32, egg_sm_client_win32, EGG_TYPE_SM_CLIENT)
 
@@ -105,7 +103,15 @@ static void
 sm_client_win32_startup (EggSMClient *client,
 			 const char  *client_id)
 {
-  gdk_window_add_filter (NULL, egg_sm_client_win32_filter, client);
+  EggSMClientWin32 *win32 = (EggSMClientWin32 *)client;
+
+  /* FIXME: if we were resumed, we need to clean up the old state
+   * dir. But not until after everyone has read their state back...
+   */
+
+  /* spawn another thread to listen for logout signals on */
+  win32->msg_queue = g_async_queue_new ();
+  g_thread_create (sm_client_thread, client, FALSE, NULL);
 }
 
 #ifdef VISTA
@@ -158,8 +164,8 @@ sm_client_win32_will_quit (EggSMClient *client,
 {
   EggSMClientWin32 *win32 = (EggSMClientWin32 *)client;
 
-  win32->will_quit = will_quit;
-  win32->will_quit_set = TRUE;
+  /* Can't push NULL onto a GAsyncQueue, so we add 1 to the value... */
+  g_async_queue_push (win32->msg_queue, GINT_TO_POINTER (will_quit + 1));
 }
 
 static gboolean
@@ -167,7 +173,6 @@ sm_client_win32_end_session (EggSMClient         *client,
 			     EggSMClientEndStyle  style,
 			     gboolean             request_confirmation)
 {
-  EggSMClientWin32 *win32 = (EggSMClientWin32 *)client;
   UINT uFlags = EWX_LOGOFF;
 
   switch (style)
@@ -184,8 +189,9 @@ sm_client_win32_end_session (EggSMClient         *client,
       break;
     }
 
-  if (!request_confirmation)
-    uFlags |= EWX_FORCE;
+  /* There's no way to make ExitWindowsEx() show a logout dialog, so
+   * we ignore @request_confirmation.
+   */
 
 #ifdef SHTDN_REASON_FLAG_PLANNED
   ExitWindowsEx (uFlags, SHTDN_REASON_FLAG_PLANNED);
@@ -194,98 +200,6 @@ sm_client_win32_end_session (EggSMClient         *client,
 #endif
 
   return TRUE;
-}
-
-static gboolean
-will_quit (EggSMClientWin32 *win32)
-{
-  /* Will this really work? Or do we need to do something kinky like
-   * arrange to have at least one WM_QUERYENDSESSION message delivered
-   * to another thread and then have that thread wait for the main
-   * thread to process the quit_requested signal asynchronously before
-   * returning? FIXME
-   */
-  win32->will_quit_set = FALSE;
-
-  egg_sm_client_quit_requested ((EggSMClient *)win32);
-  while (!win32->will_quit_set)
-    gtk_main_iteration ();
-
-  return win32->will_quit;
-}
-
-static GdkFilterReturn
-egg_sm_client_win32_filter (GdkXEvent *xevent,
-			    GdkEvent  *event,
-			    gpointer   data)
-{
-  EggSMClientWin32 *win32 = data;
-  EggSMClient *client = data;
-  MSG *msg = (MSG *)xevent;
-  GdkFilterReturn retval;
-
-  if (win32->in_filter)
-    {
-      g_message ("win32->in_filter");
-      return GDK_FILTER_CONTINUE;
-    }
-
-  /* FIXME: I think these messages are delivered per-window, not
-   * per-app, so we need to make sure we only act on them once. (Does
-   * the win32 backend have client leader windows like x11?)
-   */
-
-  win32->in_filter = TRUE;
-
-  switch (msg->message)
-    {
-    case WM_QUERYENDSESSION:
-      /* If we return GDK_FILTER_CONTINUE, the event will eventually
-       * get passed on to DefWindowProc, which will return TRUE,
-       * allowing the logout to continue. If we return
-       * GDK_FILTER_REMOVE, then inner_window_procedure will return
-       * its default value, 0, aka FALSE, causing the logout to be
-       * aborted.
-       */
-      retval = will_quit (win32) ? GDK_FILTER_CONTINUE : GDK_FILTER_REMOVE;
-      break;
-
-    case WM_ENDSESSION:
-      if (msg->wParam)
-	{
-	  /* The session is ending */
-#ifdef VISTA
-	  if ((msg->lParam & ENDSESSION_CLOSEAPP) && win32->registered)
-	    {
-	      g_free (win32->state_dir);
-	      win32->state_dir = egg_sm_client_save_state (client);
-	      set_restart_info (win32);
-	    }
-#endif
-	  egg_sm_client_quit (client);
-	}
-#ifdef VISTA
-      else
-	{
-	  /* The session isn't ending */
-	  egg_sm_client_quit_cancelled (client);
-	}
-#endif
-
-      /* This will cause 0 to be returned, which is what we're supposed
-       * to return, although the docs don't say what happens if you return
-       * any other value.
-       */
-      retval = GDK_FILTER_REMOVE;
-      break;
-
-    default:
-      retval = GDK_FILTER_CONTINUE;
-      break;
-    }
-
-  win32->in_filter = FALSE;
-  return retval;
 }
 
 #ifdef VISTA
@@ -314,3 +228,140 @@ set_restart_info (EggSMClientWin32 *win32)
   g_free (cmdline);
 }
 #endif
+
+
+/* callbacks from logout-listener thread */
+
+static gboolean
+emit_quit_requested (gpointer smclient)
+{
+  gdk_threads_enter ();
+  egg_sm_client_quit_requested (smclient);
+  gdk_threads_leave ();
+
+  return FALSE;
+}
+
+static gboolean
+emit_quit (gpointer smclient)
+{
+  EggSMClientWin32 *win32 = smclient;
+
+  gdk_threads_enter ();
+  egg_sm_client_quit (smclient);
+  gdk_threads_leave ();
+
+  g_async_queue_push (win32->msg_queue, GINT_TO_POINTER (1));
+  return FALSE;
+}
+
+static gboolean
+emit_quit_cancelled (gpointer smclient)
+{
+  EggSMClientWin32 *win32 = smclient;
+
+  gdk_threads_enter ();
+  egg_sm_client_quit_cancelled (smclient);
+  gdk_threads_leave ();
+
+  g_async_queue_push (win32->msg_queue, GINT_TO_POINTER (1));
+  return FALSE;
+}
+
+#ifdef VISTA
+static gboolean
+emit_save_state (gpointer smclient)
+{
+  EggSMClientWin32 *win32 = smclient;
+
+  g_free (win32->state_dir);
+  gdk_threads_enter ();
+  win32->state_dir = egg_sm_client_save_state (client);
+  gdk_threads_leave ();
+  set_restart_info (win32);
+
+  g_async_queue_push (win32->msg_queue, GINT_TO_POINTER (1));
+  return FALSE;
+}
+#endif
+
+/* logout-listener thread */
+
+static int
+async_emit (EggSMClientWin32 *win32, GSourceFunc emitter)
+{
+  /* ensure message queue is empty */
+  while (g_async_queue_try_pop (win32->msg_queue))
+    ;
+
+  /* Emit signal in the main thread and wait for a response */
+  g_idle_add (emitter, win32);
+  return GPOINTER_TO_INT (g_async_queue_pop (win32->msg_queue)) - 1;
+}
+
+LRESULT CALLBACK
+sm_client_win32_window_procedure (HWND   hwnd,
+				  UINT   message,
+				  WPARAM wParam,
+				  LPARAM lParam)
+{
+  EggSMClientWin32 *win32 =
+    (EggSMClientWin32 *)GetWindowLongPtr (hwnd, GWLP_USERDATA);
+
+  switch (message)
+    {
+    case WM_QUERYENDSESSION:
+      return async_emit (win32, emit_quit_requested);
+
+    case WM_ENDSESSION:
+      if (wParam)
+	{
+	  /* The session is ending */
+#ifdef VISTA
+	  if ((lParam & ENDSESSION_CLOSEAPP) && win32->registered)
+	    async_emit (win32, emit_save_state);
+#endif
+	  async_emit (win32, emit_quit);
+	}
+      else
+	{
+	  /* Nope, the session *isn't* ending */
+	  async_emit (win32, emit_quit_cancelled);
+	}
+      return 0;
+
+    default:
+      return DefWindowProc (hwnd, message, wParam, lParam);
+    }
+}
+
+static gpointer
+sm_client_thread (gpointer smclient)
+{
+  HINSTANCE instance;
+  WNDCLASSEXW wcl; 
+  ATOM klass;
+  HWND window;
+  MSG msg;
+
+  instance = GetModuleHandle (NULL);
+
+  memset (&wcl, 0, sizeof (WNDCLASSEX));
+  wcl.cbSize = sizeof (WNDCLASSEX);
+  wcl.lpfnWndProc = sm_client_win32_window_procedure;
+  wcl.hInstance = instance;
+  wcl.lpszClassName = L"EggSmClientWindow";
+  klass = RegisterClassEx (&wcl);
+
+  window = CreateWindowEx (0, MAKEINTRESOURCE (klass),
+			   L"EggSmClientWindow", 0,
+			   10, 10, 50, 50, GetDesktopWindow (),
+			   NULL, instance, NULL);
+  SetWindowLongPtr (window, GWLP_USERDATA, (LONG_PTR)smclient);
+
+  /* main loop */
+  while (GetMessage (&msg, NULL, 0, 0))
+    DispatchMessage (&msg);
+
+  return NULL;
+}

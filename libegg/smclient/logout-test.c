@@ -25,6 +25,7 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
+#include <glib/gthread.h>
 
 GtkWidget *main_window, *logout_dialog;
 
@@ -87,7 +88,7 @@ save_state (EggSMClient *client, const char *state_dir, gpointer user_data)
 }
 
 static void
-window_destroyed (GtkWidget *window, GdkEvent *event, gpointer user_data)
+window_closed (GtkWidget *window, GdkEvent *event, gpointer user_data)
 {
   gtk_main_quit ();
 }
@@ -101,6 +102,7 @@ main (int argc, char **argv)
   GtkWidget *label;
 
   g_type_init ();
+  g_thread_init (NULL);
 
   goption_context = g_option_context_new (_("- Test logout functionality"));
   g_option_context_add_group (goption_context, gtk_get_option_group (TRUE));
@@ -125,8 +127,8 @@ main (int argc, char **argv)
 
   main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title (GTK_WINDOW (main_window), "Logout Test");
-  g_signal_connect (main_window, "destroy_event",
-		    G_CALLBACK (window_destroyed), NULL);
+  g_signal_connect (main_window, "delete_event",
+		    G_CALLBACK (window_closed), NULL);
 
   label = gtk_label_new ("Logout test running...");
   gtk_container_add (GTK_CONTAINER (main_window), label);

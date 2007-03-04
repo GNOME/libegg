@@ -464,6 +464,10 @@ egg_sm_client_end_session (EggSMClient         *client,
 
 /* Signal-emitting callbacks from platform-specific code */
 
+/* FIXME: mingw doesn't have mkdtemp, but we'll probably end up not
+ * using this on Windows anyway.
+ */
+#ifndef G_OS_WIN32
 char *
 egg_sm_client_save_state (EggSMClient *client)
 {
@@ -513,6 +517,7 @@ egg_sm_client_save_state (EggSMClient *client)
 
   return state_dir;
 }
+#endif
 
 void
 egg_sm_client_quit_requested (EggSMClient *client)

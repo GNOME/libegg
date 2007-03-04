@@ -1,4 +1,4 @@
-This is the first draft of a replacement for GnomeClient. See also
+This is a draft of a replacement for GnomeClient. See also
 http://live.gnome.org/SessionManagement and
 http://bugzilla.gnome.org/show_bug.cgi?id=79285.
 
@@ -13,11 +13,8 @@ option, because non-GUI apps like beagled want a chance to exit
 cleanly when the session ends too. OTOH, making glib depend on libSM
 would obviously suck. Using dlopen may be a good solution.
 
-EggDesktopFile is the very beginnings of an attempt to port
-GnomeDesktopItem to use GKeyFile, and to clean it up a bit and make it
-conform to the glib/gtk coding style. But I only did enough of it to
-get the functionality I wanted (basic Exec key parsing without file
-handling).
+EggLauncher is proposed gtk-level rewrite of GnomeDesktopItem. See
+http://bugzilla.gnome.org/show_bug.cgi?id=339225.
 
 
 Including EggSMClient in your app
@@ -43,6 +40,15 @@ If you are using plain gtk:
           gtk_get_option_group() to it. See egg-session-end.c for an
           example.)
 
+If you are building on Windows:
+
+	- You need to make sure to link your application as a Windows
+          GUI binary. (If using GNU tools, use "-mwindows".) If you
+          build it as a console binary, Windows won't send it the
+          WM_QUERYENDSESSION (quit_requested) and WM_ENDSESSION (quit)
+          messages.
+	- You need to call g_thread_null(NULL) to initialize threads.
+
 
 Using EggSMClient
 -----------------
@@ -54,7 +60,7 @@ egg_sm_client_register(), passing it the path to your application's
 Use egg_sm_client_is_resumed() on the EggSMClient to see if you need
 to resume a saved state, and egg_sm_client_get_state_dir() to find
 that saved state. (If you used to use GnomeClient, you can also check
-egg_sm_client_get_config_prefix to see if you've been resumed from a
+egg_sm_client_get_config_prefix() to see if you've been resumed from a
 state saved by the old version of the app, and then have some
 migration code to handle that case.)
 
@@ -187,25 +193,18 @@ Example code:
 	  Yes, the --reboot and --shutdown arguments are only there to
 	  tease you.
 
+	- logout-test.c: Sits around waiting for you to try to log
+          out, and then asks "are you sure", to test
+          quit_requested/will_quit handling.
+
 	- gedit.diff: A patch to SVN gedit to make it use EggSMClient
           instead of GnomeClient.
 
-Non-functional non-XSMP clients:
-
-	- Windows: eggsmclient-win32.c is a proof-of-concept that the
-	  API should work fine under Windows as well. Maybe. I don't
-	  have a gtk-win32 development environment set up though, so I
-	  can't even compile it. I'm sure it doesn't work as is. There
-	  is also some code using new Vista-specific APIs.
-
-	  See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/shutdown/base/logging_off.asp
-	  and other URLs linked from it for more info on the Windows
-	  logout process.
+Non-functional backends:
 
 	- OS X: eggsmclient-osx.c is not quite a proof-of-concept.
-          It's more of a handwave-of-concept. I also don't have a
-          working OS X machine at the moment, so I can't test this
-          either.
+          It's more of a handwave-of-concept. I don't have a working
+          OS X machine at the moment, so I can't test/finish this.
 
 	  See http://developer.apple.com/documentation/MacOSX/Conceptual/BPSystemStartup/Articles/BootProcess.html#//apple_ref/doc/uid/20002130-114618
 	  and other URLs linked from it for more info on the OS X

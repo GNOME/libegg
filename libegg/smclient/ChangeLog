@@ -1,3 +1,27 @@
+2007-03-04  Dan Winship  <danw@novell.com>
+
+	* eggsmclient-win32.c: Redo this to fix quit_requested handling,
+	by listening for WM_QUERYENDSESSION messages in another thread
+	that can then block waiting for the main thread to handle it. More
+	of #399315.
+	(sm_client_win32_end_session): EWX_FORCE means "don't allow
+	clients to cancel", not "don't show a logout dialog" (which
+	ExitWindowsEx never does), so don't use it to implement the
+	request_confirmation flag.
+
+	* Makefile.am: make this work on both unix and windows
+
+	* README: Update. In particular, note that EggSMClientWin32
+	requires "-mwindows" and g_thread_init().
+
+	* egg-session-end.c (main): call g_thread_init
+
+	* logout-test.c (main): call g_thread_init, fix window-closed
+	handler
+
+	* eggsmclient.c (egg_sm_client_save_state): don't try to compile
+	this on Windows. (Temporary workaround)
+
 2007-02-10  Dan Winship  <danw@novell.com>
 
 	* egglauncher.c: New, replaces EggDesktopFile (as a replacement

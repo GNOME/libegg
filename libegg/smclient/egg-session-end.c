@@ -25,6 +25,7 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
+#include <glib/gthread.h>
 
 EggSMClientEndStyle style = EGG_SM_CLIENT_END_SESSION_DEFAULT;
 gboolean confirm = TRUE;
@@ -63,6 +64,7 @@ main (int argc, char **argv)
   GError *err = NULL;
 
   g_type_init ();
+  g_thread_init (NULL);
 
   goption_context = g_option_context_new (_("- End the current session"));
   g_option_context_add_main_entries (goption_context, options, NULL);
