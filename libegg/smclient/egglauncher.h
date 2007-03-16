@@ -50,6 +50,9 @@ EggLauncherType  egg_launcher_get_launcher_type (EggLauncher  *launcher);
 gboolean         egg_launcher_can_exec          (EggLauncher  *launcher,
 						 const char   *desktop_environment);
 
+gboolean         egg_launcher_accepts_multiple  (EggLauncher  *launcher);
+gboolean         egg_launcher_accepts_uris      (EggLauncher  *launcher);
+
 void             egg_launcher_add_document      (EggLauncher  *launcher,
 						 const char   *document);
 void             egg_launcher_clear_documents   (EggLauncher  *launcher);

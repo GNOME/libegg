@@ -1,3 +1,11 @@
+2007-03-16  Dan Winship  <danw@novell.com>
+
+	* egglauncher.c (egg_launcher_add_document): use
+	g_filename_to_uri() and g_filename_from_uri() rather than rolling
+	our own.
+
+	* egglauncher.h: add two missing prototypes
+
 2007-03-04  Dan Winship  <danw@novell.com>
 
 	* eggsmclient-win32.c: Redo this to fix quit_requested handling,

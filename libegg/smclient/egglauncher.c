@@ -368,83 +368,6 @@ egg_launcher_accepts_uris (EggLauncher *launcher)
   return launcher->accepts_uris;
 }
 
-
-#define XDIGIT(c) ((c) <= '9' ? (c) - '0' : ((c) & 0x4F) - 'A' + 10)
-
-/* Convert a "file:" URI to a pathname */
-/* FIXME: UTF-8 vs filename encoding? */
-static char *
-uri_to_path (const char *uri)
-{
-  char *s, *d, *slash, *path;
-
-  if (strncmp (uri, "file://", 7) != 0)
-    return NULL;
-
-  slash = strchr (uri + 7, '/');
-  if (!slash)
-    return NULL;
-
-  path = g_strdup (slash);
-  s = d = path;
-
-  do
-    {
-      if (*s == '%' && s[1] && s[2])
-	{
-	  *d++ = (XDIGIT (s[1]) << 4) + XDIGIT (s[2]);
-	  s += 2;
-	}
-      else
-	*d++ = *s;
-    }
-  while (*s++);
-
-  *d = '\0';
-  return path;
-}
-
-static const char uri_encoded_char[] = {
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x00 - 0x0f */
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x10 - 0x1f */
-  1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /*  ' ' - '/'  */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,  /*  '0' - '?'  */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /*  '@' - 'O'  */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,  /*  'P' - '_'  */
-  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /*  '`' - 'o'  */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1,  /*  'p' - 0x7f */
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-};
-
-/* Convert an absolute pathname to a "file:" URI */
-/* FIXME: UTF-8 vs filename encoding? */
-static char *
-path_to_uri (const char *path)
-{
-  GString *uri;
-  const unsigned char *s;
-
-  uri = g_string_new ("file://");
-
-  s = (const unsigned char *)path;
-  while (*s)
-    {
-      if (uri_encoded_char[*s])
-	g_string_append_printf (uri, "%%%02x", *s++);
-      else
-	g_string_append_c (uri, *s++);
-    }
-
-  return g_string_free (uri, FALSE);
-}
-
 /**
  * egg_launcher_add_document:
  * @launcher: an #EggLauncher
@@ -466,7 +389,7 @@ egg_launcher_add_document (EggLauncher  *launcher,
 	{
 	  /* Convert path to URI */
 	  launcher->documents = g_slist_prepend (launcher->documents,
-						 path_to_uri (document));
+						 g_filename_to_uri (document, NULL, NULL));
 	}
       else
 	{
@@ -488,7 +411,7 @@ egg_launcher_add_document (EggLauncher  *launcher,
 	  g_return_if_fail (launcher->accepts_uris || !strncmp (document, "file:", 5));
 	  /* Convert URI to path */
 	  launcher->documents = g_slist_prepend (launcher->documents,
-						 uri_to_path (document));
+						 g_filename_from_uri (document, NULL, NULL));
 	}
     }
 }
