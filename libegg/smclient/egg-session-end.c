@@ -59,7 +59,6 @@ static const GOptionEntry options[] = {
 int
 main (int argc, char **argv)
 {
-  EggSMClient *client;
   GOptionContext *goption_context;
   GError *err = NULL;
 
@@ -79,8 +78,7 @@ main (int argc, char **argv)
       return 1;
     }
 
-  client = egg_sm_client_get ();
-  if (!egg_sm_client_end_session (client, style, confirm))
+  if (!egg_sm_client_end_session (style, confirm))
     {
       const char *message = _("Could not connect to the session manager");
 

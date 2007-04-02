@@ -1,5 +1,15 @@
 2007-04-02  Dan Winship  <danw@novell.com>
 
+	* eggsmclient.c (egg_sm_client_end_session): Remove the "client"
+	argument; eventually this method will not be visibly attached to
+	the rest of the sm client API.
+	(EggSMClientPrivate, egg_sm_client_get_state_file): oops, fix bugs
+	in previous commit
+
+	* egg-session-end.c (main): update
+
+2007-04-02  Dan Winship  <danw@novell.com>
+
 	* eggsmclient.c (egg_sm_client_save_state): Change this signal to
 	use a GKeyFile rather than a directory name (and return that to
 	the caller).

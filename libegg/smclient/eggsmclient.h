@@ -103,8 +103,7 @@ void          egg_sm_client_will_quit           (EggSMClient *client,
 						 gboolean     will_quit);
 
 /* Initiate a logout/reboot/shutdown */
-gboolean      egg_sm_client_end_session         (EggSMClient         *client,
-						 EggSMClientEndStyle  style,
+gboolean      egg_sm_client_end_session         (EggSMClientEndStyle  style,
 						 gboolean             request_confirmation);
 
 G_END_DECLS

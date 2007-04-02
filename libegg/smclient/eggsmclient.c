@@ -40,9 +40,9 @@ enum {
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-typedef struct {
+struct _EggSMClientPrivate {
   GKeyFile *state_file;
-} EggSMClientPrivate;
+};
 
 #define EGG_SM_CLIENT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_SM_CLIENT, EggSMClientPrivate))
 
@@ -271,8 +271,8 @@ egg_sm_client_register (const char *desktop_path)
  *
  * This method (as opposed to egg_sm_client_register()) can be used by
  * an application that wants to listen to the logout-related signals,
- * or that wants to call egg_sm_client_end_session(), but that does
- * not ever want to be restarted automatically in future sessions.
+ * but that does not ever want to be restarted automatically in future
+ * sessions.
  *
  * This method can also be used by libraries that want to connect to
  * the ::save_state signal (although that signal will only be emitted
@@ -353,7 +353,7 @@ egg_sm_client_is_resumed (EggSMClient *client)
 GKeyFile *
 egg_sm_client_get_state_file (EggSMClient *client)
 {
-  EggSMClientPrivate *priv = EGG_SM_CLIENT_GET_PRIVATE (object);
+  EggSMClientPrivate *priv = EGG_SM_CLIENT_GET_PRIVATE (client);
   char *state_file_path;
   GError *err = NULL;
 
@@ -437,7 +437,6 @@ egg_sm_client_will_quit (EggSMClient *client,
 
 /**
  * egg_sm_client_end_session:
- * @client: the client
  * @style: a hint at how to end the session
  * @request_confirmation: whether or not the user should get a chance
  * to confirm the action
@@ -453,10 +452,11 @@ egg_sm_client_will_quit (EggSMClient *client,
  * be (eg, because it could not connect to the session manager).
  **/
 gboolean
-egg_sm_client_end_session (EggSMClient         *client,
-			   EggSMClientEndStyle  style,
+egg_sm_client_end_session (EggSMClientEndStyle  style,
 			   gboolean             request_confirmation)
 {
+  EggSMClient *client = egg_sm_client_get ();
+
   g_return_val_if_fail (EGG_IS_SM_CLIENT (client), FALSE);
 
   if (EGG_SM_CLIENT_GET_CLASS (client)->end_session)
