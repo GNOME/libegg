@@ -58,11 +58,8 @@ egg_sm_client_register(), passing it the path to your application's
 .desktop file. This will return an EggSMClient object.
 
 Use egg_sm_client_is_resumed() on the EggSMClient to see if you need
-to resume a saved state, and egg_sm_client_get_state_dir() to find
-that saved state. (If you used to use GnomeClient, you can also check
-egg_sm_client_get_config_prefix() to see if you've been resumed from a
-state saved by the old version of the app, and then have some
-migration code to handle that case.)
+to resume a saved state, and egg_sm_client_get_state_file() to find
+that saved state.
 
 Connect to the client's "save_state" signal if you want to be able to
 save your state and be resumed in future sessions. Connect to
@@ -117,13 +114,11 @@ apps only implement the state-saving functionality currently, so they
 would only connect to "save_state" in EggSMClient, not
 "quit_requested".
 
-When saving state, EggSMClient provides you with a directory to store
-files in. You can store any files you want to there. If you write
-anything to the directory, EggSMClient will set an XSMP DiscardCommand
-automatically to make sure that the session manager deletes the
-directory when it is no longer needed. (If you don't write any files
-there, EggSMClient will delete the directory itself right away.) If
-you can record your entire state on the command line, you can use
+When saving state, EggSMClient provides you with a GKeyFile to store
+data in. If you write any data to the key file, EggSMClient will save
+it to disk and set an XSMP DiscardCommand to make sure that the
+session manager deletes it when it is no longer needed. If you can
+record your entire state on the command line, you can use
 egg_sm_client_set_restart_command() instead, to set the command that
 will be used to restart the app.
 
@@ -169,20 +164,26 @@ There are a bunch of other bits of GnomeClient API with no analogs:
           it's not, EggSMClientXSMP should do it automatically
           whenever you change anything. (FIXME!)
 
-	- gnome_client_disable_master_connection - Irrelevant; if you
-          don't want to use EggSMClient, just don't initialize it. And
-          if EggSMClient becomes GtkSMClient, then for
-          backward-compatibility reasons we will need to make sure
-          that either (a) it doesn't connect by default like
-          GnomeClient does, or (b) it doesn't cause any problems if
-          you do let it connect by default, and so there's no reason
-          you'd want to disable it.
+	- gnome_client_disable_master_connection - Irrelevant for now;
+          if you don't want to use EggSMClient, just don't initialize
+          it. If EggSMClient becomes GtkSMClient, we will need to do
+          something here. Eg, bug-buddy needs to not connect:
+          http://bugzilla.gnome.org/show_bug.cgi?id=406009
 
 	- gnome_client_get_id - Why would you need to know?
 
 
 More notes
 ----------
+
+Assuming you provide a .desktop file to egg_sm_client_register(), the
+state file that gets saved when you save the application state will
+actually be a copy of that .desktop file, with the state information
+appended to the end, and the Exec key adjusted to include
+"--sm-client-state-file %k" (where "%k" means "the path to this
+.desktop file"). So if you want to, you can move the state file out of
+~/.config/session-state/ and use it directly as a launcher to restart
+the application with that saved state.
 
 Set EGG_SM_CLIENT_DEBUG=1 to debug
 

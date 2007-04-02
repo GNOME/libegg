@@ -54,7 +54,7 @@ struct _EggSMClientClass
 
   /* signals */
   void (*save_state)       (EggSMClient *client,
-			    const char  *state_dir);
+			    GKeyFile    *state_file);
 
   void (*quit_requested)   (EggSMClient *client);
   void (*quit_cancelled)   (EggSMClient *client);
@@ -91,8 +91,7 @@ EggSMClient  *egg_sm_client_get                 (void);
 
 /* Resuming a saved session */
 gboolean      egg_sm_client_is_resumed          (EggSMClient *client);
-const char   *egg_sm_client_get_state_dir       (EggSMClient *client);
-const char   *egg_sm_client_get_config_prefix   (EggSMClient *client);
+GKeyFile     *egg_sm_client_get_state_file      (EggSMClient *client);
 
 /* Alternate means of saving state */
 void          egg_sm_client_set_restart_command (EggSMClient  *client,

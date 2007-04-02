@@ -1,3 +1,26 @@
+2007-04-02  Dan Winship  <danw@novell.com>
+
+	* eggsmclient.c (egg_sm_client_save_state): Change this signal to
+	use a GKeyFile rather than a directory name (and return that to
+	the caller).
+	(egg_sm_client_get_state_file): replaces get_state_dir, and
+	returns a GKeyFile
+	(egg_sm_client_get_config_prefix): Kill for now. Maybe will be
+	resurrected X11-only later.
+
+	* eggsmclient-xsmp.c (sm_client_xsmp_connect): move some stuff
+	here from other places; the caller has to call _register() and/or
+	_set_restart_command() before the main loop starts, so they'll
+	always have been run before sm_client_xsmp_connect is reached, so
+	we can do everything from here.
+	(save_state): update to use a GKeyFile for state rather than a
+	directory. Merge the app's state into its .desktop file and update
+	the Exec key in that combined file using %k to point to itself,
+	thus creating a self-contained launcher/saved state.
+
+	* README:
+	* gedit.diff: update
+
 2007-03-16  Dan Winship  <danw@novell.com>
 
 	* egglauncher.c (egg_launcher_add_document): use
