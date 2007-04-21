@@ -1131,6 +1131,7 @@ egg_pixbuf_has_failed_thumbnail (const gchar *uri,
   filename = g_build_filename (g_get_home_dir (), ".thumbnails", FAIL_DIR_NAME,
 			       APP_DIR_NAME, basename, NULL);
   thumb = gdk_pixbuf_new_from_file (filename, NULL);
+  g_free (basename);
   g_free (filename);
 
   if (thumb)
@@ -1902,6 +1903,7 @@ egg_pixbuf_get_thumbnail_filename (const gchar           *uri,
   basename = g_strconcat (md5, ".png", NULL);
   filename = g_build_filename (home_dir, ".thumbnails", SIZE_TO_DIR (size),
 			       basename, NULL);
+  g_free (md5);
   g_free (basename);
 
   return filename;
