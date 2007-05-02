@@ -42,6 +42,12 @@ typedef enum {
   EGG_SM_CLIENT_SHUTDOWN
 } EggSMClientEndStyle;
 
+typedef enum {
+  EGG_SM_CLIENT_MODE_DISABLED,
+  EGG_SM_CLIENT_MODE_NO_RESTART,
+  EGG_SM_CLIENT_MODE_NORMAL
+} EggSMClientMode;
+
 struct _EggSMClient
 {
   GObject parent;
@@ -63,8 +69,6 @@ struct _EggSMClientClass
   /* virtual methods */
   void	   (*startup)             (EggSMClient          *client,
 				   const char           *client_id);
-  void	   (*register_client)     (EggSMClient          *client,
-				   const char           *desktop_path);
   void	   (*set_restart_command) (EggSMClient          *client,
 				   int                   argc,
 				   const char          **argv);
@@ -81,30 +85,31 @@ struct _EggSMClientClass
   void (*_egg_reserved4) (void);
 };
 
-GType         egg_sm_client_get_type            (void) G_GNUC_CONST;
+GType            egg_sm_client_get_type            (void) G_GNUC_CONST;
 
-GOptionGroup *egg_sm_client_get_option_group    (void);
+GOptionGroup    *egg_sm_client_get_option_group    (void);
 
 /* Initialization */
-EggSMClient  *egg_sm_client_register            (const char  *desktop_file);
-EggSMClient  *egg_sm_client_get                 (void);
+void             egg_sm_client_set_mode            (EggSMClientMode mode);
+EggSMClientMode  egg_sm_client_get_mode            (void);
+EggSMClient     *egg_sm_client_get                 (void);
 
 /* Resuming a saved session */
-gboolean      egg_sm_client_is_resumed          (EggSMClient *client);
-GKeyFile     *egg_sm_client_get_state_file      (EggSMClient *client);
+gboolean         egg_sm_client_is_resumed          (EggSMClient *client);
+GKeyFile        *egg_sm_client_get_state_file      (EggSMClient *client);
 
 /* Alternate means of saving state */
-void          egg_sm_client_set_restart_command (EggSMClient  *client,
-						 int           argc,
-						 const char  **argv);
+void             egg_sm_client_set_restart_command (EggSMClient  *client,
+						    int           argc,
+						    const char  **argv);
 
 /* Handling "quit_requested" signal */
-void          egg_sm_client_will_quit           (EggSMClient *client,
-						 gboolean     will_quit);
+void             egg_sm_client_will_quit           (EggSMClient *client,
+						    gboolean     will_quit);
 
 /* Initiate a logout/reboot/shutdown */
-gboolean      egg_sm_client_end_session         (EggSMClientEndStyle  style,
-						 gboolean             request_confirmation);
+gboolean         egg_sm_client_end_session         (EggSMClientEndStyle  style,
+						    gboolean             request_confirmation);
 
 G_END_DECLS
 

@@ -39,12 +39,6 @@ typedef struct _EggSMClientWin32Class   EggSMClientWin32Class;
 struct _EggSMClientWin32 {
   EggSMClient parent;
 
-#ifdef VISTA
-  gboolean registered;
-  char *restart_args;
-  char *state_dir;
-#endif
-
   GAsyncQueue *msg_queue;
 };
 
@@ -56,13 +50,6 @@ struct _EggSMClientWin32Class
 
 static void     sm_client_win32_startup (EggSMClient *client,
 					 const char  *client_id);
-#ifdef VISTA
-static void     sm_client_win32_register_client (EggSMClient *client,
-						 const char  *desktop_path);
-static void     sm_client_win32_set_restart_command (EggSMClient  *client,
-						     int           argc,
-						     const char  **argv);
-#endif
 static void     sm_client_win32_will_quit (EggSMClient *client,
 					   gboolean     will_quit);
 static gboolean sm_client_win32_end_session (EggSMClient         *client,
@@ -85,10 +72,6 @@ egg_sm_client_win32_class_init (EggSMClientWin32Class *klass)
   EggSMClientClass *sm_client_class = EGG_SM_CLIENT_CLASS (klass);
 
   sm_client_class->startup             = sm_client_win32_startup;
-#ifdef VISTA
-  sm_client_class->register_client     = sm_client_win32_register_client;
-  sm_client_class->set_restart_command = sm_client_win32_set_restart_command;
-#endif
   sm_client_class->will_quit           = sm_client_win32_will_quit;
   sm_client_class->end_session         = sm_client_win32_end_session;
 }
@@ -105,58 +88,10 @@ sm_client_win32_startup (EggSMClient *client,
 {
   EggSMClientWin32 *win32 = (EggSMClientWin32 *)client;
 
-  /* FIXME: if we were resumed, we need to clean up the old state
-   * dir. But not until after everyone has read their state back...
-   */
-
   /* spawn another thread to listen for logout signals on */
   win32->msg_queue = g_async_queue_new ();
   g_thread_create (sm_client_thread, client, FALSE, NULL);
 }
-
-#ifdef VISTA
-static void
-sm_client_win32_register_client (EggSMClient *client,
-				 const char  *desktop_path)
-{
-  EggSMClientWin32 *win32 = (EggSMClientWin32 *)client;
-
-  win32->registered = TRUE;
-  set_restart_info (win32);
-}
-
-static void
-sm_client_win32_set_restart_command (EggSMClient  *client,
-				     int           argc,
-				     const char  **argv)
-{
-  EggSMClientWin32 *win32 = (EggSMClientWin32 *)client;
-  GString *cmdline = g_string_new (NULL);
-
-  g_return_if_fail (win32->registered == TRUE);
-
-  g_free (win32->restart_args);
-
-  /* RegisterApplicationRestart only cares about the part of the
-   * command line after the executable name.
-   */
-  if (argc > 1)
-    {
-      int i;
-
-      /* FIXME: what is the right way to quote the arguments? */
-      for (i = 1; i < argc; i++)
-	{
-	  if (i > 1)
-	    g_string_append_c (cmdline, ' ');
-	  g_string_append (cmdline, argv[i]);
-	}
-    }
-
-  win32->restart_args = g_string_free (cmdline, FALSE);
-  set_restart_info (win32);
-}
-#endif
 
 static void
 sm_client_win32_will_quit (EggSMClient *client,
@@ -202,33 +137,6 @@ sm_client_win32_end_session (EggSMClient         *client,
   return TRUE;
 }
 
-#ifdef VISTA
-static void
-set_restart_info (EggSMClientWin32 *win32)
-{
-  PCWSTR cmdline;
-
-  if (win32->state_dir)
-    {
-      char *restart_args =
-	g_strdup_printf ("--sm-client-state-dir \"%s\"%s%s",
-			 win32->state_dir,
-			 *win32->restart_args ? " " : "",
-			 win32->restart_args);
-
-      /* FIXME: is this right? */
-      cmdline = g_utf8_to_utf16 (restart_command, -1, NULL, NULL, NULL);
-    }
-  else if (*win32->restart_args)
-    cmdline = g_utf8_to_utf16 (win32->restart_args, -1, NULL, NULL, NULL);
-  else
-    cmdline = NULL;
-
-  RegisterApplicationRestart (cmdline, RESTART_NO_CRASH | RESTART_NO_HANG);
-  g_free (cmdline);
-}
-#endif
-
 
 /* callbacks from logout-listener thread */
 
@@ -268,22 +176,6 @@ emit_quit_cancelled (gpointer smclient)
   return FALSE;
 }
 
-#ifdef VISTA
-static gboolean
-emit_save_state (gpointer smclient)
-{
-  EggSMClientWin32 *win32 = smclient;
-
-  g_free (win32->state_dir);
-  gdk_threads_enter ();
-  win32->state_dir = egg_sm_client_save_state (client);
-  gdk_threads_leave ();
-  set_restart_info (win32);
-
-  g_async_queue_push (win32->msg_queue, GINT_TO_POINTER (1));
-  return FALSE;
-}
-#endif
 
 /* logout-listener thread */
 
@@ -317,10 +209,6 @@ sm_client_win32_window_procedure (HWND   hwnd,
       if (wParam)
 	{
 	  /* The session is ending */
-#ifdef VISTA
-	  if ((lParam & ENDSESSION_CLOSEAPP) && win32->registered)
-	    async_emit (win32, emit_save_state);
-#endif
 	  async_emit (win32, emit_quit);
 	}
       else

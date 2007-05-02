@@ -25,6 +25,68 @@
 
 #include "eggsmclient.h"
 #include "eggsmclient-libgnomeui.h"
+#include "eggdesktopfile.h"
+
+static guint desktop_file_id, mode_id;
+
+static char *desktop_file;
+static EggSMClientMode mode;
+
+static void
+egg_sm_client_module_set_property (GObject *object, guint param_id,
+				   const GValue *value, GParamSpec *pspec)
+{
+  if (param_id == desktop_file_id)
+    {
+      g_free (desktop_file);
+      desktop_file = g_value_dup_string (value);
+    }
+  else if (param_id == mode_id)
+    mode = g_value_get_int (value);
+  else
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
+}
+
+static void
+egg_sm_client_module_get_property (GObject *object, guint param_id,
+				   GValue *value, GParamSpec *pspec)
+{
+  if (param_id == desktop_file_id)
+    g_value_set_string (value, desktop_file);
+  else if (param_id == mode_id)
+    g_value_set_int (value, mode);
+  else
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
+}
+
+static void
+egg_sm_client_post_args_parse (GnomeProgram *app, GnomeModuleInfo *mod_info)
+{
+  if (desktop_file)
+    egg_set_desktop_file (desktop_file);
+  egg_sm_client_set_mode (mode);
+}
+
+static void
+egg_sm_client_module_class_init (GnomeProgramClass *klass,
+				 const GnomeModuleInfo *mod_info)
+{
+  desktop_file_id = gnome_program_install_property (
+	klass,
+	egg_sm_client_module_get_property,
+	egg_sm_client_module_set_property,
+	g_param_spec_string (EGG_SM_CLIENT_PARAM_DESKTOP_FILE, NULL, NULL,
+			     NULL,
+			     G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  mode_id = gnome_program_install_property (
+	klass,
+	egg_sm_client_module_get_property,
+	egg_sm_client_module_set_property,
+	g_param_spec_int (EGG_SM_CLIENT_PARAM_MODE, NULL, NULL,
+			  EGG_SM_CLIENT_MODE_DISABLED, EGG_SM_CLIENT_MODE_NORMAL,
+			  EGG_SM_CLIENT_MODE_NORMAL,
+			  G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+}
 
 /**
  * egg_sm_client_module_info_get:
@@ -38,8 +100,14 @@ egg_sm_client_module_info_get (void)
 {
 	static GnomeModuleInfo module_info = {
 		"eggsmclient", VERSION, N_("Session management"),
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		egg_sm_client_get_option_group
+		NULL, /* requirements */
+		NULL, /* instance_init */
+		NULL, egg_sm_client_post_args_parse,
+		NULL, /* popt */
+		NULL, /* init pass */
+		egg_sm_client_module_class_init,
+		NULL, /* opt prefix */
+		egg_sm_client_get_option_group,
 	};
 
 	return &module_info;
@@ -80,3 +148,4 @@ egg_sm_client_libgnomeui_module_info_get (void)
 
   return &module_info;
 }
+

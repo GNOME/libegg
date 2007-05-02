@@ -2,60 +2,91 @@ This is a draft of a replacement for GnomeClient. See also
 http://live.gnome.org/SessionManagement and
 http://bugzilla.gnome.org/show_bug.cgi?id=79285.
 
-The code is lightly tested, but probably not yet ready for prime time
-(and probably not API stable or feature complete). However, it's
-pretty easy to port to if you're already using GnomeClient, so you can
-try it out and see if it works for you.
-
 The eventual target of this code is gtk, gdk, glib, or some
 combination of them. Having it entirely in gtk/gdk may not be the best
 option, because non-GUI apps like beagled want a chance to exit
 cleanly when the session ends too. OTOH, making glib depend on libSM
 would obviously suck. Using dlopen may be a good solution.
 
-EggLauncher is proposed gtk-level rewrite of GnomeDesktopItem. See
-http://bugzilla.gnome.org/show_bug.cgi?id=339225.
+EggDesktopItem is proposed gtk-level rewrite of GnomeDesktopItem. See
+http://bugzilla.gnome.org/show_bug.cgi?id=415070
 
 
-Including EggSMClient in your app
----------------------------------
+Building your app with EggSMClient
+----------------------------------
 
 If you are using libgnomeui:
 
-	- link to libeggsmclient-gnome.la, #include
-	  "eggsmclient-libgnomeui.h" in your main .c file and change
-	  the gnome_program_new() invocation to use
-	  EGGSMCLIENT_LIBGNOMEUI_MODULE instead of LIBGNOMEUI_MODULE.
-	  Oh, and if you haven't yet switched from popt to GOption for
-	  option parsing, you have to do that now.
+	Link to libeggsmclient-gnome.la, #include
+	"eggsmclient-libgnomeui.h" in your main .c file (and
+	"eggsmclient.h" elsewhere).
 
 If you are using plain gtk:
 
-	- link to libeggsmclient.la, and #include "eggsmclient.h". Add
-          the GOptionGroup returned by
-          egg_sm_client_get_option_group() to your GOptionContext when
-          parsing command line arguments. (If you were previously just
-          using gtk_init() or the like, you will have to create your
-          own option context now and also add the group returned by
-          gtk_get_option_group() to it. See egg-session-end.c for an
-          example.)
+	Link to libeggsmclient.la, and #include "eggsmclient.h".
 
 If you are building on Windows:
 
-	- You need to make sure to link your application as a Windows
-          GUI binary. (If using GNU tools, use "-mwindows".) If you
-          build it as a console binary, Windows won't send it the
-          WM_QUERYENDSESSION (quit_requested) and WM_ENDSESSION (quit)
-          messages.
-	- You need to call g_thread_null(NULL) to initialize threads.
+	You need to make sure to link your application as a Windows
+        GUI binary. (If using GNU tools, use "-mwindows".) If you
+        build it as a console binary, Windows won't send it the
+        WM_QUERYENDSESSION (quit_requested) and WM_ENDSESSION (quit)
+        messages.
+
+	You need to call g_thread_null(NULL) to initialize threads.
 
 
 Using EggSMClient
 -----------------
 
+Initialization with libgnomeui and GnomeProgram:
+
+	Change the gnome_program_new() invocation to use
+	EGG_SM_CLIENT_LIBGNOMEUI_MODULE instead of LIBGNOMEUI_MODULE.
+	If you haven't yet switched from popt to GOption for option
+	parsing, you have to do that now.
+
+	You should also add an EGG_SM_CLIENT_PARAM_DESKTOP_FILE
+	parameter to the gnome_program_new() invocation, and pass it
+	the path to your application's installed .desktop file. (This
+	will be used for some SM-related purposes and will also be
+	used to initialize your application's localized name and
+	default window icon. If you are currently calling
+	g_set_application_name(), gtk_window_set_default_icon(), or
+	gtk_window_set_default_icon_name(), you can remove those
+	calls.)
+
+	If you only want to use the logout notification/cancellation
+	API, and don't want to participate in session saving, you can
+	pass the EGGSMCLIENT_PARAM_MODE parameter as well, with the
+	value EGG_SM_CLIENT_MODE_NO_RESTART.
+
+Initialization with plain gtk:
+
+	Add the GOptionGroup returned by
+        egg_sm_client_get_option_group() to your GOptionContext when
+        parsing command line arguments. (If you were previously just
+        using gtk_init() or the like, you will have to create your own
+        option context now and also add the group returned by
+        gtk_get_option_group() to it. See egg-session-end.c for an
+        example.)
+
+	You should also call egg_set_desktop_file() (in
+	"eggdesktopfile.h"), passing it the path to your application's
+	installed .desktop file. (This will be used for some
+	SM-related purposes and will also be used to initialize your
+	application's localized name and default window icon. If you
+	are currently calling g_set_application_name(),
+	gtk_window_set_default_icon(), or
+	gtk_window_set_default_icon_name(), you can remove those
+	calls.)
+
+	If you only want to use the logout notification/cancellation
+	API, and don't want to participate in session saving, you can
+	call egg_sm_client_set_mode(EGG_SM_CLIENT_MODE_NO_RESTART).
+
 After parsing the command-line arguments, call
-egg_sm_client_register(), passing it the path to your application's
-.desktop file. This will return an EggSMClient object.
+egg_sm_client_get() to get the EggSMClient object.
 
 Use egg_sm_client_is_resumed() on the EggSMClient to see if you need
 to resume a saved state, and egg_sm_client_get_state_file() to find
@@ -75,20 +106,20 @@ Notes on porting from GnomeClient or raw libSM
 There's no way to manually set most of the XSMP properties using
 EggSMClient (and no need to). Program, ProcessID, and UserID are set
 automatically. RestartCommand and CloneCommand are set from the
-.desktop file passed to egg_sm_client_register() (or from a call to
-egg_sm_client_set_restart_command), and DiscardCommand is set
-automatically as needed after save_state is emitted.
+.desktop file (or from a call to egg_sm_client_set_restart_command),
+and DiscardCommand is set automatically as needed after save_state is
+emitted.
 
-RestartStyleHint is set automatically based on how
-egg_sm_client_register() is called:
+RestartStyleHint is set automatically based on a few things:
 
-	- SmRestartNever if you don't call egg_sm_client_register()
+	- SmRestartNever if you set the mode to
+          EGG_SM_CLIENT_MODE_NO_RESTART
 
-	- SmRestartImmediately if you call it with a desktop file
+	- SmRestartImmediately if you initialize with a desktop file
 	  containing the entry "X-GNOME-AutoRestart=true"
 
-	- SmRestartIfRunning if you call it with no desktop_file, or
-	  with a desktop_file that doesn't set
+	- SmRestartIfRunning if you initialize with no desktop_file,
+	  or with a desktop_file that doesn't set
 	  "X-GNOME-AutoRestart=true". (This is the normal case.)
 
 There's no way to set the restart style hint to SmRestartAnyway
@@ -164,26 +195,20 @@ There are a bunch of other bits of GnomeClient API with no analogs:
           it's not, EggSMClientXSMP should do it automatically
           whenever you change anything. (FIXME!)
 
-	- gnome_client_disable_master_connection - Irrelevant for now;
-          if you don't want to use EggSMClient, just don't initialize
-          it. If EggSMClient becomes GtkSMClient, we will need to do
-          something here. Eg, bug-buddy needs to not connect:
-          http://bugzilla.gnome.org/show_bug.cgi?id=406009
-
 	- gnome_client_get_id - Why would you need to know?
 
 
 More notes
 ----------
 
-Assuming you provide a .desktop file to egg_sm_client_register(), the
-state file that gets saved when you save the application state will
-actually be a copy of that .desktop file, with the state information
-appended to the end, and the Exec key adjusted to include
-"--sm-client-state-file %k" (where "%k" means "the path to this
-.desktop file"). So if you want to, you can move the state file out of
-~/.config/session-state/ and use it directly as a launcher to restart
-the application with that saved state.
+Assuming you provide a .desktop file to gnome_program_init() or
+egg_set_desktop_file(), the state file that gets saved when you save
+the application state will actually be a copy of that .desktop file,
+with the state information appended to the end, and the Exec key
+adjusted to include "--sm-client-state-file %k" (where "%k" means "the
+path to this .desktop file"). So if you want to, you can move the
+state file out of ~/.config/session-state/ and use it directly as a
+launcher to restart the application with that saved state.
 
 Set EGG_SM_CLIENT_DEBUG=1 to debug
 

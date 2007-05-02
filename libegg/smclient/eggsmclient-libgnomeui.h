@@ -26,10 +26,13 @@
 G_BEGIN_DECLS
 
 const GnomeModuleInfo *egg_sm_client_module_info_get (void);
-#define EGGSMCLIENT_MODULE egg_sm_client_module_info_get ()
+#define EGG_SM_CLIENT_MODULE egg_sm_client_module_info_get ()
 
 const GnomeModuleInfo *egg_sm_client_libgnomeui_module_info_get (void);
-#define EGGSMCLIENT_LIBGNOMEUI_MODULE egg_sm_client_libgnomeui_module_info_get ()
+#define EGG_SM_CLIENT_LIBGNOMEUI_MODULE egg_sm_client_libgnomeui_module_info_get ()
+
+#define EGG_SM_CLIENT_PARAM_DESKTOP_FILE "egg-desktop-file"
+#define EGG_SM_CLIENT_PARAM_MODE         "egg-sm-client-mode"
 
 
 G_END_DECLS

@@ -1,3 +1,40 @@
+2007-05-02  Dan Winship  <danw@novell.com>
+
+	* egglauncher.c: 
+	* eggdesktopfile.c: Replace EggLauncher with EggDesktopFile,
+	which is more like GnomeDesktopItem, but with a nicer launching
+	API.
+
+	* eggsmclient.c (egg_sm_client_register): Gone; apps can use
+	egg_set_desktop_file() to set the global desktop file, and
+	egg_sm_client_set_mode() to indicate they don't want to be
+	restarted.
+	(egg_sm_client_set_mode): New, lets an app indicate that it wants
+	to not connect to the SM, or that it wants to not be restarted.
+	(The common case--wanting to be restarted if the session is
+	resumed--is now automatic.)
+	(egg_sm_client_get): Update docs and code for those changes.
+
+	* eggsmclient-libgnomeui.c: add more stuff to make it possible to
+	set desktop file and EggSMClientMode from gnome_program_new().
+
+	* eggsmclient-win32.c: Remove unused untested "#ifdef VISTA" stuff
+	involving state saving. It works in theory, someone else can
+	implement it later if we actually end up wanting it to work.
+
+	* eggsmclient-xsmp.c (sm_client_xsmp_connect, save_state): Use
+	egg_get_desktop_file() to see if a desktop file has been set for
+	the app, and that and egg_sm_client_get_mode() to see what
+	restart_style to use.
+
+	* egg-launch.c: update for EggDesktopFile
+
+	* README:
+	* gedit.diff: update
+	
+	* NEWS: add this to make it easier for people to see what has
+	changed API-wise when they grab a new source snapshot.
+
 2007-04-02  Dan Winship  <danw@novell.com>
 
 	* eggsmclient.c (egg_sm_client_end_session): Remove the "client"

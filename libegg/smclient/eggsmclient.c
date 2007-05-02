@@ -49,6 +49,7 @@ struct _EggSMClientPrivate {
 G_DEFINE_TYPE (EggSMClient, egg_sm_client, G_TYPE_OBJECT)
 
 static EggSMClient *global_client;
+static EggSMClientMode global_client_mode = EGG_SM_CLIENT_MODE_NORMAL;
 
 static void
 egg_sm_client_init (EggSMClient *client)
@@ -233,50 +234,56 @@ egg_sm_client_get_option_group (void)
 }
 
 /**
- * egg_sm_client_register:
- * @desktop_path: Path to the application's .desktop file (or %NULL)
+ * egg_sm_client_set_mode:
+ * @mode: an #EggSMClient mode
  *
- * Registers the application with the session manager. This MAY
- * (depending on session manager policies and user preferences) mean
- * that the application will be automatically restarted on future
- * logins. (See also egg_sm_client_get().)
+ * Sets the "mode" of #EggSMClient as follows:
  *
- * @desktop_path is used to find various information about the
- * application, including its (localized) name and description, its
- * icon, the command used to invoke it, and whether or not it wants to
- * be restarted by the session manager if it crashes. (On Windows and
- * OS X, the name and icon are determined automatically, and you can
- * simply pass %NULL for @desktop_path. Under X11, if you pass %NULL
- * for @desktop_path, the restart command defaults to the return value
- * of g_get_prgname(). You can use egg_sm_client_set_restart_command()
- * to set an alternate restart command if necessary.)
+ *    %EGG_SM_CLIENT_MODE_DISABLED: Session management is completely
+ *    disabled. The application will not even connect to the session
+ *    manager. (egg_sm_client_get() will still return an #EggSMClient,
+ *    but it will just be a dummy object.)
  *
- * Return value: the #EggSMClient instance for this application
+ *    %EGG_SM_CLIENT_MODE_NO_RESTART: The application will connect to
+ *    the session manager (and thus will receive notification when the
+ *    user is logging out, etc), but will request to not be
+ *    automatically restarted with saved state in future sessions.
+ *
+ *    %EGG_SM_CLIENT_MODE_NORMAL: The default. #EggSMCLient will
+ *    function normally.
+ *
+ * This must be called before the application's main loop begins.
  **/
-EggSMClient *
-egg_sm_client_register (const char *desktop_path)
+void
+egg_sm_client_set_mode (EggSMClientMode mode)
 {
-  EggSMClient *client = egg_sm_client_get ();
+  global_client_mode = mode;
+}
 
-  if (!sm_client_disable &&
-      EGG_SM_CLIENT_GET_CLASS (client)->register_client)
-    EGG_SM_CLIENT_GET_CLASS (client)->register_client (client, desktop_path);
-  return client;
+/**
+ * egg_sm_client_get_mode:
+ *
+ * Gets the global #EggSMClientMode. See egg_sm_client_set_mode()
+ * for details.
+ *
+ * Return value: the global #EggSMClientMode
+ **/
+EggSMClientMode
+egg_sm_client_get_mode (void)
+{
+  return global_client_mode;
 }
 
 /**
  * egg_sm_client_get:
  *
- * Returns the master #EggSMClient.
+ * Returns the master #EggSMClient for the application.
  *
- * This method (as opposed to egg_sm_client_register()) can be used by
- * an application that wants to listen to the logout-related signals,
- * but that does not ever want to be restarted automatically in future
- * sessions.
- *
- * This method can also be used by libraries that want to connect to
- * the ::save_state signal (although that signal will only be emitted
- * if the application calls egg_sm_client_register().)
+ * On platforms that support saved sessions (ie, POSIX/X11), the
+ * application will only request to be restarted by the session
+ * manager if you call egg_set_desktop_file() to set an application
+ * desktop file. In particular, if the desktop file contains the key
+ * "X
  *
  * Return value: the master #EggSMClient.
  **/
@@ -285,22 +292,27 @@ egg_sm_client_get (void)
 {
   if (!global_client)
     {
+      if (global_client_mode != EGG_SM_CLIENT_MODE_DISABLED &&
+	  !sm_client_disable)
+	{
 #if defined (GDK_WINDOWING_WIN32)
-      global_client = egg_sm_client_win32_new ();
+	  global_client = egg_sm_client_win32_new ();
 #elif defined (GDK_WINDOWING_QUARTZ)
-      global_client = egg_sm_client_osx_new ();
+	  global_client = egg_sm_client_osx_new ();
 #else
-      /* If both D-Bus and XSMP are compiled in, try D-Bus first and fall
-       * back to XSMP if D-Bus session management isn't available.
-       */
+	  /* If both D-Bus and XSMP are compiled in, try D-Bus first
+	   * and fall back to XSMP if D-Bus session management isn't
+	   * available.
+	   */
 # ifdef EGG_SM_CLIENT_BACKEND_DBUS
-      global_client = egg_sm_client_dbus_new ();
+	  global_client = egg_sm_client_dbus_new ();
 # endif
 # ifdef EGG_SM_CLIENT_BACKEND_XSMP
-      if (!global_client)
-	global_client = egg_sm_client_xsmp_new ();
+	  if (!global_client)
+	    global_client = egg_sm_client_xsmp_new ();
 # endif
 #endif
+	}
 
       /* Fallback: create a dummy client, so that callers don't have
        * to worry about a %NULL return value.

@@ -1,4 +1,4 @@
-/* egg-launch.c - Test program for egglauncher.c
+/* egg-launch.c - Test program for eggdesktopfile.c
  * Copyright (C) 2007 Novell, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -24,17 +24,14 @@
 #include <stdio.h>
 #include <gtk/gtk.h>
 
-#include "egglauncher.h"
+#include "eggdesktopfile.h"
 
 char **setenv, *display, *directory;
-gboolean clearenv;
-int workspace = -1, launch_time = -1;
+int workspace = -1, launch_time = 0;
 
 GOptionEntry entries[] = {
   { "setenv", 'e', 0, G_OPTION_ARG_STRING_ARRAY, &setenv,
     "Set an environment variable", "VAR=VALUE" },
-  { "clearenv", 'E', 0, G_OPTION_ARG_NONE, &clearenv,
-    "Clear the child's environment", NULL },
   { "child-display", 'd', 0, G_OPTION_ARG_STRING, &display,
     "The display to launch the application on", "DISPLAY" },
   { "workspace", 'w', 0, G_OPTION_ARG_INT, &workspace,
@@ -50,12 +47,17 @@ int
 main (int argc, char **argv)
 {
   GOptionContext *ctx;
-  EggLauncher *launcher;
-  char *desktop_file, *type, *command;
+  EggDesktopFile *desktop_file;
+  char *desktop_file_path, *type, *command;
   GError *error = NULL;
+  GdkDisplay *gdk_display;
+  GdkScreen *screen;
+  GSList *documents;
   int i;
+  pid_t pid;
+  char *startup_id;
 
-  ctx = g_option_context_new ("DESKTOP-FILE [DOCUMENTS...] - test EggLauncher");
+  ctx = g_option_context_new ("DESKTOP-FILE [DOCUMENTS...] - test EggDesktopFile");
   g_option_context_add_main_entries (ctx, entries, NULL);
   g_option_context_add_group (ctx, gtk_get_option_group (TRUE));
 
@@ -72,67 +74,50 @@ main (int argc, char **argv)
       return 1;
     }
 
-  desktop_file = argv[1];
-  launcher = egg_launcher_new (desktop_file, &error);
-  if (!launcher)
+  desktop_file_path = argv[1];
+  desktop_file = egg_desktop_file_new (desktop_file_path, &error);
+  if (!desktop_file)
     {
-      fprintf (stderr, "Could not create launcher: %s\n", error->message);
+      fprintf (stderr, "Could not parse desktop file: %s\n", error->message);
       g_error_free (error);
       return 1;
     }
 
-  if (!egg_launcher_can_exec (launcher, NULL))
+  if (!egg_desktop_file_can_launch (desktop_file, NULL))
     {
       fprintf (stderr, "Not launchable according to TryExec\n");
       return 1;
     }
-  if (!egg_launcher_can_exec (launcher, "GNOME"))
+  if (!egg_desktop_file_can_launch (desktop_file, "GNOME"))
     {
       fprintf (stderr, "Not launchable in GNOME\n");
       return 1;
     }
 
-  if (clearenv)
-    egg_launcher_clearenv (launcher);
-  if (setenv)
+  if (!setenv)
     {
-      for (i = 0; setenv[i]; i++)
-	{
-	  char **env = g_strsplit (setenv[i], "=", 2);
-	  if (env[0] && env[1])
-	    egg_launcher_setenv (launcher, env[0], env[1]);
-	  g_strfreev (env);
-	}
+      setenv = g_new (char *, 1);
+      setenv[0] = NULL;
     }
 
   if (display)
     {
-      GdkDisplay *gdk_display = gdk_display_open (display);
-
+      gdk_display = gdk_display_open (display);
       if (!gdk_display)
 	{
 	  fprintf (stderr, "Could not open child display '%s'\n", display);
 	  return 1;
 	}
-      egg_launcher_set_screen (launcher, gdk_display_get_default_screen (gdk_display));
     }
+  else
+    gdk_display = gdk_display_get_default ();
+  screen = gdk_display_get_default_screen (gdk_display);
 
-  if (workspace != -1)
-    egg_launcher_set_workspace (launcher, workspace);
+  documents = NULL;
+  for (i = 2; i < argc; i++)
+    documents = g_slist_prepend (documents, argv[i]);
 
-  if (directory)
-    egg_launcher_set_directory (launcher, directory);
-
-  if (launch_time != -1)
-    egg_launcher_set_launch_time (launcher, launch_time);
-
-  if (argc > 2)
-    {
-      for (i = 2; i < argc; i++)
-	egg_launcher_add_document (launcher, argv[i]);
-    }
-
-  command = egg_launcher_get_command (launcher, &error);
+  command = egg_desktop_file_parse_exec (desktop_file, documents, &error);
   if (!command)
     {
       fprintf (stderr, "Could not get launch command: %s\n", error->message);
@@ -140,15 +125,15 @@ main (int argc, char **argv)
       return 1;
     }
 
-  switch (egg_launcher_get_launcher_type (launcher))
+  switch (egg_desktop_file_get_desktop_file_type (desktop_file))
     {
-    case EGG_LAUNCHER_TYPE_APPLICATION:
+    case EGG_DESKTOP_FILE_TYPE_APPLICATION:
       type = "Application";
       break;
-    case EGG_LAUNCHER_TYPE_DIRECTORY:
+    case EGG_DESKTOP_FILE_TYPE_DIRECTORY:
       type = "Directory";
       break;
-    case EGG_LAUNCHER_TYPE_LINK:
+    case EGG_DESKTOP_FILE_TYPE_LINK:
       type = "Link";
       break;
     default:
@@ -159,16 +144,22 @@ main (int argc, char **argv)
   printf ("Type: %s\nCommand: %s\n", type, command);
   g_free (command);
 
-  if (!egg_launcher_launch (launcher, &error))
+  if (!egg_desktop_file_launch (desktop_file, documents, &error,
+				EGG_DESKTOP_FILE_LAUNCH_PUTENV, setenv,
+				EGG_DESKTOP_FILE_LAUNCH_SCREEN, screen,
+				EGG_DESKTOP_FILE_LAUNCH_WORKSPACE, workspace,
+				EGG_DESKTOP_FILE_LAUNCH_DIRECTORY, directory,
+				EGG_DESKTOP_FILE_LAUNCH_TIME, (guint32)launch_time,
+				EGG_DESKTOP_FILE_LAUNCH_RETURN_PID, &pid,
+				EGG_DESKTOP_FILE_LAUNCH_RETURN_STARTUP_ID, &startup_id,
+				NULL))
     {
-      fprintf (stderr, "Could not launch launcher: %s\n", error->message);
+      fprintf (stderr, "Could not launch desktop_file: %s\n", error->message);
       g_error_free (error);
       return 1;
     }
 
-  printf ("PID: %lu\nStartup ID: %s\n",
-	  (unsigned long)egg_launcher_get_pid (launcher),
-	  egg_launcher_get_startup_id (launcher));
+  printf ("PID: %lu\nStartup ID: %s\n", (unsigned long)pid, startup_id);
 
   return 0;
 }

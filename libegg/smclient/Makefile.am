@@ -8,9 +8,9 @@ platform_programs =
 else
 platform_defines = -DEGG_SM_CLIENT_BACKEND_XSMP
 platform_ltlibraries =                   \
-	libegglauncher.la                \
+	libeggdesktopfile.la             \
 	libeggsmclient-gnome.la
-platform_libs = libegglauncher.la -lSM -lICE
+platform_libs = libeggdesktopfile.la -lSM -lICE
 platform_sources = eggsmclient-xsmp.c
 platform_app_ldflags =
 platform_programs = egg-launch
@@ -20,8 +20,7 @@ INCLUDES =                               \
 	-DG_LOG_DOMAIN=\""EggSMClient"\" \
 	$(platform_defines)              \
 	$(EGG_SMCLIENT_CFLAGS)           \
-	$(EGG_LIBGNOMEUI_CFLAGS)         \
-	$(EGG_LAUNCHER_CFLAGS)
+	$(EGG_LIBGNOMEUI_CFLAGS)
 
 noinst_LTLIBRARIES =                     \
 	libeggsmclient.la                \
@@ -49,12 +48,12 @@ libeggsmclient_gnome_la_SOURCES =        \
 	eggsmclient-private.h            \
 	$(platform_sources)
 
-libegglauncher_la_LIBADD =               \
-	$(EGG_LAUNCHER_LIBS)
+libeggdesktopfile_la_LIBADD =            \
+	$(EGG_LIBS)
 
-libegglauncher_la_SOURCES =              \
-	egglauncher.c                    \
-	egglauncher.h
+libeggdesktopfile_la_SOURCES =           \
+	eggdesktopfile.c                 \
+	eggdesktopfile.h
 
 noinst_PROGRAMS =                        \
 	egg-session-end                  \
@@ -80,7 +79,7 @@ egg_launch_SOURCES =                     \
 	egg-launch.c
 
 egg_launch_LDADD =                       \
-	libegglauncher.la
+	libeggdesktopfile.la
 
 EXTRA_DIST =                             \
 	README                           \
