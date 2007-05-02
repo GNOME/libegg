@@ -103,9 +103,10 @@ PKG_CHECK_MODULES(EGG_SMCLIENT, gtk+-2.0 gthread-2.0)
 AC_SUBST(EGG_SMCLIENT_LIBS)
 AC_SUBST(EGG_SMCLIENT_CFLAGS)
 
-PKG_CHECK_MODULES(EGG_LAUNCHER, gtk+-2.0 libstartup-notification-1.0)
-AC_SUBST(EGG_LAUNCHER_LIBS)
-AC_SUBST(EGG_LAUNCHER_CFLAGS)
+old_LIBS="$LIBS"
+LIBS="$LIBS $EGG_LIBS"
+AC_CHECK_FUNCS(gdk_x11_display_broadcast_startup_message)
+LIBS="$old_LIBS"
 
 ## check if we have gtk+ 2.1.x
 AM_CONDITIONAL(HAVE_GTK21, $PKG_CONFIG --atleast-version=2.1.0 gtk+-2.0)

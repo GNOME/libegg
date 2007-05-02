@@ -1,3 +1,8 @@
+2007-05-02  Dan Winship  <danw@novell.com>
+
+	* configure.in: remove EGG_LAUNCHER_LIBS/CFLAGS. Add a check for
+	the very very new gdk_x11_display_broadcast_startup_message
+
 2007-04-21  Ross Burton  <ross@burtonini.com>
 
 	* libegg/pixbufthumbnail/egg-pixbuf-thumbnail.c:
