@@ -892,9 +892,9 @@ static void
 end_startup_notification (GdkDisplay *display,
 			  const char *startup_id)
 {
-  gdk_x11_display_broadcast_sn_message (display, "remove",
-					"ID", startup_id,
-					NULL);
+  gdk_x11_display_broadcast_startup_message (display, "remove",
+					     "ID", startup_id,
+					     NULL);
 }
 
 #define EGG_DESKTOP_FILE_SN_TIMEOUT_LENGTH (30 /* seconds */ * 1000)
