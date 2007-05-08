@@ -1,3 +1,10 @@
+2007-05-08  Felix Riemann  <friemann@svn.gnome.org>
+
+	* libegg/toolbareditor/egg-toolbar-editor.c:
+	(event_box_realize_cb), (editor_create_item_from_name):
+	Support named icons in the toolbareditor and attach them to the mouse
+	pointer while dragging them to the toolbar. (bug #436684)
+
 2007-05-02  Dan Winship  <danw@novell.com>
 
 	* configure.in: remove EGG_LAUNCHER_LIBS/CFLAGS. Add a check for
