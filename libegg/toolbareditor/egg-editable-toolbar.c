@@ -463,7 +463,7 @@ configure_item_cursor (GtkToolItem *item,
       if (priv->edit_mode > 0)
         {
           GdkCursor *cursor;
-          GdkPixbuf *pixbuf;
+          GdkPixbuf *pixbuf = NULL;
           
           cursor = gdk_cursor_new (GDK_HAND2);
           gdk_window_set_cursor (widget->window, cursor);
