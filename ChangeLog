@@ -1,3 +1,10 @@
+2007-07-29  Carlos Garcia Campos  <carlosgc@gnome.org>
+
+	* libegg/toolbareditor/egg-editable-toolbar.c:
+	(egg_editable_toolbar_dispose):
+
+	Fix memory leak.
+	
 2007-07-02  Felix Riemann  <friemann@svn.gnome.org>
 
 	* libegg/toolbareditor/egg-editable-toolbar.c:
