@@ -1,5 +1,10 @@
 2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
 
+	* libegg/fileformatchooser/eggfileformatchooser.c:
+	Provide a mnemonic for the file format chooser.
+
+2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
+
 	* libegg/fileformatchooser/eggfileformatchooser.c,
 	libegg/fileformatchooser/Makefile.am: Built file filters from file
 	format list, when attaching the widget to some file chooser.

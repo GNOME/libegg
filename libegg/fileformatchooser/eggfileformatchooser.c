@@ -230,7 +230,8 @@ selection_changed (GtkTreeSelection     *selection,
     {
       gtk_tree_model_get (model, &iter, MODEL_COLUMN_NAME, &name, -1);
 
-      label = g_strdup_printf (_("File Format: %s"), name);
+      label = g_strdup_printf (_("File _Format: %s"), name);
+      gtk_expander_set_use_underline (GTK_EXPANDER (self), TRUE);
       gtk_expander_set_label (GTK_EXPANDER (self), label);
 
       g_free (name);
