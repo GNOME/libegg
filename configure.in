@@ -183,5 +183,6 @@ libegg/bookmarkfile/Makefile
 libegg/recentchooser/Makefile
 libegg/recentchooser/xdgmime/Makefile
 libegg/smclient/Makefile
+libegg/fileformatchooser/Makefile
 doc/Makefile
 ])

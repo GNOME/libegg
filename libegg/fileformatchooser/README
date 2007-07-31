@@ -1,0 +1,5 @@
+This is a draft of a common file format chooser widget.
+See also <http://live.gnome.org/GTK+/FileFormatChooser>
+and <http://bugzilla.gnome.org/show_bug.cgi?id=440431>.
+
+It is planned to have it in GTK+ 2.14.
