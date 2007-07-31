@@ -1,5 +1,16 @@
 2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
 
+	* libegg/fileformatchooser/eggfileformatchooser.c,
+	libegg/fileformatchooser/Makefile.am: Built file filters from file
+	format list, when attaching the widget to some file chooser.
+	* libegg/fileformatchooser/tests/*: Some empty files for testing
+	file format based file filtering.
+	* libegg/util/egg-macros.h: Implement EGG_DEFINE_BOXED_TYPE,
+	EGG_DEFINE_BOXED_TYPE_WITH_CODE, EGG_DEFINE_BOXED_TYPE_EXTENDED
+	and EGG_DEFINE_QUARK.
+
+2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
+
 	* configure.in, libegg/Makefile.am,
 	libegg/fileformatchooser/*: Adding the file format chooser
 	widget to libegg for easy consumtion until it gets merged.

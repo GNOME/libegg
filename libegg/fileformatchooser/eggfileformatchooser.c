@@ -17,12 +17,14 @@
  * Boston, MA 02111-1307, USA.
  */
 #include "eggfileformatchooser.h"
+#include "egg-macros.h"
 
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <string.h>
 #include <ctype.h>
 
+typedef struct _EggFileFormatFilterInfo EggFileFormatFilterInfo;
 typedef struct _EggFileFormatSearch EggFileFormatSearch;
 
 enum 
@@ -31,6 +33,7 @@ enum
   MODEL_COLUMN_NAME,
   MODEL_COLUMN_ICON,
   MODEL_COLUMN_EXTENSIONS,
+  MODEL_COLUMN_FILTER,
   MODEL_COLUMN_DATA,
   MODEL_COLUMN_DESTROY
 };
@@ -47,6 +50,18 @@ struct _EggFileFormatChooserPrivate
   GtkTreeSelection *selection;
   guint idle_hack;
   guint last_id;
+
+  GtkFileChooser *chooser;
+  GtkFileFilter *all_files;
+  GtkFileFilter *supported_files;
+};
+
+struct _EggFileFormatFilterInfo
+{
+  GHashTable *extension_set;
+  GSList *extension_list;
+  gboolean show_extensions;
+  gchar *name;
 };
 
 struct _EggFileFormatSearch
@@ -63,6 +78,143 @@ static guint signals[SIGNAL_LAST];
 G_DEFINE_TYPE (EggFileFormatChooser, 
 	       egg_file_format_chooser,
                GTK_TYPE_EXPANDER);
+EGG_DEFINE_QUARK (EggFileFormatFilterInfo,
+                  egg_file_format_filter_info);
+
+static EggFileFormatFilterInfo*
+egg_file_format_filter_info_new (const gchar *name,
+                                 gboolean     show_extensions)
+{
+  EggFileFormatFilterInfo *self;
+
+  self = g_new0 (EggFileFormatFilterInfo, 1);
+  self->extension_set = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  self->show_extensions = show_extensions;
+  self->name = g_strdup (name);
+
+  return self;
+}
+
+static void
+egg_file_format_filter_info_free (gpointer boxed)
+{
+  EggFileFormatFilterInfo *self;
+
+  if (boxed)
+    {
+      self = boxed;
+
+      g_hash_table_unref (self->extension_set);
+      g_slist_foreach (self->extension_list, (GFunc) g_free, NULL);
+      g_slist_free (self->extension_list);
+      g_free (self->name);
+      g_free (self);
+    }
+}
+
+static gboolean
+egg_file_format_filter_find (gpointer key,
+                             gpointer value G_GNUC_UNUSED,
+                             gpointer data)
+{
+  const GtkFileFilterInfo *info = data;
+  const gchar *pattern = key;
+
+  return g_str_has_suffix (info->filename, pattern + 1);
+}
+
+static gboolean
+egg_file_format_filter_filter (const GtkFileFilterInfo *info,
+                               gpointer                 data)
+{
+  EggFileFormatFilterInfo *self = data;
+
+  return NULL != g_hash_table_find (self->extension_set,
+                                    egg_file_format_filter_find,
+                                    (gpointer) info);
+}
+
+static GtkFileFilter*
+egg_file_format_filter_new (const gchar *name,
+                            gboolean     show_extensions)
+{
+  GtkFileFilter *filter;
+  EggFileFormatFilterInfo *info;
+
+  filter = gtk_file_filter_new ();
+  gtk_file_filter_set_name (filter, name);
+
+  info = egg_file_format_filter_info_new (name, show_extensions);
+
+  gtk_file_filter_add_custom (filter, GTK_FILE_FILTER_FILENAME,
+                              egg_file_format_filter_filter,
+                              info, NULL);
+  g_object_set_qdata_full (G_OBJECT (filter),
+                           egg_file_format_filter_info_quark (),
+                           info, egg_file_format_filter_info_free);
+
+  return filter;
+}
+
+static void
+egg_file_format_filter_add_extensions (GtkFileFilter *filter,
+                                       const gchar   *extensions)
+{
+  EggFileFormatFilterInfo *info;
+  GString *filter_name;
+  const gchar *extptr;
+  gchar *pattern;
+  gsize length;
+
+  g_assert (NULL != extensions);
+
+  info = g_object_get_qdata (G_OBJECT (filter),
+                             egg_file_format_filter_info_quark ());
+
+  info->extension_list = g_slist_prepend (info->extension_list,
+                                          g_strdup (extensions));
+
+  if (info->show_extensions)
+    {
+      filter_name = g_string_new (info->name);
+      g_string_append (filter_name, " (");
+    }
+  else
+    filter_name = NULL;
+
+  extptr = extensions;
+  while (*extptr)
+    {
+      length = strcspn (extptr, ",");
+      pattern = g_new (gchar, length + 3);
+
+      memcpy (pattern, "*.", 2);
+      memcpy (pattern + 2, extptr, length);
+      pattern[length + 2] = '\0';
+
+      if (filter_name)
+        {
+          if (extptr != extensions)
+            g_string_append (filter_name, ", ");
+
+          g_string_append (filter_name, pattern);
+        }
+
+      extptr += length;
+
+      if (*extptr)
+        extptr += 2;
+
+      g_hash_table_replace (info->extension_set, pattern, pattern);
+    }
+
+  if (filter_name)
+    {
+      g_string_append (filter_name, ")");
+      gtk_file_filter_set_name (filter, filter_name->str);
+      g_string_free (filter_name, TRUE);
+    }
+}
 
 static void
 selection_changed (GtkTreeSelection     *selection,
@@ -178,15 +330,21 @@ egg_file_format_chooser_init (EggFileFormatChooser *self)
   self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, EGG_TYPE_FILE_FORMAT_CHOOSER, 
                                             EggFileFormatChooserPrivate);
 
+/* file filters */
+
+  self->priv->all_files = g_object_ref_sink (gtk_file_filter_new ());
+  gtk_file_filter_set_name (self->priv->all_files, _("All Files"));
+  self->priv->supported_files = egg_file_format_filter_new (_("All Supported Files"), FALSE);
+
 /* tree model */
 
-  self->priv->model = gtk_tree_store_new (6, G_TYPE_UINT, G_TYPE_STRING,
-                                             G_TYPE_STRING, G_TYPE_STRING,
-                                             G_TYPE_POINTER, G_TYPE_POINTER);
+  self->priv->model = gtk_tree_store_new (7, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+                                             GTK_TYPE_FILE_FILTER, G_TYPE_POINTER, G_TYPE_POINTER);
 
   gtk_tree_store_append (self->priv->model, &iter, NULL);
   gtk_tree_store_set (self->priv->model, &iter,
                       MODEL_COLUMN_NAME, _("By Extension"),
+                      MODEL_COLUMN_FILTER, self->priv->supported_files,
                       MODEL_COLUMN_ID, 0,
                       -1);
 
@@ -297,8 +455,12 @@ egg_file_format_chooser_finalize (GObject *obj)
       if (self->priv->model)
         {
           reset_model (self);
+
           g_object_unref (self->priv->model);
           self->priv->model = NULL;
+
+          g_object_unref (self->priv->all_files);
+          self->priv->all_files = NULL;
         }
     }
 
@@ -306,12 +468,90 @@ egg_file_format_chooser_finalize (GObject *obj)
 }
 
 static void
+egg_file_format_chooser_realize (GtkWidget *widget)
+{
+  EggFileFormatChooser *self;
+  GtkWidget *parent;
+
+  GtkFileFilter *filter;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+
+  GTK_WIDGET_CLASS (egg_file_format_chooser_parent_class)->realize (widget);
+
+  self = EGG_FILE_FORMAT_CHOOSER (widget);
+
+  g_return_if_fail (NULL == self->priv->chooser);
+
+  parent = gtk_widget_get_parent (widget);
+
+  while (parent && !GTK_IS_FILE_CHOOSER (parent))
+    parent = gtk_widget_get_parent (parent);
+
+  g_return_if_fail (NULL != parent);
+
+  self->priv->chooser = GTK_FILE_CHOOSER (g_object_ref (parent));
+  gtk_file_chooser_add_filter (self->priv->chooser, self->priv->all_files);
+
+  model = GTK_TREE_MODEL (self->priv->model);
+
+  if (gtk_tree_model_get_iter_first (model, &iter))
+    {
+      do
+        {
+          gtk_tree_model_get (model, &iter, MODEL_COLUMN_FILTER, &filter, -1);
+          gtk_file_chooser_add_filter (self->priv->chooser, filter);
+          g_object_unref (filter);
+        }
+      while (gtk_tree_model_iter_next (model, &iter));
+    }
+
+    gtk_file_chooser_set_filter (self->priv->chooser,
+                                 self->priv->supported_files);
+}
+
+static void
+egg_file_format_chooser_unrealize (GtkWidget *widget)
+{
+  EggFileFormatChooser *self;
+
+  GtkFileFilter *filter;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+
+  GTK_WIDGET_CLASS (egg_file_format_chooser_parent_class)->unrealize (widget);
+
+  self = EGG_FILE_FORMAT_CHOOSER (widget);
+  model = GTK_TREE_MODEL (self->priv->model);
+
+  if (gtk_tree_model_get_iter_first (model, &iter))
+    {
+      do
+        {
+          gtk_tree_model_get (model, &iter, MODEL_COLUMN_FILTER, &filter, -1);
+          gtk_file_chooser_remove_filter (self->priv->chooser, filter);
+          g_object_unref (filter);
+        }
+      while (gtk_tree_model_iter_next (model, &iter));
+    }
+
+  gtk_file_chooser_remove_filter (self->priv->chooser, self->priv->all_files);
+  g_object_unref (self->priv->chooser);
+}
+
+static void
 egg_file_format_chooser_class_init (EggFileFormatChooserClass *cls)
 {
+  GObjectClass *object_class = G_OBJECT_CLASS (cls);
+  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (cls);
+
   g_type_class_add_private (cls, sizeof (EggFileFormatChooserPrivate));
 
-  G_OBJECT_CLASS (cls)->dispose = egg_file_format_chooser_dispose;
-  G_OBJECT_CLASS (cls)->finalize = egg_file_format_chooser_finalize;
+  object_class->dispose = egg_file_format_chooser_dispose;
+  object_class->finalize = egg_file_format_chooser_finalize;
+
+  widget_class->realize = egg_file_format_chooser_realize;
+  widget_class->unrealize = egg_file_format_chooser_unrealize;
 
   signals[SIGNAL_SELECTION_CHANGED] = g_signal_new (
     "selection-changed", EGG_TYPE_FILE_FORMAT_CHOOSER, G_SIGNAL_RUN_FIRST,
@@ -333,24 +573,45 @@ egg_file_format_chooser_add_format_impl (EggFileFormatChooser *self,
                                          const gchar          *extensions)
 {
   EggFileFormatSearch search;
+  GtkFileFilter *filter;
   GtkTreeIter iter;
 
   search.success = FALSE;
   search.format = parent;
+  filter = NULL;
 
   if (parent > 0)
-    gtk_tree_model_foreach (GTK_TREE_MODEL (self->priv->model),
-                            find_by_format, &search);
+    {
+      gtk_tree_model_foreach (GTK_TREE_MODEL (self->priv->model),
+                              find_by_format, &search);
+      g_return_val_if_fail (search.success, -1);
+    }
+  else
+    filter = egg_file_format_filter_new (name, TRUE);
 
   gtk_tree_store_append (self->priv->model, &iter, 
-                         search.success ? &search.iter : NULL);
+                         parent > 0 ? &search.iter : NULL);
 
   gtk_tree_store_set (self->priv->model, &iter,
                       MODEL_COLUMN_ID, ++self->priv->last_id,
                       MODEL_COLUMN_EXTENSIONS, extensions,
+                      MODEL_COLUMN_FILTER, filter,
                       MODEL_COLUMN_NAME, name,
                       MODEL_COLUMN_ICON, icon,
                       -1);
+
+  if (extensions)
+    {
+      if (parent > 0)
+        gtk_tree_model_get (GTK_TREE_MODEL (self->priv->model), &search.iter,
+                            MODEL_COLUMN_FILTER, &filter, -1);
+
+      egg_file_format_filter_add_extensions (self->priv->supported_files, extensions);
+      egg_file_format_filter_add_extensions (filter, extensions);
+
+      if (parent > 0)
+        g_object_unref (filter);
+    }
 
   return self->priv->last_id;
 }
@@ -483,6 +744,7 @@ egg_file_format_chooser_remove_format (EggFileFormatChooser *self,
   gpointer data = NULL;
 
   EggFileFormatSearch search;
+  GtkFileFilter *filter;
   GtkTreeModel *model;
 
   g_return_if_fail (EGG_IS_FILE_FORMAT_CHOOSER (self));
@@ -496,12 +758,23 @@ egg_file_format_chooser_remove_format (EggFileFormatChooser *self,
   g_return_if_fail (search.success);
 
   gtk_tree_model_get (model, &search.iter,
+                      MODEL_COLUMN_FILTER, &filter,
                       MODEL_COLUMN_DESTROY, &destroy,
                       MODEL_COLUMN_DATA, &data,
                       -1);
 
   if (destroy)
     destroy (data);
+
+  if (filter)
+    {
+      if (self->priv->chooser)
+        gtk_file_chooser_remove_filter (self->priv->chooser, filter);
+
+      g_object_unref (filter);
+    }
+  else
+    g_warning ("TODO: Remove extensions from parent filter");
 
   gtk_tree_store_remove (self->priv->model, &search.iter);
 }

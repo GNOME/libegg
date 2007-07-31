@@ -89,6 +89,51 @@ type_as_function ## _get_type (void)					\
 	g_type_register_static (parent_type_macro, #type, &object_info, 0)
 
 
+#define EGG_DEFINE_BOXED_TYPE(TN, t_n) \
+EGG_DEFINE_BOXED_TYPE_WITH_CODE(TN, t_n, {});
+
+#define EGG_DEFINE_BOXED_TYPE_WITH_CODE(TN, t_n, _C_) \
+\
+static gpointer t_n##_copy (gpointer boxed); \
+static void t_n##_free (gpointer boxed); \
+\
+EGG_DEFINE_BOXED_TYPE_EXTENDED(TN, t_n, t_n##_copy, t_n##_free, _C_);
+
+#define EGG_DEFINE_BOXED_TYPE_EXTENDED(TN, t_n, b_c, b_f, _C_) \
+\
+_EGG_DEFINE_BOXED_TYPE_EXTENDED_BEGIN(TN, t_n, b_c, b_f) {_C_;} \
+_EGG_DEFINE_BOXED_TYPE_EXTENDED_END()
+
+#define _EGG_DEFINE_BOXED_TYPE_EXTENDED_BEGIN(TypeName, type_name, boxed_copy, boxed_free) \
+\
+GType \
+type_name##_get_type (void) \
+{ \
+  static GType g_define_type_id = 0; \
+  if (G_UNLIKELY (g_define_type_id == 0)) \
+    { \
+      g_define_type_id = \
+        g_boxed_type_register_static (g_intern_static_string (#TypeName), \
+                                      boxed_copy, boxed_free); \
+      { /* custom code follows */
+#define _EGG_DEFINE_BOXED_TYPE_EXTENDED_END()	\
+        /* following custom code */	\
+      }					\
+    }					\
+  return g_define_type_id;		\
+} /* closes type_name##_get_type() */
+
+#define EGG_DEFINE_QUARK(QN, q_n) \
+\
+GQuark \
+q_n##_quark (void) \
+{ \
+  static GQuark g_define_quark = 0; \
+  if (G_UNLIKELY (g_define_quark == 0)) \
+    g_define_quark = g_quark_from_string (#QN); \
+  return g_define_quark; \
+}
+
 G_END_DECLS
 
 #endif /* _EGG_MACROS_H_ */
