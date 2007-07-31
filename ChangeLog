@@ -1,6 +1,11 @@
 2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
 
 	* libegg/fileformatchooser/eggfileformatchooser.c:
+	Synchronize file filter and file format selection.
+
+2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
+
+	* libegg/fileformatchooser/eggfileformatchooser.c:
 	Provide a mnemonic for the file format chooser.
 
 2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>

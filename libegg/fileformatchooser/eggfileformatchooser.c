@@ -223,7 +223,9 @@ selection_changed (GtkTreeSelection     *selection,
   gchar *label;
   gchar *name;
 
+  GtkFileFilter *filter;
   GtkTreeModel *model;
+  GtkTreeIter parent;
   GtkTreeIter iter;
 
   if (gtk_tree_selection_get_selected (selection, &model, &iter)) 
@@ -236,6 +238,16 @@ selection_changed (GtkTreeSelection     *selection,
 
       g_free (name);
       g_free (label);
+
+      if (self->priv->chooser)
+        {
+          while (gtk_tree_model_iter_parent (model, &parent, &iter))
+            iter = parent;
+
+          gtk_tree_model_get (model, &iter, MODEL_COLUMN_FILTER, &filter, -1);
+          gtk_file_chooser_set_filter (self->priv->chooser, filter);
+          g_object_unref (filter);
+        }
 
       g_signal_emit (self, signals[SIGNAL_SELECTION_CHANGED], 0);
     }
@@ -469,6 +481,64 @@ egg_file_format_chooser_finalize (GObject *obj)
 }
 
 static void
+filter_changed (GObject    *object,
+                GParamSpec *spec,
+                gpointer    data)
+{
+  EggFileFormatChooser *self;
+
+  GtkFileFilter *current_filter;
+  GtkFileFilter *format_filter;
+
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtkTreeIter parent;
+
+  self = EGG_FILE_FORMAT_CHOOSER (data);
+
+  format_filter = NULL;
+  current_filter = gtk_file_chooser_get_filter (GTK_FILE_CHOOSER (object));
+  model = GTK_TREE_MODEL (self->priv->model);
+
+  if (gtk_tree_selection_get_selected (self->priv->selection, &model, &iter)) 
+    {
+      while (gtk_tree_model_iter_parent (model, &parent, &iter))
+        iter = parent;
+
+      gtk_tree_model_get (model, &iter,
+                          MODEL_COLUMN_FILTER,
+                          &format_filter, -1);
+      g_object_unref (format_filter);
+    }
+
+  if (current_filter && current_filter != format_filter &&
+      gtk_tree_model_get_iter_first (model, &iter))
+    {
+      if (current_filter == self->priv->all_files)
+        format_filter = current_filter;
+      else
+        {
+          format_filter = NULL;
+
+          do
+            {
+              gtk_tree_model_get (model, &iter,
+                                  MODEL_COLUMN_FILTER,
+                                  &format_filter, -1);
+              g_object_unref (format_filter);
+
+              if (format_filter == current_filter)
+                break;
+            }
+          while (gtk_tree_model_iter_next (model, &iter));
+        }
+
+      if (format_filter)
+        gtk_tree_selection_select_iter (self->priv->selection, &iter);
+    }
+}
+
+static void
 egg_file_format_chooser_realize (GtkWidget *widget)
 {
   EggFileFormatChooser *self;
@@ -492,6 +562,8 @@ egg_file_format_chooser_realize (GtkWidget *widget)
   g_return_if_fail (NULL != parent);
 
   self->priv->chooser = GTK_FILE_CHOOSER (g_object_ref (parent));
+  g_signal_connect (self->priv->chooser, "notify::filter", 
+                    G_CALLBACK (filter_changed), self);
   gtk_file_chooser_add_filter (self->priv->chooser, self->priv->all_files);
 
   model = GTK_TREE_MODEL (self->priv->model);
