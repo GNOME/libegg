@@ -1,3 +1,14 @@
+2007-08-01  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
+
+	* libegg/util/egg-macros.h: Introduce
+	EGG_IS_POSITIVE_RESPONSE and EGG_IS_NEGATIVE_RESPONSE.
+	* libegg/fileformatchooser/eggfileformatchooser.c:
+	Intercept the "response" signal of GtkFileChooserDialog to
+	automatically append a file extension before closing the dialog.
+	* libegg/fileformatchooser/testfileformatchooser.c:
+	Check proper behaviour of egg_file_format_chooser_append_extension
+	when the filename passed already has an acceptable extension.
+
 2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
 
 	* libegg/fileformatchooser/eggfileformatchooser.c:

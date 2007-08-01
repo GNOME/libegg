@@ -104,15 +104,17 @@ verify_append_extension (EggFileFormatChooser *chooser)
   const struct {
     guint format;
     const gchar *filename;
+    const gchar *expected;
   } tests[] = {
-//    { 1, NULL, },
-    { 2, "test.ods" },
-    { 3, "test.xml" },
-    { 4, "test.xml" },
-    { 5, "test.xls" },
-    { 6, "test.html" },
-    { 7, "test.html" },
-    { 8, "test.html" },
+    { 2, "test", "test.ods" },
+    { 2, "test.ods", "test.ods" },
+    { 2, "test.xml", "test.xml.ods" },
+    { 3, "test", "test.xml" },
+    { 4, "test", "test.xml" },
+    { 5, "test", "test.xls" },
+    { 6, "test", "test.html" },
+    { 7, "test", "test.html" },
+    { 8, "test", "test.html" },
     { 0, NULL }
   };
 
@@ -120,16 +122,21 @@ verify_append_extension (EggFileFormatChooser *chooser)
 
   for(i = 0; tests[i].format; ++i)
     {
-      gchar *filename =
-        egg_file_format_chooser_append_extension (chooser, "test",
-                                                  tests[i].format);
+      gchar *filename;
+      gchar *result;
 
-      g_print ("format%d: %s, expected=%s (%s)\n",
-               i, filename, tests[i].filename,
-               (NULL == filename && NULL == tests[i].filename) ||
-               (NULL != filename && NULL != tests[i].filename &&
-                g_str_equal (filename, tests[i].filename)) ?
-               "SUCCESS" : "FAILED");
+      filename = egg_file_format_chooser_append_extension (
+        chooser, tests[i].filename, tests[i].format);
+
+      result = 
+        (NULL == filename && NULL == tests[i].expected) ||
+        (NULL != filename && NULL != tests[i].expected &&
+         g_str_equal (filename, tests[i].expected)) ?
+         "SUCCESS" : "FAILED";
+
+      g_print ("format: %d, filename: %s, expected: %s => %s (%s)\n",
+               i, tests[i].filename, tests[i].expected,
+               filename, result);
 
       g_free (filename);
     }

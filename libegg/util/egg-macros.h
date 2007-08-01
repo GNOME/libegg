@@ -134,6 +134,17 @@ q_n##_quark (void) \
   return g_define_quark; \
 }
 
+#define EGG_IS_POSITIVE_RESPONSE(response_id) \
+  ((response_id) == GTK_RESPONSE_ACCEPT || \
+   (response_id) == GTK_RESPONSE_OK     || \
+   (response_id) == GTK_RESPONSE_YES    || \
+   (response_id) == GTK_RESPONSE_APPLY)
+
+#define EGG_IS_NEGATIVE_RESPONSE(response_id) \
+  ((response_id) == GTK_RESPONSE_REJECT || \
+   (response_id) == GTK_RESPONSE_CANCEL || \
+   (response_id) == GTK_RESPONSE_NO)
+
 G_END_DECLS
 
 #endif /* _EGG_MACROS_H_ */

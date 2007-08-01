@@ -217,8 +217,8 @@ egg_file_format_filter_add_extensions (GtkFileFilter *filter,
 }
 
 static void
-selection_changed (GtkTreeSelection     *selection,
-                   EggFileFormatChooser *self)
+selection_changed_cb (GtkTreeSelection     *selection,
+                      EggFileFormatChooser *self)
 {
   gchar *label;
   gchar *name;
@@ -291,13 +291,38 @@ find_in_list (gchar       *list,
   gchar *saveptr;
   gchar *token;
 
-  for(token = strtok_r (list, ",", &saveptr); NULL != token;
-      token = strtok_r (NULL, ",", &saveptr))
+  for (token = strtok_r (list, ",", &saveptr); NULL != token;
+       token = strtok_r (NULL, ",", &saveptr))
     {
       token = g_strstrip (token);
 
       if (g_str_equal (needle, token))
         return TRUE;
+    }
+
+  return FALSE;
+}
+
+static gboolean
+accept_filename (gchar       *extensions,
+                 const gchar *filename)
+{
+  const gchar *extptr;
+  gchar *saveptr;
+  gchar *token;
+  gsize length;
+
+  length = strlen (filename);
+
+  for (token = strtok_r (extensions, ",", &saveptr); NULL != token;
+       token = strtok_r (NULL, ",", &saveptr))
+    {
+      token = g_strstrip (token);
+      extptr = filename + length - strlen (token) - 1;
+
+      if (extptr > filename && '.' == *extptr &&
+          !strcmp (extptr + 1, token))
+          return TRUE;
     }
 
   return FALSE;
@@ -397,7 +422,8 @@ egg_file_format_chooser_init (EggFileFormatChooser *self)
 /* selection */
 
   gtk_tree_selection_set_mode (self->priv->selection, GTK_SELECTION_BROWSE);
-  g_signal_connect (self->priv->selection, "changed", G_CALLBACK (selection_changed), self);
+  g_signal_connect (self->priv->selection, "changed",
+                    G_CALLBACK (selection_changed_cb), self);
   self->priv->idle_hack = g_idle_add (select_default_file_format, self);
 
 /* scroller */
@@ -481,9 +507,9 @@ egg_file_format_chooser_finalize (GObject *obj)
 }
 
 static void
-filter_changed (GObject    *object,
-                GParamSpec *spec,
-                gpointer    data)
+filter_changed_cb (GObject    *object,
+                   GParamSpec *spec,
+                   gpointer    data)
 {
   EggFileFormatChooser *self;
 
@@ -538,6 +564,116 @@ filter_changed (GObject    *object,
     }
 }
 
+/* Shows an error dialog set as transient for the specified window */
+static void
+error_message_with_parent (GtkWindow  *parent,
+			   const char *msg,
+			   const char *detail)
+{
+  gboolean first_call = TRUE;
+  GtkWidget *dialog;
+
+  if (first_call)
+    {
+      g_warning ("%s: Merge with the code in Gtk{File,Recent}ChooserDefault.", G_STRLOC);
+      first_call = FALSE;
+    }
+
+  dialog = gtk_message_dialog_new (parent,
+				   GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				   GTK_MESSAGE_ERROR,
+				   GTK_BUTTONS_OK,
+				   "%s",
+				   msg);
+  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
+					    "%s", detail);
+
+  if (parent->group)
+    gtk_window_group_add_window (parent->group, GTK_WINDOW (dialog));
+
+  gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+}
+
+/* Returns a toplevel GtkWindow, or NULL if none */
+static GtkWindow *
+get_toplevel (GtkWidget *widget)
+{
+  GtkWidget *toplevel;
+
+  toplevel = gtk_widget_get_toplevel (widget);
+  if (!GTK_WIDGET_TOPLEVEL (toplevel))
+    return NULL;
+  else
+    return GTK_WINDOW (toplevel);
+}
+
+/* Shows an error dialog for the file chooser */
+static void
+error_message (EggFileFormatChooser *impl,
+	       const char           *msg,
+	       const char           *detail)
+{
+  error_message_with_parent (get_toplevel (GTK_WIDGET (impl)), msg, detail);
+}
+
+static void
+chooser_response_cb (GtkDialog *dialog,
+                     gint       response_id,
+                     gpointer   data)
+{
+  EggFileFormatChooser *self;
+  gchar *filename, *basename;
+  gchar *message;
+  guint format;
+
+  self = EGG_FILE_FORMAT_CHOOSER (data);
+
+  if (EGG_IS_POSITIVE_RESPONSE (response_id))
+    {
+      filename = gtk_file_chooser_get_filename (self->priv->chooser);
+      basename = g_filename_display_basename (filename);
+      g_free (filename);
+
+      format = egg_file_format_chooser_get_format (self, basename);
+      g_print ("%s: %s - %d\n", G_STRFUNC, basename, format);
+
+      if (0 == format)
+        {
+
+          message = g_strdup_printf (
+            _("The program was not able to find out the file format "
+              "you want to use for `%s'. Please make sure to use a "
+              "known extension for that file or manually choose a "
+              "file format from the list below."),
+              basename);
+
+          error_message (self,
+		         _("Could not found out file format"),
+                        message);
+
+          g_free (message);
+
+          g_signal_stop_emission_by_name (dialog, "response");
+        }
+      else
+        {
+          filename = egg_file_format_chooser_append_extension (self, basename, format);
+
+          if (strcmp (filename, basename))
+            {
+              gtk_file_chooser_set_current_name (self->priv->chooser, filename);
+              g_signal_stop_emission_by_name (dialog, "response");
+            }
+
+          g_free (filename);
+        }
+
+      g_free (basename); 
+    }
+
+}
+
 static void
 egg_file_format_chooser_realize (GtkWidget *widget)
 {
@@ -554,16 +690,24 @@ egg_file_format_chooser_realize (GtkWidget *widget)
 
   g_return_if_fail (NULL == self->priv->chooser);
 
-  parent = gtk_widget_get_parent (widget);
+  parent = gtk_widget_get_toplevel (widget);
+
+  if (!GTK_IS_FILE_CHOOSER (parent))
+    parent = gtk_widget_get_parent (widget);
 
   while (parent && !GTK_IS_FILE_CHOOSER (parent))
     parent = gtk_widget_get_parent (parent);
 
-  g_return_if_fail (NULL != parent);
+  self->priv->chooser = GTK_FILE_CHOOSER (parent);
 
-  self->priv->chooser = GTK_FILE_CHOOSER (g_object_ref (parent));
+  g_return_if_fail (GTK_IS_FILE_CHOOSER (self->priv->chooser));
+  g_return_if_fail (gtk_file_chooser_get_action (self->priv->chooser) ==
+                    GTK_FILE_CHOOSER_ACTION_SAVE);
+
+  g_object_ref (self->priv->chooser);
+
   g_signal_connect (self->priv->chooser, "notify::filter", 
-                    G_CALLBACK (filter_changed), self);
+                    G_CALLBACK (filter_changed_cb), self);
   gtk_file_chooser_add_filter (self->priv->chooser, self->priv->all_files);
 
   model = GTK_TREE_MODEL (self->priv->model);
@@ -579,8 +723,12 @@ egg_file_format_chooser_realize (GtkWidget *widget)
       while (gtk_tree_model_iter_next (model, &iter));
     }
 
-    gtk_file_chooser_set_filter (self->priv->chooser,
-                                 self->priv->supported_files);
+  gtk_file_chooser_set_filter (self->priv->chooser,
+                               self->priv->supported_files);
+
+  if (GTK_IS_DIALOG (self->priv->chooser))
+    g_signal_connect (self->priv->chooser, "response",
+                      G_CALLBACK (chooser_response_cb), self);
 }
 
 static void
@@ -598,7 +746,9 @@ egg_file_format_chooser_unrealize (GtkWidget *widget)
   model = GTK_TREE_MODEL (self->priv->model);
 
   g_signal_handlers_disconnect_by_func (self->priv->chooser,
-                                        filter_changed, self);
+                                        filter_changed_cb, self);
+  g_signal_handlers_disconnect_by_func (self->priv->chooser,
+                                        chooser_response_cb, self);
 
   if (gtk_tree_model_get_iter_first (model, &iter))
     {
@@ -733,8 +883,16 @@ egg_file_format_chooser_add_format (EggFileFormatChooser *self,
 static gchar*
 get_icon_name (const gchar *mime_type)
 {
+  static gboolean first_call = TRUE;
   gchar *name = NULL;
   gchar *s;
+
+  if (first_call)
+    {
+      g_warning ("%s: Replace by g_content_type_get_icon "
+                 "when GVFS is merged into GLib.", G_STRLOC);
+      first_call = FALSE;
+    }
 
   if (mime_type)
     {
@@ -978,13 +1136,13 @@ egg_file_format_chooser_append_extension (EggFileFormatChooser *self,
   GtkTreeIter child;
 
   gchar *extensions;
-  gchar *tmpstr;
+  gchar *result;
 
   g_return_val_if_fail (EGG_IS_FILE_FORMAT_CHOOSER (self), NULL);
   g_return_val_if_fail (NULL != filename, NULL);
 
   if (0 == format)
-    format = egg_file_format_chooser_get_format (self, filename);
+    format = egg_file_format_chooser_get_format (self, NULL);
 
   if (0 == format)
     {
@@ -1019,13 +1177,14 @@ egg_file_format_chooser_append_extension (EggFileFormatChooser *self,
       return NULL;
     }
 
-  if (NULL != (tmpstr = strchr(extensions, ',')))
-    *tmpstr = '\0';
+  if (accept_filename (extensions, filename))
+    result = g_strdup (filename);
+  else
+    result = g_strconcat (filename, ".", extensions, NULL);
 
-  tmpstr = g_strconcat (filename, ".", extensions, NULL);
+  g_assert (NULL == strchr(extensions, ','));
   g_free (extensions);
-
-  return tmpstr;
+  return result;
 }
 
 /* vim: set sw=2 sta et: */
