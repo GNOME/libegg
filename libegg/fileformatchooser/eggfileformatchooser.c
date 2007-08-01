@@ -597,6 +597,9 @@ egg_file_format_chooser_unrealize (GtkWidget *widget)
   self = EGG_FILE_FORMAT_CHOOSER (widget);
   model = GTK_TREE_MODEL (self->priv->model);
 
+  g_signal_handlers_disconnect_by_func (self->priv->chooser,
+                                        filter_changed, self);
+
   if (gtk_tree_model_get_iter_first (model, &iter))
     {
       do

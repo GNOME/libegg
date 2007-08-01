@@ -1,6 +1,11 @@
 2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
 
 	* libegg/fileformatchooser/eggfileformatchooser.c:
+	Duh, disconnect "notify::filter" signal on unrealize.
+
+2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
+
+	* libegg/fileformatchooser/eggfileformatchooser.c:
 	Synchronize file filter and file format selection.
 
 2007-07-31  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
