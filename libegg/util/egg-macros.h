@@ -109,18 +109,19 @@ _EGG_DEFINE_BOXED_TYPE_EXTENDED_END()
 GType \
 type_name##_get_type (void) \
 { \
-  static GType g_define_type_id = 0; \
-  if (G_UNLIKELY (g_define_type_id == 0)) \
+  static volatile gsize g_define_type_id__volatile = 0; \
+  if (g_once_init_enter (&g_define_type_id__volatile)) \
     { \
-      g_define_type_id = \
+      GType g_define_type_id = \
         g_boxed_type_register_static (g_intern_static_string (#TypeName), \
                                       boxed_copy, boxed_free); \
       { /* custom code follows */
-#define _EGG_DEFINE_BOXED_TYPE_EXTENDED_END()	\
-        /* following custom code */	\
-      }					\
-    }					\
-  return g_define_type_id;		\
+#define _EGG_DEFINE_BOXED_TYPE_EXTENDED_END() \
+        /* following custom code */ \
+      }	\
+      g_once_init_leave (&g_define_type_id__volatile, g_define_type_id); \
+    } \
+  return g_define_type_id__volatile; \
 } /* closes type_name##_get_type() */
 
 #define EGG_DEFINE_QUARK(QN, q_n) \
@@ -128,10 +129,13 @@ type_name##_get_type (void) \
 GQuark \
 q_n##_quark (void) \
 { \
-  static GQuark g_define_quark = 0; \
-  if (G_UNLIKELY (g_define_quark == 0)) \
-    g_define_quark = g_quark_from_string (#QN); \
-  return g_define_quark; \
+  static volatile gsize g_define_quark__volatile = 0; \
+  if (g_once_init_enter (&g_define_quark__volatile)) \
+    { \
+      GQuark g_define_quark = g_quark_from_string (#QN); \
+      g_once_init_leave (&g_define_quark__volatile, g_define_quark); \
+    } \
+  return g_define_quark__volatile; \
 }
 
 #define EGG_IS_POSITIVE_RESPONSE(response_id) \

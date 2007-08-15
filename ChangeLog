@@ -1,3 +1,8 @@
+2007-08-15  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
+
+	* libegg/util/egg-macros.h: Make the EGG_DEFINE_* macros thread safe
+	as suggested by Tim Janik #449565.
+
 2007-08-01  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
 
 	* libegg/util/egg-macros.h: Introduce
