@@ -1,4 +1,3 @@
-
 INCLUDES = \
   -DCURSOR_DIR=\".\" \
   $(EGG_CFLAGS) \
