@@ -649,7 +649,7 @@ chooser_response_cb (GtkDialog *dialog,
               basename);
 
           error_message (self,
-		         _("Could not find out file format"),
+		         _("File format not recognized"),
                         message);
 
           g_free (message);
