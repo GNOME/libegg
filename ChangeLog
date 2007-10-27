@@ -1,3 +1,9 @@
+2007-10-27  Mathias Hasselmann  <mathias@openismus.com>
+
+	* configure.in, doc/libegg.types, doc/Makefile.am, 
+	libegg/Makefile.am: Excluding deprecated code that 
+	doesn't build anymore.
+
 2007-10-27  Mathias Hasselmann  <mathias.hasselmann@gmx.de>
 
 	* libegg/fileformatchooser/eggfileformatchooser.c:

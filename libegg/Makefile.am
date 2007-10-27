@@ -1,5 +1,13 @@
+if HAVE_GTK210
+else
 if HAVE_GTK21
 tray_SUBDIRS = tray
+endif
+endif
+
+if HAVE_GTK24
+else
+menu_SUBDIRS = menu
 endif
 
 if HAVE_GTK25
@@ -19,10 +27,11 @@ background_monitor_SUBDIRS = \
   background-monitor
 endif
 
-SUBDIRS = util column-chooser treeviewutils toolbar menu iconlist sidebar druid \
-  filesystem $(background_monitor_SUBDIRS) recent-files $(tray_SUBDIRS) dock \
-  datetime desktopentries $(thumbnail_SUBDIRS) $(iconchooser_SUBDIRS) \
-  bookmarkfile recentchooser regex sequence smclient fileformatchooser
+SUBDIRS = util column-chooser treeviewutils toolbar $(menu_SUBDIRS) iconlist \
+  sidebar druid filesystem $(background_monitor_SUBDIRS) recent-files \
+  $(tray_SUBDIRS) dock datetime desktopentries $(thumbnail_SUBDIRS) \
+  $(iconchooser_SUBDIRS) bookmarkfile recentchooser regex sequence smclient \
+  fileformatchooser
 
 INCLUDES = \
   $(EGG_CFLAGS)  \

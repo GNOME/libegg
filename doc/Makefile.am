@@ -53,7 +53,6 @@ GTKDOC_LIBS = \
   $(top_builddir)/libegg/background-monitor/libegg-background-monitor.la \
   $(top_builddir)/libegg/druid/libegg-druid.la \
   $(top_builddir)/libegg/iconlist/libeggiconlist.la \
-  $(top_builddir)/libegg/menu/libegg-menu.la \
   $(top_builddir)/libegg/sidebar/libegg-sidebar.la \
   $(top_builddir)/libegg/util/libeggutil.la \
   $(EGG_LIBS) \

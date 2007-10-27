@@ -29,11 +29,5 @@ egg_druid_dialog_get_type
 egg_druid_page_get_type
 egg_druid_page_standard_get_type
 egg_icon_list_get_type
-egg_action_get_type
-egg_action_group_get_type
-egg_toggle_action_get_type
-egg_radio_action_get_type
-egg_menu_merge_get_type
-egg_accel_dialog_get_type
 egg_sidebar_get_type
 egg_sidebar_button_get_type
