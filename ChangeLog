@@ -1,3 +1,13 @@
+2007-11-03  Felix Riemann  <friemann@svn.gnome.org>
+
+	* libegg/toolbareditor/egg-toolbar-editor.c:
+	(egg_toolbar_editor_disconnect_model),
+	(egg_toolbar_editor_set_model), (egg_toolbar_editor_class_init),
+	(egg_toolbar_editor_finalize):
+	* libegg/toolbareditor/egg-toolbar-editor.h:
+	Make it possible to change an EggToolbarEditor's model during runtime.
+	Should also fix some possibly leaking signal handlers. Fixes #493149.
+
 2007-10-27  Mathias Hasselmann  <mathias@openismus.com>
 
 	* configure.in, doc/libegg.types, doc/Makefile.am, 
