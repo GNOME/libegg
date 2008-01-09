@@ -1,3 +1,15 @@
+2008-01-09  Mathias Hasselmann  <mathias@openismus.com>
+
+	Provide initial implementation of EggToolPalette.
+
+	* configure.in: Add libegg/toolpalette/Makefile.
+	* libegg/Makefile.am: Add toolpalette folder.
+	* libegg/toolpalette/eggtoolpalette.c,
+	libegg/toolpalette/eggtoolpalette.h: Initial EggToolPalette code.
+	* libegg/toolpalette/testtoolpalette.c: Demonstate EggToolPalette.
+	* libegg/toolpalette/Makefile.am:
+	Build libeggtoolpalette.la and testtoolpalette.
+
 2007-11-03  Felix Riemann  <friemann@svn.gnome.org>
 
 	* libegg/toolbareditor/egg-toolbar-editor.c:

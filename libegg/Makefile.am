@@ -31,7 +31,7 @@ SUBDIRS = util column-chooser treeviewutils toolbar $(menu_SUBDIRS) iconlist \
   sidebar druid filesystem $(background_monitor_SUBDIRS) recent-files \
   $(tray_SUBDIRS) dock datetime desktopentries $(thumbnail_SUBDIRS) \
   $(iconchooser_SUBDIRS) bookmarkfile recentchooser regex sequence smclient \
-  fileformatchooser
+  fileformatchooser toolpalette
 
 INCLUDES = \
   $(EGG_CFLAGS)  \
