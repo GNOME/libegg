@@ -1,3 +1,10 @@
+2008-01-10  Mathias Hasselmann  <mathias@openismus.com>
+
+	Reduce number of referenced widgets in EggToolPaletteCategory.
+
+	* libegg/toolpalette/eggtoolpalette.c: Rename header_button field
+	of EggToolPaletteCategory to header, and remove header_label field.
+
 2008-01-09  Mathias Hasselmann  <mathias@openismus.com>
 
 	Provide initial implementation of EggToolPalette.

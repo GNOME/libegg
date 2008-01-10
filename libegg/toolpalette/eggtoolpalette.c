@@ -7,7 +7,7 @@
 #define DEFAULT_HEADER_SPACING  2
 #define DEFAULT_EXPANDER_SIZE   16
 
-typedef struct _EggToolPaletteCategory EggToolPaletteCategory;
+typedef struct _EggToolPaletteCategory     EggToolPaletteCategory;
 typedef struct _EggToolPaletteCallbackData EggToolPaletteCallbackData;
 
 enum
@@ -21,8 +21,7 @@ struct _EggToolPaletteCategory
   gchar            *id;
   GArray           *items;
 
-  GtkWidget        *header_button;
-  GtkWidget        *header_label;
+  GtkWidget        *header;
   GtkExpanderStyle  expander_style;
   guint             animation_timeout;
 
@@ -106,14 +105,14 @@ egg_tool_palette_header_expose_event (GtkWidget      *widget,
   GtkWidget *palette;
   gint x, y;
 
-  palette = gtk_widget_get_parent (category->header_button);
+  palette = gtk_widget_get_parent (category->header);
   self = EGG_TOOL_PALETTE (palette);
 
   x = widget->allocation.x + self->priv->expander_size / 2;
   y = widget->allocation.y + widget->allocation.height / 2;
 
   gtk_paint_expander (widget->style, widget->window,
-                      category->header_button->state,
+                      category->header->state,
                       &event->area, palette, NULL,
                       x, y, category->expander_style);
 
@@ -124,12 +123,12 @@ static gboolean
 egg_tool_palette_expand_animation (gpointer data)
 {
   EggToolPaletteCategory *category = data;
-  GtkWidget *palette = gtk_widget_get_parent (category->header_button);
+  GtkWidget *palette = gtk_widget_get_parent (category->header);
   gboolean finish = TRUE;
 
-  if (GTK_WIDGET_REALIZED (category->header_button))
+  if (GTK_WIDGET_REALIZED (category->header))
     {
-      GtkWidget *alignment = gtk_bin_get_child (GTK_BIN (category->header_button));
+      GtkWidget *alignment = gtk_bin_get_child (GTK_BIN (category->header));
       EggToolPalette *self = EGG_TOOL_PALETTE (palette);
       GdkRectangle area;
 
@@ -138,7 +137,7 @@ egg_tool_palette_expand_animation (gpointer data)
       area.height = self->priv->expander_size;
       area.width = self->priv->expander_size;
 
-      gdk_window_invalidate_rect (category->header_button->window, &area, TRUE);
+      gdk_window_invalidate_rect (category->header->window, &area, TRUE);
     }
 
   if (category->expanded)
@@ -197,6 +196,7 @@ egg_tool_palette_create_category (EggToolPalette *self,
 {
   EggToolPaletteCategory *category;
   GtkWidget *alignment;
+  GtkWidget *label;
 
   g_assert (NULL != id);
 
@@ -207,39 +207,36 @@ egg_tool_palette_create_category (EggToolPalette *self,
   category->expanded = TRUE;
   category->expander_style = GTK_EXPANDER_EXPANDED;
 
-  gtk_widget_push_composite_child ();
-
-  category->header_button = gtk_button_new ();
-  category->header_label  = gtk_label_new (name);
-
-  gtk_widget_set_composite_name (category->header_button, "header-button");
-  gtk_widget_set_composite_name (category->header_button, "header-label");
-  gtk_widget_set_composite_name (category->header_button, "header-arrow");
-
-  gtk_widget_pop_composite_child ();
-
+  label = gtk_label_new (name);
   alignment = gtk_alignment_new (0.0, 0.5, 0.0, 0.0);
+
   gtk_alignment_set_padding (GTK_ALIGNMENT (alignment), 0, 0,
                              self->priv->header_spacing +
                              self->priv->expander_size, 0);
+
   gtk_widget_set_size_request (alignment, -1, self->priv->expander_size);
-  gtk_container_add (GTK_CONTAINER (alignment), category->header_label);
+  gtk_container_add (GTK_CONTAINER (alignment), label);
   gtk_widget_show_all (alignment);
 
-  gtk_button_set_focus_on_click (GTK_BUTTON (category->header_button), FALSE);
-  gtk_container_add (GTK_CONTAINER (category->header_button), alignment);
-  gtk_widget_set_parent (category->header_button, GTK_WIDGET (self));
+  gtk_widget_push_composite_child ();
+  category->header = gtk_button_new ();
+  gtk_widget_set_composite_name (category->header, "header");
+  gtk_widget_pop_composite_child ();
+
+  gtk_button_set_focus_on_click (GTK_BUTTON (category->header), FALSE);
+  gtk_container_add (GTK_CONTAINER (category->header), alignment);
+  gtk_widget_set_parent (category->header, GTK_WIDGET (self));
 
   g_signal_connect_after (alignment, "expose-event",
                           G_CALLBACK (egg_tool_palette_header_expose_event),
                           category);
 
-  g_signal_connect (category->header_button, "clicked",
+  g_signal_connect (category->header, "clicked",
                     G_CALLBACK (egg_tool_palette_header_clicked),
                     category);
 
   if (name)
-    gtk_widget_show (category->header_button);
+    gtk_widget_show (category->header);
 
   g_array_append_val (self->priv->categories, category);
   self->priv->current_category = category;
@@ -249,8 +246,8 @@ egg_tool_palette_create_category (EggToolPalette *self,
 static void
 egg_tool_palette_category_free (EggToolPaletteCategory *category)
 {
-  if (category->header_button)
-    gtk_widget_unparent (category->header_button);
+  if (category->header)
+    gtk_widget_unparent (category->header);
   if (category->window)
     g_object_unref (category->window);
   if (category->items)
@@ -427,9 +424,9 @@ egg_tool_palette_size_request (GtkWidget      *widget,
       EggToolPaletteCategory *category = egg_tool_palette_get_category (self, i);
       GtkRequisition child_requistion;
 
-      if (GTK_WIDGET_VISIBLE (category->header_button))
+      if (GTK_WIDGET_VISIBLE (category->header))
         {
-          gtk_widget_size_request (category->header_button, &child_requistion);
+          gtk_widget_size_request (category->header, &child_requistion);
           requisition->width = MAX (requisition->width, child_requistion.width);
           requisition->height += child_requistion.height;
         }
@@ -491,14 +488,14 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
       if (!category->items->len)
         continue;
 
-      if (GTK_WIDGET_VISIBLE (category->header_button))
+      if (GTK_WIDGET_VISIBLE (category->header))
         {
-          gtk_widget_size_request (category->header_button, &child_requistion);
+          gtk_widget_size_request (category->header, &child_requistion);
 
           child_allocation.width  = allocation->width - border_width * 2;
           child_allocation.height = child_requistion.height;
 
-          gtk_widget_size_allocate (category->header_button, &child_allocation);
+          gtk_widget_size_allocate (category->header, &child_allocation);
 
           child_allocation.y += child_allocation.height;
         }
@@ -630,9 +627,9 @@ egg_tool_palette_style_set (GtkWidget *widget,
       EggToolPaletteCategory *category = egg_tool_palette_get_category (self, i);
       GtkWidget *alignment = NULL;
 
-      if (category->header_button)
+      if (category->header)
         {
-          alignment = gtk_bin_get_child (GTK_BIN (category->header_button));
+          alignment = gtk_bin_get_child (GTK_BIN (category->header));
 
           gtk_alignment_set_padding (GTK_ALIGNMENT (alignment), 0, 0,
                                      self->priv->header_spacing +
@@ -674,8 +671,8 @@ egg_tool_palette_forall (GtkContainer *container,
     {
       EggToolPaletteCategory *category = egg_tool_palette_get_category (self, i);
 
-      if (internals && category->header_button)
-        callback (category->header_button, callback_data);
+      if (internals && category->header)
+        callback (category->header, callback_data);
 
       for (j = 0; j < category->items->len; ++j)
         {
@@ -756,8 +753,11 @@ egg_tool_palette_set_category_name (EggToolPalette *self,
 
   if (category_info)
     {
-      gtk_label_set_text (GTK_LABEL (category_info->header_label), name);
-      gtk_widget_show (category_info->header_button);
+      GtkWidget *alignment = gtk_bin_get_child (GTK_BIN (category_info->header));
+      GtkWidget *label = gtk_bin_get_child (GTK_BIN (alignment));
+
+      gtk_label_set_text (GTK_LABEL (label), name);
+      gtk_widget_show (category_info->header);
     }
 }
 
