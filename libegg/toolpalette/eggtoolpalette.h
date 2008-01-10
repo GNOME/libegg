@@ -1,7 +1,29 @@
+/* EggToolPalette -- A tool palette with categories and DnD support
+ * Copyright (C) 2008  Openismus GmbH
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * Authors:
+ *      Mathias Hasselmann
+ */
+
 #ifndef __EGG_TOOL_PALETTE_H__
 #define __EGG_TOOL_PALETTE_H__
 
 #include <gtk/gtkcontainer.h>
+#include <gtk/gtkdnd.h>
 #include <gtk/gtktoolitem.h>
 
 G_BEGIN_DECLS
@@ -13,13 +35,9 @@ G_BEGIN_DECLS
 #define EGG_IS_TOOL_PALETTE_CLASS(obj)  (G_TYPE_CHECK_CLASS_TYPE(obj, EGG_TYPE_TOOL_PALETTE))
 #define EGG_TOOL_PALETTE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), EGG_TYPE_TOOL_PALETTE, EggToolPaletteClass))
 
-typedef struct _EggToolPalette        EggToolPalette;
-typedef struct _EggToolPaletteClass   EggToolPaletteClass;
-typedef struct _EggToolPalettePrivate EggToolPalettePrivate;
-
-typedef void (*EggToolPaletteCallback) (EggToolPalette *palette,
-                                        GtkToolItem    *item,
-                                        gpointer        data);
+typedef struct _EggToolPalette           EggToolPalette;
+typedef struct _EggToolPaletteClass      EggToolPaletteClass;
+typedef struct _EggToolPalettePrivate    EggToolPalettePrivate;
 
 struct _EggToolPalette
 {
@@ -36,67 +54,34 @@ struct _EggToolPaletteClass
                                   GtkAdjustment *vadjustment);
 };
 
-/* ===== instance handling ===== */
+GType           egg_tool_palette_get_type        (void) G_GNUC_CONST;
+GtkWidget*      egg_tool_palette_new             (void);
 
-GType                 egg_tool_palette_get_type              (void) G_GNUC_CONST;
-GtkWidget*            egg_tool_palette_new                   (void);
+void            egg_tool_palette_reorder_group   (EggToolPalette   *palette,
+                                                  GtkWidget        *group,
+                                                  guint             position);
 
-/* ===== category settings ===== */
+void            egg_tool_palette_set_icon_size   (EggToolPalette   *palette,
+                                                  GtkIconSize       icon_size);
+void            egg_tool_palette_set_orientation (EggToolPalette   *palette,
+                                                  GtkOrientation    orientation);
+void            egg_tool_palette_set_style       (EggToolPalette   *palette,
+                                                  GtkToolbarStyle   style);
 
-void                  egg_tool_palette_set_category_name     (EggToolPalette *palette,
-                                                              const gchar    *category,
-                                                              const gchar    *name);
-void                  egg_tool_palette_set_category_position (EggToolPalette *palette,
-                                                              const gchar    *category,
-                                                              gint            position);
-void                  egg_tool_palette_set_category_expanded (EggToolPalette *palette,
-                                                              const gchar    *category,
-                                                              gboolean        expanded);
+GtkIconSize     egg_tool_palette_get_icon_size   (EggToolPalette   *palette);
+GtkOrientation  egg_tool_palette_get_orientation (EggToolPalette   *palette);
+GtkToolbarStyle egg_tool_palette_get_style       (EggToolPalette   *palette);
 
-G_CONST_RETURN gchar* egg_tool_palette_get_category_name     (EggToolPalette *palette,
-                                                              const gchar    *category);
-gint                  egg_tool_palette_get_category_position (EggToolPalette *palette,
-                                                              const gchar    *category);
-gboolean              egg_tool_palette_get_category_expanded (EggToolPalette *palette,
-                                                              const gchar    *category);
+GtkToolItem*    egg_tool_palette_get_drop_item   (EggToolPalette   *palette,
+                                                  gint              x,
+                                                  gint              y);
+GtkToolItem*    egg_tool_palette_get_drag_item   (EggToolPalette   *palette,
+                                                  GtkSelectionData *selection);
 
-/* ===== item packing ===== */
-
-void                  egg_tool_palette_insert            (EggToolPalette *palette,
-                                                          const gchar    *category,
-                                                          GtkToolItem    *item,
-                                                          gint            position);
-
-gint                  egg_tool_palette_get_n_items       (EggToolPalette *palette,
-                                                          const gchar    *category);
-GtkToolItem*          egg_tool_palette_get_nth_item      (EggToolPalette *palette,
-                                                          const gchar    *category,
-                                                          gint            index);
-GtkToolItem*          egg_tool_palette_get_drop_item     (EggToolPalette *palette,
-                                                          gint            x,
-                                                          gint            y);
-
-/* ===== item settings ===== */
-
-void                  egg_tool_palette_set_item_category (EggToolPalette *palette,
-                                                          GtkToolItem    *item,
-                                                          const gchar    *category);
-void                  egg_tool_palette_set_item_position (EggToolPalette *palette,
-                                                          GtkToolItem    *item,
-                                                          gint            position);
-
-G_CONST_RETURN gchar* egg_tool_palette_get_item_category (EggToolPalette *palette,
-                                                          GtkToolItem    *item);
-gint                  egg_tool_palette_get_item_position (EggToolPalette *palette,
-                                                          GtkToolItem    *item);
-
-/* ===== drag-and-drop ===== */
-
-void                  egg_tool_palette_set_drag_source   (EggToolPalette         *palette);
-void                  egg_tool_palette_add_drag_dest     (EggToolPalette         *palette,
-                                                          GtkWidget              *widget,
-                                                          EggToolPaletteCallback  callback,
-                                                          gpointer                user_data);
+void            egg_tool_palette_set_drag_source (EggToolPalette   *palette);
+void            egg_tool_palette_add_drag_dest   (EggToolPalette   *palette,
+                                                  GtkWidget        *widget,
+                                                  GtkDestDefaults   flags);
 
 G_END_DECLS
 

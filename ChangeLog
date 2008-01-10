@@ -1,5 +1,21 @@
 2008-01-10  Mathias Hasselmann  <mathias@openismus.com>
 
+	Refactor EggToolPaletteCategory into EggToolItemGroup widget.
+
+	* libegg/toolpalette/eggtoolitemgroup.c,
+	libegg/toolpalette/eggtoolitemgroup.h:
+	Create EggToolItemGroup from EggToolPaletteCategory structure.
+	* libegg/toolpalette/eggtoolpalette.c,
+	libegg/toolpalette/eggtoolpalette.h:
+	Remove EggToolPaletteCategory and use EggToolItemGroup instead.
+	* libegg/toolpalette/eggtoolpaletteprivate.h:
+	Collect internal EggToolPalette and EggToolItemGroup functions.
+	* libegg/toolpalette/Makefile.am: Add eggtoolitemgroup.c.
+	* libegg/toolpalette/testtoolpalette.c:
+	Adopt EggToolItemGroup changes.
+
+2008-01-10  Mathias Hasselmann  <mathias@openismus.com>
+
 	Reduce number of referenced widgets in EggToolPaletteCategory.
 
 	* libegg/toolpalette/eggtoolpalette.c: Rename header_button field

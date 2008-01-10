@@ -1,4 +1,5 @@
 #include "eggtoolpalette.h"
+#include "eggtoolitemgroup.h"
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -25,13 +26,23 @@ not_implemented (GtkAction *action,
 static void
 load_stock_items (EggToolPalette *palette)
 {
-  const gchar *group = NULL;
+  GtkWidget *group_af = egg_tool_item_group_new (_("Stock Icons (A-F)"));
+  GtkWidget *group_gn = egg_tool_item_group_new (_("Stock Icons (G-N)"));
+  GtkWidget *group_or = egg_tool_item_group_new (_("Stock Icons (O-R)"));
+  GtkWidget *group_sz = egg_tool_item_group_new (_("Stock Icons (S-Z)"));
+  GtkWidget *group = NULL;
+
   GtkToolItem *item;
   GSList *stock_ids;
   GSList *iter;
 
   stock_ids = gtk_stock_list_ids ();
   stock_ids = g_slist_sort (stock_ids, (GCompareFunc) strcmp);
+
+  gtk_container_add (GTK_CONTAINER (palette), group_af);
+  gtk_container_add (GTK_CONTAINER (palette), group_gn);
+  gtk_container_add (GTK_CONTAINER (palette), group_or);
+  gtk_container_add (GTK_CONTAINER (palette), group_sz);
 
   for (iter = stock_ids; iter; iter = g_slist_next (iter))
     {
@@ -40,25 +51,25 @@ load_stock_items (EggToolPalette *palette)
       switch (id[4])
         {
           case 'a':
-            group = "stock-icons-af";
+            group = group_af;
             break;
 
           case 'g':
-            group = "stock-icons-gn";
+            group = group_gn;
             break;
 
           case 'o':
-            group = "stock-icons-or";
+            group = group_or;
             break;
 
           case 's':
-            group = "stock-icons-sz";
+            group = group_sz;
             break;
         }
 
       item = gtk_tool_button_new_from_stock (id);
       gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (item), id);
-      egg_tool_palette_insert (palette, group, item, -1);
+      egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 
       g_free (id);
     }
@@ -67,13 +78,35 @@ load_stock_items (EggToolPalette *palette)
 }
 
 static void
-contents_drop_cb (EggToolPalette *palette G_GNUC_UNUSED,
-                  GtkToolItem    *item,
-                  gpointer        data)
+contents_drag_data_received (GtkWidget        *widget,
+                             GdkDragContext   *context,
+                             gint              x         G_GNUC_UNUSED,
+                             gint              y         G_GNUC_UNUSED,
+                             GtkSelectionData *selection,
+                             guint             info      G_GNUC_UNUSED,
+                             guint             time      G_GNUC_UNUSED,
+                             gpointer          data      G_GNUC_UNUSED)
+
 {
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer (data);
-  const gchar *stock_id = gtk_tool_button_get_stock_id (GTK_TOOL_BUTTON (item));
-  gtk_text_buffer_set_text (buffer, stock_id, -1);
+  GtkWidget *palette = NULL;
+  GtkToolItem *item = NULL;
+  GtkTextBuffer *buffer;
+  const gchar *stock_id;
+
+  palette = gtk_drag_get_source_widget (context);
+
+  while (palette && !EGG_IS_TOOL_PALETTE (palette))
+    palette = gtk_widget_get_parent (palette);
+
+  if (palette)
+    item = egg_tool_palette_get_drag_item (EGG_TOOL_PALETTE (palette), selection);
+
+  if (GTK_IS_TOOL_ITEM (item))
+    {
+      buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (widget));
+      stock_id = gtk_tool_button_get_stock_id (GTK_TOOL_BUTTON (item));
+      gtk_text_buffer_set_text (buffer, stock_id, -1);
+    }
 }
 
 static GtkWidget*
@@ -152,17 +185,6 @@ create_ui (void)
 
   load_stock_items (EGG_TOOL_PALETTE (palette));
 
-  egg_tool_palette_set_category_name (EGG_TOOL_PALETTE (palette),
-                                      "stock-icons-af", _("Stock Icons (A-F)"));
-  egg_tool_palette_set_category_name (EGG_TOOL_PALETTE (palette),
-                                      "stock-icons-gn", _("Stock Icons (G-N)"));
-  egg_tool_palette_set_category_name (EGG_TOOL_PALETTE (palette),
-                                      "stock-icons-or", _("Stock Icons (O-R)"));
-  egg_tool_palette_set_category_name (EGG_TOOL_PALETTE (palette),
-                                      "stock-icons-sz", _("Stock Icons (S-Z)"));
-
-  egg_tool_palette_set_drag_source (EGG_TOOL_PALETTE (palette));
-
   palette_scroller = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (palette_scroller),
                                   GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
@@ -173,9 +195,11 @@ create_ui (void)
 
   contents = gtk_text_view_new ();
   gtk_widget_set_size_request (contents, 100, 400);
-  egg_tool_palette_add_drag_dest (EGG_TOOL_PALETTE (palette),
-                                  contents, contents_drop_cb,
-                                  contents);
+  egg_tool_palette_add_drag_dest (EGG_TOOL_PALETTE (palette), contents, GTK_DEST_DEFAULT_ALL);
+
+  g_signal_connect (contents, "drag-data-received",
+                    G_CALLBACK (contents_drag_data_received),
+                    NULL);
 
   contents_scroller = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (contents_scroller),
@@ -219,18 +243,27 @@ main (int   argc,
   gtk_init (&argc, &argv);
 
   gtk_rc_parse_string ("                                \
-    style 'egg-tool-palette-header' {                   \
+    style 'egg-tool-item-group' {                       \
+      EggToolItemGroup::expander-size = 10              \
+    }                                                   \
+                                                        \
+    style 'egg-tool-item-group-header' {                \
       bg[NORMAL] = @selected_bg_color                   \
       fg[NORMAL] = @selected_fg_color                   \
       bg[PRELIGHT] = shade(1.04, @selected_bg_color)    \
       fg[PRELIGHT] = @selected_fg_color                 \
       bg[ACTIVE] = shade(0.9, @selected_bg_color)       \
       fg[ACTIVE] = shade(0.9, @selected_fg_color)       \
+                                                        \
       font_name = 'Sans Serif Bold 10.'                 \
+      GtkButton::inner_border = { 0, 3, 0, 0 }          \
     }                                                   \
                                                         \
-    widget_class '*<EggToolPalette>.GtkButton*'         \
-    style 'egg-tool-palette-header'                     \
+    class 'EggToolItemGroup'                            \
+    style 'egg-tool-item-group'                         \
+                                                        \
+    widget_class '*<EggToolItemGroup>.GtkButton*'       \
+    style 'egg-tool-item-group-header'                  \
     ");
 
   ui = create_ui ();
