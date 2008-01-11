@@ -1,5 +1,14 @@
 2008-01-11  Mathias Hasselmann  <mathias@openismus.com>
 
+	* libegg/toolpalette/eggtoolitemgroup.h:
+	Change signature of egg_tool_item_group_get_nth_item.
+	* libegg/toolpalette/eggtoolitemgroup.c:
+	Implement egg_tool_item_group_remove.
+	* libegg/toolpalette/eggtoolpalette.c:
+	Implement egg_tool_palette_remove.
+
+2008-01-11  Mathias Hasselmann  <mathias@openismus.com>
+
 	Rename self variables to group for consistency.
 
 	* libegg/toolpalette/eggtoolitemgroup.c: Rename self variables.

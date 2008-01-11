@@ -47,7 +47,10 @@ enum
 struct _EggToolItemGroupPrivate
 {
   GtkWidget        *header;
-  GArray           *items;
+
+  GtkToolItem     **items;
+  gsize             items_size;
+  gsize             items_length;
 
   gint64            animation_start;
   GSource          *animation_timeout;
@@ -55,12 +58,33 @@ struct _EggToolItemGroupPrivate
   gint              expander_size;
   gint              header_spacing;
 
+  guint             sparse_items : 1;
   guint             expanded : 1;
 };
 
 G_DEFINE_TYPE (EggToolItemGroup,
                egg_tool_item_group,
                GTK_TYPE_CONTAINER);
+
+static void
+egg_tool_item_group_repack (EggToolItemGroup *group)
+{
+  guint si, di;
+
+  if (group->priv->sparse_items)
+    for (si = di = 0; di < group->priv->items_length; ++si)
+      {
+        if (group->priv->items[si])
+          {
+            group->priv->items[di] = group->priv->items[si];
+            ++di;
+          }
+        else
+          --group->priv->items_length;
+      }
+
+  group->priv->sparse_items = FALSE;
+}
 
 static gboolean
 egg_tool_item_group_header_expose_event_cb (GtkWidget      *widget,
@@ -110,7 +134,9 @@ egg_tool_item_group_init (EggToolItemGroup *group)
                                             EGG_TYPE_TOOL_ITEM_GROUP,
                                             EggToolItemGroupPrivate);
 
-  group->priv->items = g_array_new (TRUE, TRUE, sizeof (GtkToolItem*));
+  group->priv->items_length = 0;
+  group->priv->items_size = 4;
+  group->priv->items = g_new (GtkToolItem*, group->priv->items_size);
   group->priv->header_spacing = DEFAULT_HEADER_SPACING;
   group->priv->expander_size = DEFAULT_EXPANDER_SIZE;
   group->priv->expander_style = GTK_EXPANDER_EXPANDED;
@@ -203,7 +229,7 @@ egg_tool_item_group_finalize (GObject *object)
 
   if (group->priv->items)
     {
-      g_array_free (group->priv->items, TRUE);
+      g_free (group->priv->items);
       group->priv->items = NULL;
     }
 
@@ -217,7 +243,9 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
   const gint border_width = GTK_CONTAINER (widget)->border_width;
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
 
-  if (group->priv->items->len && egg_tool_item_group_get_name (group))
+  egg_tool_item_group_repack (group);
+
+  if (group->priv->items_length && egg_tool_item_group_get_name (group))
     {
       gtk_widget_size_request (group->priv->header, requisition);
       gtk_widget_show (group->priv->header);
@@ -275,9 +303,12 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
 
     if (group->priv->expanded || group->priv->animation_timeout)
       {
-        for (i = 0; i < group->priv->items->len; ++i)
+        for (i = 0; i < group->priv->items_length; ++i)
           {
-            GtkToolItem *item = egg_tool_item_group_get_nth_item (group, i);
+            GtkToolItem *item = group->priv->items[i];
+
+            if (!item)
+              continue;
 
             child_allocation.width = item_size.width;
             child_allocation.height = item_size.height;
@@ -299,10 +330,12 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
       }
     else
       {
-        for (i = 0; i < group->priv->items->len; ++i)
+        for (i = 0; i < group->priv->items_length; ++i)
           {
-            GtkToolItem *item = egg_tool_item_group_get_nth_item (group, i);
-            gtk_widget_hide (GTK_WIDGET (item));
+            GtkToolItem *item = group->priv->items[i];
+
+            if (item)
+              gtk_widget_hide (GTK_WIDGET (item));
           }
       }
 
@@ -398,10 +431,22 @@ egg_tool_item_group_add (GtkContainer *container,
 
 static void
 egg_tool_item_group_remove (GtkContainer *container,
-                            GtkWidget    *widget G_GNUC_UNUSED)
+                            GtkWidget    *child)
 {
+  EggToolItemGroup *group;
+  guint i;
+
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (container));
-  g_return_if_reached ();
+  group = EGG_TOOL_ITEM_GROUP (container);
+
+  for (i = 0; i < group->priv->items_length; ++i)
+    if ((GtkWidget*) group->priv->items[i] == child)
+      {
+        g_object_unref (child);
+        gtk_widget_unparent (child);
+        group->priv->items[i] = NULL;
+        group->priv->sparse_items = TRUE;
+      }
 }
 
 static void
@@ -417,10 +462,12 @@ egg_tool_item_group_forall (GtkContainer *container,
     callback (group->priv->header, callback_data);
 
   if (NULL != group->priv->items)
-    for (i = 0; i < group->priv->items->len; ++i)
+    for (i = 0; i < group->priv->items_length; ++i)
       {
-        GtkToolItem *item = egg_tool_item_group_get_nth_item (group, i);
-        callback (GTK_WIDGET (item), callback_data);
+        GtkToolItem *item = group->priv->items[i];
+
+        if (item)
+          callback (GTK_WIDGET (item), callback_data);
       }
 }
 
@@ -510,8 +557,9 @@ egg_tool_item_group_set_name (EggToolItemGroup *group,
     {
       label = egg_tool_item_group_get_label (group);
       gtk_label_set_text (GTK_LABEL (label), name);
+      egg_tool_item_group_repack (group);
 
-      if (name && group->priv->items->len)
+      if (name && group->priv->items_length)
         gtk_widget_show (group->priv->header);
       else
         gtk_widget_hide (group->priv->header);
@@ -652,9 +700,21 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
   if (-1 == position)
     position = egg_tool_item_group_get_n_items (group);
 
-  g_return_if_fail (position <= egg_tool_item_group_get_n_items (group));
-  g_array_insert_val (group->priv->items, position, item);
-  g_object_ref_sink (item);
+  g_return_if_fail ((guint) position <= egg_tool_item_group_get_n_items (group));
+
+  if (group->priv->items_length == group->priv->items_size)
+    {
+      group->priv->items_size *= 2;
+      group->priv->items = g_renew (GtkToolItem*,
+                                    group->priv->items,
+                                    group->priv->items_size);
+    }
+
+  memmove (group->priv->items + position + 1, group->priv->items + position,
+           sizeof (GtkToolItem*) * (group->priv->items_length - position));
+
+  group->priv->items[position] = g_object_ref_sink (item);
+  group->priv->items_length += 1;
 
   if (EGG_IS_TOOL_PALETTE (parent))
     _egg_tool_palette_item_set_drag_source (GTK_WIDGET (item), parent);
@@ -670,7 +730,7 @@ egg_tool_item_group_set_item_position (EggToolItemGroup *group,
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
   g_return_if_fail (GTK_IS_TOOL_ITEM (item));
 
-  g_return_if_fail (position < (guint) egg_tool_item_group_get_n_items (group));
+  g_return_if_fail (position < egg_tool_item_group_get_n_items (group));
   g_return_if_reached ();
 }
 
@@ -683,29 +743,34 @@ egg_tool_item_group_get_item_position (EggToolItemGroup *group,
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), -1);
   g_return_val_if_fail (GTK_IS_TOOL_ITEM (item), -1);
 
-  for (i = 0; i < group->priv->items->len; ++i)
-    if (item == egg_tool_item_group_get_nth_item (group, i))
+  egg_tool_item_group_repack (group);
+
+  for (i = 0; i < group->priv->items_length; ++i)
+    if (item == group->priv->items[i])
       return i;
 
   return -1;
 }
 
-gint
+guint
 egg_tool_item_group_get_n_items (EggToolItemGroup *group)
 {
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), 0);
-  return group->priv->items->len;
+  egg_tool_item_group_repack (group);
+  return group->priv->items_length;
 }
 
 GtkToolItem*
 egg_tool_item_group_get_nth_item (EggToolItemGroup *group,
-                                  gint              index)
+                                  guint             index)
 {
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
-  g_return_val_if_fail (index < egg_tool_item_group_get_n_items (group), NULL);
-  g_return_val_if_fail (index >= 0, NULL);
 
-  return g_array_index (group->priv->items, GtkToolItem*, index);
+  egg_tool_item_group_repack (group);
+
+  g_return_val_if_fail (index < group->priv->items_length, NULL);
+
+  return group->priv->items[index];
 }
 
 GtkToolItem*
@@ -737,9 +802,12 @@ _egg_tool_item_group_item_size_request (EggToolItemGroup *group,
 
   item_size->width = item_size->height = 0;
 
-  for (i = 0; i < group->priv->items->len; ++i)
+  for (i = 0; i < group->priv->items_length; ++i)
     {
-      GtkToolItem *item = egg_tool_item_group_get_nth_item (group, i);
+      GtkToolItem *item = group->priv->items[i];
+
+      if (!item)
+        continue;
 
       gtk_widget_size_request (GTK_WIDGET (item), &child_requisition);
 
@@ -795,9 +863,10 @@ gint
 _egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
                                            gint              width)
 {
-  guint n_items = group->priv->items->len;
+  guint n_items = group->priv->items_length;
   GtkRequisition child_requisition;
 
+  egg_tool_item_group_repack (group);
   gtk_widget_size_request (GTK_WIDGET (group), &child_requisition);
 
   if (n_items && (group->priv->expanded || group->priv->animation_timeout))

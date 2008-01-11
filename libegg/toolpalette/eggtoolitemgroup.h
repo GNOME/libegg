@@ -69,9 +69,9 @@ void                  egg_tool_item_group_set_item_position (EggToolItemGroup *g
 gint                  egg_tool_item_group_get_item_position (EggToolItemGroup *group,
                                                              GtkToolItem      *item);
 
-gint                  egg_tool_item_group_get_n_items       (EggToolItemGroup *group);
+guint                 egg_tool_item_group_get_n_items       (EggToolItemGroup *group);
 GtkToolItem*          egg_tool_item_group_get_nth_item      (EggToolItemGroup *group,
-                                                             gint              index);
+                                                             guint             index);
 GtkToolItem*          egg_tool_item_group_get_drop_item     (EggToolItemGroup *group,
                                                              gint              x,
                                                              gint              y);

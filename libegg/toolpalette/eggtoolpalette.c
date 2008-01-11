@@ -43,17 +43,20 @@ enum
 
 struct _EggToolPalettePrivate
 {
-  GArray          *groups;
+  EggToolItemGroup **groups;
+  gsize              groups_size;
+  gsize              groups_length;
 
-  GtkAdjustment   *hadjustment;
-  GtkAdjustment   *vadjustment;
+  GtkAdjustment     *hadjustment;
+  GtkAdjustment     *vadjustment;
 
-  GtkRequisition   item_size;
-  GtkIconSize      icon_size;
-  GtkOrientation   orientation;
-  GtkToolbarStyle  style;
+  GtkRequisition     item_size;
+  GtkIconSize        icon_size;
+  GtkOrientation     orientation;
+  GtkToolbarStyle    style;
 
-  guint            is_drag_source : 1;
+  guint              sparse_groups : 1;
+  guint              drag_source : 1;
 };
 
 struct _EggToolPaletteDragData
@@ -72,14 +75,6 @@ G_DEFINE_TYPE (EggToolPalette,
                egg_tool_palette,
                GTK_TYPE_CONTAINER);
 
-static EggToolItemGroup*
-egg_tool_palette_get_group (EggToolPalette *palette,
-                            guint           index)
-{
-  g_return_val_if_fail (index < palette->priv->groups->len, NULL);
-  return g_array_index (palette->priv->groups, EggToolItemGroup*, index);
-}
-
 static void
 egg_tool_palette_init (EggToolPalette *palette)
 {
@@ -87,7 +82,10 @@ egg_tool_palette_init (EggToolPalette *palette)
                                             EGG_TYPE_TOOL_PALETTE,
                                             EggToolPalettePrivate);
 
-  palette->priv->groups = g_array_new (TRUE, TRUE, sizeof (EggToolItemGroup*));
+  palette->priv->groups_size = 4;
+  palette->priv->groups_length = 0;
+  palette->priv->groups = g_new (EggToolItemGroup*, palette->priv->groups_size);
+
   palette->priv->icon_size = DEFAULT_ICON_SIZE;
   palette->priv->orientation = DEFAULT_ORIENTATION;
   palette->priv->style = DEFAULT_STYLE;
@@ -188,7 +186,7 @@ egg_tool_palette_finalize (GObject *object)
 
   if (palette->priv->groups)
     {
-      g_array_free (palette->priv->groups, TRUE);
+      g_free (palette->priv->groups);
       palette->priv->groups = NULL;
     }
 
@@ -210,9 +208,12 @@ egg_tool_palette_size_request (GtkWidget      *widget,
   palette->priv->item_size.width = 0;
   palette->priv->item_size.height = 0;
 
-  for (i = 0; i < palette->priv->groups->len; ++i)
+  for (i = 0; i < palette->priv->groups_length; ++i)
     {
-      EggToolItemGroup *group = egg_tool_palette_get_group (palette, i);
+      EggToolItemGroup *group = palette->priv->groups[i];
+
+      if (!group)
+        continue;
 
       gtk_widget_size_request (GTK_WIDGET (group), &child_requisition);
 
@@ -258,9 +259,9 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
   child_allocation.y = border_width + offset;
   child_allocation.width = allocation->width - border_width * 2;
 
-  for (i = 0; i < palette->priv->groups->len; ++i)
+  for (i = 0; i < palette->priv->groups_length; ++i)
     {
-      EggToolItemGroup *group = egg_tool_palette_get_group (palette, i);
+      EggToolItemGroup *group = palette->priv->groups[i];
 
       if (egg_tool_item_group_get_n_items (group))
         {
@@ -308,10 +309,12 @@ egg_tool_palette_expose_event (GtkWidget      *widget,
   cr = gdk_cairo_create (widget->window);
   cairo_push_group (cr);
 
-  for (i = 0; i < palette->priv->groups->len; ++i)
+  for (i = 0; i < palette->priv->groups_length; ++i)
     {
-      EggToolItemGroup *group = egg_tool_palette_get_group (palette, i);
-      _egg_tool_item_group_paint (group, cr);
+      EggToolItemGroup *group = palette->priv->groups[i];
+
+      if (group)
+        _egg_tool_item_group_paint (group, cr);
     }
 
   cairo_pop_group_to_source (cr);
@@ -394,6 +397,26 @@ egg_tool_palette_set_scroll_adjustments (GtkWidget     *widget,
 }
 
 static void
+egg_tool_palette_repack (EggToolPalette *palette)
+{
+  guint si, di;
+
+  if (palette->priv->sparse_groups)
+    for (si = di = 0; di < palette->priv->groups_length; ++si)
+      {
+        if (palette->priv->groups[si])
+          {
+            palette->priv->groups[di] = palette->priv->groups[si];
+            ++di;
+          }
+        else
+          --palette->priv->groups_length;
+      }
+
+  palette->priv->sparse_groups = FALSE;
+}
+
+static void
 egg_tool_palette_add (GtkContainer *container,
                       GtkWidget    *child)
 {
@@ -404,17 +427,41 @@ egg_tool_palette_add (GtkContainer *container,
 
   palette = EGG_TOOL_PALETTE (container);
 
-  g_object_ref_sink (child);
-  g_array_append_val (palette->priv->groups, child);
+  if (palette->priv->groups_length == palette->priv->groups_size)
+    egg_tool_palette_repack (palette);
+
+  if (palette->priv->groups_length == palette->priv->groups_size)
+    {
+      palette->priv->groups_size *= 2;
+      palette->priv->groups = g_renew (EggToolItemGroup*,
+                                       palette->priv->groups,
+                                       palette->priv->groups_size);
+    }
+
+  palette->priv->groups[palette->priv->groups_length] = g_object_ref_sink (child);
+  palette->priv->groups_length += 1;
+
   gtk_widget_set_parent (child, GTK_WIDGET (palette));
 }
 
 static void
 egg_tool_palette_remove (GtkContainer *container,
-                         GtkWidget    *child G_GNUC_UNUSED)
+                         GtkWidget    *child)
 {
+  EggToolPalette *palette;
+  guint i;
+
   g_return_if_fail (EGG_IS_TOOL_PALETTE (container));
-  g_return_if_reached ();
+  palette = EGG_TOOL_PALETTE (container);
+
+  for (i = 0; i < palette->priv->groups_length; ++i)
+    if ((GtkWidget*) palette->priv->groups[i] == child)
+      {
+        g_object_unref (child);
+        gtk_widget_unparent (child);
+        palette->priv->groups[i] = NULL;
+        palette->priv->sparse_groups = TRUE;
+      }
 }
 
 static void
@@ -427,10 +474,12 @@ egg_tool_palette_forall (GtkContainer *container,
   guint i;
 
   if (palette->priv->groups)
-    for (i = 0; i < palette->priv->groups->len; ++i)
+    for (i = 0; i < palette->priv->groups_length; ++i)
       {
-        EggToolItemGroup *group = egg_tool_palette_get_group (palette, i);
-        callback (GTK_WIDGET (group), callback_data);
+        EggToolItemGroup *group = palette->priv->groups[i];
+
+        if (group)
+          callback (GTK_WIDGET (group), callback_data);
       }
 }
 
@@ -544,7 +593,7 @@ egg_tool_palette_reorder_group (EggToolPalette *palette,
 {
   g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
-  g_return_if_fail (position < palette->priv->groups->len);
+  g_return_if_fail (position < palette->priv->groups_length);
 
   g_return_if_reached ();
 }
@@ -593,13 +642,13 @@ egg_tool_palette_set_drag_source (EggToolPalette *palette)
 
   g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
 
-  if (palette->priv->is_drag_source)
+  if (palette->priv->drag_source)
     return;
 
-  palette->priv->is_drag_source = TRUE;
+  palette->priv->drag_source = TRUE;
 
-  for (i = 0; i < palette->priv->groups->len; ++i)
-    gtk_container_foreach (GTK_CONTAINER (egg_tool_palette_get_group (palette, i)),
+  for (i = 0; i < palette->priv->groups_length; ++i)
+    gtk_container_foreach (GTK_CONTAINER (palette->priv->groups[i]),
                            _egg_tool_palette_item_set_drag_source,
                            palette);
 }
@@ -658,7 +707,7 @@ _egg_tool_palette_item_set_drag_source (GtkWidget *widget,
 
   g_return_if_fail (GTK_IS_TOOL_ITEM (widget));
 
-  if (palette->priv->is_drag_source)
+  if (palette->priv->drag_source)
     {
       gtk_tool_item_set_use_drag_window (GTK_TOOL_ITEM (widget), TRUE);
 
