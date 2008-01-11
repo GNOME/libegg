@@ -154,16 +154,16 @@ egg_tool_item_group_set_property (GObject      *object,
                                   const GValue *value,
                                   GParamSpec   *pspec)
 {
-  EggToolItemGroup *self = EGG_TOOL_ITEM_GROUP (object);
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (object);
 
   switch (prop_id)
     {
       case PROP_NAME:
-        egg_tool_item_group_set_name (self, g_value_get_string (value));
+        egg_tool_item_group_set_name (group, g_value_get_string (value));
         break;
 
       case PROP_EXPANED:
-        egg_tool_item_group_set_expanded (self, g_value_get_boolean (value));
+        egg_tool_item_group_set_expanded (group, g_value_get_boolean (value));
         break;
 
       default:
@@ -178,16 +178,16 @@ egg_tool_item_group_get_property (GObject    *object,
                                   GValue     *value,
                                   GParamSpec *pspec)
 {
-  EggToolItemGroup *self = EGG_TOOL_ITEM_GROUP (object);
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (object);
 
   switch (prop_id)
     {
       case PROP_NAME:
-        g_value_set_string (value, egg_tool_item_group_get_name (self));
+        g_value_set_string (value, egg_tool_item_group_get_name (group));
         break;
 
       case PROP_EXPANED:
-        g_value_set_boolean (value, egg_tool_item_group_get_expanded (self));
+        g_value_set_boolean (value, egg_tool_item_group_get_expanded (group));
         break;
 
       default:
@@ -199,12 +199,12 @@ egg_tool_item_group_get_property (GObject    *object,
 static void
 egg_tool_item_group_finalize (GObject *object)
 {
-  EggToolItemGroup *self = EGG_TOOL_ITEM_GROUP (object);
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (object);
 
-  if (self->priv->items)
+  if (group->priv->items)
     {
-      g_array_free (self->priv->items, TRUE);
-      self->priv->items = NULL;
+      g_array_free (group->priv->items, TRUE);
+      group->priv->items = NULL;
     }
 
   G_OBJECT_CLASS (egg_tool_item_group_parent_class)->finalize (object);
@@ -215,17 +215,17 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
                                   GtkRequisition *requisition)
 {
   const gint border_width = GTK_CONTAINER (widget)->border_width;
-  EggToolItemGroup *self = EGG_TOOL_ITEM_GROUP (widget);
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
 
-  if (self->priv->items->len && egg_tool_item_group_get_name (self))
+  if (group->priv->items->len && egg_tool_item_group_get_name (group))
     {
-      gtk_widget_size_request (self->priv->header, requisition);
-      gtk_widget_show (self->priv->header);
+      gtk_widget_size_request (group->priv->header, requisition);
+      gtk_widget_show (group->priv->header);
     }
   else
     {
       requisition->width = requisition->height = 0;
-      gtk_widget_hide (self->priv->header);
+      gtk_widget_hide (group->priv->header);
     }
 
   requisition->width += border_width;
@@ -410,16 +410,16 @@ egg_tool_item_group_forall (GtkContainer *container,
                             GtkCallback   callback,
                             gpointer      callback_data)
 {
-  EggToolItemGroup *self = EGG_TOOL_ITEM_GROUP (container);
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (container);
   guint i;
 
-  if (internals && self->priv->header)
-    callback (self->priv->header, callback_data);
+  if (internals && group->priv->header)
+    callback (group->priv->header, callback_data);
 
-  if (NULL != self->priv->items)
-    for (i = 0; i < self->priv->items->len; ++i)
+  if (NULL != group->priv->items)
+    for (i = 0; i < group->priv->items->len; ++i)
       {
-        GtkToolItem *item = egg_tool_item_group_get_nth_item (self, i);
+        GtkToolItem *item = egg_tool_item_group_get_nth_item (group, i);
         callback (GTK_WIDGET (item), callback_data);
       }
 }
