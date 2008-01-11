@@ -1,5 +1,11 @@
 2008-01-11  Mathias Hasselmann  <mathias@openismus.com>
 
+	Use less animation steps for expand/collapse animation.
+
+	* libegg/toolpalette/eggtoolitemgroup.c: Decrease ANIMATION_DURATION.
+
+2008-01-11  Mathias Hasselmann  <mathias@openismus.com>
+
 	Implement composited expand/collapse animation.
 
 	* libegg/toolpalette/eggtoolitemgroup.h: Indent fixes.
