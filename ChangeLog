@@ -1,3 +1,16 @@
+2008-01-11  Mathias Hasselmann  <mathias@openismus.com>
+
+	Implement composited expand/collapse animation.
+
+	* libegg/toolpalette/eggtoolitemgroup.h: Indent fixes.
+	* libegg/toolpalette/eggtoolitemgroup.c: Implement animation.
+	* libegg/toolpalette/eggtoolpalette.c: Draw composited
+	EggToolItemGroup. Delegate item group size calculation
+	to _egg_tool_item_group_get_height_for_width().
+	* libegg/toolpalette/eggtoolpaletteprivate.h:
+	Add _egg_tool_item_group_get_height_for_width() and
+	_egg_tool_item_group_paint().
+
 2008-01-10  Mathias Hasselmann  <mathias@openismus.com>
 
 	Refactor EggToolPaletteCategory into EggToolItemGroup widget.

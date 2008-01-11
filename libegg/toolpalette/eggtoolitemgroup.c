@@ -30,8 +30,10 @@
 
 #include <string.h>
 
-#define DEFAULT_EXPANDER_SIZE   16
-#define DEFAULT_HEADER_SPACING  2
+#define ANIMATION_TIMEOUT        50
+#define ANIMATION_DURATION      (ANIMATION_TIMEOUT * 6)
+#define DEFAULT_EXPANDER_SIZE    16
+#define DEFAULT_HEADER_SPACING   2
 
 #define P_(msgid) _(msgid)
 
@@ -47,7 +49,8 @@ struct _EggToolItemGroupPrivate
   GtkWidget        *header;
   GArray           *items;
 
-  guint             animation_timeout;
+  gint64            animation_start;
+  GSource          *animation_timeout;
   GtkExpanderStyle  expander_style;
   gint              expander_size;
   gint              header_spacing;
@@ -230,6 +233,18 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
 }
 
 static void
+egg_tool_item_group_get_item_size (EggToolItemGroup *group,
+                                   GtkRequisition   *item_size)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    _egg_tool_palette_get_item_size (EGG_TOOL_PALETTE (parent), item_size);
+  else
+    _egg_tool_item_group_item_size_request (group, item_size);
+}
+
+static void
 egg_tool_item_group_size_allocate (GtkWidget     *widget,
                                    GtkAllocation *allocation)
 {
@@ -238,17 +253,10 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
   GtkRequisition child_requistion;
   GtkAllocation child_allocation;
   GtkRequisition item_size;
-  GtkWidget *parent;
   guint i;
 
   GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
-
-  parent = gtk_widget_get_parent (widget);
-
-  if (EGG_IS_TOOL_PALETTE (parent))
-    _egg_tool_palette_get_item_size (EGG_TOOL_PALETTE (parent), &item_size);
-  else
-    _egg_tool_item_group_item_size_request (group, &item_size);
+  egg_tool_item_group_get_item_size (group, &item_size);
 
   child_allocation.x = border_width;
   child_allocation.y = border_width;
@@ -265,7 +273,7 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
       child_allocation.y += child_allocation.height;
     }
 
-    if (group->priv->expanded)
+    if (group->priv->expanded || group->priv->animation_timeout)
       {
         for (i = 0; i < group->priv->items->len; ++i)
           {
@@ -308,6 +316,7 @@ egg_tool_item_group_realize (GtkWidget *widget)
   const gint border_width = GTK_CONTAINER (widget)->border_width;
   gint attributes_mask = GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL | GDK_WA_COLORMAP;
   GdkWindowAttr attributes;
+  GdkDisplay *display;
 
   attributes.window_type = GDK_WINDOW_CHILD;
   attributes.x = widget->allocation.x + border_width;
@@ -323,6 +332,11 @@ egg_tool_item_group_realize (GtkWidget *widget)
 
   widget->window = gdk_window_new (gtk_widget_get_parent_window (widget),
                                    &attributes, attributes_mask);
+
+  display = gdk_drawable_get_display (widget->window);
+
+  if (gdk_display_supports_composite (display))
+    gdk_window_set_composited (widget->window, TRUE);
 
   gdk_window_set_user_data (widget->window, widget);
   widget->style = gtk_style_attach (widget->style, widget->window);
@@ -506,16 +520,24 @@ egg_tool_item_group_set_name (EggToolItemGroup *group,
     }
 }
 
+static gint64
+egg_tool_item_group_get_animation_timestamp (EggToolItemGroup *group)
+{
+  GTimeVal now;
+  g_source_get_current_time (group->priv->animation_timeout, &now);
+  return (now.tv_sec * G_USEC_PER_SEC + now.tv_usec - group->priv->animation_start) / 1000;
+}
+
 static gboolean
 egg_tool_item_group_animation_cb (gpointer data)
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (data);
-  gboolean finish = TRUE;
-  GdkRectangle area;
+  gint64 timestamp = egg_tool_item_group_get_animation_timestamp (group);
 
   if (GTK_WIDGET_REALIZED (group->priv->header))
     {
       GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
+      GdkRectangle area;
 
       area.x = alignment->allocation.x;
       area.y = alignment->allocation.y + (alignment->allocation.height - group->priv->expander_size) / 2;
@@ -525,34 +547,47 @@ egg_tool_item_group_animation_cb (gpointer data)
       gdk_window_invalidate_rect (group->priv->header->window, &area, TRUE);
     }
 
+  if (GTK_WIDGET_REALIZED (group))
+    {
+      GtkWidget *widget = GTK_WIDGET (group);
+      GtkWidget *parent = gtk_widget_get_parent (widget);
+
+      gint width = widget->allocation.width;
+      gint height = widget->allocation.height;
+      gint x, y;
+
+      gtk_widget_translate_coordinates (widget, parent, 0, 0, &x, &y);
+
+      if (GTK_WIDGET_VISIBLE (group->priv->header))
+        {
+          height -= group->priv->header->allocation.height;
+          y += group->priv->header->allocation.height;
+        }
+
+      gtk_widget_queue_draw_area (parent, x, y, width, height);
+    }
+
   if (group->priv->expanded)
     {
       if (group->priv->expander_style == GTK_EXPANDER_COLLAPSED)
-        {
-          group->priv->expander_style = GTK_EXPANDER_SEMI_EXPANDED;
-          finish = FALSE;
-        }
+        group->priv->expander_style = GTK_EXPANDER_SEMI_EXPANDED;
       else
         group->priv->expander_style = GTK_EXPANDER_EXPANDED;
     }
   else
     {
       if (group->priv->expander_style == GTK_EXPANDER_EXPANDED)
-        {
-          group->priv->expander_style = GTK_EXPANDER_SEMI_COLLAPSED;
-          finish = FALSE;
-        }
+        group->priv->expander_style = GTK_EXPANDER_SEMI_COLLAPSED;
       else
         group->priv->expander_style = GTK_EXPANDER_COLLAPSED;
     }
 
-  if (finish)
-    {
-      group->priv->animation_timeout = 0;
-      gtk_widget_queue_resize_no_redraw (GTK_WIDGET (group));
-    }
+  if (timestamp >= ANIMATION_DURATION)
+    group->priv->animation_timeout = NULL;
 
-  return !finish;
+  gtk_widget_queue_resize_no_redraw (GTK_WIDGET (group));
+
+  return (group->priv->animation_timeout != NULL);
 }
 
 void
@@ -563,12 +598,22 @@ egg_tool_item_group_set_expanded (EggToolItemGroup *group,
 
   if (expanded != group->priv->expanded)
     {
+      GTimeVal now;
+
+      g_get_current_time (&now);
+
       if (group->priv->animation_timeout)
-        g_source_remove (group->priv->animation_timeout);
+        g_source_destroy (group->priv->animation_timeout);
 
       group->priv->expanded = expanded;
-      group->priv->animation_timeout = g_timeout_add (50, egg_tool_item_group_animation_cb, group);
+      group->priv->animation_start = (now.tv_sec * G_USEC_PER_SEC + now.tv_usec);
+      group->priv->animation_timeout = g_timeout_source_new (ANIMATION_TIMEOUT);
 
+      g_source_set_callback (group->priv->animation_timeout,
+                             egg_tool_item_group_animation_cb,
+                             group, NULL);
+
+      g_source_attach (group->priv->animation_timeout, NULL);
       g_object_notify (G_OBJECT (group), "expanded");
     }
 }
@@ -701,4 +746,85 @@ _egg_tool_item_group_item_size_request (EggToolItemGroup *group,
       item_size->width = MAX (item_size->width, child_requisition.width);
       item_size->height = MAX (item_size->height, child_requisition.height);
     }
+}
+
+void
+_egg_tool_item_group_paint (EggToolItemGroup *group,
+                            cairo_t          *cr)
+{
+  GtkWidget *widget = GTK_WIDGET (group);
+
+  gdk_cairo_set_source_pixmap (cr, widget->window,
+                               widget->allocation.x,
+                               widget->allocation.y);
+
+  if (group->priv->animation_timeout)
+    {
+      cairo_pattern_t *mask;
+      gdouble y0, y1;
+
+      y0 = widget->allocation.height - 256;
+      y1 = widget->allocation.height;
+
+      if (GTK_WIDGET_VISIBLE (group->priv->header))
+        y0 = MAX (y0, group->priv->header->allocation.height);
+      else
+        y0 = MAX (y0, 0);
+
+      y1 = MIN (y0 + 256, y1);
+
+      y0 += widget->allocation.y;
+      y1 += widget->allocation.y;
+
+      mask = cairo_pattern_create_linear (0.0, y0, 0.0, y1);
+
+      cairo_pattern_add_color_stop_rgba (mask, 0.00, 0.0, 0.0, 0.0, 1.00);
+      cairo_pattern_add_color_stop_rgba (mask, 0.25, 0.0, 0.0, 0.0, 0.25);
+      cairo_pattern_add_color_stop_rgba (mask, 0.50, 0.0, 0.0, 0.0, 0.10);
+      cairo_pattern_add_color_stop_rgba (mask, 0.75, 0.0, 0.0, 0.0, 0.01);
+      cairo_pattern_add_color_stop_rgba (mask, 1.00, 0.0, 0.0, 0.0, 0.00);
+
+      cairo_mask (cr, mask);
+      cairo_pattern_destroy (mask);
+    }
+  else
+    cairo_paint (cr);
+}
+
+gint
+_egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
+                                           gint              width)
+{
+  guint n_items = group->priv->items->len;
+  GtkRequisition child_requisition;
+
+  gtk_widget_size_request (GTK_WIDGET (group), &child_requisition);
+
+  if (n_items && (group->priv->expanded || group->priv->animation_timeout))
+    {
+      gint n_columns, n_rows, height;
+      GtkRequisition item_size;
+
+      egg_tool_item_group_get_item_size (group, &item_size);
+
+      n_columns = width / item_size.width;
+      n_rows = (n_items + n_columns - 1) / n_columns;
+      height = item_size.height * n_rows;
+
+      if (group->priv->animation_timeout)
+        {
+          gint64 timestamp = egg_tool_item_group_get_animation_timestamp (group);
+
+          timestamp = MIN (timestamp, ANIMATION_DURATION);
+
+          if (!group->priv->expanded)
+            timestamp = ANIMATION_DURATION - timestamp;
+
+          height = height * timestamp / ANIMATION_DURATION;
+        }
+
+      child_requisition.height += height;
+    }
+
+  return child_requisition.height;
 }

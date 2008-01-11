@@ -245,7 +245,6 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 {
   const gint border_width = GTK_CONTAINER (widget)->border_width;
   EggToolPalette *palette = EGG_TOOL_PALETTE (widget);
-  GtkRequisition child_requisition;
   GtkAllocation child_allocation;
   gint offset = 0;
   guint i;
@@ -262,25 +261,18 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
   for (i = 0; i < palette->priv->groups->len; ++i)
     {
       EggToolItemGroup *group = egg_tool_palette_get_group (palette, i);
-      gint n_items = egg_tool_item_group_get_n_items (group);
 
-      if (!n_items)
-        continue;
-
-      gtk_widget_size_request (GTK_WIDGET (group), &child_requisition);
-      child_allocation.height = child_requisition.height;
-
-      if (egg_tool_item_group_get_expanded (group))
+      if (egg_tool_item_group_get_n_items (group))
         {
-        /* TODO: Use gtk_widget_get_height_for_width */
-          gint n_columns = child_allocation.width / palette->priv->item_size.width;
-          gint n_rows = (n_items + n_columns - 1) / n_columns;
+          child_allocation.height = _egg_tool_item_group_get_height_for_width (group, child_allocation.width);
 
-          child_allocation.height += palette->priv->item_size.height * n_rows;
+          gtk_widget_size_allocate (GTK_WIDGET (group), &child_allocation);
+          gtk_widget_show (GTK_WIDGET (group));
+
+          child_allocation.y += child_allocation.height;
         }
-
-      gtk_widget_size_allocate (GTK_WIDGET (group), &child_allocation);
-      child_allocation.y += child_allocation.height;
+      else
+          gtk_widget_hide (GTK_WIDGET (group));
     }
 
   child_allocation.y += border_width;
@@ -301,18 +293,30 @@ static gboolean
 egg_tool_palette_expose_event (GtkWidget      *widget,
                                GdkEventExpose *event)
 {
-  EggToolPalette *palette =  EGG_TOOL_PALETTE (widget);
+  EggToolPalette *palette = EGG_TOOL_PALETTE (widget);
+  GdkDisplay *display;
+  cairo_t *cr;
   guint i;
 
   if (GTK_WIDGET_CLASS (egg_tool_palette_parent_class)->expose_event (widget, event))
     return TRUE;
 
+  display = gdk_drawable_get_display (widget->window);
+  if (!gdk_display_supports_composite (display))
+    return FALSE;
+
+  cr = gdk_cairo_create (widget->window);
+  cairo_push_group (cr);
+
   for (i = 0; i < palette->priv->groups->len; ++i)
     {
-/* TODO: draw composited window
       EggToolItemGroup *group = egg_tool_palette_get_group (palette, i);
-*/
+      _egg_tool_item_group_paint (group, cr);
     }
+
+  cairo_pop_group_to_source (cr);
+  cairo_paint (cr);
+  cairo_destroy (cr);
 
   return FALSE;
 }

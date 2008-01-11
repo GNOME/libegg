@@ -50,7 +50,7 @@ struct _EggToolItemGroupClass
 };
 
 GType                 egg_tool_item_group_get_type          (void) G_GNUC_CONST;
-GtkWidget*            egg_tool_item_group_new               (const gchar *name);
+GtkWidget*            egg_tool_item_group_new               (const gchar      *name);
 
 void                  egg_tool_item_group_set_name          (EggToolItemGroup *group,
                                                              const gchar      *name);

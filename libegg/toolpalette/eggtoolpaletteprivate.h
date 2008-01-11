@@ -25,12 +25,16 @@
 #include "eggtoolpalette.h"
 #include "eggtoolitemgroup.h"
 
-void _egg_tool_palette_get_item_size        (EggToolPalette   *palette,
-                                             GtkRequisition   *item_size);
-void _egg_tool_palette_item_set_drag_source (GtkWidget        *widget,
-                                             gpointer          data);
+void _egg_tool_palette_get_item_size           (EggToolPalette   *palette,
+                                                GtkRequisition   *item_size);
+void _egg_tool_palette_item_set_drag_source    (GtkWidget        *widget,
+                                                gpointer          data);
 
-void _egg_tool_item_group_item_size_request (EggToolItemGroup *group,
-                                             GtkRequisition   *item_size);
+void _egg_tool_item_group_item_size_request    (EggToolItemGroup *group,
+                                                GtkRequisition   *item_size);
+gint _egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
+                                                gint              width);
+void _egg_tool_item_group_paint                (EggToolItemGroup *group,
+                                                cairo_t          *cr);
 
 #endif /* __EGG_TOOL_PALETTE_PRIVATE_H__ */
