@@ -1,5 +1,6 @@
 #include "eggtoolpalette.h"
 #include "eggtoolitemgroup.h"
+#include "eggenumaction.h"
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -126,6 +127,12 @@ create_ui (void)
           <menuitem action='FileQuit' />        \
         </menu>                                 \
                                                 \
+        <menu action='ViewMenu'>                \
+          <menuitem action='ViewIconSize' />    \
+          <menuitem action='ViewOrientation' /> \
+          <menuitem action='ViewStyle' />       \
+        </menu>                                 \
+                                                \
         <menu action='HelpMenu'>                \
           <menuitem action='HelpAbout' />       \
         </menu>                                 \
@@ -135,6 +142,11 @@ create_ui (void)
         <toolitem action='FileNew' />           \
         <toolitem action='FileOpen' />          \
         <toolitem action='FileSave' />          \
+        <separator />                           \
+        <toolitem action='ViewIconSize' />      \
+        <toolitem action='ViewOrientation' />   \
+        <toolitem action='ViewStyle' />         \
+        <separator />                           \
         <separator />                           \
         <toolitem action='HelpAbout' />         \
       </toolbar>                                \
@@ -148,6 +160,7 @@ create_ui (void)
     { "FileSaveAs", GTK_STOCK_SAVE_AS, NULL, NULL, NULL, G_CALLBACK (not_implemented) },
     { "FileClose",  GTK_STOCK_CLOSE, NULL,   NULL, NULL, G_CALLBACK (not_implemented) },
     { "FileQuit",   GTK_STOCK_QUIT, NULL,    NULL, NULL, G_CALLBACK (gtk_main_quit) },
+    { "ViewMenu",   NULL, N_("_View"),       NULL, NULL, NULL },
     { "HelpMenu",   NULL, N_("_Help"),       NULL, NULL, NULL },
     { "HelpAbout",  GTK_STOCK_ABOUT, NULL,   NULL, NULL, G_CALLBACK (not_implemented) },
   };
@@ -160,14 +173,29 @@ create_ui (void)
   GtkWidget *menubar, *toolbar, *hpaned;
   GtkWidget *palette, *palette_scroller;
   GtkWidget *contents, *contents_scroller;
+  GtkAction *action;
 
   /* ===== menubar/toolbar ===== */
 
+  palette = egg_tool_palette_new ();
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   group = gtk_action_group_new ("");
   ui = gtk_ui_manager_new ();
 
   gtk_action_group_add_actions (group, actions, G_N_ELEMENTS (actions), window);
+
+  action = egg_enum_action_new ("ViewIconSize", _("Icon Size"), NULL, GTK_TYPE_ICON_SIZE);
+  egg_enum_action_bind (EGG_ENUM_ACTION (action), G_OBJECT (palette), "icon-size");
+  gtk_action_group_add_action (group, action);
+
+  action = egg_enum_action_new ("ViewOrientation", _("Orientation"), NULL, GTK_TYPE_ORIENTATION);
+  egg_enum_action_bind (EGG_ENUM_ACTION (action), G_OBJECT (palette), "orientation");
+  gtk_action_group_add_action (group, action);
+
+  action = egg_enum_action_new ("ViewStyle", _("Style"), NULL, GTK_TYPE_TOOLBAR_STYLE);
+  egg_enum_action_bind (EGG_ENUM_ACTION (action), G_OBJECT (palette), "toolbar-style");
+  gtk_action_group_add_action (group, action);
+
   gtk_ui_manager_insert_action_group (ui, group, -1);
 
   if (!gtk_ui_manager_add_ui_from_string (ui, ui_spec, sizeof ui_spec - 1, &error))
@@ -180,8 +208,6 @@ create_ui (void)
   toolbar = gtk_ui_manager_get_widget (ui, "/toolbar");
 
   /* ===== palette ===== */
-
-  palette = egg_tool_palette_new ();
 
   load_stock_items (EGG_TOOL_PALETTE (palette));
 

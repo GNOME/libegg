@@ -1,3 +1,14 @@
+2008-01-12  Mathias Hasselmann  <mathias@openismus.com>
+
+	Provide combo boxes for toggling palette properties in test program.
+
+	* libegg/toolpalette/eggenumaction.h: Declare EggEnumAction.
+	* libegg/toolpalette/eggenumaction.c: Implement EggEnumAction.
+	* libegg/toolpalette/eggtoolitemgroup.c: I18N cleanup.
+	* libegg/toolpalette/eggtoolpalette.c: Install object properties.
+	* libegg/toolpalette/Makefile.am: Add eggenumaction.c.
+	* libegg/toolpalette/testtoolpalette.c: Add new actions.
+
 2008-01-11  Mathias Hasselmann  <mathias@openismus.com>
 
 	* libegg/toolpalette/eggtoolitemgroup.h:

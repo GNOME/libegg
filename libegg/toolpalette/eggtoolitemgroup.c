@@ -22,8 +22,6 @@
 #include "eggtoolitemgroup.h"
 #include "eggtoolpaletteprivate.h"
 
-#include <glib/gi18n.h>
-
 #include <gtk/gtkalignment.h>
 #include <gtk/gtkbutton.h>
 #include <gtk/gtklabel.h>
@@ -35,7 +33,7 @@
 #define DEFAULT_EXPANDER_SIZE    16
 #define DEFAULT_HEADER_SPACING   2
 
-#define P_(msgid) _(msgid)
+#define P_(msgid) (msgid)
 
 enum
 {

@@ -29,7 +29,9 @@
 
 #define DEFAULT_ICON_SIZE       GTK_ICON_SIZE_SMALL_TOOLBAR
 #define DEFAULT_ORIENTATION     GTK_ORIENTATION_VERTICAL
-#define DEFAULT_STYLE           GTK_TOOLBAR_ICONS
+#define DEFAULT_TOOLBAR_STYLE   GTK_TOOLBAR_ICONS
+
+#define P_(msgid) (msgid)
 
 typedef struct _EggToolPaletteDragData EggToolPaletteDragData;
 
@@ -38,7 +40,7 @@ enum
   PROP_NONE,
   PROP_ICON_SIZE,
   PROP_ORIENTATION,
-  PROP_STYLE,
+  PROP_TOOLBAR_STYLE,
 };
 
 struct _EggToolPalettePrivate
@@ -88,7 +90,7 @@ egg_tool_palette_init (EggToolPalette *palette)
 
   palette->priv->icon_size = DEFAULT_ICON_SIZE;
   palette->priv->orientation = DEFAULT_ORIENTATION;
-  palette->priv->style = DEFAULT_STYLE;
+  palette->priv->style = DEFAULT_TOOLBAR_STYLE;
 }
 
 static void
@@ -117,7 +119,7 @@ egg_tool_palette_set_property (GObject      *object,
           }
         break;
 
-      case PROP_STYLE:
+      case PROP_TOOLBAR_STYLE:
         if ((guint) g_value_get_enum (value) != palette->priv->style)
           {
             palette->priv->style = g_value_get_enum (value);
@@ -149,7 +151,7 @@ egg_tool_palette_get_property (GObject    *object,
         g_value_set_enum (value, egg_tool_palette_get_orientation (palette));
         break;
 
-      case PROP_STYLE:
+      case PROP_TOOLBAR_STYLE:
         g_value_set_enum (value, egg_tool_palette_get_style (palette));
         break;
 
@@ -524,6 +526,33 @@ egg_tool_palette_class_init (EggToolPaletteClass *cls)
                   GTK_TYPE_ADJUSTMENT,
                   GTK_TYPE_ADJUSTMENT);
 
+  g_object_class_install_property (oclass, PROP_ICON_SIZE,
+                                   g_param_spec_enum ("icon-size",
+                                                      P_("Icon Size"),
+                                                      P_("The size of palette icons"),
+                                                      GTK_TYPE_ICON_SIZE,
+                                                      DEFAULT_ICON_SIZE,
+                                                      G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                      G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
+  g_object_class_install_property (oclass, PROP_ORIENTATION,
+                                   g_param_spec_enum ("orientation",
+                                                      P_("Orientation"),
+                                                      P_("Orientation of the tool palette"),
+                                                      GTK_TYPE_ORIENTATION,
+                                                      DEFAULT_ORIENTATION,
+                                                      G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                      G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
+  g_object_class_install_property (oclass, PROP_TOOLBAR_STYLE,
+                                   g_param_spec_enum ("toolbar-style",
+                                                      P_("Toolbar Style"),
+                                                      P_("Style of items in the tool palette"),
+                                                      GTK_TYPE_TOOLBAR_STYLE,
+                                                      DEFAULT_TOOLBAR_STYLE,
+                                                      G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                      G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
   g_type_class_add_private (cls, sizeof (EggToolPalettePrivate));
 
   dnd_target_atom = gdk_atom_intern_static_string (dnd_targets[0].target);
@@ -582,7 +611,7 @@ egg_tool_palette_get_orientation (EggToolPalette *palette)
 GtkToolbarStyle
 egg_tool_palette_get_style (EggToolPalette *palette)
 {
-  g_return_val_if_fail (EGG_IS_TOOL_PALETTE (palette), DEFAULT_STYLE);
+  g_return_val_if_fail (EGG_IS_TOOL_PALETTE (palette), DEFAULT_TOOLBAR_STYLE);
   return palette->priv->style;
 }
 

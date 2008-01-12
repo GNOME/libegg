@@ -9,7 +9,7 @@ INCLUDES = \
 noinst_LTLIBRARIES = libeggtoolpalette.la
 noinst_PROGRAMS = testtoolpalette
 
-libeggtoolpalette_la_SOURCES = eggtoolpalette.c eggtoolitemgroup.c
+libeggtoolpalette_la_SOURCES = eggenumaction.c eggtoolpalette.c eggtoolitemgroup.c
 
 testtoolpalette_SOURCES = testtoolpalette.c
 testtoolpalette_LDFLAGS = libeggtoolpalette.la ../util/libeggutil.la $(EGG_LIBS)
