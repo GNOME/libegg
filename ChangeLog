@@ -1,3 +1,11 @@
+2008-01-14  Mathias Hasselmann  <mathias@openismus.com>
+
+	Support filtering of EggEnumAction entries.
+
+	* libegg/toolpalette/eggenumaction.c,
+	libegg/toolpalette/eggenumaction.h: Add egg_enum_action_set_filter.
+	* libegg/toolpalette/testtoolpalette.c: Filter GTK_ICON_SIZE_INVALID.
+
 2008-01-12  Mathias Hasselmann  <mathias@openismus.com>
 
 	Provide combo boxes for toggling palette properties in test program.

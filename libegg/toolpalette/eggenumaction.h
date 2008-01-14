@@ -37,6 +37,9 @@ typedef struct _EggEnumAction        EggEnumAction;
 typedef struct _EggEnumActionClass   EggEnumActionClass;
 typedef struct _EggEnumActionPrivate EggEnumActionPrivate;
 
+typedef gboolean (*EggEnumActionFilterFunc) (GEnumValue *enum_value,
+                                             gpointer    user_data);
+
 struct _EggEnumAction
 {
   GtkAction parent_instance;
@@ -48,14 +51,20 @@ struct _EggEnumActionClass
   GtkActionClass parent_class;
 };
 
-GType      egg_enum_action_get_type (void) G_GNUC_CONST;
-GtkAction* egg_enum_action_new      (const gchar   *name,
-                                     const gchar   *label,
-                                     const gchar   *tooltip,
-                                     GType          enum_type);
-void       egg_enum_action_bind     (EggEnumAction *action,
-                                     GObject       *object,
-                                     const gchar   *property_name);
+GType      egg_enum_action_get_type   (void) G_GNUC_CONST;
+GtkAction* egg_enum_action_new        (const gchar             *name,
+                                       const gchar             *label,
+                                       const gchar             *tooltip,
+                                       GType                    enum_type);
+
+void       egg_enum_action_bind       (EggEnumAction           *action,
+                                       GObject                 *object,
+                                       const gchar             *property_name);
+
+void       egg_enum_action_set_filter (EggEnumAction           *action,
+                                       EggEnumActionFilterFunc  filter,
+                                       gpointer                 user_data,
+                                       GDestroyNotify           destroy_data);
 
 G_END_DECLS
 

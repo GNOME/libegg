@@ -110,6 +110,13 @@ contents_drag_data_received (GtkWidget        *widget,
     }
 }
 
+static gboolean
+drop_invalid_icon_size (GEnumValue *enum_value,
+                        gpointer    user_data G_GNUC_UNUSED)
+{
+  return (enum_value->value != GTK_ICON_SIZE_INVALID);
+}
+
 static GtkWidget*
 create_ui (void)
 {
@@ -185,6 +192,7 @@ create_ui (void)
   gtk_action_group_add_actions (group, actions, G_N_ELEMENTS (actions), window);
 
   action = egg_enum_action_new ("ViewIconSize", _("Icon Size"), NULL, GTK_TYPE_ICON_SIZE);
+  egg_enum_action_set_filter (EGG_ENUM_ACTION (action), drop_invalid_icon_size, NULL, NULL);
   egg_enum_action_bind (EGG_ENUM_ACTION (action), G_OBJECT (palette), "icon-size");
   gtk_action_group_add_action (group, action);
 

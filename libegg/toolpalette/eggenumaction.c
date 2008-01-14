@@ -36,6 +36,10 @@ struct _EggEnumActionPrivate
   GEnumClass   *enum_class;
   GSList       *bindings;
   GtkListStore *model;
+
+  EggEnumActionFilterFunc filter_func;
+  GDestroyNotify filter_destroy;
+  gpointer filter_data;
 };
 
 static GQuark egg_enum_action_child_quark;
@@ -131,6 +135,15 @@ egg_enum_action_dispose (GObject *object)
                                                           action->priv->bindings->data);
     }
 
+  if (action->priv->filter_destroy)
+    {
+      action->priv->filter_destroy (action->priv->filter_data);
+      action->priv->filter_destroy = NULL;
+    }
+
+  action->priv->filter_func = NULL;
+  action->priv->filter_data = NULL;
+
   G_OBJECT_CLASS (egg_enum_action_parent_class)->dispose (object);
 }
 
@@ -145,15 +158,20 @@ egg_enum_action_get_model (EggEnumAction *action)
       GtkTreeIter iter;
       guint i;
 
-      action->priv->model = gtk_list_store_new (2, G_TYPE_STRING, action->priv->enum_type);
+      action->priv->model = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_POINTER);
 
       for (i = 0; i < action->priv->enum_class->n_values; ++i)
         {
-          GEnumValue *v = &action->priv->enum_class->values[i];
+          GEnumValue *enum_value = &action->priv->enum_class->values[i];
+
+          if (action->priv->filter_func &&
+             !action->priv->filter_func (enum_value, action->priv->filter_data))
+            continue;
 
           gtk_list_store_append (action->priv->model, &iter);
-          gtk_list_store_set (action->priv->model, &iter, 
-                              0, v->value_nick, 1, v->value, -1);
+          gtk_list_store_set (action->priv->model, &iter,
+                              0, enum_value->value_nick,
+                              1, enum_value, -1);
         }
     }
 
@@ -167,7 +185,8 @@ egg_enum_action_get_iter (EggEnumAction *action,
                           GParamSpec    *property)
 {
   GtkTreeModel *model = egg_enum_action_get_model (action);
-  gint object_value, model_value;
+  GEnumValue *enum_value;
+  gint current_value;
 
   if (!gtk_tree_model_get_iter_first (model, iter))
     return FALSE;
@@ -175,13 +194,13 @@ egg_enum_action_get_iter (EggEnumAction *action,
   if (!G_IS_OBJECT (object) || !G_IS_PARAM_SPEC_ENUM (property))
     return TRUE;
 
-  g_object_get (object, property->name, &object_value, NULL);
+  g_object_get (object, property->name, &current_value, NULL);
 
   do
     {
-      gtk_tree_model_get (model, iter, 1, &model_value, -1);
+      gtk_tree_model_get (model, iter, 1, &enum_value, -1);
 
-      if (model_value == object_value)
+      if (enum_value->value == current_value)
         return TRUE;
     }
   while (gtk_tree_model_iter_next (model, iter));
@@ -227,15 +246,15 @@ egg_enum_action_combo_changed (GtkComboBox *combo,
                                gpointer     data)
 {
   EggEnumAction *action = EGG_ENUM_ACTION (data);
+  GEnumValue *enum_value;
   GtkTreeModel *model;
   GtkTreeIter iter;
-  gint value;
 
   if (gtk_combo_box_get_active_iter (combo, &iter))
     {
       model = egg_enum_action_get_model (action);
-      gtk_tree_model_get (model, &iter, 1, &value, -1);
-      egg_enum_action_set_value (action, value);
+      gtk_tree_model_get (model, &iter, 1, &enum_value, -1);
+      egg_enum_action_set_value (action, enum_value->value);
     }
 }
 
@@ -327,17 +346,19 @@ static void
 egg_enum_action_menu_item_toggled (GtkCheckMenuItem *item,
                                    gpointer          data)
 {
-  gpointer value = g_object_get_qdata (G_OBJECT (item), egg_enum_action_value_quark);
-  egg_enum_action_set_value (EGG_ENUM_ACTION (data), GPOINTER_TO_INT (value));
+  GEnumValue *enum_value;
+
+  enum_value = g_object_get_qdata (G_OBJECT (item), egg_enum_action_value_quark);
+  egg_enum_action_set_value (EGG_ENUM_ACTION (data), enum_value->value);
 }
 
 static GtkWidget*
 egg_enum_action_create_menu_item (GtkAction *action)
 {
   GtkTreeModel *model = egg_enum_action_get_model (EGG_ENUM_ACTION (action));
+  GEnumValue *enum_value;
   GtkTreeIter iter;
   gchar *label;
-  gint value;
 
   GtkWidget *item;
   GtkWidget *menu = gtk_menu_new ();
@@ -346,7 +367,7 @@ egg_enum_action_create_menu_item (GtkAction *action)
   if (gtk_tree_model_get_iter_first (model, &iter))
     do
       {
-        gtk_tree_model_get (model, &iter, 0, &label, 1, &value, -1);
+        gtk_tree_model_get (model, &iter, 0, &label, 1, &enum_value, -1);
 
         item = gtk_radio_menu_item_new_with_label (group, label);
         group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (item));
@@ -354,7 +375,7 @@ egg_enum_action_create_menu_item (GtkAction *action)
 
         g_object_set_qdata (G_OBJECT (item),
                             egg_enum_action_value_quark,
-                            GINT_TO_POINTER (value));
+                            enum_value);
 
         g_signal_connect (item, "toggled",
                           G_CALLBACK (egg_enum_action_menu_item_toggled),
@@ -489,3 +510,18 @@ egg_enum_action_bind (EggEnumAction *action,
   egg_enum_action_notify (object, property, action);
 }
 
+void
+egg_enum_action_set_filter (EggEnumAction           *action,
+                            EggEnumActionFilterFunc  filter,
+                            gpointer                 user_data,
+                            GDestroyNotify           destroy_data)
+{
+  g_return_if_fail (EGG_IS_ENUM_ACTION (action));
+
+  if (action->priv->filter_destroy)
+    action->priv->filter_destroy (action->priv->filter_data);
+
+  action->priv->filter_func = filter;
+  action->priv->filter_data = user_data;
+  action->priv->filter_destroy = destroy_data;
+}
