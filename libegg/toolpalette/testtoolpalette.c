@@ -293,11 +293,18 @@ main (int   argc,
       GtkButton::inner_border = { 0, 3, 0, 0 }          \
     }                                                   \
                                                         \
+    style 'egg-tool-item-group-button' {                \
+      GtkToolButton::icon-spacing = 12                  \
+    }                                                   \
+                                                        \
     class 'EggToolItemGroup'                            \
     style 'egg-tool-item-group'                         \
                                                         \
     widget_class '*<EggToolItemGroup>.GtkButton*'       \
     style 'egg-tool-item-group-header'                  \
+                                                        \
+    widget_class '*<EggToolItemGroup>.GtkToolButton'    \
+    style 'egg-tool-item-group-button'                  \
     ");
 
   ui = create_ui ();

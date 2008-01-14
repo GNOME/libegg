@@ -1,5 +1,14 @@
 2008-01-14  Mathias Hasselmann  <mathias@openismus.com>
 
+	* libegg/toolpalette/eggtoolitemgroup.c: Implement GtkToolShellIface.
+	Consider item size in size-request. Allow ellipses for table headers.
+	* libegg/toolpalette/eggtoolpalette.c: Emit "toolbar-reconfigured"
+	signal when the palette's appearance has changed.
+	* libegg/toolpalette/testtoolpalette.c: Apply
+	GtkToolButton::icon-spacing style property.
+
+2008-01-14  Mathias Hasselmann  <mathias@openismus.com>
+
 	Request GTK+ 2.15 for EggToolPalette.
 
 	* configure.in: Add HAVE_GTK215 conditional.

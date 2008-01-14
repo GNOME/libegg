@@ -25,6 +25,7 @@
 #include <gtk/gtkalignment.h>
 #include <gtk/gtkbutton.h>
 #include <gtk/gtklabel.h>
+#include <gtk/gtktoolshell.h>
 
 #include <string.h>
 
@@ -60,9 +61,10 @@ struct _EggToolItemGroupPrivate
   guint             expanded : 1;
 };
 
-G_DEFINE_TYPE (EggToolItemGroup,
-               egg_tool_item_group,
-               GTK_TYPE_CONTAINER);
+static void egg_tool_item_group_tool_shell_init (GtkToolShellIface *iface);
+
+G_DEFINE_TYPE_WITH_CODE (EggToolItemGroup, egg_tool_item_group, GTK_TYPE_CONTAINER,
+G_IMPLEMENT_INTERFACE (GTK_TYPE_TOOL_SHELL, egg_tool_item_group_tool_shell_init));
 
 static void
 egg_tool_item_group_repack (EggToolItemGroup *group)
@@ -141,7 +143,9 @@ egg_tool_item_group_init (EggToolItemGroup *group)
   group->priv->expanded = TRUE;
 
   label = gtk_label_new (NULL);
-  alignment = gtk_alignment_new (0.0, 0.5, 0.0, 0.0);
+  gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END);
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  alignment = gtk_alignment_new (0.5, 0.5, 1.0, 1.0);
 
   gtk_alignment_set_padding (GTK_ALIGNMENT (alignment), 0, 0,
                              group->priv->header_spacing +
@@ -235,11 +239,57 @@ egg_tool_item_group_finalize (GObject *object)
 }
 
 static void
+egg_tool_item_group_get_item_size (EggToolItemGroup *group,
+                                   GtkRequisition   *item_size)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    _egg_tool_palette_get_item_size (EGG_TOOL_PALETTE (parent), item_size);
+  else
+    _egg_tool_item_group_item_size_request (group, item_size);
+}
+
+static GtkIconSize
+egg_tool_item_group_get_icon_size (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_icon_size (EGG_TOOL_PALETTE (parent));
+
+  return GTK_ICON_SIZE_SMALL_TOOLBAR;
+}
+
+static GtkOrientation
+egg_tool_item_group_get_orientation (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_orientation (EGG_TOOL_PALETTE (parent));
+
+  return GTK_ORIENTATION_VERTICAL;
+}
+
+static GtkToolbarStyle
+egg_tool_item_group_get_style (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_style (EGG_TOOL_PALETTE (parent));
+
+  return GTK_TOOLBAR_ICONS;
+}
+
+static void
 egg_tool_item_group_size_request (GtkWidget      *widget,
                                   GtkRequisition *requisition)
 {
   const gint border_width = GTK_CONTAINER (widget)->border_width;
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
+  GtkRequisition item_size;
 
   egg_tool_item_group_repack (group);
 
@@ -254,20 +304,16 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
       gtk_widget_hide (group->priv->header);
     }
 
+  egg_tool_item_group_get_item_size (group, &item_size);
+
+  if (GTK_ORIENTATION_VERTICAL ==
+      egg_tool_item_group_get_orientation (GTK_TOOL_SHELL (group)))
+    requisition->width = MAX (requisition->width, item_size.width);
+  else
+    requisition->height = MAX (requisition->height, item_size.height);
+
   requisition->width += border_width;
   requisition->height += border_width;
-}
-
-static void
-egg_tool_item_group_get_item_size (EggToolItemGroup *group,
-                                   GtkRequisition   *item_size)
-{
-  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
-
-  if (EGG_IS_TOOL_PALETTE (parent))
-    _egg_tool_palette_get_item_size (EGG_TOOL_PALETTE (parent), item_size);
-  else
-    _egg_tool_item_group_item_size_request (group, item_size);
 }
 
 static void
@@ -533,6 +579,14 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
                                                              G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
   g_type_class_add_private (cls, sizeof (EggToolItemGroupPrivate));
+}
+
+static void
+egg_tool_item_group_tool_shell_init (GtkToolShellIface *iface)
+{
+  iface->get_icon_size = egg_tool_item_group_get_icon_size;
+  iface->get_orientation = egg_tool_item_group_get_orientation;
+  iface->get_style = egg_tool_item_group_get_style;
 }
 
 GtkWidget*

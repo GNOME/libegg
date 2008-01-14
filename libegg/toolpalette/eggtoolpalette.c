@@ -94,6 +94,34 @@ egg_tool_palette_init (EggToolPalette *palette)
 }
 
 static void
+egg_tool_palette_reconfigured_foreach_item (GtkWidget *child,
+                                            gpointer   data G_GNUC_UNUSED)
+{
+  if (GTK_IS_TOOL_ITEM (child))
+    gtk_tool_item_toolbar_reconfigured (GTK_TOOL_ITEM (child));
+}
+
+static void
+egg_tool_palette_reconfigured (EggToolPalette *palette)
+{
+  guint i;
+
+  for (i = 0; i < palette->priv->groups_length; ++i)
+    {
+      EggToolItemGroup *group = palette->priv->groups[i];
+
+      if (!group)
+        continue;
+
+      gtk_container_foreach (GTK_CONTAINER (group),
+                             egg_tool_palette_reconfigured_foreach_item,
+                             NULL);
+    }
+
+  gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
+}
+
+static void
 egg_tool_palette_set_property (GObject      *object,
                                guint         prop_id,
                                const GValue *value,
@@ -107,7 +135,7 @@ egg_tool_palette_set_property (GObject      *object,
         if ((guint) g_value_get_enum (value) != palette->priv->icon_size)
           {
             palette->priv->icon_size = g_value_get_enum (value);
-            gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
+            egg_tool_palette_reconfigured (palette);
           }
         break;
 
@@ -115,7 +143,7 @@ egg_tool_palette_set_property (GObject      *object,
         if ((guint) g_value_get_enum (value) != palette->priv->orientation)
           {
             palette->priv->orientation = g_value_get_enum (value);
-            gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
+            egg_tool_palette_reconfigured (palette);
           }
         break;
 
@@ -123,7 +151,7 @@ egg_tool_palette_set_property (GObject      *object,
         if ((guint) g_value_get_enum (value) != palette->priv->style)
           {
             palette->priv->style = g_value_get_enum (value);
-            gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
+            egg_tool_palette_reconfigured (palette);
           }
         break;
 
