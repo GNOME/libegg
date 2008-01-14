@@ -22,6 +22,11 @@ iconchooser_SUBDIRS = \
   iconchooser
 endif
 
+if HAVE_GTK215
+gtk215_SUBDIRS = \
+  toolpalette
+endif
+
 if HAVE_GTK_TARGET_X11
 background_monitor_SUBDIRS = \
   background-monitor
@@ -31,7 +36,7 @@ SUBDIRS = util column-chooser treeviewutils toolbar $(menu_SUBDIRS) iconlist \
   sidebar druid filesystem $(background_monitor_SUBDIRS) recent-files \
   $(tray_SUBDIRS) dock datetime desktopentries $(thumbnail_SUBDIRS) \
   $(iconchooser_SUBDIRS) bookmarkfile recentchooser regex sequence smclient \
-  fileformatchooser toolpalette
+  fileformatchooser $(gtk215_SUBDIRS)
 
 INCLUDES = \
   $(EGG_CFLAGS)  \

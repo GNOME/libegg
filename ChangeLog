@@ -1,5 +1,13 @@
 2008-01-14  Mathias Hasselmann  <mathias@openismus.com>
 
+	Request GTK+ 2.15 for EggToolPalette.
+
+	* configure.in: Add HAVE_GTK215 conditional.
+	* libegg/Makefile.am: Check HAVE_GTK215 conditional
+	and set gtk215_SUBDIRS variable accordingly.
+
+2008-01-14  Mathias Hasselmann  <mathias@openismus.com>
+
 	Support filtering of EggEnumAction entries.
 
 	* libegg/toolpalette/eggenumaction.c,
