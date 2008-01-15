@@ -93,6 +93,8 @@ egg_tool_palette_init (EggToolPalette *palette)
   palette->priv->style = DEFAULT_TOOLBAR_STYLE;
 }
 
+#ifdef GTK_TOOL_SHELL
+
 static void
 egg_tool_palette_reconfigured_foreach_item (GtkWidget *child,
                                             gpointer   data G_GNUC_UNUSED)
@@ -100,6 +102,7 @@ egg_tool_palette_reconfigured_foreach_item (GtkWidget *child,
   if (GTK_IS_TOOL_ITEM (child))
     gtk_tool_item_toolbar_reconfigured (GTK_TOOL_ITEM (child));
 }
+
 
 static void
 egg_tool_palette_reconfigured (EggToolPalette *palette)
@@ -120,6 +123,16 @@ egg_tool_palette_reconfigured (EggToolPalette *palette)
 
   gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
 }
+
+#else /* GTK_TOOL_SHELL */
+
+static void
+egg_tool_palette_reconfigured (EggToolPalette *palette)
+{
+  gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
+}
+
+#endif /* GTK_TOOL_SHELL */
 
 static void
 egg_tool_palette_set_property (GObject      *object,

@@ -1,3 +1,14 @@
+2008-01-15  Mathias Hasselmann  <mathias@openismus.com>
+
+	Mask GTK+ 2.15 features in EggToolPalette to support currently
+	GTK+ stable release. Without GTK+ 2.15 appearance of the tool
+	palette cannot be changed dynamically.
+
+	* libegg/toolpalette/eggtoolitemgroup.c: Don't call
+	gtk_tool_item_toolbar_reconfigured without GTK+ 2.15.
+	* libegg/toolpalette/eggtoolpalette.c: Don't implemented
+	GtkToolShellIface without GTK+ 2.15.
+
 2008-01-14  Mathias Hasselmann  <mathias@openismus.com>
 
 	* libegg/toolpalette/eggtoolitemgroup.c: Implement GtkToolShellIface.
