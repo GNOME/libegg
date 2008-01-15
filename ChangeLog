@@ -1,5 +1,12 @@
 2008-01-15  Mathias Hasselmann  <mathias@openismus.com>
 
+	Also demonstrate interactive drag-and-drop.
+
+	* libegg/toolpalette/testtoolpalette.c: Replace text-view by primitive
+	canvas widgets to also demonstrate interactive drag-and-drop.
+
+2008-01-15  Mathias Hasselmann  <mathias@openismus.com>
+
 	Mask GTK+ 2.15 features in EggToolPalette to support currently
 	GTK+ stable release. Without GTK+ 2.15 appearance of the tool
 	palette cannot be changed dynamically.
