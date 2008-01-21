@@ -748,6 +748,20 @@ _egg_tool_palette_get_item_size (EggToolPalette *palette,
   *item_size = palette->priv->item_size;
 }
 
+static GtkToolItem*
+egg_tool_palette_find_tool_item (GtkWidget *widget)
+{
+  while (widget)
+    {
+      if (GTK_IS_TOOL_ITEM (widget))
+        return GTK_TOOL_ITEM (widget);
+
+      widget = gtk_widget_get_parent (widget);
+    }
+
+  return NULL;
+}
+
 static void
 egg_tool_palette_item_drag_data_get (GtkWidget        *widget,
                                      GdkDragContext   *context G_GNUC_UNUSED,
@@ -756,17 +770,16 @@ egg_tool_palette_item_drag_data_get (GtkWidget        *widget,
                                      guint             time G_GNUC_UNUSED,
                                      gpointer          data)
 {
-  if (selection->target == dnd_target_atom)
-    {
-      EggToolPaletteDragData drag_data = {
-        EGG_TOOL_PALETTE (data),
-        GTK_TOOL_ITEM (widget)
-      };
+  EggToolPaletteDragData drag_data = {
+    EGG_TOOL_PALETTE (data), NULL
+  };
 
-      gtk_selection_data_set (selection, selection->target, 8,
-                              (guchar*) &drag_data,
-                              sizeof (drag_data));
-    }
+  if (selection->target == dnd_target_atom)
+    drag_data.item = egg_tool_palette_find_tool_item (widget);
+
+  if (drag_data.item)
+    gtk_selection_data_set (selection, selection->target, 8,
+                            (guchar*) &drag_data, sizeof (drag_data));
 }
 
 void
@@ -779,14 +792,16 @@ _egg_tool_palette_item_set_drag_source (GtkWidget *widget,
 
   if (palette->priv->drag_source)
     {
-      gtk_tool_item_set_use_drag_window (GTK_TOOL_ITEM (widget), TRUE);
+      /* Connect to child, instead of the item itself work arround bug 510377.
+       */
+      GtkWidget *child = gtk_bin_get_child (GTK_BIN (widget));
 
-      gtk_drag_source_set (widget,
+      gtk_drag_source_set (child,
                            GDK_BUTTON1_MASK | GDK_BUTTON3_MASK,
                            dnd_targets, G_N_ELEMENTS (dnd_targets),
                            GDK_ACTION_COPY);
 
-      g_signal_connect (widget, "drag-data-get",
+      g_signal_connect (child, "drag-data-get",
                         G_CALLBACK (egg_tool_palette_item_drag_data_get),
                         palette);
     }
