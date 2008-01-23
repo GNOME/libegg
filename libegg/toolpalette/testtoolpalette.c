@@ -102,6 +102,45 @@ canvas_expose_event (GtkWidget      *widget,
 /*****************************/
 
 static void
+palette_drop_item (GtkToolItem      *drag_item,
+                   EggToolItemGroup *drop_group,
+                   gint              x,
+                   gint              y)
+{
+  GtkWidget *drag_group = gtk_widget_get_parent (GTK_WIDGET (drag_item));
+  GtkToolItem *drop_item = egg_tool_item_group_get_drop_item (drop_group, x, y);
+  gint drop_position = -1;
+
+  if (drop_item)
+    drop_position = egg_tool_item_group_get_item_position (EGG_TOOL_ITEM_GROUP (drop_group), drop_item);
+
+  if (EGG_TOOL_ITEM_GROUP (drag_group) != drop_group)
+    {
+      g_object_ref (drag_item);
+      gtk_container_remove (GTK_CONTAINER (drag_group), GTK_WIDGET (drag_item));
+      egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (drop_group),
+                                  drag_item, drop_position);
+      g_object_unref (drag_item);
+    }
+  else
+    egg_tool_item_group_set_item_position (EGG_TOOL_ITEM_GROUP (drop_group),
+                                           drag_item, drop_position);
+}
+
+static void
+palette_drop_group (EggToolPalette *palette,
+                    GtkWidget      *drag_group,
+                    GtkWidget      *drop_group)
+{
+  gint drop_position = -1;
+
+  if (drop_group)
+    drop_position = egg_tool_palette_get_group_position (palette, drop_group);
+
+  egg_tool_palette_set_group_position (palette, drag_group, drop_position);
+}
+
+static void
 palette_drag_data_received (GtkWidget        *widget,
                             GdkDragContext   *context,
                             gint              x,
@@ -112,41 +151,24 @@ palette_drag_data_received (GtkWidget        *widget,
                             gpointer          data G_GNUC_UNUSED)
 {
   GtkWidget *drag_palette = gtk_drag_get_source_widget (context);
-  GtkWidget *drag_group = NULL, *drop_group = NULL;
-  GtkToolItem *drag_item = NULL, *drop_item = NULL;
-  gint drop_position = -1;
+  GtkWidget *drag_item = NULL, *drop_group = NULL;
 
   while (drag_palette && !EGG_IS_TOOL_PALETTE (drag_palette))
     drag_palette = gtk_widget_get_parent (drag_palette);
 
   if (drag_palette)
-    drag_item = egg_tool_palette_get_drag_item (EGG_TOOL_PALETTE (drag_palette), selection);
-  if (drag_item)
-    drop_group = egg_tool_palette_get_drop_group (EGG_TOOL_PALETTE (widget), x, y);
-
-  if (drop_group)
     {
-      drop_item = egg_tool_item_group_get_drop_item (EGG_TOOL_ITEM_GROUP (drop_group),
-                                                     x - drop_group->allocation.x,
-                                                     y - drop_group->allocation.y);
-
-      if (drop_item)
-        drop_position = egg_tool_item_group_get_item_position (EGG_TOOL_ITEM_GROUP (drop_group), drop_item);
-
-      drag_group = gtk_widget_get_parent (GTK_WIDGET (drag_item));
-
-      if (drag_group != drop_group)
-        {
-          g_object_ref (drag_item);
-          gtk_container_remove (GTK_CONTAINER (drag_group), GTK_WIDGET (drag_item));
-          egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (drop_group),
-                                      drag_item, drop_position);
-          g_object_unref (drag_item);
-        }
-      else
-        egg_tool_item_group_set_item_position (EGG_TOOL_ITEM_GROUP (drop_group),
-                                               drag_item, drop_position);
+      drag_item = egg_tool_palette_get_drag_item (EGG_TOOL_PALETTE (drag_palette), selection);
+      drop_group = egg_tool_palette_get_drop_group (EGG_TOOL_PALETTE (widget), x, y);
     }
+
+  if (EGG_IS_TOOL_ITEM_GROUP (drag_item))
+    palette_drop_group (EGG_TOOL_PALETTE (drag_palette), drag_item, drop_group);
+  else if (GTK_IS_TOOL_ITEM (drag_item) && drop_group)
+    palette_drop_item (GTK_TOOL_ITEM (drag_item),
+                       EGG_TOOL_ITEM_GROUP (drop_group),
+                       x - GTK_WIDGET (drop_group)->allocation.x,
+                       y - GTK_WIDGET (drop_group)->allocation.y);
 }
 
 /********************************/
@@ -167,7 +189,7 @@ passive_canvas_drag_data_received (GtkWidget        *widget,
 
   GtkWidget *palette = gtk_drag_get_source_widget (context);
   CanvasItem *canvas_item = NULL;
-  GtkToolItem *tool_item = NULL;
+  GtkWidget *tool_item = NULL;
 
   while (palette && !EGG_IS_TOOL_PALETTE (palette))
     palette = gtk_widget_get_parent (palette);
@@ -240,7 +262,7 @@ interactive_canvas_drag_data_received (GtkWidget        *widget,
   /* find the tool button, which is the source of this DnD operation */
 
   GtkWidget *palette = gtk_drag_get_source_widget (context);
-  GtkToolItem *tool_item = NULL;
+  GtkWidget *tool_item = NULL;
 
   while (palette && !EGG_IS_TOOL_PALETTE (palette))
     palette = gtk_widget_get_parent (palette);
@@ -561,7 +583,10 @@ create_ui (void)
                     G_CALLBACK (palette_drag_data_received),
                     NULL);
   egg_tool_palette_add_drag_dest (EGG_TOOL_PALETTE (palette),
-                                  palette, GTK_DEST_DEFAULT_ALL);
+                                  palette, GTK_DEST_DEFAULT_ALL,
+                                  EGG_TOOL_PALETTE_DRAG_ITEMS |
+                                  EGG_TOOL_PALETTE_DRAG_GROUPS,
+                                  GDK_ACTION_MOVE);
 
   /* ===== passive DnD dest ===== */
 
@@ -574,7 +599,9 @@ create_ui (void)
                     NULL);
 
   egg_tool_palette_add_drag_dest (EGG_TOOL_PALETTE (palette),
-                                  contents, GTK_DEST_DEFAULT_ALL);
+                                  contents, GTK_DEST_DEFAULT_ALL,
+                                  EGG_TOOL_PALETTE_DRAG_ITEMS,
+                                  GDK_ACTION_COPY);
 
   contents_scroller = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (contents_scroller),
@@ -599,7 +626,9 @@ create_ui (void)
                     NULL);
 
   egg_tool_palette_add_drag_dest (EGG_TOOL_PALETTE (palette),
-                                  contents, GTK_DEST_DEFAULT_HIGHLIGHT);
+                                  contents, GTK_DEST_DEFAULT_HIGHLIGHT,
+                                  EGG_TOOL_PALETTE_DRAG_ITEMS,
+                                  GDK_ACTION_COPY);
 
   contents_scroller = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (contents_scroller),

@@ -862,7 +862,7 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
   group->priv->items_length += 1;
 
   if (EGG_IS_TOOL_PALETTE (parent))
-    _egg_tool_palette_item_set_drag_source (GTK_WIDGET (item), parent);
+    _egg_tool_palette_child_set_drag_source (GTK_WIDGET (item), parent);
 
   gtk_widget_set_parent (GTK_WIDGET (item), GTK_WIDGET (group));
 }
@@ -870,7 +870,7 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
 void
 egg_tool_item_group_set_item_position (EggToolItemGroup *group,
                                        GtkToolItem      *item,
-                                       guint             position)
+                                       gint              position)
 {
   gint old_position;
   gpointer src, dst;
@@ -881,18 +881,20 @@ egg_tool_item_group_set_item_position (EggToolItemGroup *group,
 
   egg_tool_item_group_repack (group);
 
-  g_return_if_fail (position < group->priv->items_length);
+  g_return_if_fail (position >= -1);
+
+  if (-1 == position)
+    position = group->priv->items_length - 1;
+
+  g_return_if_fail ((guint) position < group->priv->items_length);
 
   if (item == group->priv->items[position])
     return;
 
   old_position = egg_tool_item_group_get_item_position (group, item);
-
   g_return_if_fail (old_position >= 0);
 
-g_print ("%s: old=%d, new=%d\n", G_STRFUNC, old_position, position);
-
-  if (position < (guint) old_position)
+  if (position < old_position)
     {
       dst = group->priv->items + position + 1;
       src = group->priv->items + position;

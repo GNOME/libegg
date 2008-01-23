@@ -64,13 +64,16 @@ struct _EggToolPalettePrivate
 struct _EggToolPaletteDragData
 {
   EggToolPalette *palette;
-  GtkToolItem    *item;
+  GtkWidget      *item;
 };
 
-static GdkAtom dnd_target_atom = GDK_NONE;
+static GdkAtom dnd_target_atom_item = GDK_NONE;
+static GdkAtom dnd_target_atom_group = GDK_NONE;
+
 static GtkTargetEntry dnd_targets[] =
 {
   { "application/x-egg-tool-palette-item", GTK_TARGET_SAME_APP, 0 },
+  { "application/x-egg-tool-palette-group", GTK_TARGET_SAME_APP, 0 },
 };
 
 G_DEFINE_TYPE (EggToolPalette,
@@ -603,7 +606,8 @@ egg_tool_palette_class_init (EggToolPaletteClass *cls)
 
   g_type_class_add_private (cls, sizeof (EggToolPalettePrivate));
 
-  dnd_target_atom = gdk_atom_intern_static_string (dnd_targets[0].target);
+  dnd_target_atom_item = gdk_atom_intern_static_string (dnd_targets[0].target);
+  dnd_target_atom_group = gdk_atom_intern_static_string (dnd_targets[1].target);
 }
 
 GtkWidget*
@@ -664,15 +668,65 @@ egg_tool_palette_get_style (EggToolPalette *palette)
 }
 
 void
-egg_tool_palette_reorder_group (EggToolPalette *palette,
-                                GtkWidget      *group,
-                                guint           position)
+egg_tool_palette_set_group_position (EggToolPalette *palette,
+                                     GtkWidget      *group,
+                                     gint            position)
 {
+  gint old_position;
+  gpointer src, dst;
+  gsize len;
+
   g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
-  g_return_if_fail (position < palette->priv->groups_length);
 
-  g_return_if_reached ();
+  egg_tool_palette_repack (palette);
+
+  g_return_if_fail (position >= -1);
+
+  if (-1 == position)
+    position = palette->priv->groups_length - 1;
+
+  g_return_if_fail ((guint) position < palette->priv->groups_length);
+
+  if (EGG_TOOL_ITEM_GROUP (group) == palette->priv->groups[position])
+    return;
+
+  old_position = egg_tool_palette_get_group_position (palette, group);
+  g_return_if_fail (old_position >= 0);
+
+  if (position < old_position)
+    {
+      dst = palette->priv->groups + position + 1;
+      src = palette->priv->groups + position;
+      len = old_position - position;
+    }
+  else
+    {
+      dst = palette->priv->groups + old_position;
+      src = palette->priv->groups + old_position + 1;
+      len = position - old_position;
+    }
+
+  memmove (dst, src, len * sizeof (*palette->priv->groups));
+  palette->priv->groups[position] = EGG_TOOL_ITEM_GROUP (group);
+
+  gtk_widget_queue_resize (GTK_WIDGET (palette));
+}
+
+gint
+egg_tool_palette_get_group_position (EggToolPalette *palette,
+                                     GtkWidget      *group)
+{
+  guint i;
+
+  g_return_val_if_fail (EGG_IS_TOOL_PALETTE (palette), -1);
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), -1);
+
+  for (i = 0; i < palette->priv->groups_length; ++i)
+    if ((gpointer) group == palette->priv->groups[i])
+      return i;
+
+  return -1;
 }
 
 GtkToolItem*
@@ -726,7 +780,7 @@ egg_tool_palette_get_drop_group (EggToolPalette *palette,
   return NULL;
 }
 
-GtkToolItem*
+GtkWidget*
 egg_tool_palette_get_drag_item (EggToolPalette   *palette,
                                 GtkSelectionData *selection)
 {
@@ -737,11 +791,18 @@ egg_tool_palette_get_drag_item (EggToolPalette   *palette,
 
   g_return_val_if_fail (selection->format == 8, NULL);
   g_return_val_if_fail (selection->length == sizeof (EggToolPaletteDragData), NULL);
-  g_return_val_if_fail (selection->target == dnd_target_atom, NULL);
+  g_return_val_if_fail (selection->target == dnd_target_atom_item ||
+                        selection->target == dnd_target_atom_group,
+                        NULL);
 
   data = (EggToolPaletteDragData*) selection->data;
 
   g_return_val_if_fail (data->palette == palette, NULL);
+
+  if (dnd_target_atom_item == selection->target)
+    g_return_val_if_fail (GTK_IS_TOOL_ITEM (data->item), NULL);
+  else if (dnd_target_atom_group == selection->target)
+    g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (data->item), NULL);
 
   return data->item;
 }
@@ -765,25 +826,33 @@ egg_tool_palette_set_drag_source (EggToolPalette *palette)
       if (!group)
         continue;
 
-      gtk_container_foreach (GTK_CONTAINER (group),
-                             _egg_tool_palette_item_set_drag_source,
-                             palette);
+      gtk_container_forall (GTK_CONTAINER (group),
+                            _egg_tool_palette_child_set_drag_source,
+                            palette);
     }
 }
 
 void
-egg_tool_palette_add_drag_dest (EggToolPalette  *palette,
-                                GtkWidget       *widget,
-                                GtkDestDefaults  flags)
+egg_tool_palette_add_drag_dest (EggToolPalette            *palette,
+                                GtkWidget                 *widget,
+                                GtkDestDefaults            flags,
+                                EggToolPaletteDragTargets  targets,
+                                GdkDragAction              actions)
 {
+  GtkTargetEntry entries[G_N_ELEMENTS (dnd_targets)];
+  gint n_entries = 0;
+
   g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
   g_return_if_fail (GTK_IS_WIDGET (widget));
 
   egg_tool_palette_set_drag_source (palette);
 
-  gtk_drag_dest_set (widget, flags, dnd_targets,
-                     G_N_ELEMENTS (dnd_targets),
-                     GDK_ACTION_COPY);
+  if (targets & EGG_TOOL_PALETTE_DRAG_ITEMS)
+    entries[n_entries++] = dnd_targets[0];
+  if (targets & EGG_TOOL_PALETTE_DRAG_GROUPS)
+    entries[n_entries++] = dnd_targets[1];
+
+  gtk_drag_dest_set (widget, flags, entries, n_entries, actions);
 }
 
 void
@@ -796,13 +865,14 @@ _egg_tool_palette_get_item_size (EggToolPalette *palette,
   *item_size = palette->priv->item_size;
 }
 
-static GtkToolItem*
-egg_tool_palette_find_tool_item (GtkWidget *widget)
+static GtkWidget*
+egg_tool_palette_find_anchestor (GtkWidget *widget,
+                                 GType      type)
 {
   while (widget)
     {
-      if (GTK_IS_TOOL_ITEM (widget))
-        return GTK_TOOL_ITEM (widget);
+      if (G_TYPE_CHECK_INSTANCE_TYPE (widget, type))
+        return widget;
 
       widget = gtk_widget_get_parent (widget);
     }
@@ -818,12 +888,28 @@ egg_tool_palette_item_drag_data_get (GtkWidget        *widget,
                                      guint             time G_GNUC_UNUSED,
                                      gpointer          data)
 {
-  EggToolPaletteDragData drag_data = {
-    EGG_TOOL_PALETTE (data), NULL
-  };
+  EggToolPaletteDragData drag_data = { EGG_TOOL_PALETTE (data), NULL };
 
-  if (selection->target == dnd_target_atom)
-    drag_data.item = egg_tool_palette_find_tool_item (widget);
+  if (selection->target == dnd_target_atom_item)
+    drag_data.item = egg_tool_palette_find_anchestor (widget, GTK_TYPE_TOOL_ITEM);
+
+  if (drag_data.item)
+    gtk_selection_data_set (selection, selection->target, 8,
+                            (guchar*) &drag_data, sizeof (drag_data));
+}
+
+static void
+egg_tool_palette_child_drag_data_get (GtkWidget        *widget,
+                                      GdkDragContext   *context G_GNUC_UNUSED,
+                                      GtkSelectionData *selection,
+                                      guint             info G_GNUC_UNUSED,
+                                      guint             time G_GNUC_UNUSED,
+                                      gpointer          data)
+{
+  EggToolPaletteDragData drag_data = { EGG_TOOL_PALETTE (data), NULL };
+
+  if (selection->target == dnd_target_atom_group)
+    drag_data.item = egg_tool_palette_find_anchestor (widget, EGG_TYPE_TOOL_ITEM_GROUP);
 
   if (drag_data.item)
     gtk_selection_data_set (selection, selection->target, 8,
@@ -831,26 +917,38 @@ egg_tool_palette_item_drag_data_get (GtkWidget        *widget,
 }
 
 void
-_egg_tool_palette_item_set_drag_source (GtkWidget *widget,
-                                        gpointer   data)
+_egg_tool_palette_child_set_drag_source (GtkWidget *child,
+                                         gpointer   data)
 {
   EggToolPalette *palette = EGG_TOOL_PALETTE (data);
 
-  g_return_if_fail (GTK_IS_TOOL_ITEM (widget));
+  /* Check drag_source,
+   * to work properly when called from egg_tool_item_group_insert().
+   */
+  if (!palette->priv->drag_source)
+    return;
 
-  if (palette->priv->drag_source)
+  if (GTK_IS_TOOL_ITEM (child))
     {
-      /* Connect to child, instead of the item itself work arround bug 510377.
+      /* Connect to child instead of the item itself,
+       * to work arround bug 510377.
        */
-      GtkWidget *child = gtk_bin_get_child (GTK_BIN (widget));
+      child = gtk_bin_get_child (GTK_BIN (child));
 
-      gtk_drag_source_set (child,
-                           GDK_BUTTON1_MASK | GDK_BUTTON3_MASK,
-                           dnd_targets, G_N_ELEMENTS (dnd_targets),
-                           GDK_ACTION_COPY);
+      gtk_drag_source_set (child, GDK_BUTTON1_MASK | GDK_BUTTON3_MASK,
+                           &dnd_targets[0], 1, GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
       g_signal_connect (child, "drag-data-get",
                         G_CALLBACK (egg_tool_palette_item_drag_data_get),
+                        palette);
+    }
+  else if (GTK_IS_BUTTON (child))
+    {
+      gtk_drag_source_set (child, GDK_BUTTON1_MASK | GDK_BUTTON3_MASK,
+                           &dnd_targets[1], 1, GDK_ACTION_COPY | GDK_ACTION_MOVE);
+
+      g_signal_connect (child, "drag-data-get",
+                        G_CALLBACK (egg_tool_palette_child_drag_data_get),
                         palette);
     }
 }

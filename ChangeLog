@@ -1,5 +1,23 @@
 2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
 
+	* libegg/toolpalette/eggtoolitemgroup.c,
+	libegg/toolpalette/eggtoolitemgroup.h: Allow position
+	of -1 for egg_tool_item_group_set_item_position().
+	* libegg/toolpalette/eggtoolpalette.c,
+	libegg/toolpalette/eggtoolpalette.h: Add targets and actions arguments
+	to egg_tool_palette_add_drag_dest(). Implement DnD for item groups.
+	Add egg_tool_palette_get_group_position(). Implement
+	egg_tool_palette_reorder_group(), and rename it to
+	egg_tool_palette_set_group_position().
+	* libegg/toolpalette/eggtoolpaletteprivate.h:
+	Rename _egg_tool_palette_item_set_drag_source()
+	to _egg_tool_palette_child_set_drag_source().
+	* libegg/toolpalette/testtoolpalette.c:
+	Support reordering of tool item groups.
+	* libegg/toolpalette/TODO: Updated.
+
+2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
+
 	Fully expand tool items, when style != GTK_TOOLBAR_ICONS.
 
 	* libegg/toolpalette/eggtoolitemgroup.c: See above.

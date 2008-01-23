@@ -1,10 +1,10 @@
 EggToolPalette
 
- * implement stubs (g_return_if_reached)
  * implement natural-size interface
  * scroll to group, when expanding
  * support horizontal orientation
  * consider scrollbar size in size-request
+ * install position child properties
 
 GtkToolShell:
 

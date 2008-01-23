@@ -65,7 +65,7 @@ void                  egg_tool_item_group_insert            (EggToolItemGroup *g
                                                              gint              position);
 void                  egg_tool_item_group_set_item_position (EggToolItemGroup *group,
                                                              GtkToolItem      *item,
-                                                             guint             position);
+                                                             gint              position);
 gint                  egg_tool_item_group_get_item_position (EggToolItemGroup *group,
                                                              GtkToolItem      *item);
 

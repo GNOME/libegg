@@ -27,7 +27,7 @@
 
 void _egg_tool_palette_get_item_size           (EggToolPalette   *palette,
                                                 GtkRequisition   *item_size);
-void _egg_tool_palette_item_set_drag_source    (GtkWidget        *widget,
+void _egg_tool_palette_child_set_drag_source   (GtkWidget        *widget,
                                                 gpointer          data);
 
 void _egg_tool_item_group_item_size_request    (EggToolItemGroup *group,
