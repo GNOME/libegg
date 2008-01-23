@@ -866,11 +866,43 @@ egg_tool_item_group_set_item_position (EggToolItemGroup *group,
                                        GtkToolItem      *item,
                                        guint             position)
 {
+  gint old_position;
+  gpointer src, dst;
+  gsize len;
+
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
   g_return_if_fail (GTK_IS_TOOL_ITEM (item));
 
-  g_return_if_fail (position < egg_tool_item_group_get_n_items (group));
-  g_return_if_reached ();
+  egg_tool_item_group_repack (group);
+
+  g_return_if_fail (position < group->priv->items_length);
+
+  if (item == group->priv->items[position])
+    return;
+
+  old_position = egg_tool_item_group_get_item_position (group, item);
+
+  g_return_if_fail (old_position >= 0);
+
+g_print ("%s: old=%d, new=%d\n", G_STRFUNC, old_position, position);
+
+  if (position < (guint) old_position)
+    {
+      dst = group->priv->items + position + 1;
+      src = group->priv->items + position;
+      len = old_position - position;
+    }
+  else
+    {
+      dst = group->priv->items + old_position;
+      src = group->priv->items + old_position + 1;
+      len = position - old_position;
+    }
+
+  memmove (dst, src, len * sizeof (*group->priv->items));
+  group->priv->items[position] = item;
+
+  gtk_widget_queue_resize (GTK_WIDGET (group));
 }
 
 gint
@@ -918,15 +950,36 @@ egg_tool_item_group_get_drop_item (EggToolItemGroup *group,
                                    gint              y)
 {
   GtkAllocation *allocation;
+  GtkOrientation orientation;
+  guint i;
 
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
 
   allocation = &GTK_WIDGET (group)->allocation;
+  orientation = egg_tool_item_group_get_orientation (GTK_TOOL_SHELL (group));
 
   g_return_val_if_fail (x >= 0 && x < allocation->width, NULL);
-  g_return_val_if_fail (y >= 0 && y < allocation->width, NULL);
+  g_return_val_if_fail (y >= 0 && y < allocation->height, NULL);
 
-  g_return_val_if_reached (NULL);
+  for (i = 0; i < group->priv->items_length; ++i)
+    {
+      GtkToolItem *item = group->priv->items[i];
+      gint x0, y0;
+
+      if (!item || !egg_tool_item_group_is_item_visible (item, orientation))
+        continue;
+
+      allocation = &GTK_WIDGET (item)->allocation;
+
+      x0 = x - allocation->x;
+      y0 = y - allocation->y;
+
+      if (x0 >= 0 && x0 < allocation->width &&
+          y0 >= 0 && y0 < allocation->height)
+        return item;
+    }
+
+  return NULL;
 }
 
 void

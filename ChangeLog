@@ -1,5 +1,20 @@
 2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
 
+	Implement functions for reordering and finding items.
+
+	* libegg/toolpalette/eggtoolitemgroup.c:
+	Implement egg_tool_item_group_set_item_position()
+	and egg_tool_item_group_get_drop_item().
+	* libegg/toolpalette/eggtoolpalette.c:
+	Implement egg_tool_palette_get_drop_item()
+	and egg_tool_palette_get_drop_group().
+	* libegg/toolpalette/eggtoolpalette.h:
+	Add egg_tool_palette_get_drop_group().
+	* libegg/toolpalette/testtoolpalette.c:
+	Allow reordering of tool items by drag-and-drop.
+
+2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
+
 	Avoid flickering when scrolling.
 
 	* libegg/toolpalette/eggtoolpalette.c: Do not chain-up expose-event

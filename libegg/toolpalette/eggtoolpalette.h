@@ -75,6 +75,9 @@ GtkToolbarStyle egg_tool_palette_get_style       (EggToolPalette   *palette);
 GtkToolItem*    egg_tool_palette_get_drop_item   (EggToolPalette   *palette,
                                                   gint              x,
                                                   gint              y);
+GtkWidget*      egg_tool_palette_get_drop_group  (EggToolPalette   *palette,
+                                                  gint              x,
+                                                  gint              y);
 GtkToolItem*    egg_tool_palette_get_drag_item   (EggToolPalette   *palette,
                                                   GtkSelectionData *selection);
 

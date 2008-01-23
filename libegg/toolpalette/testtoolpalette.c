@@ -97,6 +97,58 @@ canvas_expose_event (GtkWidget      *widget,
   return TRUE;
 }
 
+/*****************************/
+/* ====== Palette DnD ====== */
+/*****************************/
+
+static void
+palette_drag_data_received (GtkWidget        *widget,
+                            GdkDragContext   *context,
+                            gint              x,
+                            gint              y,
+                            GtkSelectionData *selection,
+                            guint             info G_GNUC_UNUSED,
+                            guint             time G_GNUC_UNUSED,
+                            gpointer          data G_GNUC_UNUSED)
+{
+  GtkWidget *drag_palette = gtk_drag_get_source_widget (context);
+  GtkWidget *drag_group = NULL, *drop_group = NULL;
+  GtkToolItem *drag_item = NULL, *drop_item = NULL;
+  gint drop_position = -1;
+
+  while (drag_palette && !EGG_IS_TOOL_PALETTE (drag_palette))
+    drag_palette = gtk_widget_get_parent (drag_palette);
+
+  if (drag_palette)
+    drag_item = egg_tool_palette_get_drag_item (EGG_TOOL_PALETTE (drag_palette), selection);
+  if (drag_item)
+    drop_group = egg_tool_palette_get_drop_group (EGG_TOOL_PALETTE (widget), x, y);
+
+  if (drop_group)
+    {
+      drop_item = egg_tool_item_group_get_drop_item (EGG_TOOL_ITEM_GROUP (drop_group),
+                                                     x - drop_group->allocation.x,
+                                                     y - drop_group->allocation.y);
+
+      if (drop_item)
+        drop_position = egg_tool_item_group_get_item_position (EGG_TOOL_ITEM_GROUP (drop_group), drop_item);
+
+      drag_group = gtk_widget_get_parent (GTK_WIDGET (drag_item));
+
+      if (drag_group != drop_group)
+        {
+          g_object_ref (drag_item);
+          gtk_container_remove (GTK_CONTAINER (drag_group), GTK_WIDGET (drag_item));
+          egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (drop_group),
+                                      drag_item, drop_position);
+          g_object_unref (drag_item);
+        }
+      else
+        egg_tool_item_group_set_item_position (EGG_TOOL_ITEM_GROUP (drop_group),
+                                               drag_item, drop_position);
+    }
+}
+
 /********************************/
 /* ====== Passive Canvas ====== */
 /********************************/
@@ -502,6 +554,14 @@ create_ui (void)
 
   notebook = gtk_notebook_new ();
   gtk_container_set_border_width (GTK_CONTAINER (notebook), 6);
+
+  /* ===== DnD for tool items ===== */
+
+  g_signal_connect (palette, "drag-data-received",
+                    G_CALLBACK (palette_drag_data_received),
+                    NULL);
+  egg_tool_palette_add_drag_dest (EGG_TOOL_PALETTE (palette),
+                                  palette, GTK_DEST_DEFAULT_ALL);
 
   /* ===== passive DnD dest ===== */
 

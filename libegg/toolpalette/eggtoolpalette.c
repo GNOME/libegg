@@ -229,6 +229,7 @@ egg_tool_palette_finalize (GObject *object)
 
   if (palette->priv->groups)
     {
+      palette->priv->groups_length = 0;
       g_free (palette->priv->groups);
       palette->priv->groups = NULL;
     }
@@ -451,17 +452,16 @@ egg_tool_palette_repack (EggToolPalette *palette)
 {
   guint si, di;
 
-  if (palette->priv->sparse_groups)
-    for (si = di = 0; di < palette->priv->groups_length; ++si)
-      {
-        if (palette->priv->groups[si])
-          {
-            palette->priv->groups[di] = palette->priv->groups[si];
-            ++di;
-          }
-        else
-          --palette->priv->groups_length;
-      }
+  for (si = di = 0; di < palette->priv->groups_length; ++si)
+    {
+      if (palette->priv->groups[si])
+        {
+          palette->priv->groups[di] = palette->priv->groups[si];
+          ++di;
+        }
+      else
+        --palette->priv->groups_length;
+    }
 
   palette->priv->sparse_groups = FALSE;
 }
@@ -676,20 +676,54 @@ egg_tool_palette_reorder_group (EggToolPalette *palette,
 }
 
 GtkToolItem*
-egg_tool_palette_get_drop_item (EggToolPalette   *palette,
-                                gint              x,
-                                gint              y)
+egg_tool_palette_get_drop_item (EggToolPalette *palette,
+                                gint            x,
+                                gint            y)
+{
+  GtkWidget *group = egg_tool_palette_get_drop_group (palette, x, y);
+
+  if (group)
+    return egg_tool_item_group_get_drop_item (EGG_TOOL_ITEM_GROUP (group),
+                                              x - group->allocation.x,
+                                              y - group->allocation.y);
+
+  return NULL;
+}
+
+GtkWidget*
+egg_tool_palette_get_drop_group (EggToolPalette *palette,
+                                 gint            x,
+                                 gint            y)
 {
   GtkAllocation *allocation;
+  guint i;
 
   g_return_val_if_fail (EGG_IS_TOOL_PALETTE (palette), NULL);
 
   allocation = &GTK_WIDGET (palette)->allocation;
 
   g_return_val_if_fail (x >= 0 && x < allocation->width, NULL);
-  g_return_val_if_fail (y >= 0 && y < allocation->width, NULL);
+  g_return_val_if_fail (y >= 0 && y < allocation->height, NULL);
 
-  g_return_val_if_reached (NULL);
+  for (i = 0; i < palette->priv->groups_length; ++i)
+    {
+      EggToolItemGroup *group = palette->priv->groups[i];
+      gint x0, y0;
+
+      if (!group)
+        continue;
+
+      allocation = &GTK_WIDGET (group)->allocation;
+
+      x0 = x - allocation->x;
+      y0 = y - allocation->y;
+
+      if (x0 >= 0 && x0 < allocation->width &&
+          y0 >= 0 && y0 < allocation->height)
+        return GTK_WIDGET (group);
+    }
+
+  return NULL;
 }
 
 GtkToolItem*
@@ -725,9 +759,16 @@ egg_tool_palette_set_drag_source (EggToolPalette *palette)
   palette->priv->drag_source = TRUE;
 
   for (i = 0; i < palette->priv->groups_length; ++i)
-    gtk_container_foreach (GTK_CONTAINER (palette->priv->groups[i]),
-                           _egg_tool_palette_item_set_drag_source,
-                           palette);
+    {
+      EggToolItemGroup *group = palette->priv->groups[i];
+
+      if (!group)
+        continue;
+
+      gtk_container_foreach (GTK_CONTAINER (group),
+                             _egg_tool_palette_item_set_drag_source,
+                             palette);
+    }
 }
 
 void
