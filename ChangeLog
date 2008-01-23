@@ -1,5 +1,11 @@
 2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
 
+	Fully expand tool items, when style != GTK_TOOLBAR_ICONS.
+
+	* libegg/toolpalette/eggtoolitemgroup.c: See above.
+
+2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
+
 	Implement functions for reordering and finding items.
 
 	* libegg/toolpalette/eggtoolitemgroup.c:

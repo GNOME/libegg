@@ -365,8 +365,8 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   GtkAllocation child_allocation;
   GtkRequisition item_size;
 
-  guint i, n_columns;
   gint width;
+  guint i;
 
   GtkOrientation orientation;
   GtkToolbarStyle style;
@@ -379,8 +379,14 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   egg_tool_item_group_get_item_size (group, &item_size);
 
   item_size.width = MIN (item_size.width, allocation->width);
-  n_columns = MAX (allocation->width / item_size.width, 1);
-  width = item_size.width * n_columns;
+
+  if (style == GTK_TOOLBAR_ICONS)
+    {
+      guint n_columns = MAX (allocation->width / item_size.width, 1);
+      width = item_size.width * n_columns;
+    }
+  else
+    width = allocation->width;
 
   child_allocation.x = border_width;
   child_allocation.y = border_width;
