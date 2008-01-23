@@ -296,10 +296,10 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
   GTK_WIDGET_CLASS (egg_tool_palette_parent_class)->size_allocate (widget, allocation);
 
   if (palette->priv->vadjustment)
-    offset = -gtk_adjustment_get_value (palette->priv->vadjustment);
+    offset = gtk_adjustment_get_value (palette->priv->vadjustment);
 
   child_allocation.x = border_width;
-  child_allocation.y = border_width + offset;
+  child_allocation.y = border_width - offset;
   child_allocation.width = allocation->width - border_width * 2;
 
   for (i = 0; i < palette->priv->groups_length; ++i)
@@ -316,20 +316,26 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
           child_allocation.y += child_allocation.height;
         }
       else
-          gtk_widget_hide (GTK_WIDGET (group));
+        gtk_widget_hide (GTK_WIDGET (group));
     }
 
   child_allocation.y += border_width;
+  child_allocation.y += offset;
 
   if (palette->priv->vadjustment)
     {
-      palette->priv->vadjustment->page_size = allocation->height;
-      palette->priv->vadjustment->page_increment = allocation->height * 0.9;
-      palette->priv->vadjustment->step_increment = allocation->height * 0.1;
-      palette->priv->vadjustment->upper = MAX (0, child_allocation.y - allocation->y - offset);
+      GtkAdjustment *vadj = palette->priv->vadjustment;
 
-      gtk_adjustment_changed (palette->priv->vadjustment);
-      gtk_adjustment_clamp_page (palette->priv->vadjustment, -offset, allocation->height -offset);
+      vadj->page_increment = allocation->height * 0.9;
+      vadj->step_increment = allocation->height * 0.1;
+      vadj->upper = MAX (0, child_allocation.y);
+      vadj->page_size = allocation->height;
+
+      gtk_adjustment_clamp_page (vadj,
+                                 MIN (offset, vadj->upper - vadj->page_size),
+                                 offset + allocation->height);
+
+      gtk_adjustment_changed (vadj);
     }
 }
 

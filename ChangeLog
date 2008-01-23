@@ -1,3 +1,10 @@
+2008-01-22  Mathias Hasselmann  <mathias@openismus.com>
+
+	Fix some scrolling issues in EggToolPalette.
+
+	* libegg/toolpalette/eggtoolpalette.c: Properly calculate and
+	clamp vertical adjustment in egg_tool_palette_size_allocate().
+
 2008-01-21  Mathias Hasselmann  <mathias@openismus.com>
 
 	Provide hover effect for tool items even in DnD mode.
