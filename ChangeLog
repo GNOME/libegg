@@ -1,5 +1,14 @@
 2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
 
+	Expand tool items when not in icon-only mode,
+	or when the item requests this.
+
+	* libegg/toolpalette/eggtoolitemgroup.c: Expand tool items.
+	* libegg/toolpalette/testtoolpalette.c: Set label instead of tooltip.
+	* libegg/toolpalette/TODO: Adding TODO list.
+
+2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
+
 	Consider item visibility during size-allocation.
 
 	* libegg/toolpalette/eggtoolitemgroup.c: Add and consider

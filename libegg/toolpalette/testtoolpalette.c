@@ -308,6 +308,7 @@ load_stock_items (EggToolPalette *palette)
 
   for (iter = stock_ids; iter; iter = g_slist_next (iter))
     {
+      GtkStockItem stock_item;
       gchar *id = iter->data;
 
       switch (id[4])
@@ -333,6 +334,9 @@ load_stock_items (EggToolPalette *palette)
       gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (item), id);
       egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 
+      if (!gtk_stock_lookup (id, &stock_item) || !stock_item.label)
+        gtk_tool_button_set_label (GTK_TOOL_BUTTON (item), id);
+
       g_free (id);
     }
 
@@ -349,27 +353,32 @@ load_special_items (EggToolPalette *palette)
   gtk_container_add (GTK_CONTAINER (palette), group);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_UP);
-  gtk_tool_item_set_tooltip_text (item, "Show on vertical palettes only");
+  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
+                             "Show on vertical palettes only");
   gtk_tool_item_set_visible_horizontal (item, FALSE);
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_FORWARD);
-  gtk_tool_item_set_tooltip_text (item, "Show on horizontal palettes only");
+  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
+                             "Show on horizontal palettes only");
   gtk_tool_item_set_visible_vertical (item, FALSE);
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_DELETE);
-  gtk_tool_item_set_tooltip_text (item, "Do not show at all");
+  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
+                             "Do not show at all");
   gtk_widget_set_no_show_all (GTK_WIDGET (item), TRUE);
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_FULLSCREEN);
-  gtk_tool_item_set_tooltip_text (item, "Expanded this item");
+  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
+                             "Expanded this item");
   gtk_tool_item_set_expand (item, TRUE);
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_HELP);
-  gtk_tool_item_set_tooltip_text (item, "A regular item");
+  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
+                             "A regular item");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 }
 
