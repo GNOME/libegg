@@ -1,7 +1,12 @@
-* support horizontal orientation
+EggToolPalette
+
+ * implement stubs (g_return_if_reached)
+ * implement natural-size interface
+ * scroll to group, when expanding
+ * support horizontal orientation
+ * consider scrollbar size in size-request
+
+GtkToolShell:
+
 * ask tool items to apply ellipses to labels
 * left-align labels (and center icons) in both-horiz mode
-* implement stubs (g_return_if_reached)
-* avoid flickering in non-icon-only modes
-* implement natural-size interface
-* scroll to group, when expanding

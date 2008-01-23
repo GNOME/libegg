@@ -348,14 +348,15 @@ egg_tool_palette_expose_event (GtkWidget      *widget,
   cairo_t *cr;
   guint i;
 
-  if (GTK_WIDGET_CLASS (egg_tool_palette_parent_class)->expose_event (widget, event))
-    return TRUE;
-
   display = gdk_drawable_get_display (widget->window);
+
   if (!gdk_display_supports_composite (display))
     return FALSE;
 
   cr = gdk_cairo_create (widget->window);
+  gdk_cairo_region (cr, event->region);
+  cairo_clip (cr);
+
   cairo_push_group (cr);
 
   for (i = 0; i < palette->priv->groups_length; ++i)

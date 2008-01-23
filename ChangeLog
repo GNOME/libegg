@@ -1,5 +1,13 @@
 2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
 
+	Avoid flickering when scrolling.
+
+	* libegg/toolpalette/eggtoolpalette.c: Do not chain-up expose-event
+	handler since chaining up causes flicker.
+	* libegg/toolpalette/TODO: Updated.
+
+2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
+
 	Expand tool items when not in icon-only mode,
 	or when the item requests this.
 
