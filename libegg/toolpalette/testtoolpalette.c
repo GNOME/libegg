@@ -339,6 +339,40 @@ load_stock_items (EggToolPalette *palette)
   g_slist_free (stock_ids);
 }
 
+static void
+load_special_items (EggToolPalette *palette)
+{
+  GtkToolItem *item;
+  GtkWidget *group;
+
+  group = egg_tool_item_group_new (_("Advanced Features"));
+  gtk_container_add (GTK_CONTAINER (palette), group);
+
+  item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_UP);
+  gtk_tool_item_set_tooltip_text (item, "Show on vertical palettes only");
+  gtk_tool_item_set_visible_horizontal (item, FALSE);
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+
+  item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_FORWARD);
+  gtk_tool_item_set_tooltip_text (item, "Show on horizontal palettes only");
+  gtk_tool_item_set_visible_vertical (item, FALSE);
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+
+  item = gtk_tool_button_new_from_stock (GTK_STOCK_DELETE);
+  gtk_tool_item_set_tooltip_text (item, "Do not show at all");
+  gtk_widget_set_no_show_all (GTK_WIDGET (item), TRUE);
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+
+  item = gtk_tool_button_new_from_stock (GTK_STOCK_FULLSCREEN);
+  gtk_tool_item_set_tooltip_text (item, "Expanded this item");
+  gtk_tool_item_set_expand (item, TRUE);
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+
+  item = gtk_tool_button_new_from_stock (GTK_STOCK_HELP);
+  gtk_tool_item_set_tooltip_text (item, "A regular item");
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+}
+
 static gboolean
 drop_invalid_icon_size (GEnumValue *enum_value,
                         gpointer    user_data G_GNUC_UNUSED)
@@ -447,6 +481,7 @@ create_ui (void)
   /* ===== palette ===== */
 
   load_stock_items (EGG_TOOL_PALETTE (palette));
+  load_special_items (EGG_TOOL_PALETTE (palette));
 
   palette_scroller = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (palette_scroller),

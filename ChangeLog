@@ -1,3 +1,12 @@
+2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
+
+	Consider item visibility during size-allocation.
+
+	* libegg/toolpalette/eggtoolitemgroup.c: Add and consider
+	return value of egg_tool_item_group_is_item_visible().
+	* libegg/toolpalette/testtoolpalette.c: Add a tool item
+	group with some special cases.
+
 2008-01-22  Mathias Hasselmann  <mathias@openismus.com>
 
 	Fix some scrolling issues in EggToolPalette.

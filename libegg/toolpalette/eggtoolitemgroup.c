@@ -343,6 +343,17 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
   requisition->height += border_width;
 }
 
+static gboolean
+egg_tool_item_group_is_item_visible (GtkToolItem    *item,
+                                     GtkOrientation  orientation)
+{
+  return
+    (GTK_WIDGET_VISIBLE (item)) &&
+    (GTK_ORIENTATION_VERTICAL == orientation ?
+     gtk_tool_item_get_visible_vertical (item) :
+     gtk_tool_item_get_visible_horizontal (item));
+}
+
 static void
 egg_tool_item_group_size_allocate (GtkWidget     *widget,
                                    GtkAllocation *allocation)
@@ -351,10 +362,13 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
   GtkRequisition child_requistion;
   GtkAllocation child_allocation;
+  GtkOrientation orientation;
   GtkRequisition item_size;
   guint i;
 
   GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
+
+  orientation = egg_tool_item_group_get_orientation (GTK_TOOL_SHELL (group));
   egg_tool_item_group_get_item_size (group, &item_size);
 
   child_allocation.x = border_width;
@@ -372,43 +386,53 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
       child_allocation.y += child_allocation.height;
     }
 
-    if (group->priv->expanded || group->priv->animation_timeout)
-      {
-        for (i = 0; i < group->priv->items_length; ++i)
-          {
-            GtkToolItem *item = group->priv->items[i];
 
-            if (!item)
+  if (group->priv->expanded || group->priv->animation_timeout)
+    {
+      for (i = 0; i < group->priv->items_length; ++i)
+        {
+          GtkToolItem *item = group->priv->items[i];
+
+          if (!item)
+            continue;
+
+          if (!egg_tool_item_group_is_item_visible (item, orientation))
+            {
+              /* in case the item is invisible due its orientation preferences */
+              gtk_widget_set_child_visible (GTK_WIDGET (item), FALSE);
               continue;
+            }
 
-            child_allocation.width = item_size.width;
-            child_allocation.height = item_size.height;
+          child_allocation.width = item_size.width;
+          child_allocation.height = item_size.height;
 
-            if (child_allocation.x + child_allocation.width > allocation->width)
-              {
-                child_allocation.y += child_allocation.height;
-                child_allocation.x = border_width;
-              }
+          if (child_allocation.x + child_allocation.width > allocation->width)
+            {
+              child_allocation.y += child_allocation.height;
+              child_allocation.x = border_width;
+            }
 
-            gtk_widget_size_allocate (GTK_WIDGET (item), &child_allocation);
-            gtk_widget_show (GTK_WIDGET (item));
+          gtk_widget_size_allocate (GTK_WIDGET (item), &child_allocation);
+          gtk_widget_set_child_visible (GTK_WIDGET (item), TRUE);
 
-            child_allocation.x += child_allocation.width;
-          }
+          child_allocation.x += child_allocation.width;
+        }
 
-        child_allocation.y += item_size.height;
-        child_allocation.x = border_width;
-      }
-    else
-      {
-        for (i = 0; i < group->priv->items_length; ++i)
-          {
-            GtkToolItem *item = group->priv->items[i];
+      child_allocation.y += item_size.height;
+      child_allocation.x = border_width;
+    }
+  else
+    {
+      for (i = 0; i < group->priv->items_length; ++i)
+        {
+          GtkToolItem *item = group->priv->items[i];
 
-            if (item)
-              gtk_widget_hide (GTK_WIDGET (item));
-          }
-      }
+          if (!item)
+            continue;
+
+          gtk_widget_set_child_visible (GTK_WIDGET (item), FALSE);
+        }
+    }
 
   if (GTK_WIDGET_MAPPED (widget))
     gdk_window_invalidate_rect (widget->window, NULL, FALSE);
@@ -942,11 +966,30 @@ _egg_tool_item_group_paint (EggToolItemGroup *group,
     cairo_paint (cr);
 }
 
+static guint
+egg_tool_item_group_get_visible_item_count (EggToolItemGroup *group)
+{
+  GtkOrientation orientation;
+  guint i, count;
+
+  orientation = egg_tool_item_group_get_orientation (GTK_TOOL_SHELL (group));
+
+  for (i = 0, count = 0; i < group->priv->items_length; ++i)
+    {
+      GtkToolItem *item = group->priv->items[i];
+
+      if (egg_tool_item_group_is_item_visible (item, orientation))
+        count += 1;
+    }
+
+  return count;
+}
+
 gint
 _egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
                                            gint              width)
 {
-  guint n_items = group->priv->items_length;
+  guint n_items = egg_tool_item_group_get_visible_item_count (group);
   GtkRequisition child_requisition;
 
   egg_tool_item_group_repack (group);
