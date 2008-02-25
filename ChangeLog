@@ -1,3 +1,13 @@
+2008-02-25  Johannes Schmid <johannes.schmid@openismus.com>
+
+	* libegg/toolpalette/Makefile.am:
+	Use relativ include dir to allow easier integration
+	into other projects
+	* libegg/toolpalette/eggtoolitemgroup.c:
+	(egg_tool_item_group_real_size_allocate),
+	(egg_tool_item_group_get_drop_item):
+	Fixed build with GTK+ < 2.15
+
 2008-01-23  Mathias Hasselmann  <mathias@openismus.com>
 
 	* libegg/toolpalette/eggtoolitemgroup.c,

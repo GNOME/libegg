@@ -1,6 +1,6 @@
 INCLUDES = \
   $(EGG_CFLAGS) \
-  -I$(top_srcdir)/libegg/util \
+  -I../util \
   -DEGG_COMPILATION \
   -DGTK_DISABLE_DEPRECATED \
   -DGDK_DISABLE_DEPRECATED \
