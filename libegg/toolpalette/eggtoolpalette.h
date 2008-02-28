@@ -88,7 +88,7 @@ GtkWidget*      egg_tool_palette_get_drop_group     (EggToolPalette            *
                                                      gint                       x,
                                                      gint                       y);
 GtkWidget*      egg_tool_palette_get_drag_item      (EggToolPalette            *palette,
-                                                     GtkSelectionData          *selection);
+                                                     const GtkSelectionData    *selection);
 
 void            egg_tool_palette_set_drag_source    (EggToolPalette            *palette);
 void            egg_tool_palette_add_drag_dest      (EggToolPalette            *palette,
@@ -96,6 +96,9 @@ void            egg_tool_palette_add_drag_dest      (EggToolPalette            *
                                                      GtkDestDefaults            flags,
                                                      EggToolPaletteDragTargets  targets,
                                                      GdkDragAction              actions);
+
+GtkTargetEntry egg_tool_palette_get_drag_target_item ();
+GtkTargetEntry egg_tool_palette_get_drag_target_group ();
 
 G_END_DECLS
 

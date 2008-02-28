@@ -76,6 +76,16 @@ static GtkTargetEntry dnd_targets[] =
   { "application/x-egg-tool-palette-group", GTK_TARGET_SAME_APP, 0 },
 };
 
+GtkTargetEntry egg_tool_palette_get_drag_target_item ()
+{
+  return dnd_targets[0];
+}
+
+GtkTargetEntry egg_tool_palette_get_drag_target_group ()
+{
+  return dnd_targets[1];
+}
+
 G_DEFINE_TYPE (EggToolPalette,
                egg_tool_palette,
                GTK_TYPE_CONTAINER);
@@ -782,7 +792,7 @@ egg_tool_palette_get_drop_group (EggToolPalette *palette,
 
 GtkWidget*
 egg_tool_palette_get_drag_item (EggToolPalette   *palette,
-                                GtkSelectionData *selection)
+                                const GtkSelectionData *selection)
 {
   EggToolPaletteDragData *data;
 

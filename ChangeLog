@@ -1,3 +1,13 @@
+2008-02-28  Johannes Schmid <jhs@gnome.org>
+
+	* libegg/toolpalette/eggtoolpalette.c:
+	(egg_tool_palette_get_drag_target_item),
+	(egg_tool_palette_get_drag_target_group),
+	(egg_tool_palette_get_drag_item):
+	* libegg/toolpalette/eggtoolpalette.h:
+	Added two methods for advanced drag & drop and
+	make GtkSelectionData* argument const
+
 2008-02-26  Jens Granseuer  <jensgr@gmx.net>
 
 	* libegg/toolbareditor/egg-toolbar-editor.c:
