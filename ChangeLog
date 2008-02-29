@@ -1,3 +1,8 @@
+2008-02-29  Claudio Saavedra  <csaavedra@alumnos.utalca.cl>
+
+	* libegg/toolbareditor/egg-editable-toolbar.c:
+	(new_separator_pixbuf): Fix declaration to be C89 valid.
+
 2008-02-28  Johannes Schmid <jhs@gnome.org>
 
 	* libegg/toolpalette/eggtoolpalette.c:
