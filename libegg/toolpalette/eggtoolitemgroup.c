@@ -302,6 +302,17 @@ egg_tool_item_group_get_orientation (EggToolItemGroup *group)
   return GTK_ORIENTATION_VERTICAL;
 }
 
+static GtkToolbarStyle
+egg_tool_item_group_get_style (EggToolItemGroup *group)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_style (EGG_TOOL_PALETTE (parent));
+
+  return GTK_TOOLBAR_ICONS;
+}
+
 #endif /* GTK_TOOL_SHELL */
 
 static void
@@ -369,14 +380,16 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   guint i;
 
   GtkOrientation orientation;
-  GtkToolbarStyle style = GTK_TOOLBAR_ICONS;
+  GtkToolbarStyle style;
 
   GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
 
 #ifdef GTK_TOOL_SHELL
-  style = egg_tool_item_group_get_style (group);
+  orientation = egg_tool_item_group_get_orientation (GTK_TOOL_SHELL (group));
+  style = egg_tool_item_group_get_style (GTK_TOOL_SHELL (group));
 #else /* GTK_TOOL_SHELL */
-	orientation = egg_tool_item_group_get_orientation (group);
+  orientation = egg_tool_item_group_get_orientation (group);
+  style = egg_tool_item_group_get_style (group);
 #endif
 
   egg_tool_item_group_get_item_size (group, &item_size);
@@ -967,7 +980,11 @@ egg_tool_item_group_get_drop_item (EggToolItemGroup *group,
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
 
   allocation = &GTK_WIDGET (group)->allocation;
+#ifdef GTK_TOOL_SHELL
+  orientation = gtk_tool_shell_get_orientation (GTK_TOOL_SHELL (group));
+#else
   orientation = egg_tool_item_group_get_orientation (group);
+#endif
 
   g_return_val_if_fail (x >= 0 && x < allocation->width, NULL);
   g_return_val_if_fail (y >= 0 && y < allocation->height, NULL);

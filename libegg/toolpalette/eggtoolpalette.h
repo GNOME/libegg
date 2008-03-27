@@ -61,44 +61,45 @@ struct _EggToolPaletteClass
                                   GtkAdjustment *vadjustment);
 };
 
-GType           egg_tool_palette_get_type           (void) G_GNUC_CONST;
-GtkWidget*      egg_tool_palette_new                (void);
+GType                          egg_tool_palette_get_type              (void) G_GNUC_CONST;
+GtkWidget*                     egg_tool_palette_new                   (void);
 
-void            egg_tool_palette_set_group_position (EggToolPalette            *palette,
-                                                     GtkWidget                 *group,
-                                                     gint                       position);
-gint            egg_tool_palette_get_group_position (EggToolPalette            *palette,
-                                                     GtkWidget                 *group);
+void                           egg_tool_palette_set_group_position    (EggToolPalette            *palette,
+                                                                       GtkWidget                 *group,
+                                                                       gint                       position);
+gint                           egg_tool_palette_get_group_position    (EggToolPalette            *palette,
+                                                                       GtkWidget                 *group);
 
-void            egg_tool_palette_set_icon_size      (EggToolPalette            *palette,
-                                                     GtkIconSize                icon_size);
-void            egg_tool_palette_set_orientation    (EggToolPalette            *palette,
-                                                     GtkOrientation             orientation);
-void            egg_tool_palette_set_style          (EggToolPalette            *palette,
-                                                     GtkToolbarStyle            style);
+void                           egg_tool_palette_set_icon_size         (EggToolPalette            *palette,
+                                                                       GtkIconSize                icon_size);
+void                           egg_tool_palette_set_orientation       (EggToolPalette            *palette,
+                                                                       GtkOrientation             orientation);
+void                           egg_tool_palette_set_style             (EggToolPalette            *palette,
+                                                                       GtkToolbarStyle            style);
 
-GtkIconSize     egg_tool_palette_get_icon_size      (EggToolPalette            *palette);
-GtkOrientation  egg_tool_palette_get_orientation    (EggToolPalette            *palette);
-GtkToolbarStyle egg_tool_palette_get_style          (EggToolPalette            *palette);
+GtkIconSize                    egg_tool_palette_get_icon_size         (EggToolPalette            *palette);
+GtkOrientation                 egg_tool_palette_get_orientation       (EggToolPalette            *palette);
+GtkToolbarStyle                egg_tool_palette_get_style             (EggToolPalette            *palette);
 
-GtkToolItem*    egg_tool_palette_get_drop_item      (EggToolPalette            *palette,
-                                                     gint                       x,
-                                                     gint                       y);
-GtkWidget*      egg_tool_palette_get_drop_group     (EggToolPalette            *palette,
-                                                     gint                       x,
-                                                     gint                       y);
-GtkWidget*      egg_tool_palette_get_drag_item      (EggToolPalette            *palette,
-                                                     const GtkSelectionData    *selection);
+GtkToolItem*                   egg_tool_palette_get_drop_item         (EggToolPalette            *palette,
+                                                                       gint                       x,
+                                                                       gint                       y);
+GtkWidget*                     egg_tool_palette_get_drop_group        (EggToolPalette            *palette,
+                                                                       gint                       x,
+                                                                       gint                       y);
+GtkWidget*                     egg_tool_palette_get_drag_item         (EggToolPalette            *palette,
+                                                                       const GtkSelectionData    *selection);
 
-void            egg_tool_palette_set_drag_source    (EggToolPalette            *palette);
-void            egg_tool_palette_add_drag_dest      (EggToolPalette            *palette,
-                                                     GtkWidget                 *widget,
-                                                     GtkDestDefaults            flags,
-                                                     EggToolPaletteDragTargets  targets,
-                                                     GdkDragAction              actions);
+void                           egg_tool_palette_set_drag_source       (EggToolPalette            *palette);
+void                           egg_tool_palette_add_drag_dest         (EggToolPalette            *palette,
+                                                                       GtkWidget                 *widget,
+                                                                       GtkDestDefaults            flags,
+                                                                       EggToolPaletteDragTargets  targets,
+                                                                       GdkDragAction              actions);
 
-GtkTargetEntry egg_tool_palette_get_drag_target_item ();
-GtkTargetEntry egg_tool_palette_get_drag_target_group ();
+G_CONST_RETURN GtkTargetEntry* egg_tool_palette_get_drag_target_item  (void) G_GNUC_CONST;
+G_CONST_RETURN GtkTargetEntry* egg_tool_palette_get_drag_target_group (void) G_GNUC_CONST;
+
 
 G_END_DECLS
 

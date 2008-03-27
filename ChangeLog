@@ -1,3 +1,16 @@
+2008-03-27  Mathias Hasselmann  <mathias@openismus.com>
+
+	Small build fixes for EggToolPalette.
+
+	* libegg/toolpalette/eggtoolitemgroup.c:
+	  Allow compilation with -Werror and gtk trunk.
+	* libegg/toolpalette/eggtoolpalette.c,
+	  libegg/toolpalette/eggtoolpalette.h:
+	  Change signature of egg_tool_palette_get_drag_target_item()
+	  and egg_tool_palette_get_drag_target_group() to return "const
+	  GtkTargetEntry*", instead of GtkTargetEntry. Also add the
+	  G_GNUC_CONST attribute to those functions.
+
 2008-02-29  Claudio Saavedra  <csaavedra@alumnos.utalca.cl>
 
 	* libegg/toolbareditor/egg-editable-toolbar.c:

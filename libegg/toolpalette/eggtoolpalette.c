@@ -70,21 +70,11 @@ struct _EggToolPaletteDragData
 static GdkAtom dnd_target_atom_item = GDK_NONE;
 static GdkAtom dnd_target_atom_group = GDK_NONE;
 
-static GtkTargetEntry dnd_targets[] =
+static const GtkTargetEntry dnd_targets[] =
 {
   { "application/x-egg-tool-palette-item", GTK_TARGET_SAME_APP, 0 },
   { "application/x-egg-tool-palette-group", GTK_TARGET_SAME_APP, 0 },
 };
-
-GtkTargetEntry egg_tool_palette_get_drag_target_item ()
-{
-  return dnd_targets[0];
-}
-
-GtkTargetEntry egg_tool_palette_get_drag_target_group ()
-{
-  return dnd_targets[1];
-}
 
 G_DEFINE_TYPE (EggToolPalette,
                egg_tool_palette,
@@ -94,8 +84,8 @@ static void
 egg_tool_palette_init (EggToolPalette *palette)
 {
   palette->priv = G_TYPE_INSTANCE_GET_PRIVATE (palette,
-                                            EGG_TYPE_TOOL_PALETTE,
-                                            EggToolPalettePrivate);
+                                               EGG_TYPE_TOOL_PALETTE,
+                                               EggToolPalettePrivate);
 
   palette->priv->groups_size = 4;
   palette->priv->groups_length = 0;
@@ -791,7 +781,7 @@ egg_tool_palette_get_drop_group (EggToolPalette *palette,
 }
 
 GtkWidget*
-egg_tool_palette_get_drag_item (EggToolPalette   *palette,
+egg_tool_palette_get_drag_item (EggToolPalette         *palette,
                                 const GtkSelectionData *selection)
 {
   EggToolPaletteDragData *data;
@@ -962,3 +952,16 @@ _egg_tool_palette_child_set_drag_source (GtkWidget *child,
                         palette);
     }
 }
+
+G_CONST_RETURN GtkTargetEntry*
+egg_tool_palette_get_drag_target_item (void)
+{
+  return &dnd_targets[0];
+}
+
+G_CONST_RETURN GtkTargetEntry*
+egg_tool_palette_get_drag_target_group (void)
+{
+  return &dnd_targets[1];
+}
+
