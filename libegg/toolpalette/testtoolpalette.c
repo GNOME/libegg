@@ -427,32 +427,27 @@ load_special_items (EggToolPalette *palette)
   gtk_container_add (GTK_CONTAINER (palette), group);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_UP);
-  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
-                             "Show on vertical palettes only");
-  gtk_tool_item_set_visible_horizontal (item, FALSE);
+  gtk_tool_item_set_tooltip_text (item, "Show on vertical palettes only");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_tool_item_set_visible_horizontal (item, FALSE);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_FORWARD);
-  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
-                             "Show on horizontal palettes only");
-  gtk_tool_item_set_visible_vertical (item, FALSE);
+  gtk_tool_item_set_tooltip_text (item, "Show on horizontal palettes only");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_tool_item_set_visible_vertical (item, FALSE);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_DELETE);
-  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
-                             "Do not show at all");
-  gtk_widget_set_no_show_all (GTK_WIDGET (item), TRUE);
+  gtk_tool_item_set_tooltip_text (item, "Do not show at all");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_widget_set_no_show_all (GTK_WIDGET (item), TRUE);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_FULLSCREEN);
-  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
-                             "Expanded this item");
-  gtk_tool_item_set_expand (item, TRUE);
+  gtk_tool_item_set_tooltip_text (item, "Expanded this item");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_tool_item_set_expand (item, TRUE);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_HELP);
-  gtk_tool_button_set_label (GTK_TOOL_BUTTON (item),
-                             "A regular item");
+  gtk_tool_item_set_tooltip_text (item, "A regular item");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 }
 
@@ -461,6 +456,40 @@ drop_invalid_icon_size (GEnumValue *enum_value,
                         gpointer    user_data G_GNUC_UNUSED)
 {
   return (enum_value->value != GTK_ICON_SIZE_INVALID);
+}
+
+static void
+palette_notify_orientation (GObject    *object,
+                            GParamSpec *pspec G_GNUC_UNUSED,
+                            gpointer    data  G_GNUC_UNUSED)
+{
+  GtkWidget *scroller = gtk_widget_get_parent (GTK_WIDGET (object));
+  GtkWidget *parent = gtk_widget_get_parent (scroller);
+
+  GtkWidget *hpaned = g_object_get_data (object, "hpaned");
+  GtkWidget *vpaned = g_object_get_data (object, "vpaned");
+
+  g_object_ref (scroller);
+
+  if (parent)
+    gtk_container_remove (GTK_CONTAINER (parent), scroller);
+
+  switch (egg_tool_palette_get_orientation (EGG_TOOL_PALETTE (object)))
+    {
+      case GTK_ORIENTATION_VERTICAL:
+        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
+                                        GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
+        gtk_paned_pack1 (GTK_PANED (hpaned), scroller, FALSE, FALSE);
+        break;
+
+      case GTK_ORIENTATION_HORIZONTAL:
+        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
+                                        GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+        gtk_paned_pack1 (GTK_PANED (vpaned), scroller, FALSE, FALSE);
+        break;
+    }
+
+  g_object_unref (scroller);
 }
 
 static GtkWidget*
@@ -522,8 +551,8 @@ create_ui (void)
   GError *error = NULL;
   GtkUIManager *ui;
 
-  GtkWidget *window, *vbox, *notebook;
-  GtkWidget *menubar, *toolbar, *hpaned;
+  GtkWidget *window, *vbox, *hpaned, *vpaned;
+  GtkWidget *menubar, *toolbar, *notebook;
   GtkWidget *palette, *palette_scroller;
   GtkWidget *contents, *contents_scroller;
   GtkAction *action;
@@ -566,11 +595,16 @@ create_ui (void)
   load_stock_items (EGG_TOOL_PALETTE (palette));
   load_special_items (EGG_TOOL_PALETTE (palette));
 
+  g_signal_connect (palette, "notify::orientation",
+                    G_CALLBACK (palette_notify_orientation),
+                    NULL);
+
   palette_scroller = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (palette_scroller),
                                   GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   gtk_container_set_border_width (GTK_CONTAINER (palette_scroller), 6);
   gtk_container_add (GTK_CONTAINER (palette_scroller), palette);
+  gtk_widget_show_all (palette_scroller);
 
   /* ===== notebook ===== */
 
@@ -642,15 +676,27 @@ create_ui (void)
   /* ===== hpaned ===== */
 
   hpaned = gtk_hpaned_new ();
-  gtk_paned_pack1 (GTK_PANED (hpaned), palette_scroller, FALSE, FALSE);
   gtk_paned_pack2 (GTK_PANED (hpaned), notebook, TRUE, FALSE);
+
+  g_object_set_data_full (G_OBJECT (palette), "hpaned",
+                          g_object_ref (hpaned),
+                          g_object_unref);
+
+  /* ===== vpaned ===== */
+
+  vpaned = gtk_vpaned_new ();
+  gtk_paned_pack2 (GTK_PANED (vpaned), hpaned, TRUE, FALSE);
+
+  g_object_set_data_full (G_OBJECT (palette), "vpaned",
+                          g_object_ref (vpaned),
+                          g_object_unref);
 
   /* ===== vbox ===== */
 
   vbox = gtk_vbox_new (FALSE, 0);
   gtk_box_pack_start (GTK_BOX (vbox), menubar, FALSE, TRUE, 0);
   gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, TRUE, 0);
-  gtk_box_pack_start (GTK_BOX (vbox), hpaned, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox), vpaned, TRUE, TRUE, 0);
   gtk_widget_show_all (vbox);
 
   /* ===== window ===== */
@@ -659,6 +705,8 @@ create_ui (void)
   gtk_window_set_default_size (GTK_WINDOW (window), 600, 500);
   gtk_window_add_accel_group (GTK_WINDOW (window), gtk_ui_manager_get_accel_group (ui));
   g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
+
+  /* ===== final fixup ===== */
 
   g_object_unref (ui);
   return window;

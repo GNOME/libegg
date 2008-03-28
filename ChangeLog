@@ -1,5 +1,19 @@
 2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
 
+	Support horizontal orientation for icon-only style.
+
+	* libegg/toolpalette/eggtoolitemgroup.c,
+	  libegg/toolpalette/eggtoolpalette.c:
+	  Support horizontal orientation for icon-only style.
+	* libegg/toolpalette/eggtoolpaletteprivate.h:
+	  Add _egg_tool_item_group_palette_reconfigured() and
+	  _egg_tool_item_group_get_width_for_height().
+	* libegg/toolpalette/testtoolpalette.c:
+	  Set tooltip instead of label for items of advanced features group.
+	* libegg/toolpalette/TODO: Updated.
+
+2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
+
 	Avoid those strange rendering artifacts when expanding groups.
 
 	* libegg/toolpalette/eggtoolitemgroup.c:

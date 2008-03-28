@@ -96,17 +96,6 @@ egg_tool_palette_init (EggToolPalette *palette)
   palette->priv->style = DEFAULT_TOOLBAR_STYLE;
 }
 
-#ifdef GTK_TOOL_SHELL
-
-static void
-egg_tool_palette_reconfigured_foreach_item (GtkWidget *child,
-                                            gpointer   data G_GNUC_UNUSED)
-{
-  if (GTK_IS_TOOL_ITEM (child))
-    gtk_tool_item_toolbar_reconfigured (GTK_TOOL_ITEM (child));
-}
-
-
 static void
 egg_tool_palette_reconfigured (EggToolPalette *palette)
 {
@@ -114,28 +103,12 @@ egg_tool_palette_reconfigured (EggToolPalette *palette)
 
   for (i = 0; i < palette->priv->groups_length; ++i)
     {
-      EggToolItemGroup *group = palette->priv->groups[i];
-
-      if (!group)
-        continue;
-
-      gtk_container_foreach (GTK_CONTAINER (group),
-                             egg_tool_palette_reconfigured_foreach_item,
-                             NULL);
+      if (palette->priv->groups[i])
+        _egg_tool_item_group_palette_reconfigured (palette->priv->groups[i]);
     }
 
   gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
 }
-
-#else /* GTK_TOOL_SHELL */
-
-static void
-egg_tool_palette_reconfigured (EggToolPalette *palette)
-{
-  gtk_widget_queue_resize_no_redraw (GTK_WIDGET (palette));
-}
-
-#endif /* GTK_TOOL_SHELL */
 
 static void
 egg_tool_palette_set_property (GObject      *object,
@@ -293,18 +266,42 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 {
   const gint border_width = GTK_CONTAINER (widget)->border_width;
   EggToolPalette *palette = EGG_TOOL_PALETTE (widget);
+  GtkAdjustment *adjustment = NULL;
   GtkAllocation child_allocation;
+
+  gint page_start, page_size = 0;
   gint offset = 0;
   guint i;
 
   GTK_WIDGET_CLASS (egg_tool_palette_parent_class)->size_allocate (widget, allocation);
 
-  if (palette->priv->vadjustment)
-    offset = gtk_adjustment_get_value (palette->priv->vadjustment);
-
   child_allocation.x = border_width;
-  child_allocation.y = border_width - offset;
-  child_allocation.width = allocation->width - border_width * 2;
+  child_allocation.y = border_width;
+
+  if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
+    {
+      adjustment = palette->priv->vadjustment;
+      page_size = allocation->height;
+    }
+  else
+    {
+      adjustment = palette->priv->hadjustment;
+      page_size = allocation->width;
+    }
+
+  if (adjustment)
+    offset = gtk_adjustment_get_value (adjustment);
+
+  if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
+    {
+      child_allocation.y -= offset;
+      child_allocation.width = allocation->width - border_width * 2;
+    }
+  else
+    {
+      child_allocation.x -= offset;
+      child_allocation.height = allocation->height - border_width * 2;
+    }
 
   for (i = 0; i < palette->priv->groups_length; ++i)
     {
@@ -312,34 +309,51 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 
       if (egg_tool_item_group_get_n_items (group))
         {
-          child_allocation.height = _egg_tool_item_group_get_height_for_width (group, child_allocation.width);
+          if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
+            child_allocation.height = _egg_tool_item_group_get_height_for_width (group, child_allocation.width);
+          else
+            child_allocation.width = _egg_tool_item_group_get_width_for_height (group, child_allocation.height);
 
           gtk_widget_size_allocate (GTK_WIDGET (group), &child_allocation);
           gtk_widget_show (GTK_WIDGET (group));
 
-          child_allocation.y += child_allocation.height;
+          if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
+            child_allocation.y += child_allocation.height;
+          else
+            child_allocation.x += child_allocation.width;
         }
       else
         gtk_widget_hide (GTK_WIDGET (group));
     }
 
-  child_allocation.y += border_width;
-  child_allocation.y += offset;
-
-  if (palette->priv->vadjustment)
+  if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
     {
-      GtkAdjustment *vadj = palette->priv->vadjustment;
+      child_allocation.y += border_width;
+      child_allocation.y += offset;
 
-      vadj->page_increment = allocation->height * 0.9;
-      vadj->step_increment = allocation->height * 0.1;
-      vadj->upper = MAX (0, child_allocation.y);
-      vadj->page_size = allocation->height;
+      page_start = child_allocation.y;
+    }
+  else
+    {
+      child_allocation.x += border_width;
+      child_allocation.x += offset;
 
-      gtk_adjustment_clamp_page (vadj,
-                                 MIN (offset, vadj->upper - vadj->page_size),
-                                 offset + allocation->height);
+      page_start = child_allocation.x;
+    }
 
-      gtk_adjustment_changed (vadj);
+  if (adjustment)
+    {
+      gdouble value;
+
+      adjustment->page_increment = page_size * 0.9;
+      adjustment->step_increment = page_size * 0.1;
+      adjustment->upper = MAX (0, page_start);
+      adjustment->page_size = page_size;
+
+      value = MIN (offset, adjustment->upper - adjustment->page_size);
+      gtk_adjustment_clamp_page (adjustment, value, offset + page_size);
+
+      gtk_adjustment_changed (adjustment);
     }
 }
 

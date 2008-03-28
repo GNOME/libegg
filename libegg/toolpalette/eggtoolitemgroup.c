@@ -96,15 +96,34 @@ egg_tool_item_group_header_expose_event_cb (GtkWidget      *widget,
                                             gpointer        data)
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (data);
+  GtkExpanderStyle expander_style;
+  GtkOrientation orientation;
+  gint x, y;
 
-  gint x = widget->allocation.x + group->priv->expander_size / 2;
-  gint y = widget->allocation.y + widget->allocation.height / 2;
+  orientation = gtk_tool_shell_get_orientation (GTK_TOOL_SHELL (group));
+  expander_style = group->priv->expander_style;
+
+  if (GTK_ORIENTATION_VERTICAL == orientation)
+    {
+      x = widget->allocation.x + group->priv->expander_size / 2;
+      y = widget->allocation.y + widget->allocation.height / 2;
+    }
+  else
+    {
+      x = widget->allocation.x + widget->allocation.width / 2;
+      y = widget->allocation.y + group->priv->expander_size / 2;
+
+      /* Unfortunatly gtk_paint_expander() doesn't support rotated drawing
+       * modes. Luckily the following shady arithmetics produce the desired
+       * result. */
+      expander_style = GTK_EXPANDER_EXPANDED - expander_style; /* XXX */
+    }
 
   gtk_paint_expander (widget->style, widget->window,
                       group->priv->header->state,
                       &event->area, GTK_WIDGET (group),
                       "tool-palette-header", x, y,
-                      group->priv->expander_style);
+                      expander_style);
 
   return FALSE;
 }
@@ -126,6 +145,113 @@ egg_tool_item_group_header_clicked_cb (GtkButton *button G_GNUC_UNUSED,
   egg_tool_item_group_set_expanded (group, !group->priv->expanded);
 }
 
+static GtkWidget*
+egg_tool_item_group_get_alignment (EggToolItemGroup *group)
+{
+  return gtk_bin_get_child (GTK_BIN (group->priv->header));
+}
+
+static GtkWidget*
+egg_tool_item_group_get_label (EggToolItemGroup *group)
+{
+  GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
+  return gtk_bin_get_child (GTK_BIN (alignment));
+}
+
+#ifdef GTK_TOOL_SHELL
+
+static GtkIconSize
+egg_tool_item_group_get_icon_size (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_icon_size (EGG_TOOL_PALETTE (parent));
+
+  return GTK_ICON_SIZE_SMALL_TOOLBAR;
+}
+
+static GtkOrientation
+egg_tool_item_group_get_orientation (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_orientation (EGG_TOOL_PALETTE (parent));
+
+  return GTK_ORIENTATION_VERTICAL;
+}
+
+static GtkToolbarStyle
+egg_tool_item_group_get_style (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_style (EGG_TOOL_PALETTE (parent));
+
+  return GTK_TOOLBAR_ICONS;
+}
+
+#else /* GTK_TOOL_SHELL */
+
+static GtkOrientation
+egg_tool_item_group_get_orientation (EggToolItemGroup *group)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_orientation (EGG_TOOL_PALETTE (parent));
+
+  return GTK_ORIENTATION_VERTICAL;
+}
+
+static GtkToolbarStyle
+egg_tool_item_group_get_style (EggToolItemGroup *group)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return egg_tool_palette_get_style (EGG_TOOL_PALETTE (parent));
+
+  return GTK_TOOLBAR_ICONS;
+}
+
+#endif /* GTK_TOOL_SHELL */
+
+static void
+egg_tool_item_group_header_adjust_style (EggToolItemGroup *group)
+{
+  GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
+  GtkWidget *label = gtk_bin_get_child (GTK_BIN (alignment));
+  GtkWidget *widget = GTK_WIDGET (group);
+  gint dx = 0, dy = 0;
+
+  gtk_widget_style_get (widget,
+                        "header-spacing", &group->priv->header_spacing,
+                        "expander-size", &group->priv->expander_size,
+                        NULL);
+
+#ifdef GTK_TOOL_SHELL
+  switch (gtk_tool_shell_get_orientation (GTK_TOOL_SHELL (group)))
+#else
+  switch (egg_tool_item_group_get_orientation (group))
+#endif
+    {
+      case GTK_ORIENTATION_HORIZONTAL:
+        dy = group->priv->header_spacing + group->priv->expander_size;
+        gtk_label_set_angle (GTK_LABEL (label), 90);
+        break;
+
+      case GTK_ORIENTATION_VERTICAL:
+        dx = group->priv->header_spacing + group->priv->expander_size;
+        gtk_label_set_angle (GTK_LABEL (label), 0);
+        break;
+    }
+
+  gtk_alignment_set_padding (GTK_ALIGNMENT (alignment), dy, 0, dx, 0);
+}
+
 static void
 egg_tool_item_group_init (EggToolItemGroup *group)
 {
@@ -135,8 +261,8 @@ egg_tool_item_group_init (EggToolItemGroup *group)
   gtk_widget_set_redraw_on_allocate (GTK_WIDGET (group), FALSE);
 
   group->priv = G_TYPE_INSTANCE_GET_PRIVATE (group,
-                                            EGG_TYPE_TOOL_ITEM_GROUP,
-                                            EggToolItemGroupPrivate);
+                                             EGG_TYPE_TOOL_ITEM_GROUP,
+                                             EggToolItemGroupPrivate);
 
   group->priv->items_length = 0;
   group->priv->items_size = 4;
@@ -147,14 +273,8 @@ egg_tool_item_group_init (EggToolItemGroup *group)
   group->priv->expanded = TRUE;
 
   label = gtk_label_new (NULL);
-  gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END);
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
   alignment = gtk_alignment_new (0.5, 0.5, 1.0, 1.0);
-
-  gtk_alignment_set_padding (GTK_ALIGNMENT (alignment), 0, 0,
-                             group->priv->header_spacing +
-                             group->priv->expander_size, 0);
-
   gtk_container_add (GTK_CONTAINER (alignment), label);
   gtk_widget_show_all (alignment);
 
@@ -167,6 +287,8 @@ egg_tool_item_group_init (EggToolItemGroup *group)
   gtk_button_set_focus_on_click (GTK_BUTTON (group->priv->header), FALSE);
   gtk_container_add (GTK_CONTAINER (group->priv->header), alignment);
   gtk_widget_set_parent (group->priv->header, GTK_WIDGET (group));
+
+  egg_tool_item_group_header_adjust_style (group);
 
   g_signal_connect_after (alignment, "expose-event",
                           G_CALLBACK (egg_tool_item_group_header_expose_event_cb),
@@ -254,67 +376,6 @@ egg_tool_item_group_get_item_size (EggToolItemGroup *group,
     _egg_tool_item_group_item_size_request (group, item_size);
 }
 
-#ifdef GTK_TOOL_SHELL
-
-static GtkIconSize
-egg_tool_item_group_get_icon_size (GtkToolShell *shell)
-{
-  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
-
-  if (EGG_IS_TOOL_PALETTE (parent))
-    return egg_tool_palette_get_icon_size (EGG_TOOL_PALETTE (parent));
-
-  return GTK_ICON_SIZE_SMALL_TOOLBAR;
-}
-
-static GtkOrientation
-egg_tool_item_group_get_orientation (GtkToolShell *shell)
-{
-  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
-
-  if (EGG_IS_TOOL_PALETTE (parent))
-    return egg_tool_palette_get_orientation (EGG_TOOL_PALETTE (parent));
-
-  return GTK_ORIENTATION_VERTICAL;
-}
-
-static GtkToolbarStyle
-egg_tool_item_group_get_style (GtkToolShell *shell)
-{
-  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
-
-  if (EGG_IS_TOOL_PALETTE (parent))
-    return egg_tool_palette_get_style (EGG_TOOL_PALETTE (parent));
-
-  return GTK_TOOLBAR_ICONS;
-}
-
-#else /* GTK_TOOL_SHELL */
-
-static GtkOrientation
-egg_tool_item_group_get_orientation (EggToolItemGroup *group)
-{
-  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
-
-  if (EGG_IS_TOOL_PALETTE (parent))
-    return egg_tool_palette_get_orientation (EGG_TOOL_PALETTE (parent));
-
-  return GTK_ORIENTATION_VERTICAL;
-}
-
-static GtkToolbarStyle
-egg_tool_item_group_get_style (EggToolItemGroup *group)
-{
-  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
-
-  if (EGG_IS_TOOL_PALETTE (parent))
-    return egg_tool_palette_get_style (EGG_TOOL_PALETTE (parent));
-
-  return GTK_TOOLBAR_ICONS;
-}
-
-#endif /* GTK_TOOL_SHELL */
-
 static void
 egg_tool_item_group_size_request (GtkWidget      *widget,
                                   GtkRequisition *requisition)
@@ -374,13 +435,14 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
   GtkRequisition child_requistion;
   GtkAllocation child_allocation;
-  GtkRequisition item_size;
 
-  gint width;
-  guint i;
+  GtkRequisition item_size;
+  GtkAllocation item_area;
 
   GtkOrientation orientation;
   GtkToolbarStyle style;
+
+  guint n_visible_items, i;
 
   GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
 
@@ -392,17 +454,50 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   style = egg_tool_item_group_get_style (group);
 #endif
 
+  /* figure out item size */
+
   egg_tool_item_group_get_item_size (group, &item_size);
 
-  item_size.width = MIN (item_size.width, allocation->width);
+  if (GTK_ORIENTATION_VERTICAL == orientation)
+    item_size.width = MIN (item_size.width, allocation->width);
+  else
+    item_size.height = MIN (item_size.height, allocation->height);
 
-  if (style == GTK_TOOLBAR_ICONS)
+  n_visible_items = 0;
+
+  for (i = 0; i < group->priv->items_length; ++i)
     {
-      guint n_columns = MAX (allocation->width / item_size.width, 1);
-      width = item_size.width * n_columns;
+      GtkToolItem *item = group->priv->items[i];
+
+      if (item && egg_tool_item_group_is_item_visible (item, orientation))
+        n_visible_items += 1;
+    }
+
+  if (GTK_TOOLBAR_ICONS == style)
+    {
+      guint n_columns, n_rows;
+
+      if (GTK_ORIENTATION_VERTICAL == orientation)
+        {
+          n_columns = MAX (allocation->width / item_size.width, 1);
+          n_rows = (n_visible_items + n_columns - 1) / n_columns;
+        }
+      else
+        {
+          n_rows = MAX (allocation->height / item_size.height, 1);
+          n_columns = (n_visible_items + n_rows - 1) / n_rows;
+        }
+
+      item_area.width = item_size.width * n_columns;
+      item_area.height = item_size.height * n_rows;
     }
   else
-    width = allocation->width;
+    {
+      item_area.width = allocation->width;
+      item_area.height = allocation->height;
+    }
+
+  /* place the header widget */
 
   child_allocation.x = border_width;
   child_allocation.y = border_width;
@@ -411,14 +506,30 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
     {
       gtk_widget_size_request (group->priv->header, &child_requistion);
 
-      child_allocation.width = allocation->width;
-      child_allocation.height = child_requistion.height;
+      if (GTK_ORIENTATION_VERTICAL == orientation)
+        {
+          child_allocation.width = allocation->width;
+          child_allocation.height = child_requistion.height;
+        }
+      else
+        {
+          child_allocation.width = child_requistion.width;
+          child_allocation.height = allocation->height;
+        }
 
       if (!inquery)
         gtk_widget_size_allocate (group->priv->header, &child_allocation);
 
-      child_allocation.y += child_allocation.height;
+      if (GTK_ORIENTATION_VERTICAL == orientation)
+        child_allocation.y += child_allocation.height;
+      else
+        child_allocation.x += child_allocation.width;
     }
+
+  item_area.x = child_allocation.x;
+  item_area.y = child_allocation.y;
+
+  /* otherwise, when expanded or in transition, place the tool items */
 
   if (group->priv->expanded || group->priv->animation_timeout)
     {
@@ -431,20 +542,20 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
           if (!egg_tool_item_group_is_item_visible (item, orientation))
             {
-              if (!inquery) /* in case of orientation preferences */
+              if (!inquery)
                 gtk_widget_set_child_visible (GTK_WIDGET (item), FALSE);
 
               continue;
             }
 
-          if (child_allocation.x + item_size.width > width)
+          if (child_allocation.x + item_size.width > item_area.x + item_area.width)
             {
               child_allocation.y += child_allocation.height;
-              child_allocation.x = border_width;
+              child_allocation.x = item_area.x;
             }
 
           if (style != GTK_TOOLBAR_ICONS || gtk_tool_item_get_expand (item))
-            child_allocation.width = width - child_allocation.x;
+            child_allocation.width = item_area.x + item_area.width - child_allocation.x;
           else
             child_allocation.width = item_size.width;
 
@@ -462,23 +573,22 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
       child_allocation.y += item_size.height;
       child_allocation.x = border_width;
     }
+
+  /* or just hide all items, when collapsed */
+
   else if (!inquery)
     {
       for (i = 0; i < group->priv->items_length; ++i)
-        {
-          GtkToolItem *item = group->priv->items[i];
-
-          if (!item)
-            continue;
-
-          gtk_widget_set_child_visible (GTK_WIDGET (item), FALSE);
-        }
+        if (group->priv->items[i])
+          gtk_widget_set_child_visible (GTK_WIDGET (group->priv->items[i]), FALSE);
     }
+
+  /* report effective widget size */
 
   if (inquery)
     {
-      inquery->width = child_allocation.width;
-      inquery->height = child_allocation.y;
+      inquery->width = item_area.x + item_area.width + border_width;
+      inquery->height = child_allocation.y + border_width;
     }
 }
 
@@ -532,38 +642,11 @@ egg_tool_item_group_realize (GtkWidget *widget)
   gtk_widget_queue_resize_no_redraw (widget);
 }
 
-static GtkWidget*
-egg_tool_item_group_get_alignment (EggToolItemGroup *group)
-{
-  return gtk_bin_get_child (GTK_BIN (group->priv->header));
-}
-
-static GtkWidget*
-egg_tool_item_group_get_label (EggToolItemGroup *group)
-{
-  GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
-  return gtk_bin_get_child (GTK_BIN (alignment));
-}
-
 static void
 egg_tool_item_group_style_set (GtkWidget *widget,
                                GtkStyle  *previous_style)
 {
-  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
-  GtkWidget *alignment = NULL;
-
-  gtk_widget_style_get (widget,
-                        "header-spacing", &group->priv->header_spacing,
-                        "expander-size", &group->priv->expander_size,
-                        NULL);
-
-  alignment = egg_tool_item_group_get_alignment (group);
-
-  gtk_alignment_set_padding (GTK_ALIGNMENT (alignment),
-                             0, 0,
-                             group->priv->header_spacing +
-                             group->priv->expander_size, 0);
-
+  egg_tool_item_group_header_adjust_style (EGG_TOOL_ITEM_GROUP (widget));
   GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->style_set (widget, previous_style);
 }
 
@@ -1057,23 +1140,40 @@ _egg_tool_item_group_paint (EggToolItemGroup *group,
 
   if (group->priv->animation_timeout)
     {
+      GtkOrientation orientation = egg_tool_item_group_get_orientation (GTK_TOOL_SHELL (group));
       cairo_pattern_t *mask;
-      gdouble y0, y1;
+      gdouble v0, v1;
 
-      y0 = widget->allocation.height - 256;
-      y1 = widget->allocation.height;
-
-      if (GTK_WIDGET_VISIBLE (group->priv->header))
-        y0 = MAX (y0, group->priv->header->allocation.height);
+      if (GTK_ORIENTATION_VERTICAL == orientation)
+        v1 = widget->allocation.height;
       else
-        y0 = MAX (y0, 0);
+        v1 = widget->allocation.width;
 
-      y1 = MIN (y0 + 256, y1);
+      v0 = v1 - 256;
 
-      y0 += widget->allocation.y;
-      y1 += widget->allocation.y;
+      if (!GTK_WIDGET_VISIBLE (group->priv->header))
+        v0 = MAX (v0, 0);
+      else if (GTK_ORIENTATION_VERTICAL == orientation)
+        v0 = MAX (v0, group->priv->header->allocation.height);
+      else
+        v0 = MAX (v0, group->priv->header->allocation.width);
 
-      mask = cairo_pattern_create_linear (0.0, y0, 0.0, y1);
+      v1 = MIN (v0 + 256, v1);
+
+      if (GTK_ORIENTATION_VERTICAL == orientation)
+        {
+          v0 += widget->allocation.y;
+          v1 += widget->allocation.y;
+
+          mask = cairo_pattern_create_linear (0.0, v0, 0.0, v1);
+        }
+      else
+        {
+          v0 += widget->allocation.x;
+          v1 += widget->allocation.x;
+
+          mask = cairo_pattern_create_linear (v0, 0.0, v1, 0.0);
+        }
 
       cairo_pattern_add_color_stop_rgba (mask, 0.00, 0.0, 0.0, 0.0, 1.00);
       cairo_pattern_add_color_stop_rgba (mask, 0.25, 0.0, 0.0, 0.0, 0.25);
@@ -1088,9 +1188,10 @@ _egg_tool_item_group_paint (EggToolItemGroup *group,
     cairo_paint (cr);
 }
 
-gint
-_egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
-                                           gint              width)
+static gint
+egg_tool_item_group_get_size_for_limit (EggToolItemGroup *group,
+                                        gint              limit,
+                                        gboolean          vertical)
 {
   GtkRequisition requisition;
 
@@ -1099,13 +1200,21 @@ _egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
 
   if (group->priv->expanded || group->priv->animation_timeout)
     {
-      GtkAllocation allocation = { 0, 0, width, requisition.height };
+      GtkAllocation allocation = { 0, 0, requisition.width, requisition.height };
       GtkRequisition inquery;
+
+      if (vertical)
+        allocation.width = limit;
+      else
+        allocation.height = limit;
 
       egg_tool_item_group_real_size_allocate (GTK_WIDGET (group),
                                               &allocation, &inquery);
 
-      inquery.height -= requisition.height;
+      if (vertical)
+        inquery.height -= requisition.height;
+      else
+        inquery.width -= requisition.width;
 
       if (group->priv->animation_timeout)
         {
@@ -1116,12 +1225,64 @@ _egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
           if (!group->priv->expanded)
             timestamp = ANIMATION_DURATION - timestamp;
 
-          inquery.height *= timestamp;
-          inquery.height /= ANIMATION_DURATION;
+          if (vertical)
+            {
+              inquery.height *= timestamp;
+              inquery.height /= ANIMATION_DURATION;
+            }
+          else
+            {
+              inquery.width *= timestamp;
+              inquery.width /= ANIMATION_DURATION;
+            }
         }
 
-      requisition.height += inquery.height;
+      if (vertical)
+        requisition.height += inquery.height;
+      else
+        requisition.width += inquery.width;
     }
 
-  return requisition.height;
+  return (vertical ? requisition.height : requisition.width);
 }
+
+gint
+_egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
+                                           gint              width)
+{
+  return egg_tool_item_group_get_size_for_limit (group, width, TRUE);
+}
+
+gint
+_egg_tool_item_group_get_width_for_height (EggToolItemGroup *group,
+                                           gint              height)
+{
+  return egg_tool_item_group_get_size_for_limit (group, height, FALSE);
+}
+
+#ifdef GTK_TOOL_SHELL
+
+static void
+egg_tool_palette_reconfigured_foreach_item (GtkWidget *child,
+                                            gpointer   data G_GNUC_UNUSED)
+{
+  if (GTK_IS_TOOL_ITEM (child))
+    gtk_tool_item_toolbar_reconfigured (GTK_TOOL_ITEM (child));
+}
+
+#endif /* GTK_TOOL_SHELL */
+
+void
+_egg_tool_item_group_palette_reconfigured (EggToolItemGroup *group)
+{
+#ifdef GTK_TOOL_SHELL
+
+  gtk_container_foreach (GTK_CONTAINER (group),
+                         egg_tool_palette_reconfigured_foreach_item,
+                         NULL);
+
+#endif /* GTK_TOOL_SHELL */
+
+  egg_tool_item_group_header_adjust_style (group);
+}
+
