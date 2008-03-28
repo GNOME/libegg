@@ -1,3 +1,12 @@
+2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
+
+	Avoid those strange rendering artifacts when expanding groups.
+
+	* libegg/toolpalette/eggtoolitemgroup.c:
+	  Move gtk_widget_queue_resize_no_redraw() invokation and call
+	  gdk_window_process_updates() in egg_tool_item_group_animation_cb().
+	* libegg/toolpalette/eggtoolpalette.c: Just an empty line.
+
 2008-03-27  Mathias Hasselmann  <mathias@openismus.com>
 
 	Small build fixes for EggToolPalette.

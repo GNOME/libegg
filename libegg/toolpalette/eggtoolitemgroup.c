@@ -743,6 +743,9 @@ egg_tool_item_group_animation_cb (gpointer data)
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (data);
   gint64 timestamp = egg_tool_item_group_get_animation_timestamp (group);
 
+  /* enque this early to reduce number of expose events */
+  gtk_widget_queue_resize_no_redraw (GTK_WIDGET (group));
+
   if (GTK_WIDGET_REALIZED (group->priv->header))
     {
       GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
@@ -794,7 +797,13 @@ egg_tool_item_group_animation_cb (gpointer data)
   if (timestamp >= ANIMATION_DURATION)
     group->priv->animation_timeout = NULL;
 
-  gtk_widget_queue_resize_no_redraw (GTK_WIDGET (group));
+  /* Ensure that all composited windows and child windows are repainted, before
+   * the parent widget gets its expose-event. This is needed to avoid heavy
+   * rendering artifacts. GTK+ should take care about this issue by itself I
+   * guess, but currently it doesn't. Also I don't understand the parameters
+   * of this issue well enough yet, to file a bug report.
+   */
+  gdk_window_process_updates (GTK_WIDGET (group)->window, TRUE);
 
   return (group->priv->animation_timeout != NULL);
 }
