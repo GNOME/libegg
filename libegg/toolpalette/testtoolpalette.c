@@ -492,6 +492,23 @@ palette_notify_orientation (GObject    *object,
   g_object_unref (scroller);
 }
 
+static void
+ellipsize_changed_cb (GtkWidget *widget,
+                      gpointer   data)
+{
+  GEnumValue *ellipsize = data;
+
+  egg_tool_item_group_set_ellipsize (EGG_TOOL_ITEM_GROUP (widget),
+                                     ellipsize->value);
+}
+
+static void
+ellipsize_changed (GEnumValue *value,
+                   gpointer    data)
+{
+  gtk_container_foreach (data, ellipsize_changed_cb, value);
+}
+
 static GtkWidget*
 create_ui (void)
 {
@@ -513,6 +530,7 @@ create_ui (void)
           <menuitem action='ViewIconSize' />    \
           <menuitem action='ViewOrientation' /> \
           <menuitem action='ViewStyle' />       \
+          <menuitem action='ViewEllipsize' />   \
         </menu>                                 \
                                                 \
         <menu action='HelpMenu'>                \
@@ -528,6 +546,7 @@ create_ui (void)
         <toolitem action='ViewIconSize' />      \
         <toolitem action='ViewOrientation' />   \
         <toolitem action='ViewStyle' />         \
+        <toolitem action='ViewEllipsize' />     \
         <separator />                           \
         <separator />                           \
         <toolitem action='HelpAbout' />         \
@@ -577,6 +596,10 @@ create_ui (void)
 
   action = egg_enum_action_new ("ViewStyle", _("Style"), NULL, GTK_TYPE_TOOLBAR_STYLE);
   egg_enum_action_bind (EGG_ENUM_ACTION (action), G_OBJECT (palette), "toolbar-style");
+  gtk_action_group_add_action (group, action);
+
+  action = egg_enum_action_new ("ViewEllipsize", _("Ellipsize Headers"), NULL, PANGO_TYPE_ELLIPSIZE_MODE);
+  egg_enum_action_connect (EGG_ENUM_ACTION (action), ellipsize_changed, palette);
   gtk_action_group_add_action (group, action);
 
   gtk_ui_manager_insert_action_group (ui, group, -1);

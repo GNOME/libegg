@@ -50,31 +50,34 @@ struct _EggToolItemGroupClass
 };
 
 GType                 egg_tool_item_group_get_type          (void) G_GNUC_CONST;
-GtkWidget*            egg_tool_item_group_new               (const gchar      *name);
+GtkWidget*            egg_tool_item_group_new               (const gchar        *name);
 
-void                  egg_tool_item_group_set_name          (EggToolItemGroup *group,
-                                                             const gchar      *name);
-void                  egg_tool_item_group_set_expanded      (EggToolItemGroup *group,
-                                                             gboolean          expanded);
+void                  egg_tool_item_group_set_name          (EggToolItemGroup   *group,
+                                                             const gchar        *name);
+void                  egg_tool_item_group_set_expanded      (EggToolItemGroup   *group,
+                                                             gboolean            expanded);
+void                  egg_tool_item_group_set_ellipsize     (EggToolItemGroup   *group,
+                                                             PangoEllipsizeMode  ellipsize);
 
-G_CONST_RETURN gchar* egg_tool_item_group_get_name          (EggToolItemGroup *group);
-gboolean              egg_tool_item_group_get_expanded      (EggToolItemGroup *group);
+G_CONST_RETURN gchar* egg_tool_item_group_get_name          (EggToolItemGroup   *group);
+gboolean              egg_tool_item_group_get_expanded      (EggToolItemGroup   *group);
+PangoEllipsizeMode    egg_tool_item_group_get_ellipsize     (EggToolItemGroup   *group);
 
-void                  egg_tool_item_group_insert            (EggToolItemGroup *group,
-                                                             GtkToolItem      *item,
-                                                             gint              position);
-void                  egg_tool_item_group_set_item_position (EggToolItemGroup *group,
-                                                             GtkToolItem      *item,
-                                                             gint              position);
-gint                  egg_tool_item_group_get_item_position (EggToolItemGroup *group,
-                                                             GtkToolItem      *item);
+void                  egg_tool_item_group_insert            (EggToolItemGroup   *group,
+                                                             GtkToolItem        *item,
+                                                             gint                position);
+void                  egg_tool_item_group_set_item_position (EggToolItemGroup   *group,
+                                                             GtkToolItem        *item,
+                                                             gint                position);
+gint                  egg_tool_item_group_get_item_position (EggToolItemGroup   *group,
+                                                             GtkToolItem        *item);
 
-guint                 egg_tool_item_group_get_n_items       (EggToolItemGroup *group);
-GtkToolItem*          egg_tool_item_group_get_nth_item      (EggToolItemGroup *group,
-                                                             guint             index);
-GtkToolItem*          egg_tool_item_group_get_drop_item     (EggToolItemGroup *group,
-                                                             gint              x,
-                                                             gint              y);
+guint                 egg_tool_item_group_get_n_items       (EggToolItemGroup   *group);
+GtkToolItem*          egg_tool_item_group_get_nth_item      (EggToolItemGroup   *group,
+                                                             guint               index);
+GtkToolItem*          egg_tool_item_group_get_drop_item     (EggToolItemGroup   *group,
+                                                             gint                x,
+                                                             gint                y);
 
 G_END_DECLS
 

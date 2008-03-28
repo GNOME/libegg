@@ -35,11 +35,12 @@ struct _EggEnumActionPrivate
   GType         enum_type;
   GEnumClass   *enum_class;
   GSList       *bindings;
+  GSList       *callbacks;
   GtkListStore *model;
 
   EggEnumActionFilterFunc filter_func;
-  GDestroyNotify filter_destroy;
-  gpointer filter_data;
+  GDestroyNotify          filter_destroy;
+  gpointer                filter_data;
 };
 
 static GQuark egg_enum_action_child_quark;
@@ -135,6 +136,12 @@ egg_enum_action_dispose (GObject *object)
                                                           action->priv->bindings->data);
     }
 
+  if (action->priv->callbacks)
+    {
+      g_slist_free (action->priv->callbacks);
+      action->priv->callbacks = NULL;
+    }
+
   if (action->priv->filter_destroy)
     {
       action->priv->filter_destroy (action->priv->filter_data);
@@ -226,18 +233,24 @@ egg_enum_action_get_active_iter (EggEnumAction *action,
 
 static void
 egg_enum_action_set_value (EggEnumAction *action,
-                           gint           value)
+                           GEnumValue    *enum_value)
 {
-  GSList *binding = action->priv->bindings;
+  GSList *iter;
 
-  while (binding)
+  for (iter = action->priv->bindings; iter; iter = iter->next->next)
     {
-      GParamSpec *property = binding->data;
-      GObject *object = binding->next->data;
+      GParamSpec *property = iter->data;
+      GObject *object = iter->next->data;
 
-      g_object_set (object, property->name, value, NULL);
+      g_object_set (object, property->name, enum_value->value, NULL);
+    }
 
-      binding = binding->next->next;
+  for (iter = action->priv->callbacks; iter; iter = iter->next->next)
+    {
+      EggEnumActionCallback callback = iter->next->data;
+      gpointer user_data = iter->data;
+
+      callback (enum_value, user_data);
     }
 }
 
@@ -254,7 +267,7 @@ egg_enum_action_combo_changed (GtkComboBox *combo,
     {
       model = egg_enum_action_get_model (action);
       gtk_tree_model_get (model, &iter, 1, &enum_value, -1);
-      egg_enum_action_set_value (action, enum_value->value);
+      egg_enum_action_set_value (action, enum_value);
     }
 }
 
@@ -349,7 +362,7 @@ egg_enum_action_menu_item_toggled (GtkCheckMenuItem *item,
   GEnumValue *enum_value;
 
   enum_value = g_object_get_qdata (G_OBJECT (item), egg_enum_action_value_quark);
-  egg_enum_action_set_value (EGG_ENUM_ACTION (data), enum_value->value);
+  egg_enum_action_set_value (EGG_ENUM_ACTION (data), enum_value);
 }
 
 static GtkWidget*
@@ -508,6 +521,18 @@ egg_enum_action_bind (EggEnumAction *action,
   action->priv->bindings = g_slist_prepend (action->priv->bindings, g_param_spec_ref (property));
 
   egg_enum_action_notify (object, property, action);
+}
+
+void
+egg_enum_action_connect (EggEnumAction         *action,
+                         EggEnumActionCallback  callback,
+                         gpointer               data)
+{
+  g_return_if_fail (EGG_IS_ENUM_ACTION (action));
+  g_return_if_fail (NULL != callback);
+
+  action->priv->callbacks = g_slist_prepend (action->priv->callbacks, callback);
+  action->priv->callbacks = g_slist_prepend (action->priv->callbacks, data);
 }
 
 void

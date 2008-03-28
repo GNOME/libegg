@@ -32,29 +32,36 @@
 
 #define P_(msgid) (msgid)
 
+#define DEFAULT_NAME             NULL
+#define DEFAULT_EXPANDED         TRUE
+#define DEFAULT_ELLIPSIZE        PANGO_ELLIPSIZE_NONE
+
 enum
 {
   PROP_NONE,
   PROP_NAME,
-  PROP_EXPANED,
+  PROP_EXPANDED,
+  PROP_ELLIPSIZE,
 };
 
 struct _EggToolItemGroupPrivate
 {
-  GtkWidget        *header;
+  GtkWidget         *header;
 
-  GtkToolItem     **items;
-  gsize             items_size;
-  gsize             items_length;
+  GtkToolItem      **items;
+  gsize              items_size;
+  gsize              items_length;
 
-  gint64            animation_start;
-  GSource          *animation_timeout;
-  GtkExpanderStyle  expander_style;
-  gint              expander_size;
-  gint              header_spacing;
+  gint64             animation_start;
+  GSource           *animation_timeout;
+  GtkExpanderStyle   expander_style;
+  gint               expander_size;
+  gint               header_spacing;
+  PangoEllipsizeMode ellipsize;
 
-  guint             sparse_items : 1;
-  guint             expanded : 1;
+  guint              sparse_items : 1;
+  guint              expanded : 1;
+
 };
 
 #ifdef GTK_TYPE_TOOL_SHELL
@@ -227,11 +234,13 @@ egg_tool_item_group_header_adjust_style (EggToolItemGroup *group)
     {
       case GTK_ORIENTATION_HORIZONTAL:
         dy = group->priv->header_spacing + group->priv->expander_size;
+        gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_NONE);
         gtk_label_set_angle (GTK_LABEL (label), 90);
         break;
 
       case GTK_ORIENTATION_VERTICAL:
         dx = group->priv->header_spacing + group->priv->expander_size;
+        gtk_label_set_ellipsize (GTK_LABEL (label), group->priv->ellipsize);
         gtk_label_set_angle (GTK_LABEL (label), 0);
         break;
     }
@@ -303,8 +312,12 @@ egg_tool_item_group_set_property (GObject      *object,
         egg_tool_item_group_set_name (group, g_value_get_string (value));
         break;
 
-      case PROP_EXPANED:
+      case PROP_EXPANDED:
         egg_tool_item_group_set_expanded (group, g_value_get_boolean (value));
+        break;
+
+      case PROP_ELLIPSIZE:
+        egg_tool_item_group_set_ellipsize (group, g_value_get_enum (value));
         break;
 
       default:
@@ -327,8 +340,12 @@ egg_tool_item_group_get_property (GObject    *object,
         g_value_set_string (value, egg_tool_item_group_get_name (group));
         break;
 
-      case PROP_EXPANED:
+      case PROP_EXPANDED:
         g_value_set_boolean (value, egg_tool_item_group_get_expanded (group));
+        break;
+
+      case PROP_ELLIPSIZE:
+        g_value_set_enum (value, egg_tool_item_group_get_ellipsize (group));
         break;
 
       default:
@@ -712,17 +729,25 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
                                    g_param_spec_string ("name",
                                                         P_("Name"),
                                                         P_("The name of this item group"),
-                                                        NULL,
+                                                        DEFAULT_NAME,
                                                         G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
                                                         G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
-  g_object_class_install_property (oclass, PROP_EXPANED,
+  g_object_class_install_property (oclass, PROP_EXPANDED,
                                    g_param_spec_boolean ("expanded",
                                                          P_("Expanded"),
                                                          P_("Wether the group has been expanded and items are shown"),
-                                                         TRUE,
+                                                         DEFAULT_EXPANDED,
                                                          G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
                                                          G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
+  g_object_class_install_property (oclass, PROP_ELLIPSIZE,
+                                   g_param_spec_enum ("ellipsize",
+                                                      P_("ellipsize"),
+                                                      P_("Ellipsize for item group headers"),
+                                                      PANGO_TYPE_ELLIPSIZE_MODE, DEFAULT_ELLIPSIZE,
+                                                      G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                      G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
   gtk_widget_class_install_style_property (wclass,
                                            g_param_spec_int ("expander-size",
@@ -885,12 +910,26 @@ egg_tool_item_group_set_expanded (EggToolItemGroup *group,
     }
 }
 
+void
+egg_tool_item_group_set_ellipsize (EggToolItemGroup   *group,
+                                   PangoEllipsizeMode  ellipsize)
+{
+  g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
+
+  if (ellipsize != group->priv->ellipsize)
+    {
+      group->priv->ellipsize = ellipsize;
+      egg_tool_item_group_header_adjust_style (group);
+      g_object_notify (G_OBJECT (group), "ellipsize");
+    }
+}
+
 G_CONST_RETURN gchar*
 egg_tool_item_group_get_name (EggToolItemGroup *group)
 {
   GtkWidget *label;
 
-  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), DEFAULT_NAME);
 
   label = egg_tool_item_group_get_label (group);
   return gtk_label_get_text (GTK_LABEL (label));
@@ -899,8 +938,15 @@ egg_tool_item_group_get_name (EggToolItemGroup *group)
 gboolean
 egg_tool_item_group_get_expanded (EggToolItemGroup *group)
 {
-  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), FALSE);
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), DEFAULT_EXPANDED);
   return group->priv->expanded;
+}
+
+PangoEllipsizeMode
+egg_tool_item_group_get_ellipsize (EggToolItemGroup *group)
+{
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), DEFAULT_ELLIPSIZE);
+  return group->priv->ellipsize;
 }
 
 void

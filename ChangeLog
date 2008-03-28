@@ -1,5 +1,18 @@
 2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
 
+	Support "ellipsize" property for EggToolItemGroup.
+
+	* libegg/toolpalette/eggenumaction.c,
+	  libegg/toolpalette/eggenumaction.h:
+	  Add egg_enum_action_connect().
+	* libegg/toolpalette/eggtoolitemgroup.c,
+	  libegg/toolpalette/eggtoolitemgroup.h:
+	  Add "ellipsize" property and accessors.
+	* libegg/toolpalette/testtoolpalette.c:
+	  Allow adjustment for "ellipsize" property.
+
+2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
+
 	Define some wanky preprocessor macros for GTK+ < 2.15 to reduce
 	the amount of conditional compilation needed.
 

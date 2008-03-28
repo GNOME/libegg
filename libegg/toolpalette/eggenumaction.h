@@ -37,6 +37,8 @@ typedef struct _EggEnumAction        EggEnumAction;
 typedef struct _EggEnumActionClass   EggEnumActionClass;
 typedef struct _EggEnumActionPrivate EggEnumActionPrivate;
 
+typedef void     (*EggEnumActionCallback)   (GEnumValue *enum_value,
+                                             gpointer    user_data);
 typedef gboolean (*EggEnumActionFilterFunc) (GEnumValue *enum_value,
                                              gpointer    user_data);
 
@@ -60,6 +62,9 @@ GtkAction* egg_enum_action_new        (const gchar             *name,
 void       egg_enum_action_bind       (EggEnumAction           *action,
                                        GObject                 *object,
                                        const gchar             *property_name);
+void       egg_enum_action_connect    (EggEnumAction           *action,
+                                       EggEnumActionCallback    callback,
+                                       gpointer                 data);
 
 void       egg_enum_action_set_filter (EggEnumAction           *action,
                                        EggEnumActionFilterFunc  filter,
