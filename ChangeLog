@@ -1,5 +1,13 @@
 2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
 
+	Define some wanky preprocessor macros for GTK+ < 2.15 to reduce
+	the amount of conditional compilation needed.
+
+	* libegg/toolpalette/eggtoolitemgroup.c: Define some preprocessor
+	  macros simulating existance of GtkToolShell for GTK+ < 2.15.
+
+2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
+
 	Support horizontal orientation for icon-only style.
 
 	* libegg/toolpalette/eggtoolitemgroup.c,
