@@ -1,3 +1,11 @@
+2008-03-29  Mathias Hasselmann  <mathias@openismus.com>
+
+	Support child properties in EggToolItemGroup.
+
+	* libegg/toolpalette/eggtoolitemgroup.c:
+	  Implement "expand", "homogeneous" and "position".
+	* libegg/toolpalette/TODO: Updated.
+
 2008-03-28  Mathias Hasselmann  <mathias@openismus.com>
 
 	Support "ellipsize" property for EggToolItemGroup.

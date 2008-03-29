@@ -25,12 +25,12 @@
 #include <gtk/gtk.h>
 #include <string.h>
 
+#define P_(msgid)               (msgid)
+
 #define ANIMATION_TIMEOUT        50
 #define ANIMATION_DURATION      (ANIMATION_TIMEOUT * 4)
 #define DEFAULT_EXPANDER_SIZE    16
 #define DEFAULT_HEADER_SPACING   2
-
-#define P_(msgid) (msgid)
 
 #define DEFAULT_NAME             NULL
 #define DEFAULT_EXPANDED         TRUE
@@ -42,6 +42,14 @@ enum
   PROP_NAME,
   PROP_EXPANDED,
   PROP_ELLIPSIZE,
+};
+
+enum
+{
+  CHILD_PROP_NONE,
+  CHILD_PROP_EXPAND,
+  CHILD_PROP_HOMOGENEOUS,
+  CHILD_PROP_POSITION,
 };
 
 struct _EggToolItemGroupPrivate
@@ -705,25 +713,87 @@ egg_tool_item_group_child_type (GtkContainer *container G_GNUC_UNUSED)
 }
 
 static void
+egg_tool_item_group_set_child_property (GtkContainer *container,
+                                        GtkWidget    *child,
+                                        guint         prop_id,
+                                        const GValue *value,
+                                        GParamSpec   *pspec)
+{
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (container);
+  GtkToolItem *item = GTK_TOOL_ITEM (child);
+
+  switch (prop_id)
+    {
+      case CHILD_PROP_EXPAND:
+        gtk_tool_item_set_expand (item, g_value_get_boolean (value));
+        break;
+
+      case CHILD_PROP_HOMOGENEOUS:
+        gtk_tool_item_set_homogeneous (item, g_value_get_boolean (value));
+        break;
+
+      case CHILD_PROP_POSITION:
+        egg_tool_item_group_set_item_position (group, item, g_value_get_int (value));
+        break;
+
+      default:
+        GTK_CONTAINER_WARN_INVALID_CHILD_PROPERTY_ID (container, prop_id, pspec);
+        break;
+    }
+}
+
+static void
+egg_tool_item_group_get_child_property (GtkContainer *container,
+                                        GtkWidget    *child,
+                                        guint         prop_id,
+                                        GValue       *value,
+                                        GParamSpec   *pspec)
+{
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (container);
+  GtkToolItem *item = GTK_TOOL_ITEM (child);
+
+  switch (prop_id)
+    {
+      case CHILD_PROP_EXPAND:
+        g_value_set_boolean (value, gtk_tool_item_get_expand (item));
+        break;
+
+      case CHILD_PROP_HOMOGENEOUS:
+        g_value_set_boolean (value, gtk_tool_item_get_homogeneous (item));
+        break;
+
+      case CHILD_PROP_POSITION:
+        g_value_set_int (value, egg_tool_item_group_get_item_position (group, item));
+        break;
+
+      default:
+        GTK_CONTAINER_WARN_INVALID_CHILD_PROPERTY_ID (container, prop_id, pspec);
+        break;
+    }
+}
+
+static void
 egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
 {
-  GObjectClass *oclass = G_OBJECT_CLASS (cls);
-  GtkWidgetClass *wclass = GTK_WIDGET_CLASS (cls);
-  GtkContainerClass *cclass = GTK_CONTAINER_CLASS (cls);
+  GObjectClass       *oclass = G_OBJECT_CLASS (cls);
+  GtkWidgetClass     *wclass = GTK_WIDGET_CLASS (cls);
+  GtkContainerClass  *cclass = GTK_CONTAINER_CLASS (cls);
 
-  oclass->set_property  = egg_tool_item_group_set_property;
-  oclass->get_property  = egg_tool_item_group_get_property;
-  oclass->finalize      = egg_tool_item_group_finalize;
+  oclass->set_property       = egg_tool_item_group_set_property;
+  oclass->get_property       = egg_tool_item_group_get_property;
+  oclass->finalize           = egg_tool_item_group_finalize;
 
-  wclass->size_request  = egg_tool_item_group_size_request;
-  wclass->size_allocate = egg_tool_item_group_size_allocate;
-  wclass->realize       = egg_tool_item_group_realize;
-  wclass->style_set     = egg_tool_item_group_style_set;
+  wclass->size_request       = egg_tool_item_group_size_request;
+  wclass->size_allocate      = egg_tool_item_group_size_allocate;
+  wclass->realize            = egg_tool_item_group_realize;
+  wclass->style_set          = egg_tool_item_group_style_set;
 
-  cclass->add           = egg_tool_item_group_add;
-  cclass->remove        = egg_tool_item_group_remove;
-  cclass->forall        = egg_tool_item_group_forall;
-  cclass->child_type    = egg_tool_item_group_child_type;
+  cclass->add                = egg_tool_item_group_add;
+  cclass->remove             = egg_tool_item_group_remove;
+  cclass->forall             = egg_tool_item_group_forall;
+  cclass->child_type         = egg_tool_item_group_child_type;
+  cclass->set_child_property = egg_tool_item_group_set_child_property;
+  cclass->get_child_property = egg_tool_item_group_get_child_property;
 
   g_object_class_install_property (oclass, PROP_NAME,
                                    g_param_spec_string ("name",
@@ -768,6 +838,32 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
                                                              DEFAULT_HEADER_SPACING,
                                                              G_PARAM_READABLE | G_PARAM_STATIC_NAME |
                                                              G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
+  gtk_container_class_install_child_property (cclass, CHILD_PROP_EXPAND,
+                                              g_param_spec_boolean ("expand",
+                                                                    P_("Expand"),
+                                                                    P_("Whether the item should receive extra space when the toolbar grows"),
+                                                                    FALSE,
+                                                                    G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                                    G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
+  gtk_container_class_install_child_property (cclass, CHILD_PROP_HOMOGENEOUS,
+                                              g_param_spec_boolean ("homogeneous",
+                                                                    P_("Homogeneous"),
+                                                                    P_("Whether the item should be the same size as other homogeneous items"),
+                                                                    FALSE,
+                                                                    G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                                    G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
+  gtk_container_class_install_child_property (cclass, CHILD_PROP_POSITION,
+                                              g_param_spec_int ("position",
+                                                                P_("Position"),
+                                                                P_("Position of the item within this group"),
+                                                                0,
+                                                                G_MAXINT,
+                                                                0,
+                                                                G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                                G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
   g_type_class_add_private (cls, sizeof (EggToolItemGroupPrivate));
 }

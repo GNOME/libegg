@@ -1,14 +1,17 @@
 EggToolPalette
+==============
 
- * implement natural-size interface
- * scroll to group, when expanding
- * consider scrollbar size in size-request
- * install position child properties
- * support ellipses in group headers again
- * support horizontal orientation for other styles but icon only
+* scroll to group, when expanding
+* support horizontal orientation for other styles but icon only
+* consider scrollbar size in size-request
+  - is that even possible?
+* implement natural-size interface:
+  - requires GtkNaturalSize to be pushed to GTK+
 
-GtkToolShell:
+GtkToolShell
+============
 
-* ask tool items to apply ellipses to labels
 * left-align labels (and center icons) in both-horiz mode
 * enforce "expand" and "homogeneous" child property
+* request rotated rendering of text-only items
+* ask tool items to apply ellipses to labels
