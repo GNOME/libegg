@@ -67,7 +67,18 @@ GtkWidget*                     egg_tool_palette_new                   (void);
 void                           egg_tool_palette_set_group_position    (EggToolPalette            *palette,
                                                                        GtkWidget                 *group,
                                                                        gint                       position);
+void                           egg_tool_palette_set_exclusive         (EggToolPalette            *palette,
+                                                                       GtkWidget                 *group,
+                                                                       gboolean                   exclusive);
+void                           egg_tool_palette_set_expand            (EggToolPalette            *palette,
+                                                                       GtkWidget                 *group,
+                                                                       gboolean                   expand);
+
 gint                           egg_tool_palette_get_group_position    (EggToolPalette            *palette,
+                                                                       GtkWidget                 *group);
+gboolean                       egg_tool_palette_get_exclusive         (EggToolPalette            *palette,
+                                                                       GtkWidget                 *group);
+gboolean                       egg_tool_palette_get_expand            (EggToolPalette            *palette,
                                                                        GtkWidget                 *group);
 
 void                           egg_tool_palette_set_icon_size         (EggToolPalette            *palette,

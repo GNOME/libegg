@@ -493,7 +493,7 @@ palette_notify_orientation (GObject    *object,
 }
 
 static void
-ellipsize_changed_cb (GtkWidget *widget,
+view_ellipsize_changed_cb (GtkWidget *widget,
                       gpointer   data)
 {
   GEnumValue *ellipsize = data;
@@ -503,10 +503,44 @@ ellipsize_changed_cb (GtkWidget *widget,
 }
 
 static void
-ellipsize_changed (GEnumValue *value,
-                   gpointer    data)
+view_ellipsize_changed (GEnumValue *value,
+                        gpointer    data)
 {
-  gtk_container_foreach (data, ellipsize_changed_cb, value);
+  gtk_container_foreach (data, view_ellipsize_changed_cb, value);
+}
+
+static void
+view_exclusive_toggled_cb (GtkWidget *widget,
+                           gpointer   data)
+{
+  gboolean value = gtk_toggle_action_get_active (data);
+  GtkWidget *palette = gtk_widget_get_parent (widget);
+
+  egg_tool_palette_set_exclusive (EGG_TOOL_PALETTE (palette), widget, value);
+}
+
+static void
+view_exclusive_toggled (GtkToggleAction *action,
+                        gpointer         data)
+{
+  gtk_container_foreach (data, view_exclusive_toggled_cb, action);
+}
+
+static void
+view_expand_toggled_cb (GtkWidget *widget,
+                        gpointer   data)
+{
+  gboolean value = gtk_toggle_action_get_active (data);
+  GtkWidget *palette = gtk_widget_get_parent (widget);
+
+  egg_tool_palette_set_expand (EGG_TOOL_PALETTE (palette), widget, value);
+}
+
+static void
+view_expand_toggled (GtkToggleAction *action,
+                     gpointer         data)
+{
+  gtk_container_foreach (data, view_expand_toggled_cb, action);
 }
 
 static GtkWidget*
@@ -530,7 +564,10 @@ create_ui (void)
           <menuitem action='ViewIconSize' />    \
           <menuitem action='ViewOrientation' /> \
           <menuitem action='ViewStyle' />       \
+          <separator />                         \
           <menuitem action='ViewEllipsize' />   \
+          <menuitem action='ViewExclusive' />   \
+          <menuitem action='ViewExpand' />      \
         </menu>                                 \
                                                 \
         <menu action='HelpMenu'>                \
@@ -546,8 +583,10 @@ create_ui (void)
         <toolitem action='ViewIconSize' />      \
         <toolitem action='ViewOrientation' />   \
         <toolitem action='ViewStyle' />         \
-        <toolitem action='ViewEllipsize' />     \
         <separator />                           \
+        <toolitem action='ViewEllipsize' />     \
+        <toolitem action='ViewExclusive' />     \
+        <toolitem action='ViewExpand' />        \
         <separator />                           \
         <toolitem action='HelpAbout' />         \
       </toolbar>                                \
@@ -599,7 +638,15 @@ create_ui (void)
   gtk_action_group_add_action (group, action);
 
   action = egg_enum_action_new ("ViewEllipsize", _("Ellipsize Headers"), NULL, PANGO_TYPE_ELLIPSIZE_MODE);
-  egg_enum_action_connect (EGG_ENUM_ACTION (action), ellipsize_changed, palette);
+  egg_enum_action_connect (EGG_ENUM_ACTION (action), view_ellipsize_changed, palette);
+  gtk_action_group_add_action (group, action);
+
+  action = GTK_ACTION (gtk_toggle_action_new ("ViewExclusive", _("Exclusive Groups"), NULL, NULL));
+  g_signal_connect (action, "toggled", G_CALLBACK (view_exclusive_toggled), palette);
+  gtk_action_group_add_action (group, action);
+
+  action = GTK_ACTION (gtk_toggle_action_new ("ViewExpand", _("Expand Groups"), NULL, NULL));
+  g_signal_connect (action, "toggled", G_CALLBACK (view_expand_toggled), palette);
   gtk_action_group_add_action (group, action);
 
   gtk_ui_manager_insert_action_group (ui, group, -1);
@@ -612,6 +659,8 @@ create_ui (void)
 
   menubar = gtk_ui_manager_get_widget (ui, "/menubar");
   toolbar = gtk_ui_manager_get_widget (ui, "/toolbar");
+
+  gtk_toolbar_set_show_arrow (GTK_TOOLBAR (toolbar), FALSE);
 
   /* ===== palette ===== */
 
@@ -639,6 +688,7 @@ create_ui (void)
   g_signal_connect (palette, "drag-data-received",
                     G_CALLBACK (palette_drag_data_received),
                     NULL);
+
   egg_tool_palette_add_drag_dest (EGG_TOOL_PALETTE (palette),
                                   palette, GTK_DEST_DEFAULT_ALL,
                                   EGG_TOOL_PALETTE_DRAG_ITEMS |

@@ -1,5 +1,64 @@
 2008-03-31  Mathias Hasselmann  <mathias@openismus.com>
 
+	Implement "exclusive" and prepare "expand" child property.
+
+	Execute every act of thy life as though it were thy last.
+		-- Marcus Aurelius
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	 (egg_tool_item_group_header_clicked_cb()):
+	  Don't collapse the current item group in exclusive mode.
+
+	* libegg/toolpalette/eggtoolpalette.c (CHILD_PROP_NONE,
+	  CHILD_PROP_EXCLUSIVE, CHILD_PROP_EXPAND, DEFAULT_CHILD_EXCLUSIVE,
+	  DEFAULT_CHILD_EXPAND, egg_tool_palette_class_init(),
+	  egg_tool_palette_get_child_property(),
+	  egg_tool_palette_set_child_property()):
+	  Implement "exclusive" and "expand" child properties.
+
+	* libegg/toolpalette/eggtoolpalette.c
+	 (egg_tool_palette_set_exclusive(), egg_tool_palette_set_expand(),
+	  egg_tool_palette_get_exclusive(), egg_tool_palette_get_expand()),
+	  libegg/toolpalette/eggtoolpalette.h
+	 (egg_tool_palette_set_exclusive(), egg_tool_palette_set_expand(),
+	  egg_tool_palette_get_exclusive(), egg_tool_palette_get_expand()):
+	  Add those property accessors.
+
+	* libegg/toolpalette/eggtoolpalette.c
+	 (egg_tool_palette_group_notify_collapsed()):
+	  Watch "collapse" notification from embbeded item groups.
+	* libegg/toolpalette/eggtoolpalette.c (egg_tool_palette_dispose()):
+	  Disconnect "collapse" notification handlers.
+
+	* libegg/toolpalette/eggtoolpalette.c (EggToolItemGroupInfo,
+	  EggToolPalettePrivate, egg_tool_palette_init(),
+	  egg_tool_palette_add(), egg_tool_palette_remove()):
+	  Also store child properties and signal handler ids in groups array
+	  of EggToolPalettePrivate.
+	* libegg/toolpalette/eggtoolpalette.c (egg_tool_palette_repack(),
+	 (egg_tool_palette_expose_event(), egg_tool_palette_forall(),
+	 egg_tool_palette_get_drop_group(), egg_tool_palette_reconfigured(),
+	 egg_tool_palette_size_allocate(), egg_tool_palette_size_request(),
+	 egg_tool_palette_get_group_position(),
+	 egg_tool_palette_set_group_position()):
+	  Update item group access, since the groups array of
+	  EggToolItemGroupInfo stores more details now.
+
+	* libegg/toolpalette/testtoolpalette.c (create_ui()):
+	  Add "ViewExclusive" and "ViewExpand" action. Separate palette
+	  properties from item group properties in "View" menu and toolbar.
+	* libegg/toolpalette/testtoolpalette.c (view_ellipsize_changed(),
+	  view_ellipsize_changed_cb()): Add "view_" prefix to match action
+	  name.
+	* libegg/toolpalette/testtoolpalette.c (view_exclusive_toggled(),
+	  view_exclusive_toggled_cb()): Update "exclusive" child property for
+	  all item groups when the "ViewExclusive" action is toggled.
+	* libegg/toolpalette/testtoolpalette.c (view_expand_toggled(),
+	  view_expand_toggled_cb()): Update "expand" child property for
+	  all item groups when the "ViewExpand" action is toggled.
+
+2008-03-31  Mathias Hasselmann  <mathias@openismus.com>
+
 	Rename "expanded" property to "collapsed" and inverse its logic.
 
 	You have all eternity to be cautious in when you're dead.

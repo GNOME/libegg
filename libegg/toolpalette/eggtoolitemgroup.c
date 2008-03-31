@@ -222,7 +222,12 @@ egg_tool_item_group_header_clicked_cb (GtkButton *button G_GNUC_UNUSED,
                                        gpointer   data)
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (data);
-  egg_tool_item_group_set_collapsed (group, !group->priv->collapsed);
+  GtkWidget *parent = gtk_widget_get_parent (data);
+
+  if (group->priv->collapsed ||
+      !EGG_IS_TOOL_PALETTE (parent) ||
+      !egg_tool_palette_get_exclusive (EGG_TOOL_PALETTE (parent), data))
+    egg_tool_item_group_set_collapsed (group, !group->priv->collapsed);
 }
 
 static void
