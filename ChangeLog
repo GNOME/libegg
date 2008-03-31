@@ -1,5 +1,23 @@
 2008-03-31  Mathias Hasselmann  <mathias@openismus.com>
 
+	Implement "expand" child property for EggToolPalette.
+
+	Nothing is so firmly believed as that which we least know.
+		-- Michel de Montaigne
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	 (egg_tool_item_group_real_size_allocate()): Change size allocation
+	  algorithm to utilize additional space horizontal item group get
+	  assigned get when expanded.
+
+	* libegg/toolpalette/eggtoolpalette.c (egg_tool_palette_get_expand(),
+	  egg_tool_palette_set_expand()): Implement the "expand" property.
+	* libegg/toolpalette/eggtoolpalette.c
+	 (egg_tool_palette_size_allocate()): Distribute unused space among
+	  item groups with expand child property set.
+
+2008-03-31  Mathias Hasselmann  <mathias@openismus.com>
+
 	Implement "exclusive" and prepare "expand" child property.
 
 	Execute every act of thy life as though it were thy last.

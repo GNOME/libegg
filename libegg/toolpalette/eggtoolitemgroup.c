@@ -461,6 +461,13 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   orientation = gtk_tool_shell_get_orientation (GTK_TOOL_SHELL (group));
   style = gtk_tool_shell_get_style (GTK_TOOL_SHELL (group));
 
+  /* figure out header size */
+
+  if (GTK_WIDGET_VISIBLE (group->priv->header))
+    gtk_widget_size_request (group->priv->header, &child_requistion);
+  else
+    child_requistion.width = child_requistion.height = 0;
+
   /* figure out item size */
 
   egg_tool_item_group_get_item_size (group, &item_size);
@@ -486,13 +493,25 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
       if (GTK_ORIENTATION_VERTICAL == orientation)
         {
-          n_columns = MAX (allocation->width / item_size.width, 1);
+          item_area.width = allocation->width - 2 * border_width;
+          n_columns = MAX (item_area.width / item_size.width, 1);
           n_rows = (n_visible_items + n_columns - 1) / n_columns;
+        }
+      else if (inquery)
+        {
+          item_area.height = allocation->height - 2 * border_width;
+          n_rows = MAX (item_area.height / item_size.height, 1);
+          n_columns = (n_visible_items + n_rows - 1) / n_rows;
         }
       else
         {
-          n_rows = MAX (allocation->height / item_size.height, 1);
-          n_columns = (n_visible_items + n_rows - 1) / n_rows;
+          item_area.width = allocation->width - 2 * border_width;
+
+          if (child_requistion.width > 0)
+            item_area.width -= child_requistion.width;
+
+          n_columns = MAX (item_area.width / item_size.width, 1);
+          n_rows = (n_visible_items + n_columns - 1) / n_columns;
         }
 
       item_area.width = item_size.width * n_columns;
@@ -511,8 +530,6 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   if (GTK_WIDGET_VISIBLE (group->priv->header))
     {
-      gtk_widget_size_request (group->priv->header, &child_requistion);
-
       if (GTK_ORIENTATION_VERTICAL == orientation)
         {
           child_allocation.width = allocation->width;
