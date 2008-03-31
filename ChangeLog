@@ -1,3 +1,28 @@
+2008-03-31  Mathias Hasselmann  <mathias@openismus.com>
+
+	Rename "expanded" property to "collapsed" and inverse its logic.
+
+	You have all eternity to be cautious in when you're dead.
+		-- Lois Platford
+
+	* libegg/toolpalette/eggtoolitemgroup.c (DEFAULT_COLLAPSED,
+	  PROP_COLLAPSED, EggToolItemGroupPrivate.collapsed,
+	  egg_tool_item_group_animation_cb(),
+	  egg_tool_item_group_class_init(),
+	  egg_tool_item_group_get_collapsed(),
+	  egg_tool_item_group_get_property(),
+	  egg_tool_item_group_get_size_for_limit(),
+	  egg_tool_item_group_header_clicked_cb(),
+	  egg_tool_item_group_real_size_allocate(),
+	  egg_tool_item_group_set_collapsed(),
+	  egg_tool_item_group_set_property()):
+	  Rename "expanded" property to collapsed.
+
+	* libegg/toolpalette/eggtoolitemgroup.h,
+	 (egg_tool_item_group_get_collapsed(),
+	  egg_tool_item_group_set_collapsed()):
+	  Rename property accessors.
+
 2008-03-29  Mathias Hasselmann  <mathias@openismus.com>
 
 	Support child properties in EggToolItemGroup.

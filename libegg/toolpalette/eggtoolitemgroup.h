@@ -54,13 +54,13 @@ GtkWidget*            egg_tool_item_group_new               (const gchar        
 
 void                  egg_tool_item_group_set_name          (EggToolItemGroup   *group,
                                                              const gchar        *name);
-void                  egg_tool_item_group_set_expanded      (EggToolItemGroup   *group,
-                                                             gboolean            expanded);
+void                  egg_tool_item_group_set_collapsed      (EggToolItemGroup  *group,
+                                                             gboolean            collapsed);
 void                  egg_tool_item_group_set_ellipsize     (EggToolItemGroup   *group,
                                                              PangoEllipsizeMode  ellipsize);
 
 G_CONST_RETURN gchar* egg_tool_item_group_get_name          (EggToolItemGroup   *group);
-gboolean              egg_tool_item_group_get_expanded      (EggToolItemGroup   *group);
+gboolean              egg_tool_item_group_get_collapsed     (EggToolItemGroup   *group);
 PangoEllipsizeMode    egg_tool_item_group_get_ellipsize     (EggToolItemGroup   *group);
 
 void                  egg_tool_item_group_insert            (EggToolItemGroup   *group,

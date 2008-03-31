@@ -33,14 +33,14 @@
 #define DEFAULT_HEADER_SPACING   2
 
 #define DEFAULT_NAME             NULL
-#define DEFAULT_EXPANDED         TRUE
+#define DEFAULT_COLLAPSED        FALSE
 #define DEFAULT_ELLIPSIZE        PANGO_ELLIPSIZE_NONE
 
 enum
 {
   PROP_NONE,
   PROP_NAME,
-  PROP_EXPANDED,
+  PROP_COLLAPSED,
   PROP_ELLIPSIZE,
 };
 
@@ -68,7 +68,7 @@ struct _EggToolItemGroupPrivate
   PangoEllipsizeMode ellipsize;
 
   guint              sparse_items : 1;
-  guint              expanded : 1;
+  guint              collapsed : 1;
 
 };
 
@@ -222,7 +222,7 @@ egg_tool_item_group_header_clicked_cb (GtkButton *button G_GNUC_UNUSED,
                                        gpointer   data)
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (data);
-  egg_tool_item_group_set_expanded (group, !group->priv->expanded);
+  egg_tool_item_group_set_collapsed (group, !group->priv->collapsed);
 }
 
 static void
@@ -274,7 +274,6 @@ egg_tool_item_group_init (EggToolItemGroup *group)
   group->priv->header_spacing = DEFAULT_HEADER_SPACING;
   group->priv->expander_size = DEFAULT_EXPANDER_SIZE;
   group->priv->expander_style = GTK_EXPANDER_EXPANDED;
-  group->priv->expanded = TRUE;
 
   label = gtk_label_new (NULL);
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
@@ -320,8 +319,8 @@ egg_tool_item_group_set_property (GObject      *object,
         egg_tool_item_group_set_name (group, g_value_get_string (value));
         break;
 
-      case PROP_EXPANDED:
-        egg_tool_item_group_set_expanded (group, g_value_get_boolean (value));
+      case PROP_COLLAPSED:
+        egg_tool_item_group_set_collapsed (group, g_value_get_boolean (value));
         break;
 
       case PROP_ELLIPSIZE:
@@ -348,8 +347,8 @@ egg_tool_item_group_get_property (GObject    *object,
         g_value_set_string (value, egg_tool_item_group_get_name (group));
         break;
 
-      case PROP_EXPANDED:
-        g_value_set_boolean (value, egg_tool_item_group_get_expanded (group));
+      case PROP_COLLAPSED:
+        g_value_set_boolean (value, egg_tool_item_group_get_collapsed (group));
         break;
 
       case PROP_ELLIPSIZE:
@@ -534,7 +533,7 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   /* otherwise, when expanded or in transition, place the tool items */
 
-  if (group->priv->expanded || group->priv->animation_timeout)
+  if (!group->priv->collapsed || group->priv->animation_timeout)
     {
       for (i = 0; i < group->priv->items_length; ++i)
         {
@@ -803,11 +802,11 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
                                                         G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
                                                         G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
-  g_object_class_install_property (oclass, PROP_EXPANDED,
-                                   g_param_spec_boolean ("expanded",
-                                                         P_("Expanded"),
-                                                         P_("Wether the group has been expanded and items are shown"),
-                                                         DEFAULT_EXPANDED,
+  g_object_class_install_property (oclass, PROP_COLLAPSED,
+                                   g_param_spec_boolean ("collapsed",
+                                                         P_("Collapsed"),
+                                                         P_("Wether the group has been collapsed and items are hidden"),
+                                                         DEFAULT_COLLAPSED,
                                                          G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
                                                          G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
@@ -949,19 +948,19 @@ egg_tool_item_group_animation_cb (gpointer data)
       gtk_widget_queue_draw_area (parent, x, y, width, height);
     }
 
-  if (group->priv->expanded)
-    {
-      if (group->priv->expander_style == GTK_EXPANDER_COLLAPSED)
-        group->priv->expander_style = GTK_EXPANDER_SEMI_EXPANDED;
-      else
-        group->priv->expander_style = GTK_EXPANDER_EXPANDED;
-    }
-  else
+  if (group->priv->collapsed)
     {
       if (group->priv->expander_style == GTK_EXPANDER_EXPANDED)
         group->priv->expander_style = GTK_EXPANDER_SEMI_COLLAPSED;
       else
         group->priv->expander_style = GTK_EXPANDER_COLLAPSED;
+    }
+  else
+    {
+      if (group->priv->expander_style == GTK_EXPANDER_COLLAPSED)
+        group->priv->expander_style = GTK_EXPANDER_SEMI_EXPANDED;
+      else
+        group->priv->expander_style = GTK_EXPANDER_EXPANDED;
     }
 
   if (timestamp >= ANIMATION_DURATION)
@@ -979,12 +978,12 @@ egg_tool_item_group_animation_cb (gpointer data)
 }
 
 void
-egg_tool_item_group_set_expanded (EggToolItemGroup *group,
-                                  gboolean          expanded)
+egg_tool_item_group_set_collapsed (EggToolItemGroup *group,
+                                   gboolean          collapsed)
 {
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
 
-  if (expanded != group->priv->expanded)
+  if (collapsed != group->priv->collapsed)
     {
       GTimeVal now;
 
@@ -993,7 +992,7 @@ egg_tool_item_group_set_expanded (EggToolItemGroup *group,
       if (group->priv->animation_timeout)
         g_source_destroy (group->priv->animation_timeout);
 
-      group->priv->expanded = expanded;
+      group->priv->collapsed = collapsed;
       group->priv->animation_start = (now.tv_sec * G_USEC_PER_SEC + now.tv_usec);
       group->priv->animation_timeout = g_timeout_source_new (ANIMATION_TIMEOUT);
 
@@ -1002,7 +1001,7 @@ egg_tool_item_group_set_expanded (EggToolItemGroup *group,
                              group, NULL);
 
       g_source_attach (group->priv->animation_timeout, NULL);
-      g_object_notify (G_OBJECT (group), "expanded");
+      g_object_notify (G_OBJECT (group), "collapsed");
     }
 }
 
@@ -1032,10 +1031,10 @@ egg_tool_item_group_get_name (EggToolItemGroup *group)
 }
 
 gboolean
-egg_tool_item_group_get_expanded (EggToolItemGroup *group)
+egg_tool_item_group_get_collapsed (EggToolItemGroup *group)
 {
-  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), DEFAULT_EXPANDED);
-  return group->priv->expanded;
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), DEFAULT_COLLAPSED);
+  return group->priv->collapsed;
 }
 
 PangoEllipsizeMode
@@ -1302,7 +1301,7 @@ egg_tool_item_group_get_size_for_limit (EggToolItemGroup *group,
   egg_tool_item_group_repack (group);
   gtk_widget_size_request (GTK_WIDGET (group), &requisition);
 
-  if (group->priv->expanded || group->priv->animation_timeout)
+  if (!group->priv->collapsed || group->priv->animation_timeout)
     {
       GtkAllocation allocation = { 0, 0, requisition.width, requisition.height };
       GtkRequisition inquery;
@@ -1326,7 +1325,7 @@ egg_tool_item_group_get_size_for_limit (EggToolItemGroup *group,
 
           timestamp = MIN (timestamp, ANIMATION_DURATION);
 
-          if (!group->priv->expanded)
+          if (group->priv->collapsed)
             timestamp = ANIMATION_DURATION - timestamp;
 
           if (vertical)
