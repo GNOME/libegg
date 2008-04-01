@@ -1,3 +1,9 @@
+2008-04-01  Mathias Hasselmann  <mathias@openismus.com>
+
+	Add detailed instructions to EggToolPalette's TODO list.
+
+	* libegg/toolpalette/TODO: Updated.
+
 2008-03-31  Mathias Hasselmann  <mathias@openismus.com>
 
 	Implement "expand" child property for EggToolPalette.
