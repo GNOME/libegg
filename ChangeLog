@@ -1,5 +1,23 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	* libegg/toolpalette/eggtoolitemgroup.c (EggToolItemGroupChild,
+	  _EggToolItemGroupPrivate, header, children, _EggToolItemGroupChild,
+	  item, egg_tool_item_group_init, egg_tool_item_group_finalize,
+	  egg_tool_item_group_size_request,
+	  egg_tool_item_group_real_size_allocate, egg_tool_item_group_remove,
+	  egg_tool_item_group_forall, egg_tool_item_group_set_name,
+	  egg_tool_item_group_insert, egg_tool_item_group_get_child,
+	  egg_tool_item_group_set_item_position,
+	  egg_tool_item_group_get_item_position,
+	  egg_tool_item_group_get_n_items, egg_tool_item_group_get_nth_item,
+	  egg_tool_item_group_get_drop_item,
+	  _egg_tool_item_group_item_size_request): Introduce a
+	  EggToolItemGroupChild structure to make it possible to store child
+	  properties. Use a GList instead of the array to store child
+	  informations.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	Add better support for RTL languages (#535235).
 
 	* libegg/toolpalette/eggtoolitemgroup.c

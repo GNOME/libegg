@@ -52,13 +52,13 @@ enum
   CHILD_PROP_POSITION,
 };
 
+typedef struct _EggToolItemGroupChild EggToolItemGroupChild;
+
 struct _EggToolItemGroupPrivate
 {
   GtkWidget         *header;
 
-  GtkToolItem      **items;
-  gsize              items_size;
-  gsize              items_length;
+  GList             *children;
 
   gint64             animation_start;
   GSource           *animation_timeout;
@@ -70,6 +70,11 @@ struct _EggToolItemGroupPrivate
   guint              sparse_items : 1;
   guint              collapsed : 1;
 
+};
+
+struct _EggToolItemGroupChild
+{
+  GtkToolItem       *item;
 };
 
 #ifdef GTK_TYPE_TOOL_SHELL
@@ -149,26 +154,6 @@ egg_tool_item_group_tool_shell_init (GtkToolShellIface *iface)
 }
 
 #endif /* GTK_TYPE_TOOL_SHELL */
-
-static void
-egg_tool_item_group_repack (EggToolItemGroup *group)
-{
-  guint si, di;
-
-  if (group->priv->sparse_items)
-    for (si = di = 0; di < group->priv->items_length; ++si)
-      {
-        if (group->priv->items[si])
-          {
-            group->priv->items[di] = group->priv->items[si];
-            ++di;
-          }
-        else
-          --group->priv->items_length;
-      }
-
-  group->priv->sparse_items = FALSE;
-}
 
 static gboolean
 egg_tool_item_group_header_expose_event_cb (GtkWidget      *widget,
@@ -282,9 +267,7 @@ egg_tool_item_group_init (EggToolItemGroup *group)
                                              EGG_TYPE_TOOL_ITEM_GROUP,
                                              EggToolItemGroupPrivate);
 
-  group->priv->items_length = 0;
-  group->priv->items_size = 4;
-  group->priv->items = g_new (GtkToolItem*, group->priv->items_size);
+  group->priv->children = NULL;
   group->priv->header_spacing = DEFAULT_HEADER_SPACING;
   group->priv->expander_size = DEFAULT_EXPANDER_SIZE;
   group->priv->expander_style = GTK_EXPANDER_EXPANDED;
@@ -380,10 +363,10 @@ egg_tool_item_group_finalize (GObject *object)
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (object);
 
-  if (group->priv->items)
+  if (group->priv->children)
     {
-      g_free (group->priv->items);
-      group->priv->items = NULL;
+      g_list_free (group->priv->children);
+      group->priv->children = NULL;
     }
 
   G_OBJECT_CLASS (egg_tool_item_group_parent_class)->finalize (object);
@@ -410,9 +393,7 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
   GtkOrientation orientation;
   GtkRequisition item_size;
 
-  egg_tool_item_group_repack (group);
-
-  if (group->priv->items_length && egg_tool_item_group_get_name (group))
+  if (group->priv->children && egg_tool_item_group_get_name (group))
     {
       gtk_widget_size_request (group->priv->header, requisition);
       gtk_widget_show (group->priv->header);
@@ -463,7 +444,9 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   GtkOrientation orientation;
   GtkToolbarStyle style;
 
-  guint n_visible_items, i;
+  guint n_visible_items;
+
+  GList *it;
 
   if (!inquery)
     GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
@@ -489,9 +472,10 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   n_visible_items = 0;
 
-  for (i = 0; i < group->priv->items_length; ++i)
+  for (it = group->priv->children; it != NULL; it = it->next)
     {
-      GtkToolItem *item = group->priv->items[i];
+      EggToolItemGroupChild *child = it->data;
+      GtkToolItem *item = child->item;
 
       if (item && egg_tool_item_group_is_item_visible (item, orientation))
         n_visible_items += 1;
@@ -567,9 +551,10 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   if (!group->priv->collapsed || group->priv->animation_timeout)
     {
-      for (i = 0; i < group->priv->items_length; ++i)
+      for (it = group->priv->children; it != NULL; it = it->next)
         {
-          GtkToolItem *item = group->priv->items[i];
+          EggToolItemGroupChild *child = it->data;
+          GtkToolItem *item = child->item;
 
           if (!item)
             continue;
@@ -612,9 +597,11 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   else if (!inquery)
     {
-      for (i = 0; i < group->priv->items_length; ++i)
-        if (group->priv->items[i])
-          gtk_widget_set_child_visible (GTK_WIDGET (group->priv->items[i]), FALSE);
+      for (it = group->priv->children; it != NULL; it = it->next)
+        {
+          EggToolItemGroupChild *child = it->data;
+          gtk_widget_set_child_visible (GTK_WIDGET (child->item), FALSE);
+	}
     }
 
   /* report effective widget size */
@@ -700,19 +687,27 @@ egg_tool_item_group_remove (GtkContainer *container,
                             GtkWidget    *child)
 {
   EggToolItemGroup *group;
-  guint i;
+  GList *it;
 
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (container));
   group = EGG_TOOL_ITEM_GROUP (container);
 
-  for (i = 0; i < group->priv->items_length; ++i)
-    if ((GtkWidget*) group->priv->items[i] == child)
-      {
-        g_object_unref (child);
-        gtk_widget_unparent (child);
-        group->priv->items[i] = NULL;
-        group->priv->sparse_items = TRUE;
-      }
+  for (it = group->priv->children; it != NULL; it = it->next)
+    {
+      EggToolItemGroupChild *child_info = it->data;
+
+      if ((GtkWidget *)child_info->item == child)
+        {
+          g_object_unref (child);
+          gtk_widget_unparent (child);
+
+          g_free (child_info);
+          group->priv->children = g_list_delete_link (group->priv->children, it);
+
+          gtk_widget_queue_resize (GTK_WIDGET (container));
+          break;
+        }
+    }
 }
 
 static void
@@ -722,19 +717,22 @@ egg_tool_item_group_forall (GtkContainer *container,
                             gpointer      callback_data)
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (container);
-  guint i;
+  GList *children;
 
   if (internals && group->priv->header)
     callback (group->priv->header, callback_data);
 
-  if (NULL != group->priv->items)
-    for (i = 0; i < group->priv->items_length; ++i)
-      {
-        GtkToolItem *item = group->priv->items[i];
+  children = group->priv->children;
+  while (children)
+    {
+      EggToolItemGroupChild *child = children->data;
+      children = children->next; /* store pointer before call to callback
+				    because the child pointer is invalid if the
+				    child->item is removed from the item group 
+				    in callback */
 
-        if (item)
-          callback (GTK_WIDGET (item), callback_data);
-      }
+      callback (GTK_WIDGET (child->item), callback_data);
+    }
 }
 
 static GType
@@ -919,9 +917,8 @@ egg_tool_item_group_set_name (EggToolItemGroup *group,
     {
       label = egg_tool_item_group_get_label (group);
       gtk_label_set_text (GTK_LABEL (label), name);
-      egg_tool_item_group_repack (group);
 
-      if (name && group->priv->items_length)
+      if (name && group->priv->children)
         gtk_widget_show (group->priv->header);
       else
         gtk_widget_hide (group->priv->header);
@@ -1087,6 +1084,7 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
                             gint              position)
 {
   GtkWidget *parent;
+  EggToolItemGroupChild *child;
 
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
   g_return_if_fail (GTK_IS_TOOL_ITEM (item));
@@ -1094,29 +1092,46 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
 
   parent = gtk_widget_get_parent (GTK_WIDGET (group));
 
-  if (-1 == position)
-    position = egg_tool_item_group_get_n_items (group);
+  child = g_new (EggToolItemGroupChild, 1);
+  child->item = g_object_ref_sink (item);
 
-  g_return_if_fail ((guint) position <= egg_tool_item_group_get_n_items (group));
-
-  if (group->priv->items_length == group->priv->items_size)
-    {
-      group->priv->items_size *= 2;
-      group->priv->items = g_renew (GtkToolItem*,
-                                    group->priv->items,
-                                    group->priv->items_size);
-    }
-
-  memmove (group->priv->items + position + 1, group->priv->items + position,
-           sizeof (GtkToolItem*) * (group->priv->items_length - position));
-
-  group->priv->items[position] = g_object_ref_sink (item);
-  group->priv->items_length += 1;
+  group->priv->children = g_list_insert (group->priv->children, child, position);
 
   if (EGG_IS_TOOL_PALETTE (parent))
     _egg_tool_palette_child_set_drag_source (GTK_WIDGET (item), parent);
 
   gtk_widget_set_parent (GTK_WIDGET (item), GTK_WIDGET (group));
+}
+
+static EggToolItemGroupChild *
+egg_tool_item_group_get_child (EggToolItemGroup  *group,
+                               GtkToolItem       *item,
+                               gint              *position,
+                               GList            **link)
+{
+  guint i;
+  GList *it;
+
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
+  g_return_val_if_fail (GTK_IS_TOOL_ITEM (item), NULL);
+
+  for (it = group->priv->children, i = 0; it != NULL; it = it->next, ++i)
+    {
+      EggToolItemGroupChild *child = it->data;
+
+      if (child->item == item)
+        {
+          if (position)
+            *position = i;
+
+          if (link)
+            *link = it;
+
+          return child;
+        }
+    }
+
+  return NULL;
 }
 
 void
@@ -1125,60 +1140,40 @@ egg_tool_item_group_set_item_position (EggToolItemGroup *group,
                                        gint              position)
 {
   gint old_position;
-  gpointer src, dst;
-  gsize len;
+  GList *link;
+  EggToolItemGroupChild *child;
 
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
   g_return_if_fail (GTK_IS_TOOL_ITEM (item));
 
-  egg_tool_item_group_repack (group);
-
   g_return_if_fail (position >= -1);
 
-  if (-1 == position)
-    position = group->priv->items_length - 1;
+  child = egg_tool_item_group_get_child (group, item, &old_position, &link);
 
-  g_return_if_fail ((guint) position < group->priv->items_length);
+  g_return_if_fail (child != NULL);
 
-  if (item == group->priv->items[position])
+  if (position == old_position)
     return;
 
-  old_position = egg_tool_item_group_get_item_position (group, item);
-  g_return_if_fail (old_position >= 0);
+  group->priv->children = g_list_delete_link (group->priv->children, link);
+  group->priv->children = g_list_insert (group->priv->children, child, position);
 
-  if (position < old_position)
-    {
-      dst = group->priv->items + position + 1;
-      src = group->priv->items + position;
-      len = old_position - position;
-    }
-  else
-    {
-      dst = group->priv->items + old_position;
-      src = group->priv->items + old_position + 1;
-      len = position - old_position;
-    }
-
-  memmove (dst, src, len * sizeof (*group->priv->items));
-  group->priv->items[position] = item;
-
-  gtk_widget_queue_resize (GTK_WIDGET (group));
+  gtk_widget_child_notify (GTK_WIDGET (item), "position");
+  if (GTK_WIDGET_VISIBLE (group) && GTK_WIDGET_VISIBLE (item))
+    gtk_widget_queue_resize (GTK_WIDGET (group));
 }
 
 gint
 egg_tool_item_group_get_item_position (EggToolItemGroup *group,
                                        GtkToolItem      *item)
 {
-  guint i;
+  gint position;
 
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), -1);
   g_return_val_if_fail (GTK_IS_TOOL_ITEM (item), -1);
 
-  egg_tool_item_group_repack (group);
-
-  for (i = 0; i < group->priv->items_length; ++i)
-    if (item == group->priv->items[i])
-      return i;
+  if (egg_tool_item_group_get_child (group, item, &position, NULL))
+    return position;
 
   return -1;
 }
@@ -1187,21 +1182,21 @@ guint
 egg_tool_item_group_get_n_items (EggToolItemGroup *group)
 {
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), 0);
-  egg_tool_item_group_repack (group);
-  return group->priv->items_length;
+
+  return g_list_length (group->priv->children);
 }
 
 GtkToolItem*
 egg_tool_item_group_get_nth_item (EggToolItemGroup *group,
                                   guint             index)
 {
+  EggToolItemGroupChild *child;
+
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
 
-  egg_tool_item_group_repack (group);
+  child = g_list_nth_data (group->priv->children, index);
 
-  g_return_val_if_fail (index < group->priv->items_length, NULL);
-
-  return group->priv->items[index];
+  return child != NULL ? child->item : NULL;
 }
 
 GtkToolItem*
@@ -1211,7 +1206,7 @@ egg_tool_item_group_get_drop_item (EggToolItemGroup *group,
 {
   GtkAllocation *allocation;
   GtkOrientation orientation;
-  guint i;
+  GList *it;
 
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
 
@@ -1221,9 +1216,10 @@ egg_tool_item_group_get_drop_item (EggToolItemGroup *group,
   g_return_val_if_fail (x >= 0 && x < allocation->width, NULL);
   g_return_val_if_fail (y >= 0 && y < allocation->height, NULL);
 
-  for (i = 0; i < group->priv->items_length; ++i)
+  for (it = group->priv->children; it != NULL; it = it->next)
     {
-      GtkToolItem *item = group->priv->items[i];
+      EggToolItemGroupChild *child = it->data;
+      GtkToolItem *item = child->item;
       gint x0, y0;
 
       if (!item || !egg_tool_item_group_is_item_visible (item, orientation))
@@ -1247,21 +1243,18 @@ _egg_tool_item_group_item_size_request (EggToolItemGroup *group,
                                         GtkRequisition   *item_size)
 {
   GtkRequisition child_requisition;
-  guint i;
+  GList *it;
 
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
   g_return_if_fail (NULL != item_size);
 
   item_size->width = item_size->height = 0;
 
-  for (i = 0; i < group->priv->items_length; ++i)
+  for (it = group->priv->children; it != NULL; it = it->next)
     {
-      GtkToolItem *item = group->priv->items[i];
+      EggToolItemGroupChild *child = it->data;
 
-      if (!item)
-        continue;
-
-      gtk_widget_size_request (GTK_WIDGET (item), &child_requisition);
+      gtk_widget_size_request (GTK_WIDGET (child->item), &child_requisition);
 
       item_size->width = MAX (item_size->width, child_requisition.width);
       item_size->height = MAX (item_size->height, child_requisition.height);
@@ -1336,7 +1329,6 @@ _egg_tool_item_group_get_size_for_limit (EggToolItemGroup *group,
 {
   GtkRequisition requisition;
 
-  egg_tool_item_group_repack (group);
   gtk_widget_size_request (GTK_WIDGET (group), &requisition);
 
   if (!group->priv->collapsed || group->priv->animation_timeout)
