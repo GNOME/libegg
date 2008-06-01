@@ -1,5 +1,16 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	Rework allocation code: Add better support for RTL languages, add
+	support for the new child properties, add better support for all
+	different styles (535920).
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	  (egg_tool_item_group_size_request,
+	  egg_tool_item_group_real_size_allocate,
+	  _egg_tool_item_group_item_size_request): Rework allocation code.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	* libegg/toolpalette/testtoolpalette.c (palette_drop_item): Add
 	support for the new child properties to testtoolpalette.
 

@@ -17,12 +17,14 @@
  *
  * Authors:
  *      Mathias Hasselmann
+ *      Jan Arne Petersen
  */
 
 #include "eggtoolitemgroup.h"
 #include "eggtoolpaletteprivate.h"
 
 #include <gtk/gtk.h>
+#include <math.h>
 #include <string.h>
 
 #define P_(msgid)               (msgid)
@@ -419,8 +421,8 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
   else
     requisition->height = MAX (requisition->height, item_size.height);
 
-  requisition->width += border_width;
-  requisition->height += border_width;
+  requisition->width += border_width * 2;
+  requisition->height += border_width * 2;
 }
 
 static gboolean
@@ -441,7 +443,7 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 {
   const gint border_width = GTK_CONTAINER (widget)->border_width;
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
-  GtkRequisition child_requistion;
+  GtkRequisition child_requisition;
   GtkAllocation child_allocation;
 
   GtkRequisition item_size;
@@ -454,6 +456,12 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   GList *it;
 
+  guint header_width = 0;
+
+  guint n_columns, n_rows;
+
+  GtkTextDirection direction = gtk_widget_get_direction (widget);
+
   if (!inquery)
     GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
 
@@ -463,9 +471,9 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   /* figure out header size */
 
   if (GTK_WIDGET_VISIBLE (group->priv->header))
-    gtk_widget_size_request (group->priv->header, &child_requistion);
+    gtk_widget_size_request (group->priv->header, &child_requisition);
   else
-    child_requistion.width = child_requistion.height = 0;
+    child_requisition.width = child_requisition.height = 0;
 
   /* figure out item size */
 
@@ -481,47 +489,36 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   for (it = group->priv->children; it != NULL; it = it->next)
     {
       EggToolItemGroupChild *child = it->data;
-      GtkToolItem *item = child->item;
 
-      if (item && egg_tool_item_group_is_item_visible (item, orientation))
+      if (egg_tool_item_group_is_item_visible (child->item, orientation))
         n_visible_items += 1;
     }
 
-  if (GTK_TOOLBAR_ICONS == style)
+  if (GTK_ORIENTATION_VERTICAL == orientation)
     {
-      guint n_columns, n_rows;
-
-      if (GTK_ORIENTATION_VERTICAL == orientation)
-        {
-          item_area.width = allocation->width - 2 * border_width;
-          n_columns = MAX (item_area.width / item_size.width, 1);
-          n_rows = (n_visible_items + n_columns - 1) / n_columns;
-        }
-      else if (inquery)
-        {
-          item_area.height = allocation->height - 2 * border_width;
-          n_rows = MAX (item_area.height / item_size.height, 1);
-          n_columns = (n_visible_items + n_rows - 1) / n_rows;
-        }
-      else
-        {
-          item_area.width = allocation->width - 2 * border_width;
-
-          if (child_requistion.width > 0)
-            item_area.width -= child_requistion.width;
-
-          n_columns = MAX (item_area.width / item_size.width, 1);
-          n_rows = (n_visible_items + n_columns - 1) / n_columns;
-        }
-
-      item_area.width = item_size.width * n_columns;
-      item_area.height = item_size.height * n_rows;
+      item_area.width = allocation->width - 2 * border_width;
+      n_columns = MAX (item_area.width / item_size.width, 1);
+      n_rows = (n_visible_items + n_columns - 1) / n_columns;
+    }
+  else if (inquery)
+    {
+      item_area.height = allocation->height - 2 * border_width;
+      n_rows = MAX (item_area.height / item_size.height, 1);
+      n_columns = (n_visible_items + n_rows - 1) / n_rows;
     }
   else
     {
-      item_area.width = allocation->width;
-      item_area.height = allocation->height;
+      item_area.width = allocation->width - 2 * border_width;
+
+      if (child_requisition.width > 0)
+        item_area.width -= child_requisition.width;
+
+      n_columns = MAX (item_area.width / item_size.width, 1);
+      n_rows = (n_visible_items + n_columns - 1) / n_columns;
     }
+
+  item_area.width = item_size.width * n_columns;
+  item_area.height = item_size.height * n_rows;
 
   /* place the header widget */
 
@@ -533,12 +530,16 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
       if (GTK_ORIENTATION_VERTICAL == orientation)
         {
           child_allocation.width = allocation->width;
-          child_allocation.height = child_requistion.height;
+          child_allocation.height = child_requisition.height;
         }
       else
         {
-          child_allocation.width = child_requistion.width;
+          child_allocation.width = child_requisition.width;
+	  header_width = child_allocation.width;
           child_allocation.height = allocation->height;
+
+	  if (GTK_TEXT_DIR_RTL == direction)
+            child_allocation.x = allocation->width - border_width - header_width;
         }
 
       if (!inquery)
@@ -546,57 +547,114 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
       if (GTK_ORIENTATION_VERTICAL == orientation)
         child_allocation.y += child_allocation.height;
-      else
+      else if (GTK_TEXT_DIR_RTL != direction)
         child_allocation.x += child_allocation.width;
+      else
+        child_allocation.x = border_width;
     }
 
   item_area.x = child_allocation.x;
   item_area.y = child_allocation.y;
 
-  /* otherwise, when expanded or in transition, place the tool items */
+  if (!inquery)
+    {
+      if (GTK_ORIENTATION_VERTICAL == orientation)
+        {
+          item_area.width = allocation->width - 2 * border_width - header_width;
+          item_size.width = item_area.width / n_columns;
+        }
+      else
+        {
+          item_area.height = allocation->height - 2 * border_width;
+          item_size.height = item_area.height / n_rows;
+        }
+    }
 
+  /* otherwise, when expanded or in transition, place the tool items */
   if (!group->priv->collapsed || group->priv->animation_timeout)
     {
+      guint col = 0, row = 0;
+
       for (it = group->priv->children; it != NULL; it = it->next)
         {
           EggToolItemGroupChild *child = it->data;
-          GtkToolItem *item = child->item;
 
-          if (!item)
-            continue;
-
-          if (!egg_tool_item_group_is_item_visible (item, orientation))
+          if (!egg_tool_item_group_is_item_visible (child->item, orientation))
             {
               if (!inquery)
-                gtk_widget_set_child_visible (GTK_WIDGET (item), FALSE);
+                gtk_widget_set_child_visible (GTK_WIDGET (child->item), FALSE);
 
               continue;
             }
 
-          if (child_allocation.x + item_size.width > item_area.x + item_area.width)
+          child_requisition.width = 0;
+	  if (!child->homogeneous)
             {
-              child_allocation.y += child_allocation.height;
-              child_allocation.x = item_area.x;
+              if (GTK_ORIENTATION_HORIZONTAL == orientation && GTK_TOOLBAR_TEXT == style)
+                {
+                  /* in horizontal text mode non homogneneous items are not supported */
+                  gtk_widget_set_child_visible (GTK_WIDGET (child->item), FALSE);
+                  continue;
+                }
+
+              gtk_widget_size_request (GTK_WIDGET (child->item), &child_requisition);
+              child_requisition.width = MIN (child_requisition.width, item_area.width);
             }
 
-          if (style != GTK_TOOLBAR_ICONS || gtk_tool_item_get_expand (item))
-            child_allocation.width = item_area.x + item_area.width - child_allocation.x;
+          if (col > 0 && (child->new_row || (col * item_size.width) + MAX (child_requisition.width, item_size.width) > item_area.width))
+            {
+              row++;
+              col = 0;
+              child_allocation.y += child_allocation.height;
+            }
+
+          if (!child->homogeneous)
+            {
+              guint col_width;
+              guint width;
+
+              if (child->expand)
+                col_width = n_columns - col;
+              else
+                col_width = (guint) ceil (1.0 * child_requisition.width / item_size.width);
+
+              width = col_width * item_size.width;
+
+              if (child->fill)
+                {
+                  child_allocation.x = item_area.x + 
+			  (((GTK_TEXT_DIR_RTL == direction) ? (n_columns - col - col_width) : col) * item_size.width);
+                  child_allocation.width = width;
+                }
+              else
+                {
+                  child_allocation.x = item_area.x + 
+			  (((GTK_TEXT_DIR_RTL == direction) ? (n_columns - col - col_width) : col) * item_size.width) + 
+			  (width - child_requisition.width) / 2;
+                  child_allocation.width = child_requisition.width;
+                }
+
+              col += col_width;
+            }
           else
-            child_allocation.width = item_size.width;
+            {
+              child_allocation.x = item_area.x + 
+		      (((GTK_TEXT_DIR_RTL == direction) ? (n_columns - col - 1) : col) * item_size.width);
+              child_allocation.width = item_size.width;
+
+              col++;
+            }
 
           child_allocation.height = item_size.height;
 
           if (!inquery)
             {
-              gtk_widget_size_allocate (GTK_WIDGET (item), &child_allocation);
-              gtk_widget_set_child_visible (GTK_WIDGET (item), TRUE);
+              gtk_widget_size_allocate (GTK_WIDGET (child->item), &child_allocation);
+              gtk_widget_set_child_visible (GTK_WIDGET (child->item), TRUE);
             }
-
-          child_allocation.x += child_allocation.width;
         }
 
       child_allocation.y += item_size.height;
-      child_allocation.x = border_width;
     }
 
   /* or just hide all items, when collapsed */
@@ -606,15 +664,16 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
       for (it = group->priv->children; it != NULL; it = it->next)
         {
           EggToolItemGroupChild *child = it->data;
+
           gtk_widget_set_child_visible (GTK_WIDGET (child->item), FALSE);
-	}
+        }
     }
 
   /* report effective widget size */
 
   if (inquery)
     {
-      inquery->width = item_area.x + item_area.width + border_width;
+      inquery->width = item_area.width + header_width + 2 * border_width;
       inquery->height = child_allocation.y + border_width;
     }
 }
@@ -1411,7 +1470,8 @@ _egg_tool_item_group_item_size_request (EggToolItemGroup *group,
 
       gtk_widget_size_request (GTK_WIDGET (child->item), &child_requisition);
 
-      item_size->width = MAX (item_size->width, child_requisition.width);
+      if (child->homogeneous)
+        item_size->width = MAX (item_size->width, child_requisition.width);
       item_size->height = MAX (item_size->height, child_requisition.height);
     }
 }
