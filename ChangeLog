@@ -1,5 +1,22 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	Add "fill" and "new-row" child properties. Use the child info struct
+	to store the "homogeneous" and "expand" child properties to make it
+	possible to use our own defaults (see related #535253).
+
+	* libegg/toolpalette/eggtoolitemgroup.c (CHILD_PROP_HOMOGENEOUS,
+	  CHILD_PROP_EXPAND, CHILD_PROP_FILL, CHILD_PROP_NEW_ROW, collapsed,
+	  _EggToolItemGroupChild, item, homogeneous, expand, fill, new_row,
+	  egg_tool_item_group_child_type, egg_tool_item_group_get_child,
+	  egg_tool_item_group_get_item_packing,
+	  egg_tool_item_group_set_item_packing,
+	  egg_tool_item_group_set_child_property,
+	  egg_tool_item_group_get_child_property,
+	  egg_tool_item_group_class_init, egg_tool_item_group_insert): Add
+	  the infrastructure for the child properties.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	* libegg/toolpalette/eggtoolitemgroup.c (EggToolItemGroupChild,
 	  _EggToolItemGroupPrivate, header, children, _EggToolItemGroupChild,
 	  item, egg_tool_item_group_init, egg_tool_item_group_finalize,

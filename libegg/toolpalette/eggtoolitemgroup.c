@@ -47,8 +47,10 @@ enum
 enum
 {
   CHILD_PROP_NONE,
-  CHILD_PROP_EXPAND,
   CHILD_PROP_HOMOGENEOUS,
+  CHILD_PROP_EXPAND,
+  CHILD_PROP_FILL,
+  CHILD_PROP_NEW_ROW,
   CHILD_PROP_POSITION,
 };
 
@@ -67,14 +69,18 @@ struct _EggToolItemGroupPrivate
   gint               header_spacing;
   PangoEllipsizeMode ellipsize;
 
-  guint              sparse_items : 1;
   guint              collapsed : 1;
 
 };
 
 struct _EggToolItemGroupChild
 {
-  GtkToolItem       *item;
+  GtkToolItem *item;
+
+  guint        homogeneous : 1;
+  guint        expand : 1;
+  guint        fill : 1;
+  guint        new_row : 1;
 };
 
 #ifdef GTK_TYPE_TOOL_SHELL
@@ -741,6 +747,118 @@ egg_tool_item_group_child_type (GtkContainer *container G_GNUC_UNUSED)
   return GTK_TYPE_TOOL_ITEM;
 }
 
+static EggToolItemGroupChild *
+egg_tool_item_group_get_child (EggToolItemGroup  *group,
+                               GtkToolItem       *item,
+                               gint              *position,
+                               GList            **link)
+{
+  guint i;
+  GList *it;
+
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
+  g_return_val_if_fail (GTK_IS_TOOL_ITEM (item), NULL);
+
+  for (it = group->priv->children, i = 0; it != NULL; it = it->next, ++i)
+    {
+      EggToolItemGroupChild *child = it->data;
+
+      if (child->item == item)
+        {
+          if (position)
+            *position = i;
+
+          if (link)
+            *link = it;
+
+          return child;
+        }
+    }
+
+  return NULL;
+}
+
+static void
+egg_tool_item_group_get_item_packing (EggToolItemGroup *group,
+                                      GtkToolItem      *item,
+                                      gboolean         *homogeneous,
+                                      gboolean         *expand,
+                                      gboolean         *fill,
+                                      gboolean         *new_row)
+{
+  EggToolItemGroupChild *child;
+
+  g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
+  g_return_if_fail (GTK_IS_TOOL_ITEM (item));
+
+  child = egg_tool_item_group_get_child (group, item, NULL, NULL);
+  if (!child)
+    return;
+
+  if (expand)
+    *expand = child->expand;
+
+  if (homogeneous)
+    *homogeneous = child->homogeneous;
+
+  if (fill)
+    *fill = child->fill;
+
+  if (new_row)
+    *new_row = child->new_row;
+}
+
+static void
+egg_tool_item_group_set_item_packing (EggToolItemGroup *group,
+                                      GtkToolItem      *item,
+                                      gboolean          homogeneous,
+                                      gboolean          expand,
+                                      gboolean          fill,
+                                      gboolean          new_row)
+{
+  EggToolItemGroupChild *child;
+  gboolean changed = FALSE;
+
+  g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
+  g_return_if_fail (GTK_IS_TOOL_ITEM (item));
+
+  child = egg_tool_item_group_get_child (group, item, NULL, NULL);
+  if (!child)
+    return;
+
+  gtk_widget_freeze_child_notify (GTK_WIDGET (item));
+
+  if (child->homogeneous != homogeneous)
+    {
+      child->homogeneous = homogeneous;
+      changed = TRUE;
+      gtk_widget_child_notify (GTK_WIDGET (item), "homogeneous");
+    }
+  if (child->expand != expand)
+    {
+      child->expand = expand;
+      changed = TRUE;
+      gtk_widget_child_notify (GTK_WIDGET (item), "expand");
+    }
+  if (child->fill != fill)
+    {
+      child->fill = fill;
+      changed = TRUE;
+      gtk_widget_child_notify (GTK_WIDGET (item), "fill");
+    }
+  if (child->new_row != new_row)
+    {
+      child->new_row = new_row;
+      changed = TRUE;
+      gtk_widget_child_notify (GTK_WIDGET (item), "new-row");
+    }
+
+  gtk_widget_thaw_child_notify (GTK_WIDGET (item));
+
+  if (changed && GTK_WIDGET_VISIBLE (group) && GTK_WIDGET_VISIBLE (item))
+    gtk_widget_queue_resize (GTK_WIDGET (group));
+}
+
 static void
 egg_tool_item_group_set_child_property (GtkContainer *container,
                                         GtkWidget    *child,
@@ -750,15 +868,47 @@ egg_tool_item_group_set_child_property (GtkContainer *container,
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (container);
   GtkToolItem *item = GTK_TOOL_ITEM (child);
+  gboolean homogeneous, expand, fill, new_row;
+
+  if (prop_id != CHILD_PROP_POSITION)
+    egg_tool_item_group_get_item_packing (group, item,
+                                          &homogeneous,
+                                          &expand,
+                                          &fill,
+                                          &new_row);
 
   switch (prop_id)
     {
-      case CHILD_PROP_EXPAND:
-        gtk_tool_item_set_expand (item, g_value_get_boolean (value));
+      case CHILD_PROP_HOMOGENEOUS:
+        egg_tool_item_group_set_item_packing (group, item,
+                                              g_value_get_boolean (value),
+                                              expand,
+                                              fill,
+                                              new_row);
         break;
 
-      case CHILD_PROP_HOMOGENEOUS:
-        gtk_tool_item_set_homogeneous (item, g_value_get_boolean (value));
+      case CHILD_PROP_EXPAND:
+        egg_tool_item_group_set_item_packing (group, item,
+                                              homogeneous,
+                                              g_value_get_boolean (value),
+                                              fill,
+                                              new_row);
+        break;
+
+      case CHILD_PROP_FILL:
+        egg_tool_item_group_set_item_packing (group, item,
+                                              homogeneous,
+                                              expand,
+                                              g_value_get_boolean (value),
+                                              new_row);
+        break;
+
+      case CHILD_PROP_NEW_ROW:
+        egg_tool_item_group_set_item_packing (group, item,
+                                              homogeneous,
+                                              expand,
+                                              fill,
+                                              g_value_get_boolean (value));
         break;
 
       case CHILD_PROP_POSITION:
@@ -780,18 +930,34 @@ egg_tool_item_group_get_child_property (GtkContainer *container,
 {
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (container);
   GtkToolItem *item = GTK_TOOL_ITEM (child);
+  gboolean homogeneous, expand, fill, new_row;
+
+  if (prop_id != CHILD_PROP_POSITION)
+    egg_tool_item_group_get_item_packing (group, item,
+                                          &homogeneous,
+                                          &expand,
+                                          &fill,
+                                          &new_row);
 
   switch (prop_id)
     {
-      case CHILD_PROP_EXPAND:
-        g_value_set_boolean (value, gtk_tool_item_get_expand (item));
-        break;
-
       case CHILD_PROP_HOMOGENEOUS:
-        g_value_set_boolean (value, gtk_tool_item_get_homogeneous (item));
+        g_value_set_boolean (value, homogeneous);
         break;
 
-      case CHILD_PROP_POSITION:
+       case CHILD_PROP_EXPAND:
+        g_value_set_boolean (value, expand);
+        break;
+
+       case CHILD_PROP_FILL:
+        g_value_set_boolean (value, fill);
+        break;
+
+       case CHILD_PROP_NEW_ROW:
+        g_value_set_boolean (value, new_row);
+        break;
+
+     case CHILD_PROP_POSITION:
         g_value_set_int (value, egg_tool_item_group_get_item_position (group, item));
         break;
 
@@ -868,6 +1034,14 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
                                                              G_PARAM_READABLE | G_PARAM_STATIC_NAME |
                                                              G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
+  gtk_container_class_install_child_property (cclass, CHILD_PROP_HOMOGENEOUS,
+                                              g_param_spec_boolean ("homogeneous",
+                                                                    P_("Homogeneous"),
+                                                                    P_("Whether the item should be the same size as other homogeneous items"),
+                                                                    TRUE,
+                                                                    G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                                    G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
   gtk_container_class_install_child_property (cclass, CHILD_PROP_EXPAND,
                                               g_param_spec_boolean ("expand",
                                                                     P_("Expand"),
@@ -876,10 +1050,18 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
                                                                     G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
                                                                     G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
-  gtk_container_class_install_child_property (cclass, CHILD_PROP_HOMOGENEOUS,
-                                              g_param_spec_boolean ("homogeneous",
-                                                                    P_("Homogeneous"),
-                                                                    P_("Whether the item should be the same size as other homogeneous items"),
+  gtk_container_class_install_child_property (cclass, CHILD_PROP_FILL,
+                                              g_param_spec_boolean ("fill",
+                                                                    P_("Fill"),
+                                                                    P_("Whether the item should fill the avaiable space"),
+                                                                    TRUE,
+                                                                    G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                                    G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
+  gtk_container_class_install_child_property (cclass, CHILD_PROP_NEW_ROW,
+                                              g_param_spec_boolean ("new-row",
+                                                                    P_("New Row"),
+                                                                    P_("Whether the item should start a new row"),
                                                                     FALSE,
                                                                     G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
                                                                     G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
@@ -1094,6 +1276,10 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
 
   child = g_new (EggToolItemGroupChild, 1);
   child->item = g_object_ref_sink (item);
+  child->homogeneous = TRUE;
+  child->expand = FALSE;
+  child->fill = TRUE;
+  child->new_row = FALSE;
 
   group->priv->children = g_list_insert (group->priv->children, child, position);
 
@@ -1101,37 +1287,6 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
     _egg_tool_palette_child_set_drag_source (GTK_WIDGET (item), parent);
 
   gtk_widget_set_parent (GTK_WIDGET (item), GTK_WIDGET (group));
-}
-
-static EggToolItemGroupChild *
-egg_tool_item_group_get_child (EggToolItemGroup  *group,
-                               GtkToolItem       *item,
-                               gint              *position,
-                               GList            **link)
-{
-  guint i;
-  GList *it;
-
-  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), NULL);
-  g_return_val_if_fail (GTK_IS_TOOL_ITEM (item), NULL);
-
-  for (it = group->priv->children, i = 0; it != NULL; it = it->next, ++i)
-    {
-      EggToolItemGroupChild *child = it->data;
-
-      if (child->item == item)
-        {
-          if (position)
-            *position = i;
-
-          if (link)
-            *link = it;
-
-          return child;
-        }
-    }
-
-  return NULL;
 }
 
 void
