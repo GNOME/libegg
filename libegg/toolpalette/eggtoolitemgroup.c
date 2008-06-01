@@ -1009,6 +1009,7 @@ egg_tool_item_group_set_collapsed (EggToolItemGroup *group,
   if (collapsed != group->priv->collapsed)
     {
       GTimeVal now;
+      GtkWidget *parent;
 
       g_get_current_time (&now);
 
@@ -1018,6 +1019,10 @@ egg_tool_item_group_set_collapsed (EggToolItemGroup *group,
       group->priv->collapsed = collapsed;
       group->priv->animation_start = (now.tv_sec * G_USEC_PER_SEC + now.tv_usec);
       group->priv->animation_timeout = g_timeout_source_new (ANIMATION_TIMEOUT);
+
+      parent = gtk_widget_get_parent (GTK_WIDGET (group));
+      if (EGG_IS_TOOL_PALETTE (parent) && !collapsed)
+        _egg_tool_palette_set_expanding_child (EGG_TOOL_PALETTE (parent), GTK_WIDGET (group));
 
       g_source_set_callback (group->priv->animation_timeout,
                              egg_tool_item_group_animation_cb,
@@ -1314,10 +1319,11 @@ _egg_tool_item_group_paint (EggToolItemGroup *group,
     cairo_paint (cr);
 }
 
-static gint
-egg_tool_item_group_get_size_for_limit (EggToolItemGroup *group,
-                                        gint              limit,
-                                        gboolean          vertical)
+gint
+_egg_tool_item_group_get_size_for_limit (EggToolItemGroup *group,
+                                         gint              limit,
+                                         gboolean          vertical,
+                                         gboolean          animation)
 {
   GtkRequisition requisition;
 
@@ -1342,7 +1348,7 @@ egg_tool_item_group_get_size_for_limit (EggToolItemGroup *group,
       else
         inquery.width -= requisition.width;
 
-      if (group->priv->animation_timeout)
+      if (group->priv->animation_timeout && animation)
         {
           gint64 timestamp = egg_tool_item_group_get_animation_timestamp (group);
 
@@ -1376,14 +1382,14 @@ gint
 _egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
                                            gint              width)
 {
-  return egg_tool_item_group_get_size_for_limit (group, width, TRUE);
+  return _egg_tool_item_group_get_size_for_limit (group, width, TRUE, TRUE);
 }
 
 gint
 _egg_tool_item_group_get_width_for_height (EggToolItemGroup *group,
                                            gint              height)
 {
-  return egg_tool_item_group_get_size_for_limit (group, height, FALSE);
+  return _egg_tool_item_group_get_size_for_limit (group, height, FALSE, TRUE);
 }
 
 #ifdef GTK_TYPE_TOOL_SHELL

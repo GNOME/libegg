@@ -1,7 +1,6 @@
 EggToolPalette
 ==============
 
-* scroll to group to show as many of its items as possible, when expanding.
 * support horizontal orientation for other styles but icon only:
   - GTK_TOOLBAR_ICONS: done
   - GTK_TOOLBAR_TEXT: rotate the text labels. currently can be done

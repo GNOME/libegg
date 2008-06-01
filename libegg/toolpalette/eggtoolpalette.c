@@ -77,6 +77,8 @@ struct _EggToolPalettePrivate
   GtkOrientation        orientation;
   GtkToolbarStyle       style;
 
+  GtkWidget            *expanding_child;
+
   guint                 sparse_groups : 1;
   guint                 drag_source : 1;
 };
@@ -309,6 +311,8 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
   gint offset = 0;
   guint i;
 
+  gint min_offset = -1, max_offset = -1;
+
   gint *group_sizes = g_newa(gint, palette->priv->groups_length);
 
   GTK_WIDGET_CLASS (egg_tool_palette_parent_class)->size_allocate (widget, allocation);
@@ -331,15 +335,9 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
   child_allocation.y = border_width;
 
   if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
-    {
-      child_allocation.y -= offset;
-      child_allocation.width = allocation->width - border_width * 2;
-    }
+    child_allocation.width = allocation->width - border_width * 2;
   else
-    {
-      child_allocation.x -= offset;
-      child_allocation.height = allocation->height - border_width * 2;
-    }
+    child_allocation.height = allocation->height - border_width * 2;
 
   if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
     remaining_space = allocation->height;
@@ -371,6 +369,26 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 
       remaining_space -= size;
       group_sizes[i] = size;
+
+      if (widget == palette->priv->expanding_child)
+        {
+          gint j, real_size;
+          gint limit = GTK_ORIENTATION_VERTICAL == palette->priv->orientation ? child_allocation.width : child_allocation.height;
+
+          min_offset = 0;
+          for (j = 0; j < i; ++j)
+            {
+              min_offset += group_sizes[j];
+            }
+          max_offset = min_offset + group_sizes[i];
+
+          real_size = _egg_tool_item_group_get_size_for_limit (EGG_TOOL_ITEM_GROUP (widget),
+                                                               limit,
+                                                               GTK_ORIENTATION_VERTICAL == palette->priv->orientation,
+                                                               FALSE);
+          if (size == real_size)
+            palette->priv->expanding_child = NULL;
+        }
     }
 
   if (n_expand_groups > 0)
@@ -378,6 +396,19 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
       remaining_space = MAX (0, remaining_space);
       expand_space = remaining_space / n_expand_groups;
     }
+
+  if (max_offset != -1)
+    {
+      gint limit = GTK_ORIENTATION_VERTICAL == palette->priv->orientation ? allocation->height : allocation->width;
+
+      offset = MIN(MAX (offset, max_offset - limit), min_offset);
+    }
+
+  if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
+    child_allocation.y -= offset;
+  else
+    child_allocation.x -= offset;
+
 
   for (i = 0; i < palette->priv->groups_length; ++i)
     {
@@ -1259,3 +1290,11 @@ egg_tool_palette_get_drag_target_group (void)
   return &dnd_targets[1];
 }
 
+void
+_egg_tool_palette_set_expanding_child (EggToolPalette   *palette,
+                                       GtkWidget        *widget)
+{
+  g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
+
+  palette->priv->expanding_child = widget;
+}

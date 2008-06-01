@@ -29,6 +29,8 @@ void _egg_tool_palette_get_item_size           (EggToolPalette   *palette,
                                                 GtkRequisition   *item_size);
 void _egg_tool_palette_child_set_drag_source   (GtkWidget        *widget,
                                                 gpointer          data);
+void _egg_tool_palette_set_expanding_child     (EggToolPalette   *palette,
+                                                GtkWidget        *widget);
 
 void _egg_tool_item_group_palette_reconfigured (EggToolItemGroup *group);
 void _egg_tool_item_group_item_size_request    (EggToolItemGroup *group,
@@ -39,5 +41,9 @@ gint _egg_tool_item_group_get_width_for_height (EggToolItemGroup *group,
                                                 gint              height);
 void _egg_tool_item_group_paint                (EggToolItemGroup *group,
                                                 cairo_t          *cr);
+gint _egg_tool_item_group_get_size_for_limit   (EggToolItemGroup *group,
+                                                gint              limit,
+                                                gboolean          vertical,
+                                                gboolean          animation);
 
 #endif /* __EGG_TOOL_PALETTE_PRIVATE_H__ */

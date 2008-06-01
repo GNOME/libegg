@@ -1,5 +1,30 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	Add support for scroll to group feature. Show the group's header and
+	as many of its items as possible, when expanding (#535093).
+
+	* libegg/toolpalette/TODO: remove entry
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	  (egg_tool_item_group_set_collapsed, _egg_tool_item_group_paint,
+	  _egg_tool_item_group_get_size_for_limit,
+	  _egg_tool_item_group_get_height_for_width,
+	  _egg_tool_item_group_get_width_for_height): Add an additional
+	  argument to _egg_tool_item_group_get_size_for_limit to allow to
+	  query the non collapsed size.
+
+	* libegg/toolpalette/eggtoolpalette.c (expanding_child,
+	  egg_tool_palette_size_allocate,
+	  egg_tool_palette_get_drag_target_group,
+	  _egg_tool_palette_set_expanding_child): as long as a group is
+	  expanding it is shown in view.
+
+	* libegg/toolpalette/eggtoolpaletteprivate.h
+	  (__EGG_TOOL_PALETTE_PRIVATE_H__): add function to set the expanding
+	  group.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	* libegg/toolpalette/testtoolpalette.c (palette_notify_orientation):
 	Use GTK_POLICY_AUTOMATIC to show the scrollbar only when required.
 
