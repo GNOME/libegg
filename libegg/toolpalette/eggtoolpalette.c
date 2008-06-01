@@ -1226,6 +1226,9 @@ _egg_tool_palette_child_set_drag_source (GtkWidget *child,
        */
       child = gtk_bin_get_child (GTK_BIN (child));
 
+      if (!child)
+        return;
+
       gtk_drag_source_set (child, GDK_BUTTON1_MASK | GDK_BUTTON3_MASK,
                            &dnd_targets[0], 1, GDK_ACTION_COPY | GDK_ACTION_MOVE);
 

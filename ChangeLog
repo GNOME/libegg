@@ -1,5 +1,11 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	* libegg/toolpalette/eggtoolpalette.c
+	  (_egg_tool_palette_child_set_drag_source): Add check for child. Drag
+	  and drop of tool items without a child is not supported yet.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	* libegg/toolpalette/eggtoolitemgroup.c
 	  (egg_tool_item_group_real_size_allocate): Don't chain up
 	  size allocation if in query mode (#535604).
