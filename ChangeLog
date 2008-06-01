@@ -1,3 +1,9 @@
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	  (egg_tool_item_group_real_size_allocate): Don't chain up
+	  size allocation if in query mode (#535604).
+
 2008-04-01  Mathias Hasselmann  <mathias@openismus.com>
 
 	Add detailed instructions to EggToolPalette's TODO list.

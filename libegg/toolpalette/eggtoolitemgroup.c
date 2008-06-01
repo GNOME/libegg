@@ -456,7 +456,8 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   guint n_visible_items, i;
 
-  GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
+  if (!inquery)
+    GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->size_allocate (widget, allocation);
 
   orientation = gtk_tool_shell_get_orientation (GTK_TOOL_SHELL (group));
   style = gtk_tool_shell_get_style (GTK_TOOL_SHELL (group));
