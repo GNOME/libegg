@@ -440,6 +440,43 @@ load_special_items (EggToolPalette *palette)
   group = egg_tool_item_group_new (_("Advanced Features"));
   gtk_container_add (GTK_CONTAINER (palette), group);
 
+  item = gtk_tool_item_new ();
+  gtk_container_add (GTK_CONTAINER (item), gtk_entry_new ());
+  gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (item))), "homogeneous=FALSE");
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_container_child_set (GTK_CONTAINER (group), GTK_WIDGET (item),
+                           "homogeneous", FALSE,
+                           NULL);
+
+  item = gtk_tool_item_new ();
+  gtk_container_add (GTK_CONTAINER (item), gtk_entry_new ());
+  gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (item))), "homogeneous=FALSE, expand=TRUE");
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_container_child_set (GTK_CONTAINER (group), GTK_WIDGET (item),
+                           "homogeneous", FALSE,
+                           "expand", TRUE,
+                           NULL);
+
+  item = gtk_tool_item_new ();
+  gtk_container_add (GTK_CONTAINER (item), gtk_entry_new ());
+  gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (item))), "homogeneous=FALSE, expand=TRUE, fill=FALSE");
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_container_child_set (GTK_CONTAINER (group), GTK_WIDGET (item),
+                           "homogeneous", FALSE,
+                           "expand", TRUE,
+                           "fill", FALSE,
+                           NULL);
+
+  item = gtk_tool_item_new ();
+  gtk_container_add (GTK_CONTAINER (item), gtk_entry_new ());
+  gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (item))), "homogeneous=FALSE, expand=TRUE, new-row=TRUE");
+  egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+  gtk_container_child_set (GTK_CONTAINER (group), GTK_WIDGET (item),
+                           "homogeneous", FALSE,
+                           "expand", TRUE,
+                           "new-row", TRUE,
+                           NULL);
+ 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_UP);
   gtk_tool_item_set_tooltip_text (item, "Show on vertical palettes only");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
@@ -458,7 +495,10 @@ load_special_items (EggToolPalette *palette)
   item = gtk_tool_button_new_from_stock (GTK_STOCK_FULLSCREEN);
   gtk_tool_item_set_tooltip_text (item, "Expanded this item");
   egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
-  gtk_tool_item_set_expand (item, TRUE);
+  gtk_container_child_set (GTK_CONTAINER (group), GTK_WIDGET (item),
+                           "homogeneous", FALSE,
+                           "expand", TRUE,
+                           NULL);
 
   item = gtk_tool_button_new_from_stock (GTK_STOCK_HELP);
   gtk_tool_item_set_tooltip_text (item, "A regular item");

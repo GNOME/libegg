@@ -1,5 +1,10 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	* libegg/toolpalette/testtoolpalette.c (load_special_items): Add items
+	which use the new child properties to testtoolpalette.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	Rework allocation code: Add better support for RTL languages, add
 	support for the new child properties, add better support for all
 	different styles (535920).
