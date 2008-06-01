@@ -24,6 +24,7 @@
 
 #include "eggtoolpalette.h"
 #include "eggtoolitemgroup.h"
+#include <gtk/gtk.h>
 
 void _egg_tool_palette_get_item_size           (EggToolPalette   *palette,
                                                 GtkRequisition   *item_size);
@@ -45,5 +46,12 @@ gint _egg_tool_item_group_get_size_for_limit   (EggToolItemGroup *group,
                                                 gint              limit,
                                                 gboolean          vertical,
                                                 gboolean          animation);
+
+#undef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+/* #define HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090 */
+
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+GtkSizeGroup *_egg_tool_palette_get_size_group (EggToolPalette   *palette);
+#endif
 
 #endif /* __EGG_TOOL_PALETTE_PRIVATE_H__ */

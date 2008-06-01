@@ -153,12 +153,66 @@ egg_tool_item_group_get_icon_size (GtkToolShell *shell)
   return GTK_ICON_SIZE_SMALL_TOOLBAR;
 }
 
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+
+static PangoEllipsizeMode
+egg_tool_item_group_get_ellipsize_mode (GtkToolShell *shell)
+{
+  return EGG_TOOL_ITEM_GROUP (shell)->priv->ellipsize;
+}
+
+static gfloat
+egg_tool_item_group_get_text_alignment (GtkToolShell *shell)
+{
+  if (GTK_TOOLBAR_TEXT == egg_tool_item_group_get_style (shell) ||
+      GTK_TOOLBAR_BOTH_HORIZ == egg_tool_item_group_get_style (shell))
+    return 0.0;
+
+  return 0.5;
+}
+
+static GtkOrientation
+egg_tool_item_group_get_text_orientation (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    {
+      GtkOrientation orientation = egg_tool_palette_get_orientation (EGG_TOOL_PALETTE (parent));
+      if (GTK_ORIENTATION_HORIZONTAL == orientation &&
+          (GTK_TOOLBAR_TEXT == egg_tool_item_group_get_style (shell)/* ||
+           GTK_TOOLBAR_BOTH_HORIZ == egg_tool_item_group_get_style (shell)*/))
+        return GTK_ORIENTATION_VERTICAL;
+    }
+
+  return GTK_ORIENTATION_HORIZONTAL;
+}
+
+static GtkSizeGroup *
+egg_tool_item_group_get_text_size_group (GtkToolShell *shell)
+{
+  GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (shell));
+
+  if (EGG_IS_TOOL_PALETTE (parent))
+    return _egg_tool_palette_get_size_group (EGG_TOOL_PALETTE (parent));
+
+  return NULL;
+}
+
+#endif
+
 static void
 egg_tool_item_group_tool_shell_init (GtkToolShellIface *iface)
 {
   iface->get_icon_size = egg_tool_item_group_get_icon_size;
   iface->get_orientation = egg_tool_item_group_get_orientation;
   iface->get_style = egg_tool_item_group_get_style;
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+  iface->get_text_alignment = egg_tool_item_group_get_text_alignment;
+  iface->get_text_orientation = egg_tool_item_group_get_text_orientation;
+  iface->get_text_size_group = egg_tool_item_group_get_text_size_group;
+  iface->get_ellipsize_mode = egg_tool_item_group_get_ellipsize_mode;
+#endif
 }
 
 #endif /* GTK_TYPE_TOOL_SHELL */
@@ -1291,6 +1345,9 @@ egg_tool_item_group_set_ellipsize (EggToolItemGroup   *group,
       group->priv->ellipsize = ellipsize;
       egg_tool_item_group_header_adjust_style (group);
       g_object_notify (G_OBJECT (group), "ellipsize");
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+      _egg_tool_item_group_palette_reconfigured (group);
+#endif
     }
 }
 
@@ -1633,4 +1690,3 @@ _egg_tool_item_group_palette_reconfigured (EggToolItemGroup *group)
 
   egg_tool_item_group_header_adjust_style (group);
 }
-

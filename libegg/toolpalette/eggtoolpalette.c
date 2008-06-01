@@ -79,6 +79,10 @@ struct _EggToolPalettePrivate
 
   GtkWidget            *expanding_child;
 
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+  GtkSizeGroup         *text_size_group;
+#endif
+
   guint                 sparse_groups : 1;
   guint                 drag_source : 1;
 };
@@ -116,6 +120,10 @@ egg_tool_palette_init (EggToolPalette *palette)
   palette->priv->icon_size = DEFAULT_ICON_SIZE;
   palette->priv->orientation = DEFAULT_ORIENTATION;
   palette->priv->style = DEFAULT_TOOLBAR_STYLE;
+
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+  palette->priv->text_size_group = gtk_size_group_new (GTK_SIZE_GROUP_BOTH);
+#endif
 }
 
 static void
@@ -228,6 +236,14 @@ egg_tool_palette_dispose (GObject *object)
           group->notify_collapsed = 0;
         }
     }
+
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+  if (palette->priv->text_size_group)
+    {
+      g_object_unref (palette->priv->text_size_group);
+      palette->priv->text_size_group = NULL;
+    }
+#endif
 
   G_OBJECT_CLASS (egg_tool_palette_parent_class)->dispose (object);
 }
@@ -1328,3 +1344,13 @@ _egg_tool_palette_set_expanding_child (EggToolPalette   *palette,
 
   palette->priv->expanding_child = widget;
 }
+
+#ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+GtkSizeGroup *
+_egg_tool_palette_get_size_group (EggToolPalette *palette)
+{
+  g_return_val_if_fail (EGG_IS_TOOL_PALETTE (palette), NULL);
+
+  return palette->priv->text_size_group;
+}
+#endif

@@ -1,5 +1,28 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	Use some extended ToolShell features as proposed in the TODO, requires
+	patch for gtk+ from #535090 (to activate the use of this features,
+	define HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090) (#535095).
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	  (egg_tool_item_group_get_icon_size,
+	  egg_tool_item_group_get_ellipsize_mode,
+	  egg_tool_item_group_get_text_alignment,
+	  egg_tool_item_group_get_text_orientation,
+	  egg_tool_item_group_get_text_size_group,
+	  egg_tool_item_group_tool_shell_init,
+	  egg_tool_item_group_set_ellipsize):
+	* libegg/toolpalette/eggtoolpalette.c (expanding_child,
+	  text_size_group, egg_tool_palette_init, egg_tool_palette_dispose,
+	  _egg_tool_palette_set_expanding_child,
+	  _egg_tool_palette_get_size_group):
+	* libegg/toolpalette/eggtoolpaletteprivate.h
+	  (__EGG_TOOL_PALETTE_PRIVATE_H__,
+	  HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090):
+	* libegg/toolpalette/testtoolpalette.c (load_stock_items):
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	* libegg/toolpalette/testtoolpalette.c (load_special_items): Add items
 	which use the new child properties to testtoolpalette.
 

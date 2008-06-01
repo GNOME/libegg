@@ -420,6 +420,7 @@ load_stock_items (EggToolPalette *palette)
 
       item = gtk_tool_button_new_from_stock (id);
       gtk_tool_item_set_tooltip_text (GTK_TOOL_ITEM (item), id);
+      gtk_tool_item_set_is_important (GTK_TOOL_ITEM (item), TRUE);
       egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
 
       if (!gtk_stock_lookup (id, &stock_item) || !stock_item.label)
