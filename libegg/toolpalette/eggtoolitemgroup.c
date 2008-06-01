@@ -179,13 +179,18 @@ egg_tool_item_group_header_expose_event_cb (GtkWidget      *widget,
   GtkExpanderStyle expander_style;
   GtkOrientation orientation;
   gint x, y;
+  GtkTextDirection direction;
 
   orientation = gtk_tool_shell_get_orientation (GTK_TOOL_SHELL (group));
   expander_style = group->priv->expander_style;
+  direction = gtk_widget_get_direction (widget);
 
   if (GTK_ORIENTATION_VERTICAL == orientation)
     {
-      x = widget->allocation.x + group->priv->expander_size / 2;
+      if (GTK_TEXT_DIR_RTL == direction)
+        x = widget->allocation.x + widget->allocation.width - group->priv->expander_size / 2;
+      else
+        x = widget->allocation.x + group->priv->expander_size / 2;
       y = widget->allocation.y + widget->allocation.height / 2;
     }
   else
@@ -237,6 +242,7 @@ egg_tool_item_group_header_adjust_style (EggToolItemGroup *group)
   GtkWidget *label = gtk_bin_get_child (GTK_BIN (alignment));
   GtkWidget *widget = GTK_WIDGET (group);
   gint dx = 0, dy = 0;
+  GtkTextDirection direction = gtk_widget_get_direction (widget);
 
   gtk_widget_style_get (widget,
                         "header-spacing", &group->priv->header_spacing,
@@ -248,7 +254,10 @@ egg_tool_item_group_header_adjust_style (EggToolItemGroup *group)
       case GTK_ORIENTATION_HORIZONTAL:
         dy = group->priv->header_spacing + group->priv->expander_size;
         gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_NONE);
-        gtk_label_set_angle (GTK_LABEL (label), 90);
+        if (GTK_TEXT_DIR_RTL == direction)
+          gtk_label_set_angle (GTK_LABEL (label), -90);
+        else
+          gtk_label_set_angle (GTK_LABEL (label), 90);
         break;
 
       case GTK_ORIENTATION_VERTICAL:

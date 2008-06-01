@@ -313,7 +313,11 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 
   gint min_offset = -1, max_offset = -1;
 
+  gint x;
+
   gint *group_sizes = g_newa(gint, palette->priv->groups_length);
+
+  GtkTextDirection direction = gtk_widget_get_direction (widget);
 
   GTK_WIDGET_CLASS (egg_tool_palette_parent_class)->size_allocate (widget, allocation);
 
@@ -330,9 +334,9 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 
   if (adjustment)
     offset = gtk_adjustment_get_value (adjustment);
-
-  child_allocation.x = border_width;
-  child_allocation.y = border_width;
+  if (GTK_ORIENTATION_HORIZONTAL == palette->priv->orientation &&
+      GTK_TEXT_DIR_RTL == direction)
+    offset = -offset;
 
   if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
     child_allocation.width = allocation->width - border_width * 2;
@@ -404,11 +408,16 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
       offset = MIN(MAX (offset, max_offset - limit), min_offset);
     }
 
+  if (remaining_space > 0)
+    offset = 0;
+
+  x = border_width;
+  child_allocation.y = border_width;
+
   if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
     child_allocation.y -= offset;
   else
-    child_allocation.x -= offset;
-
+    x -= offset;
 
   for (i = 0; i < palette->priv->groups_length; ++i)
     {
@@ -435,13 +444,19 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
           else
             child_allocation.width = size;
 
+          if (GTK_ORIENTATION_HORIZONTAL == palette->priv->orientation &&
+              GTK_TEXT_DIR_RTL == direction)
+            child_allocation.x = allocation->width - x - child_allocation.width;
+          else
+            child_allocation.x = x;
+
           gtk_widget_size_allocate (widget, &child_allocation);
           gtk_widget_show (widget);
 
           if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation)
             child_allocation.y += child_allocation.height;
           else
-            child_allocation.x += child_allocation.width;
+            x += child_allocation.width;
         }
       else
         gtk_widget_hide (widget);
@@ -456,10 +471,10 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
     }
   else
     {
-      child_allocation.x += border_width;
-      child_allocation.x += offset;
+      x += border_width;
+      x += offset;
 
-      page_start = child_allocation.x;
+      page_start = x;
     }
 
   if (adjustment)
@@ -468,11 +483,26 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 
       adjustment->page_increment = page_size * 0.9;
       adjustment->step_increment = page_size * 0.1;
-      adjustment->upper = MAX (0, page_start);
       adjustment->page_size = page_size;
+      if (GTK_ORIENTATION_HORIZONTAL == palette->priv->orientation &&
+          GTK_TEXT_DIR_RTL == direction)
+        {
+          adjustment->lower = page_size - MAX (0, page_start);
+          adjustment->upper = page_size;
 
-      value = MIN (offset, adjustment->upper - adjustment->page_size);
-      gtk_adjustment_clamp_page (adjustment, value, offset + page_size);
+          offset = -offset;
+
+          value = MAX(offset, adjustment->lower);
+          gtk_adjustment_clamp_page (adjustment, offset, value + page_size);
+        }
+      else
+        {
+          adjustment->lower = 0;
+          adjustment->upper = MAX (0, page_start);
+
+          value = MIN (offset, adjustment->upper - adjustment->page_size);
+          gtk_adjustment_clamp_page (adjustment, value, offset + page_size);
+        }
 
       gtk_adjustment_changed (adjustment);
     }

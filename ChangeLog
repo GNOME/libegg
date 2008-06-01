@@ -1,5 +1,18 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	Add better support for RTL languages (#535235).
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	  (egg_tool_item_group_header_expose_event_cb): Paint the expander on
+	  the opposite side if in RTL mode.
+	  (egg_tool_item_group_header_adjust_style): In horizontal orientation
+	  turn the label in the other direction in RTL mode.
+
+	* libegg/toolpalette/eggtoolpalette.c
+	(egg_tool_palette_size_allocate): Fix RTL mode.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	Add support for scroll to group feature. Show the group's header and
 	as many of its items as possible, when expanding (#535093).
 
