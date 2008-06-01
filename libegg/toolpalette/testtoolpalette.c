@@ -116,10 +116,24 @@ palette_drop_item (GtkToolItem      *drag_item,
 
   if (EGG_TOOL_ITEM_GROUP (drag_group) != drop_group)
     {
+      gboolean homogeneous, expand, fill, new_row;
+      
       g_object_ref (drag_item);
+      gtk_container_child_get (GTK_CONTAINER (drag_group), GTK_WIDGET (drag_item),
+                               "homogeneous", &homogeneous,
+                               "expand", &expand,
+                               "fill", &fill,
+                               "new-row", &new_row,
+                               NULL);
       gtk_container_remove (GTK_CONTAINER (drag_group), GTK_WIDGET (drag_item));
       egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (drop_group),
                                   drag_item, drop_position);
+      gtk_container_child_set (GTK_CONTAINER (drop_group), GTK_WIDGET (drag_item),
+                               "homogeneous", homogeneous,
+                               "expand", expand,
+                               "fill", fill,
+                               "new-row", new_row,
+                               NULL);
       g_object_unref (drag_item);
     }
   else

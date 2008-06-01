@@ -1,5 +1,10 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	* libegg/toolpalette/testtoolpalette.c (palette_drop_item): Add
+	support for the new child properties to testtoolpalette.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	Add "fill" and "new-row" child properties. Use the child info struct
 	to store the "homogeneous" and "expand" child properties to make it
 	possible to use our own defaults (see related #535253).
