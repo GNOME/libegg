@@ -1,5 +1,10 @@
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
+	* libegg/toolpalette/testtoolpalette.c (palette_notify_orientation):
+	Use GTK_POLICY_AUTOMATIC to show the scrollbar only when required.
+
+2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
+
 	* libegg/toolpalette/eggtoolpalette.c
 	  (_egg_tool_palette_child_set_drag_source): Add check for child. Drag
 	  and drop of tool items without a child is not supported yet.

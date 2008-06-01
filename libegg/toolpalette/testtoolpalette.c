@@ -478,13 +478,13 @@ palette_notify_orientation (GObject    *object,
     {
       case GTK_ORIENTATION_VERTICAL:
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
-                                        GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
+                                        GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
         gtk_paned_pack1 (GTK_PANED (hpaned), scroller, FALSE, FALSE);
         break;
 
       case GTK_ORIENTATION_HORIZONTAL:
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
-                                        GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+                                        GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
         gtk_paned_pack1 (GTK_PANED (vpaned), scroller, FALSE, FALSE);
         break;
     }
