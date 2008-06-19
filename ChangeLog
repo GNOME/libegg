@@ -1,3 +1,16 @@
+2008-06-19  Jan Arne Petersen  <jpetersen@jpetersen.org>
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	  (egg_tool_item_group_is_item_visible): Add special handling of
+	  orientation==HORZIONTAL style==TEXT case. Fixes required size in
+	  this case.
+	  (egg_tool_item_group_real_size_query,
+	  egg_tool_item_group_real_size_allocate,
+	  egg_tool_item_group_get_drop_item,
+	  _egg_tool_item_group_item_size_request): Update calls of the
+	  egg_tool_item_group_is_item_visible function. Remove special
+	  handling of orientation==HORZIONTAL style==TEXT case.
+
 2008-06-19  Jan Arne Petersen  <jpetersen@openismus.com>
 
 	* libegg/toolpalette/eggtoolitemgroup.c
