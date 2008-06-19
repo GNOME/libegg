@@ -1,3 +1,27 @@
+2008-06-19  Jan Arne Petersen  <jpetersen@openismus.com>
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	  (egg_tool_item_group_size_request): Consider required rows and non
+	  homogeneous items in calculation of the required size.
+	  (egg_tool_item_group_real_size_query,
+	  egg_tool_item_group_real_size_allocate): Split the allocate function
+	  in a query and allocation function. Add support for 'width for
+	  height' geometry also for non homogeneous items to the query function.
+	  (_egg_tool_item_group_item_size_request): Add calculation of
+	  required rows and add support for non homogeneous widgets.
+	  (egg_tool_item_group_get_item_size): Add support for the new
+	  non homogeneous and required rows arguments.
+	  (egg_tool_item_group_size_allocate,
+	  _egg_tool_item_group_get_size_for_limit): Fix calls to the
+	  egg_tool_item_group_real_size_query and
+	  egg_tool_item_group_real_size_allocate functions.
+	* libegg/toolpalette/eggtoolpalette.c
+	  (_egg_tool_palette_get_item_size): Add calculation of max requistion
+	  and max required rows depending on the new arguments.
+	* libegg/toolpalette/eggtoolpaletteprivate.h: Add new arguments to the
+	function defintions of _egg_tool_palette_get_item_size and
+	_egg_tool_item_group_item_size_request.
+
 2008-06-01  Jan Arne Petersen  <jpetersen@openismus.com>
 
 	Use some extended ToolShell features as proposed in the TODO, requires

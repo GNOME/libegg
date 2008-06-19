@@ -27,7 +27,9 @@
 #include <gtk/gtk.h>
 
 void _egg_tool_palette_get_item_size           (EggToolPalette   *palette,
-                                                GtkRequisition   *item_size);
+                                                GtkRequisition   *item_size,
+                                                gboolean          homogeneous_only,
+                                                guint            *requested_rows);
 void _egg_tool_palette_child_set_drag_source   (GtkWidget        *widget,
                                                 gpointer          data);
 void _egg_tool_palette_set_expanding_child     (EggToolPalette   *palette,
@@ -35,7 +37,9 @@ void _egg_tool_palette_set_expanding_child     (EggToolPalette   *palette,
 
 void _egg_tool_item_group_palette_reconfigured (EggToolItemGroup *group);
 void _egg_tool_item_group_item_size_request    (EggToolItemGroup *group,
-                                                GtkRequisition   *item_size);
+                                                GtkRequisition   *item_size,
+                                                gboolean          homogeneous_only,
+                                                guint            *requested_rows);
 gint _egg_tool_item_group_get_height_for_width (EggToolItemGroup *group,
                                                 gint              width);
 gint _egg_tool_item_group_get_width_for_height (EggToolItemGroup *group,

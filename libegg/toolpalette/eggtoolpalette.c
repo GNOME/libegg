@@ -72,7 +72,6 @@ struct _EggToolPalettePrivate
   GtkAdjustment        *hadjustment;
   GtkAdjustment        *vadjustment;
 
-  GtkRequisition        item_size;
   GtkIconSize           icon_size;
   GtkOrientation        orientation;
   GtkToolbarStyle       style;
@@ -275,9 +274,6 @@ egg_tool_palette_size_request (GtkWidget      *widget,
   requisition->width = 0;
   requisition->height = 0;
 
-  palette->priv->item_size.width = 0;
-  palette->priv->item_size.height = 0;
-
   for (i = 0; i < palette->priv->groups_length; ++i)
     {
       EggToolItemGroupInfo *group = &palette->priv->groups[i];
@@ -297,13 +293,6 @@ egg_tool_palette_size_request (GtkWidget      *widget,
           requisition->width += child_requisition.width;
           requisition->height = MAX (requisition->height, child_requisition.height);
         }
-
-      _egg_tool_item_group_item_size_request (group->widget, &child_requisition);
-
-      palette->priv->item_size.width = MAX (palette->priv->item_size.width,
-                                            child_requisition.width);
-      palette->priv->item_size.height = MAX (palette->priv->item_size.height,
-                                             child_requisition.height);
     }
 
   requisition->width += border_width * 2;
@@ -1225,12 +1214,40 @@ egg_tool_palette_add_drag_dest (EggToolPalette            *palette,
 
 void
 _egg_tool_palette_get_item_size (EggToolPalette *palette,
-                                 GtkRequisition *item_size)
+                                 GtkRequisition *item_size,
+                                 gboolean        homogeneous_only,
+                                 guint          *requested_rows)
 {
+  GtkRequisition max_requisition;
+  guint max_rows, i;
+
   g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
   g_return_if_fail (NULL != item_size);
 
-  *item_size = palette->priv->item_size;
+  max_requisition.width = 0;
+  max_requisition.height = 0;
+  max_rows = 0;
+
+  /* iterate over all groups and calculate the max item_size and max row request */
+  for (i = 0; i < palette->priv->groups_length; ++i)
+    {
+      GtkRequisition requisition;
+      guint rows;
+      EggToolItemGroupInfo *group = &palette->priv->groups[i];
+
+      if (!group->widget)
+        continue;
+
+      _egg_tool_item_group_item_size_request (group->widget, &requisition, homogeneous_only, &rows);
+
+      max_requisition.width = MAX (max_requisition.width, requisition.width);
+      max_requisition.height = MAX (max_requisition.height, requisition.height);
+      max_rows = MAX (max_rows, rows);
+    }
+
+  *item_size = max_requisition;
+  if (requested_rows)
+    *requested_rows = max_rows;
 }
 
 static GtkWidget*
