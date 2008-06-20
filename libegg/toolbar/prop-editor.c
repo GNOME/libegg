@@ -52,7 +52,7 @@ signal_removed (gpointer  data,
 static void
 g_object_connect_property (GObject *object,
                            const gchar *prop_name,
-                           GtkSignalFunc func,
+                           GCallback func,
                            gpointer data,
                            GObject *alive_object)
 {
@@ -99,7 +99,7 @@ connect_controller (GObject *controller,
                     const gchar *signal,
                     GObject *model,
                     const gchar *prop_name,
-                    GtkSignalFunc func)
+                    GCallback func)
 {
   ObjectProperty *p;
 
@@ -476,7 +476,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       
       if (can_modify)
 	connect_controller (G_OBJECT (adj), "value_changed",
-			    object, spec->name, (GtkSignalFunc) int_modified);
+			    object, spec->name, (GCallback) int_modified);
     }
   else if (type == G_TYPE_PARAM_UINT)
     {
@@ -497,7 +497,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       
       if (can_modify)
 	connect_controller (G_OBJECT (adj), "value_changed",
-			    object, spec->name, (GtkSignalFunc) uint_modified);
+			    object, spec->name, (GCallback) uint_modified);
     }
   else if (type == G_TYPE_PARAM_FLOAT)
     {
@@ -518,7 +518,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       
       if (can_modify)
 	connect_controller (G_OBJECT (adj), "value_changed",
-			    object, spec->name, (GtkSignalFunc) float_modified);
+			    object, spec->name, (GCallback) float_modified);
     }
   else if (type == G_TYPE_PARAM_DOUBLE)
     {
@@ -538,7 +538,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       
       if (can_modify)
 	connect_controller (G_OBJECT (adj), "value_changed",
-			    object, spec->name, (GtkSignalFunc) double_modified);
+			    object, spec->name, (GCallback) double_modified);
     }
   else if (type == G_TYPE_PARAM_STRING)
     {
@@ -550,7 +550,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       
       if (can_modify)
 	connect_controller (G_OBJECT (prop_edit), "changed",
-			    object, spec->name, (GtkSignalFunc) string_modified);
+			    object, spec->name, (GCallback) string_modified);
     }
   else if (type == G_TYPE_PARAM_BOOLEAN)
     {
@@ -562,7 +562,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       
       if (can_modify)
 	connect_controller (G_OBJECT (prop_edit), "toggled",
-			    object, spec->name, (GtkSignalFunc) bool_modified);
+			    object, spec->name, (GCallback) bool_modified);
     }
   else if (type == G_TYPE_PARAM_ENUM)
     {
@@ -601,7 +601,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
 	
 	if (can_modify)
 	  connect_controller (G_OBJECT (prop_edit), "changed",
-			      object, spec->name, (GtkSignalFunc) enum_modified);
+			      object, spec->name, (GCallback) enum_modified);
       }
     }
   else if (type == G_TYPE_PARAM_UNICHAR)
@@ -615,7 +615,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       
       if (can_modify)
 	connect_controller (G_OBJECT (prop_edit), "changed",
-			    object, spec->name, (GtkSignalFunc) unichar_modified);
+			    object, spec->name, (GCallback) unichar_modified);
     }
   else if (type == G_TYPE_PARAM_POINTER)
     {

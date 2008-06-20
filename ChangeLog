@@ -1,5 +1,21 @@
 2008-06-20  Christian Persch  <chpe@gnome.org>
 
+	* libegg/iconchooser/prop-editor.c: (connect_controller),
+	(property_widget):
+	* libegg/iconlist/prop-editor.c: (connect_controller),
+	(property_widget):
+	* libegg/toolbar/eggtoolbar.c: (egg_toolbar_append_item),
+	(egg_toolbar_prepend_item), (egg_toolbar_insert_item),
+	(egg_toolbar_insert_stock), (egg_toolbar_append_element),
+	(egg_toolbar_prepend_element), (egg_toolbar_insert_element),
+	(egg_toolbar_internal_insert_element):
+	* libegg/toolbar/eggtoolbar.h:
+	* libegg/toolbar/prop-editor.c: (g_object_connect_property),
+	(connect_controller), (property_widget): Use GCallback instead of
+	GtkSignalFunc.
+
+2008-06-20  Christian Persch  <chpe@gnome.org>
+
 	* libegg/combo-old/eggentry.c: (append_action_signal),
 	(popup_targets_received):
 	* libegg/dock/egg-dock-layout.c:

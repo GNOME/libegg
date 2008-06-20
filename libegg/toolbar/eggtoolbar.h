@@ -166,21 +166,21 @@ GtkWidget* egg_toolbar_append_item   (EggToolbar      *toolbar,
 				      const char      *tooltip_text,
 				      const char      *tooltip_private_text,
 				      GtkWidget       *icon,
-				      GtkSignalFunc    callback,
+				      GCallback    callback,
 				      gpointer         user_data);
 GtkWidget* egg_toolbar_prepend_item  (EggToolbar      *toolbar,
 				      const char      *text,
 				      const char      *tooltip_text,
 				      const char      *tooltip_private_text,
 				      GtkWidget       *icon,
-				      GtkSignalFunc    callback,
+				      GCallback    callback,
 				      gpointer         user_data);
 GtkWidget* egg_toolbar_insert_item   (EggToolbar      *toolbar,
 				      const char      *text,
 				      const char      *tooltip_text,
 				      const char      *tooltip_private_text,
 				      GtkWidget       *icon,
-				      GtkSignalFunc    callback,
+				      GCallback    callback,
 				      gpointer         user_data,
 				      gint             position);
 
@@ -189,7 +189,7 @@ GtkWidget* egg_toolbar_insert_stock    (EggToolbar      *toolbar,
 					const gchar     *stock_id,
 					const char      *tooltip_text,
 					const char      *tooltip_private_text,
-					GtkSignalFunc    callback,
+					GCallback    callback,
 					gpointer         user_data,
 					gint             position);
 
@@ -208,7 +208,7 @@ GtkWidget* egg_toolbar_append_element  (EggToolbar      *toolbar,
 					const char      *tooltip_text,
 					const char      *tooltip_private_text,
 					GtkWidget       *icon,
-					GtkSignalFunc    callback,
+					GCallback    callback,
 					gpointer         user_data);
 
 GtkWidget* egg_toolbar_prepend_element (EggToolbar      *toolbar,
@@ -218,7 +218,7 @@ GtkWidget* egg_toolbar_prepend_element (EggToolbar      *toolbar,
 					const char      *tooltip_text,
 					const char      *tooltip_private_text,
 					GtkWidget       *icon,
-					GtkSignalFunc    callback,
+					GCallback    callback,
 					gpointer         user_data);
 
 GtkWidget* egg_toolbar_insert_element  (EggToolbar      *toolbar,
@@ -228,7 +228,7 @@ GtkWidget* egg_toolbar_insert_element  (EggToolbar      *toolbar,
 					const char      *tooltip_text,
 					const char      *tooltip_private_text,
 					GtkWidget       *icon,
-					GtkSignalFunc    callback,
+					GCallback    callback,
 					gpointer         user_data,
 					gint             position);
 
