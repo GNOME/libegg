@@ -1,5 +1,14 @@
 2008-06-20  Christian Persch  <chpe@gnome.org>
 
+	* libegg/combo-old/eggentry.c: (append_action_signal),
+	(popup_targets_received):
+	* libegg/dock/egg-dock-layout.c:
+	(egg_dock_layout_construct_layouts_ui):
+	* libegg/toolbar/prop-editor.c: (property_widget),
+	(create_prop_editor): Remove more deprecated gtk macros.
+
+2008-06-20  Christian Persch  <chpe@gnome.org>
+
 	* libegg/column-chooser/eggcolumnchooserdialog.c:
 	(egg_column_chooser_dialog_get_type):
 	* libegg/column-chooser/eggcolumnchooserdialog.h:

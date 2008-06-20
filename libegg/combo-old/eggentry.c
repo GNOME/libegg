@@ -3905,7 +3905,7 @@ append_action_signal (EggEntry     *entry,
 
   gtk_object_set_data (GTK_OBJECT (menuitem), "gtk-signal", (char *)signal);
   gtk_signal_connect (GTK_OBJECT (menuitem), "activate",
-		      GTK_SIGNAL_FUNC (activate_cb), entry);
+		      G_CALLBACK (activate_cb), entry);
 
   gtk_widget_set_sensitive (menuitem, sensitive);
   
@@ -3994,7 +3994,7 @@ popup_targets_received (GtkClipboard     *clipboard,
       
       menuitem = gtk_menu_item_new_with_label (_("Select All"));
       gtk_signal_connect_object (GTK_OBJECT (menuitem), "activate",
-				 GTK_SIGNAL_FUNC (egg_entry_select_all), entry);
+				 G_CALLBACK (egg_entry_select_all), entry);
       gtk_widget_show (menuitem);
       gtk_menu_shell_append (GTK_MENU_SHELL (entry->popup_menu), menuitem);
       

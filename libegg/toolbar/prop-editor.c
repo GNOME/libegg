@@ -471,7 +471,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_spin_button_new (adj, 1.0, 0);
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (int_changed),
+				 G_CALLBACK (int_changed),
 				 adj, G_OBJECT (adj));
       
       if (can_modify)
@@ -492,7 +492,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_spin_button_new (adj, 1.0, 0);
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (uint_changed),
+				 G_CALLBACK (uint_changed),
 				 adj, G_OBJECT (adj));
       
       if (can_modify)
@@ -513,7 +513,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_spin_button_new (adj, 0.1, 2);
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (float_changed),
+				 G_CALLBACK (float_changed),
 				 adj, G_OBJECT (adj));
       
       if (can_modify)
@@ -533,7 +533,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_spin_button_new (adj, 0.1, 2);
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (double_changed),
+				 G_CALLBACK (double_changed),
 				 adj, G_OBJECT (adj));
       
       if (can_modify)
@@ -545,7 +545,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_entry_new ();
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (string_changed),
+				 G_CALLBACK (string_changed),
 				 prop_edit, G_OBJECT (prop_edit));
       
       if (can_modify)
@@ -557,7 +557,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_toggle_button_new_with_label ("");
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (bool_changed),
+				 G_CALLBACK (bool_changed),
 				 prop_edit, G_OBJECT (prop_edit));
       
       if (can_modify)
@@ -596,7 +596,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
 	gtk_option_menu_set_menu (GTK_OPTION_MENU (prop_edit), menu);
 	
 	g_object_connect_property (object, spec->name,
-				   GTK_SIGNAL_FUNC (enum_changed),
+				   G_CALLBACK (enum_changed),
 				   prop_edit, G_OBJECT (prop_edit));
 	
 	if (can_modify)
@@ -610,7 +610,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       gtk_entry_set_max_length (GTK_ENTRY (prop_edit), 1);
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (unichar_changed),
+				 G_CALLBACK (unichar_changed),
 				 prop_edit, G_OBJECT (prop_edit));
       
       if (can_modify)
@@ -622,7 +622,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_label_new ("");
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (pointer_changed),
+				 G_CALLBACK (pointer_changed),
 				 prop_edit, G_OBJECT (prop_edit));
     }
   else if (type == G_TYPE_PARAM_OBJECT)
@@ -630,7 +630,7 @@ property_widget (GObject *object, GParamSpec *spec, gboolean can_modify)
       prop_edit = gtk_label_new ("");
       
       g_object_connect_property (object, spec->name,
-				 GTK_SIGNAL_FUNC (object_changed),
+				 G_CALLBACK (object_changed),
 				 prop_edit, G_OBJECT (prop_edit));
     }
   else
@@ -755,7 +755,7 @@ create_prop_editor (GObject   *object,
   
   tips = gtk_tooltips_new ();
   g_signal_connect_data (GTK_OBJECT (win), "destroy",
-			 GTK_SIGNAL_FUNC (gtk_object_destroy), GTK_OBJECT (tips), NULL,
+			 G_CALLBACK (gtk_object_destroy), GTK_OBJECT (tips), NULL,
 			 G_CONNECT_SWAPPED);
 
   /* hold a weak ref to the object we're editing */

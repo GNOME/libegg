@@ -746,13 +746,13 @@ egg_dock_layout_construct_layouts_ui (EggDockLayout *layout)
                       G_CALLBACK (selection_changed_cb), ui_data);
 
     glade_xml_signal_connect_data (gui, "on_newlayout_entry_activate",
-                                   GTK_SIGNAL_FUNC (save_layout_cb), ui_data);
+                                   G_CALLBACK (save_layout_cb), ui_data);
     glade_xml_signal_connect_data (gui, "on_save_button_clicked",
-                                   GTK_SIGNAL_FUNC (save_layout_cb), ui_data);
+                                   G_CALLBACK (save_layout_cb), ui_data);
     glade_xml_signal_connect_data (gui, "on_load_button_clicked",
-                                   GTK_SIGNAL_FUNC (load_layout_cb), ui_data);
+                                   G_CALLBACK (load_layout_cb), ui_data);
     glade_xml_signal_connect_data (gui, "on_delete_button_clicked",
-                                   GTK_SIGNAL_FUNC (delete_layout_cb), ui_data);
+                                   G_CALLBACK (delete_layout_cb), ui_data);
 
     g_signal_connect (container, "destroy", (GCallback) layout_ui_destroyed, NULL);
 
