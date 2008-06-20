@@ -42,11 +42,11 @@ extern "C" {
 
 
 #define EGG_TYPE_ENTRY                  (egg_entry_get_type ())
-#define EGG_ENTRY(obj)                  (GTK_CHECK_CAST ((obj), EGG_TYPE_ENTRY, EggEntry))
-#define EGG_ENTRY_CLASS(klass)          (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_ENTRY, EggEntryClass))
-#define EGG_IS_ENTRY(obj)               (GTK_CHECK_TYPE ((obj), EGG_TYPE_ENTRY))
-#define EGG_IS_ENTRY_CLASS(klass)       (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_ENTRY))
-#define EGG_ENTRY_GET_CLASS(obj)        (GTK_CHECK_GET_CLASS ((obj), EGG_TYPE_ENTRY, EggEntryClass))
+#define EGG_ENTRY(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_ENTRY, EggEntry))
+#define EGG_ENTRY_CLASS(klass)          (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_ENTRY, EggEntryClass))
+#define EGG_IS_ENTRY(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_ENTRY))
+#define EGG_IS_ENTRY_CLASS(klass)       (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_ENTRY))
+#define EGG_ENTRY_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYPE_ENTRY, EggEntryClass))
 
 
 typedef struct _EggEntry       EggEntry;
@@ -153,7 +153,7 @@ typedef gboolean (* EggCompletionFunc) (const gchar *key,
 					gpointer     user_data);
 
 
-GtkType    egg_entry_get_type       		(void) G_GNUC_CONST;
+GType    egg_entry_get_type       		(void) G_GNUC_CONST;
 GtkWidget* egg_entry_new            		(void);
 void       egg_entry_set_visibility 		(EggEntry      *entry,
 						 gboolean       visible);
@@ -197,7 +197,7 @@ void         egg_entry_enable_completion        (EggEntry          *entry,
 						 gint               entry_column,
 						 EggCompletionFunc  func,
 						 gpointer           func_data,
-						 GtkDestroyNotify   func_destroy);
+						 GDestroyNotify   func_destroy);
 gboolean     egg_entry_completion_enabled       (EggEntry          *entry);
 
 

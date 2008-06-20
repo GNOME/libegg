@@ -42,7 +42,7 @@ static GtkDialogClass *parent_class = NULL;
 GType
 egg_column_chooser_dialog_get_type (void)
 {
-	static GtkType object_type = 0;
+	static GType object_type = 0;
 
 	if (!object_type) {
 		static const GTypeInfo object_info = {

@@ -2317,7 +2317,7 @@ void
 egg_tree_model_filter_set_visible_func (EggTreeModelFilter            *filter,
                                         EggTreeModelFilterVisibleFunc  func,
                                         gpointer                       data,
-                                        GtkDestroyNotify               destroy)
+                                        GDestroyNotify               destroy)
 {
   g_return_if_fail (EGG_IS_TREE_MODEL_FILTER (filter));
   g_return_if_fail (func != NULL);
@@ -2325,7 +2325,7 @@ egg_tree_model_filter_set_visible_func (EggTreeModelFilter            *filter,
 
   if (filter->visible_func)
     {
-      GtkDestroyNotify d = filter->visible_destroy;
+      GDestroyNotify d = filter->visible_destroy;
 
       filter->visible_destroy = NULL;
       d (filter->visible_data);
@@ -2356,7 +2356,7 @@ egg_tree_model_filter_set_modify_func (EggTreeModelFilter           *filter,
                                        GType                        *types,
                                        EggTreeModelFilterModifyFunc  func,
                                        gpointer                      data,
-                                       GtkDestroyNotify              destroy)
+                                       GDestroyNotify              destroy)
 {
   g_return_if_fail (EGG_IS_TREE_MODEL_FILTER (filter));
   g_return_if_fail (func != NULL);
@@ -2364,7 +2364,7 @@ egg_tree_model_filter_set_modify_func (EggTreeModelFilter           *filter,
 
   if (filter->modify_destroy)
     {
-      GtkDestroyNotify d = filter->modify_destroy;
+      GDestroyNotify d = filter->modify_destroy;
 
       filter->modify_destroy = NULL;
       d (filter->modify_data);

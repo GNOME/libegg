@@ -78,7 +78,7 @@ static void  egg_dock_item_forall        (GtkContainer *container,
                                           gboolean      include_internals,
                                           GtkCallback   callback,
                                           gpointer      callback_data);
-static GtkType egg_dock_item_child_type  (GtkContainer *container);
+static GType egg_dock_item_child_type  (GtkContainer *container);
 
 static void  egg_dock_item_size_request  (GtkWidget *widget,
                                           GtkRequisition *requisition);
@@ -615,7 +615,7 @@ egg_dock_item_forall (GtkContainer *container,
         (* callback) (item->child, callback_data);
 }
 
-static GtkType
+static GType
 egg_dock_item_child_type (GtkContainer *container)
 {
     g_return_val_if_fail (EGG_IS_DOCK_ITEM (container), G_TYPE_NONE);

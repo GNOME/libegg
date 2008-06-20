@@ -32,11 +32,11 @@ G_BEGIN_DECLS
 
 /* standard macros */
 #define EGG_TYPE_DOCK_MASTER             (egg_dock_master_get_type ())
-#define EGG_DOCK_MASTER(obj)             (GTK_CHECK_CAST ((obj), EGG_TYPE_DOCK_MASTER, EggDockMaster))
-#define EGG_DOCK_MASTER_CLASS(klass)     (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_MASTER, EggDockMasterClass))
-#define EGG_IS_DOCK_MASTER(obj)          (GTK_CHECK_TYPE ((obj), EGG_TYPE_DOCK_MASTER))
-#define EGG_IS_DOCK_MASTER_CLASS(klass)  (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_MASTER))
-#define EGG_DOCK_MASTER_GET_CLASS(obj)   (GTK_CHECK_GET_CLASS ((obj), GTK_TYPE_DOCK_MASTER, EggDockMasterClass))
+#define EGG_DOCK_MASTER(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_DOCK_MASTER, EggDockMaster))
+#define EGG_DOCK_MASTER_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_MASTER, EggDockMasterClass))
+#define EGG_IS_DOCK_MASTER(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_DOCK_MASTER))
+#define EGG_IS_DOCK_MASTER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_MASTER))
+#define EGG_DOCK_MASTER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_DOCK_MASTER, EggDockMasterClass))
 
 /* data types & structures */
 typedef struct _EggDockMaster        EggDockMaster;

@@ -30,7 +30,7 @@ struct _EggRecentViewClass
 	EggRecentModel * (* do_get_model)	(EggRecentView *view);
 };
 
-GtkType	egg_recent_view_get_type		(void) G_GNUC_CONST;
+GType	egg_recent_view_get_type		(void) G_GNUC_CONST;
 void	egg_recent_view_set_list		(EggRecentView *view,
 						 GSList *list);
 void	egg_recent_view_clear			(EggRecentView *view);

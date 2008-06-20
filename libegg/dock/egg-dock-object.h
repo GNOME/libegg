@@ -29,11 +29,11 @@ G_BEGIN_DECLS
 
 /* standard macros */
 #define EGG_TYPE_DOCK_OBJECT             (egg_dock_object_get_type ())
-#define EGG_DOCK_OBJECT(obj)             (GTK_CHECK_CAST ((obj), EGG_TYPE_DOCK_OBJECT, EggDockObject))
-#define EGG_DOCK_OBJECT_CLASS(klass)     (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_OBJECT, EggDockObjectClass))
-#define EGG_IS_DOCK_OBJECT(obj)          (GTK_CHECK_TYPE ((obj), EGG_TYPE_DOCK_OBJECT))
-#define EGG_IS_DOCK_OBJECT_CLASS(klass)  (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_OBJECT))
-#define EGG_DOCK_OBJECT_GET_CLASS(obj)   (GTK_CHECK_GET_CLASS ((obj), GTK_TYPE_DOCK_OBJECT, EggDockObjectClass))
+#define EGG_DOCK_OBJECT(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_DOCK_OBJECT, EggDockObject))
+#define EGG_DOCK_OBJECT_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_OBJECT, EggDockObjectClass))
+#define EGG_IS_DOCK_OBJECT(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_DOCK_OBJECT))
+#define EGG_IS_DOCK_OBJECT_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_OBJECT))
+#define EGG_DOCK_OBJECT_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_DOCK_OBJECT, EggDockObjectClass))
 
 /* data types & structures */
 typedef enum {

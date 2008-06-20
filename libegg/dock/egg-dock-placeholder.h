@@ -29,11 +29,11 @@ G_BEGIN_DECLS
 
 /* standard macros */
 #define EGG_TYPE_DOCK_PLACEHOLDER             (egg_dock_placeholder_get_type ())
-#define EGG_DOCK_PLACEHOLDER(obj)             (GTK_CHECK_CAST ((obj), EGG_TYPE_DOCK_PLACEHOLDER, EggDockPlaceholder))
-#define EGG_DOCK_PLACEHOLDER_CLASS(klass)     (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_PLACEHOLDER, EggDockPlaceholderClass))
-#define EGG_IS_DOCK_PLACEHOLDER(obj)          (GTK_CHECK_TYPE ((obj), EGG_TYPE_DOCK_PLACEHOLDER))
-#define EGG_IS_DOCK_PLACEHOLDER_CLASS(klass)  (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_PLACEHOLDER))
-#define EGG_DOCK_PLACEHOLDER_GET_CLASS(obj)   (GTK_CHECK_GET_CLASS ((obj), GTK_TYPE_DOCK_PLACEHOLDER, EggDockPlaceholderClass))
+#define EGG_DOCK_PLACEHOLDER(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_DOCK_PLACEHOLDER, EggDockPlaceholder))
+#define EGG_DOCK_PLACEHOLDER_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_PLACEHOLDER, EggDockPlaceholderClass))
+#define EGG_IS_DOCK_PLACEHOLDER(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_DOCK_PLACEHOLDER))
+#define EGG_IS_DOCK_PLACEHOLDER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_PLACEHOLDER))
+#define EGG_DOCK_PLACEHOLDER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_DOCK_PLACEHOLDER, EggDockPlaceholderClass))
 
 /* data types & structures */
 typedef struct _EggDockPlaceholder        EggDockPlaceholder;

@@ -50,7 +50,7 @@ static GMemChunk *merge_node_chunk = NULL;
 GType
 egg_menu_merge_get_type (void)
 {
-  static GtkType type = 0;
+  static GType type = 0;
 
   if (!type)
     {

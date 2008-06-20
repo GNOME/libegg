@@ -77,7 +77,7 @@ static void  egg_dock_forall          (GtkContainer *container,
                                        gboolean      include_internals,
                                        GtkCallback   callback,
                                        gpointer      callback_data);
-static GtkType  egg_dock_child_type   (GtkContainer *container);
+static GType  egg_dock_child_type   (GtkContainer *container);
 
 static void     egg_dock_detach       (EggDockObject    *object,
                                        gboolean          recursive);
@@ -741,7 +741,7 @@ egg_dock_forall (GtkContainer *container,
         (*callback) (GTK_WIDGET (dock->root), callback_data);
 }
 
-static GtkType
+static GType
 egg_dock_child_type (GtkContainer *container)
 {
     return EGG_TYPE_DOCK_ITEM;

@@ -28,10 +28,10 @@
 #include "egg-recent-view.h"
 
 
-GtkType
+GType
 egg_recent_view_get_type (void)
 {
-	static GtkType view_type = 0;
+	static GType view_type = 0;
 
 	if (!view_type)
 	{

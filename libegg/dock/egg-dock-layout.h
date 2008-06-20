@@ -30,11 +30,11 @@ G_BEGIN_DECLS
 
 /* standard macros */
 #define	EGG_TYPE_DOCK_LAYOUT		  (egg_dock_layout_get_type ())
-#define EGG_DOCK_LAYOUT(object)		  (GTK_CHECK_CAST ((object), EGG_TYPE_DOCK_LAYOUT, EggDockLayout))
-#define EGG_DOCK_LAYOUT_CLASS(klass)	  (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_LAYOUT, EggDockLayoutClass))
-#define EGG_IS_DOCK_LAYOUT(object)	  (GTK_CHECK_TYPE ((object), EGG_TYPE_DOCK_LAYOUT))
-#define EGG_IS_DOCK_LAYOUT_CLASS(klass)	  (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_LAYOUT))
-#define	EGG_DOCK_LAYOUT_GET_CLASS(object) (GTK_CHECK_GET_CLASS ((object), EGG_TYPE_DOCK_LAYOUT, EggDockLayoutClass))
+#define EGG_DOCK_LAYOUT(object)		  (G_TYPE_CHECK_INSTANCE_CAST ((object), EGG_TYPE_DOCK_LAYOUT, EggDockLayout))
+#define EGG_DOCK_LAYOUT_CLASS(klass)	  (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_LAYOUT, EggDockLayoutClass))
+#define EGG_IS_DOCK_LAYOUT(object)	  (G_TYPE_CHECK_INSTANCE_TYPE ((object), EGG_TYPE_DOCK_LAYOUT))
+#define EGG_IS_DOCK_LAYOUT_CLASS(klass)	  (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_LAYOUT))
+#define	EGG_DOCK_LAYOUT_GET_CLASS(object) (G_TYPE_INSTANCE_GET_CLASS ((object), EGG_TYPE_DOCK_LAYOUT, EggDockLayoutClass))
 
 /* data types & structures */
 typedef struct _EggDockLayout EggDockLayout;

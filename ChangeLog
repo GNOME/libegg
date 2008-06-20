@@ -1,3 +1,45 @@
+2008-06-20  Christian Persch  <chpe@gnome.org>
+
+	* libegg/column-chooser/eggcolumnchooserdialog.c:
+	(egg_column_chooser_dialog_get_type):
+	* libegg/column-chooser/eggcolumnchooserdialog.h:
+	* libegg/combo-old/eggentry.c: (egg_entry_get_type),
+	(egg_entry_enable_completion):
+	* libegg/combo-old/eggentry.h:
+	* libegg/datetime/egg-datetime.c: (egg_datetime_get_type):
+	* libegg/datetime/egg-datetime.h:
+	* libegg/dock/egg-dock-item-grip.h:
+	* libegg/dock/egg-dock-item.c:
+	* libegg/dock/egg-dock-item.h:
+	* libegg/dock/egg-dock-layout.h:
+	* libegg/dock/egg-dock-master.h:
+	* libegg/dock/egg-dock-notebook.h:
+	* libegg/dock/egg-dock-object.h:
+	* libegg/dock/egg-dock-paned.h:
+	* libegg/dock/egg-dock-placeholder.h:
+	* libegg/dock/egg-dock-tablabel.h:
+	* libegg/dock/egg-dock.c:
+	* libegg/dock/egg-dock.h:
+	* libegg/iconlist/eggiconlist.h:
+	* libegg/menu/egg-accel-dialog.c: (egg_accel_dialog_get_type):
+	* libegg/menu/egg-action.c: (egg_action_get_type):
+	* libegg/menu/egg-menu-merge.c: (egg_menu_merge_get_type):
+	* libegg/menu/egg-radio-action.c: (egg_radio_action_get_type):
+	* libegg/menu/egg-toggle-action.c: (egg_toggle_action_get_type):
+	* libegg/recent-files/egg-recent-view.c:
+	(egg_recent_view_get_type):
+	* libegg/recent-files/egg-recent-view.h:
+	* libegg/toolbar/eggtoolbar.c: (egg_toolbar_get_type):
+	* libegg/toolbar/eggtoolbutton.c: (egg_tool_button_get_type):
+	* libegg/toolbar/eggtoolitem.c: (egg_tool_item_get_type):
+	* libegg/treeviewutils/egg-cell-renderer-text.h:
+	* libegg/treeviewutils/eggcellrendererkeys.h:
+	* libegg/treeviewutils/eggtreemodelfilter.c:
+	(egg_tree_model_filter_set_visible_func),
+	(egg_tree_model_filter_set_modify_func):
+	* libegg/treeviewutils/eggtreemodelfilter.h: Use nondeprecated
+	GType/G_TYPE_* macros instead of the deprecated gtk ones.
+
 2008-06-20  Jan Arne Petersen  <jpetersen@openismus.com>
 
 	* libegg/toolpalette/eggtoolpalette.c

@@ -82,7 +82,7 @@ static guint         toolbutton_signals[LAST_SIGNAL] = { 0 };
 GType
 egg_tool_button_get_type (void)
 {
-  static GtkType type = 0;
+  static GType type = 0;
 
   if (!type)
     {

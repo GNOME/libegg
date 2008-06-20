@@ -28,11 +28,11 @@ G_BEGIN_DECLS
 
 /* standard macros */
 #define EGG_TYPE_DOCK_NOTEBOOK            (egg_dock_notebook_get_type ())
-#define EGG_DOCK_NOTEBOOK(obj)            (GTK_CHECK_CAST ((obj), EGG_TYPE_DOCK_NOTEBOOK, EggDockNotebook))
-#define EGG_DOCK_NOTEBOOK_CLASS(klass)    (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_NOTEBOOK, EggDockNotebookClass))
-#define EGG_IS_DOCK_NOTEBOOK(obj)         (GTK_CHECK_TYPE ((obj), EGG_TYPE_DOCK_NOTEBOOK))
-#define EGG_IS_DOCK_NOTEBOOK_CLASS(klass) (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_NOTEBOOK))
-#define EGG_DOCK_NOTEBOOK_GET_CLASS(obj)  (GTK_CHECK_GET_CLASS ((obj), GTK_TYPE_DOCK_NOTEBOOK, EggDockNotebookClass))
+#define EGG_DOCK_NOTEBOOK(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_DOCK_NOTEBOOK, EggDockNotebook))
+#define EGG_DOCK_NOTEBOOK_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_NOTEBOOK, EggDockNotebookClass))
+#define EGG_IS_DOCK_NOTEBOOK(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_DOCK_NOTEBOOK))
+#define EGG_IS_DOCK_NOTEBOOK_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_NOTEBOOK))
+#define EGG_DOCK_NOTEBOOK_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_DOCK_NOTEBOOK, EggDockNotebookClass))
 
 /* data types & structures */
 typedef struct _EggDockNotebook        EggDockNotebook;

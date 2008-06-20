@@ -61,7 +61,7 @@ struct _EggTreeModelFilter
 
   EggTreeModelFilterVisibleFunc visible_func;
   gpointer visible_data;
-  GtkDestroyNotify visible_destroy;
+  GDestroyNotify visible_destroy;
 
   gint modify_n_columns;
   GType *modify_types;
@@ -93,13 +93,13 @@ GtkTreeModel *egg_tree_model_filter_new			(GtkTreeModel                 *child_m
 void	egg_tree_model_filter_set_visible_func		(EggTreeModelFilter           *filter,
 							 EggTreeModelFilterVisibleFunc func,
 							 gpointer                      data,
-							 GtkDestroyNotify              destroy);
+							 GDestroyNotify              destroy);
 void	egg_tree_model_filter_set_modify_func           (EggTreeModelFilter           *filter,
 							 gint                          n_columns,
 							 GType                        *types,
 							 EggTreeModelFilterModifyFunc  func,
 							 gpointer                      data,
-							 GtkDestroyNotify              destroy);
+							 GDestroyNotify              destroy);
 void	egg_tree_model_filter_set_visible_column	(EggTreeModelFilter           *filter,
 							 gint                          column);
 

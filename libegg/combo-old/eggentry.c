@@ -143,7 +143,7 @@ struct _EggEntryExtInfo
 
   EggCompletionFunc completion_func;
   gpointer completion_func_data;
-  GtkDestroyNotify completion_func_destroy;
+  GDestroyNotify completion_func_destroy;
 
   gint list_column;
   gint entry_column;
@@ -384,23 +384,23 @@ static void         egg_entry_history_add              (EggEntry       *entry,
 
 static GtkWidgetClass *parent_class = NULL;
 
-GtkType
+GType
 egg_entry_get_type (void)
 {
-  static GtkType entry_type = 0;
+  static GType entry_type = 0;
 
   if (!entry_type)
     {
-      static const GtkTypeInfo entry_info =
+      static const GTypeInfo entry_info =
       {
 	"EggEntry",
 	sizeof (EggEntry),
 	sizeof (EggEntryClass),
-	(GtkClassInitFunc) egg_entry_class_init,
-	(GtkObjectInitFunc) egg_entry_init,
+	(GBaseInitFunc) egg_entry_class_init,
+	(GInstanceInitFunc) egg_entry_init,
 	/* reserved_1 */ NULL,
 	/* reserved_2 */ NULL,
-        (GtkClassInitFunc) NULL,
+        (GBaseInitFunc) NULL,
       };
       
       static const GInterfaceInfo editable_info =
@@ -4795,7 +4795,7 @@ egg_entry_enable_completion (EggEntry          *entry,
 			     gint               entry_column,
 			     EggCompletionFunc  func,
 			     gpointer           func_data,
-			     GtkDestroyNotify   func_destroy)
+			     GDestroyNotify   func_destroy)
 {
   EggEntryExtInfo *info;
 

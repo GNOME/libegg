@@ -21,15 +21,15 @@ G_BEGIN_DECLS
 
 #define EGG_TYPE_DOCK_ITEM_GRIP            (egg_dock_item_grip_get_type())
 #define EGG_DOCK_ITEM_GRIP(obj)            \
-    (GTK_CHECK_CAST ((obj), EGG_TYPE_DOCK_ITEM_GRIP, EggDockItemGrip))
+    (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_DOCK_ITEM_GRIP, EggDockItemGrip))
 #define EGG_DOCK_ITEM_GRIP_CLASS(klass)    \
-    (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_ITEM_GRIP, EggDockItemGripClass))
+    (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_ITEM_GRIP, EggDockItemGripClass))
 #define EGG_IS_DOCK_ITEM_GRIP(obj)         \
-    (GTK_CHECK_TYPE ((obj), EGG_TYPE_DOCK_ITEM_GRIP))
+    (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_DOCK_ITEM_GRIP))
 #define EGG_IS_DOCK_ITEM_GRIP_CLASS(klass) \
-    (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_ITEM_GRIP))
+    (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_ITEM_GRIP))
 #define EGG_DOCK_ITEM_GRIP_GET_CLASS(obj)  \
-    (GTK_CHECK_GET_CLASS ((obj), EGG_TYPE_DOCK_ITEM_GRIP, EggDockItemGripClass))
+    (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYPE_DOCK_ITEM_GRIP, EggDockItemGripClass))
 
 typedef struct _EggDockItemGripPrivate EggDockItemGripPrivate;
 

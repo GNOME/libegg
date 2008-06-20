@@ -29,11 +29,11 @@ G_BEGIN_DECLS
 
 /* standard macros */
 #define EGG_TYPE_DOCK_PANED                  (egg_dock_paned_get_type ())
-#define EGG_DOCK_PANED(obj)                  (GTK_CHECK_CAST ((obj), EGG_TYPE_DOCK_PANED, EggDockPaned))
-#define EGG_DOCK_PANED_CLASS(klass)          (GTK_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_PANED, EggDockPanedClass))
-#define EGG_IS_DOCK_PANED(obj)               (GTK_CHECK_TYPE ((obj), EGG_TYPE_DOCK_PANED))
-#define EGG_IS_DOCK_PANED_CLASS(klass)       (GTK_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_PANED))
-#define EGG_DOCK_PANED_GET_CLASS(obj)        (GTK_CHECK_GET_CLASS ((obj), EGG_TYE_DOCK_PANED, EggDockPanedClass))
+#define EGG_DOCK_PANED(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), EGG_TYPE_DOCK_PANED, EggDockPaned))
+#define EGG_DOCK_PANED_CLASS(klass)          (G_TYPE_CHECK_CLASS_CAST ((klass), EGG_TYPE_DOCK_PANED, EggDockPanedClass))
+#define EGG_IS_DOCK_PANED(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), EGG_TYPE_DOCK_PANED))
+#define EGG_IS_DOCK_PANED_CLASS(klass)       (G_TYPE_CHECK_CLASS_TYPE ((klass), EGG_TYPE_DOCK_PANED))
+#define EGG_DOCK_PANED_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), EGG_TYE_DOCK_PANED, EggDockPanedClass))
 
 /* data types & structures */
 typedef struct _EggDockPaned      EggDockPaned;
