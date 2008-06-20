@@ -1,4 +1,12 @@
-2008-06-19  Jan Arne Petersen  <jpetersen@jpetersen.org>
+2008-06-20  Jan Arne Petersen  <jpetersen@openismus.com>
+
+	* libegg/toolpalette/eggtoolpalette.c
+	  (egg_tool_palette_item_drag_data_get,
+	  egg_tool_palette_child_drag_data_get): Replace calls to
+	  egg_tool_palette_find_anchestor with calls to
+	  gtk_widget_get_ancestor and remove egg_tool_palette_find_anchestor.
+
+2008-06-19  Jan Arne Petersen  <jpetersen@openismus.com>
 
 	* libegg/toolpalette/eggtoolitemgroup.c
 	  (egg_tool_item_group_is_item_visible): Add special handling of

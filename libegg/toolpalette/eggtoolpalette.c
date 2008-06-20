@@ -1250,21 +1250,6 @@ _egg_tool_palette_get_item_size (EggToolPalette *palette,
     *requested_rows = max_rows;
 }
 
-static GtkWidget*
-egg_tool_palette_find_anchestor (GtkWidget *widget,
-                                 GType      type)
-{
-  while (widget)
-    {
-      if (G_TYPE_CHECK_INSTANCE_TYPE (widget, type))
-        return widget;
-
-      widget = gtk_widget_get_parent (widget);
-    }
-
-  return NULL;
-}
-
 static void
 egg_tool_palette_item_drag_data_get (GtkWidget        *widget,
                                      GdkDragContext   *context G_GNUC_UNUSED,
@@ -1276,7 +1261,7 @@ egg_tool_palette_item_drag_data_get (GtkWidget        *widget,
   EggToolPaletteDragData drag_data = { EGG_TOOL_PALETTE (data), NULL };
 
   if (selection->target == dnd_target_atom_item)
-    drag_data.item = egg_tool_palette_find_anchestor (widget, GTK_TYPE_TOOL_ITEM);
+    drag_data.item = gtk_widget_get_ancestor (widget, GTK_TYPE_TOOL_ITEM);
 
   if (drag_data.item)
     gtk_selection_data_set (selection, selection->target, 8,
@@ -1294,7 +1279,7 @@ egg_tool_palette_child_drag_data_get (GtkWidget        *widget,
   EggToolPaletteDragData drag_data = { EGG_TOOL_PALETTE (data), NULL };
 
   if (selection->target == dnd_target_atom_group)
-    drag_data.item = egg_tool_palette_find_anchestor (widget, EGG_TYPE_TOOL_ITEM_GROUP);
+    drag_data.item = gtk_widget_get_ancestor (widget, EGG_TYPE_TOOL_ITEM_GROUP);
 
   if (drag_data.item)
     gtk_selection_data_set (selection, selection->target, 8,
