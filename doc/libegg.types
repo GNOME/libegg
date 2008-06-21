@@ -18,6 +18,9 @@
 #include <libegg/sidebar/eggsidebar.h>
 #include <libegg/sidebar/eggsidebarbutton.h>
 
+#include <libegg/toolpalette/eggtoolpalette.h>
+#include <libegg/toolpalette/eggtoolitemgroup.h>
+
 egg_cell_renderer_keys_get_type
 egg_cell_renderer_popup_get_type
 egg_cell_renderer_text_get_type
@@ -31,3 +34,5 @@ egg_druid_page_standard_get_type
 egg_icon_list_get_type
 egg_sidebar_get_type
 egg_sidebar_button_get_type
+egg_tool_palette_get_type
+egg_tool_item_group_get_type

@@ -38,6 +38,11 @@ typedef struct _EggToolItemGroup        EggToolItemGroup;
 typedef struct _EggToolItemGroupClass   EggToolItemGroupClass;
 typedef struct _EggToolItemGroupPrivate EggToolItemGroupPrivate;
 
+/**
+ * EggToolItemGroup:
+ *
+ * This should not be accessed directly. Use the accessor functions below.
+ */
 struct _EggToolItemGroup
 {
   GtkContainer parent_instance;

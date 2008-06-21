@@ -38,6 +38,15 @@
 #define DEFAULT_COLLAPSED        FALSE
 #define DEFAULT_ELLIPSIZE        PANGO_ELLIPSIZE_NONE
 
+/**
+ * SECTION:EggToolItemGroup
+ * @short_description: A sub container used in a tool palette
+ * @include: eggtoolitemgroup.h
+ *
+ * An #EggToolItemGroup is used together with #EggToolPalette to add #GtkToolItem<!-- -->s to a palette like container
+ * with different categories and drag and drop support.
+ */
+
 enum
 {
   PROP_NONE,
@@ -438,7 +447,7 @@ static void
 egg_tool_item_group_get_item_size (EggToolItemGroup *group,
                                    GtkRequisition   *item_size,
                                    gboolean          homogeneous_only,
-                                   guint            *requested_rows)
+                                   gint             *requested_rows)
 {
   GtkWidget *parent = gtk_widget_get_parent (GTK_WIDGET (group));
 
@@ -456,7 +465,7 @@ egg_tool_item_group_size_request (GtkWidget      *widget,
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (widget);
   GtkOrientation orientation;
   GtkRequisition item_size;
-  guint requested_rows;
+  gint requested_rows;
 
   if (group->priv->children && egg_tool_item_group_get_name (group))
     {
@@ -519,7 +528,7 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
   GtkOrientation orientation;
   GtkToolbarStyle style;
 
-  guint min_rows;
+  gint min_rows;
 
   orientation = gtk_tool_shell_get_orientation (GTK_TOOL_SHELL (group));
   style = gtk_tool_shell_get_style (GTK_TOOL_SHELL (group));
@@ -538,7 +547,8 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
   /* figure out the required columns (n_columns) and rows (n_rows) to place all items */
   if (!group->priv->collapsed || group->priv->animation_timeout)
     {
-      guint n_columns, n_rows;
+      guint n_columns;
+      gint n_rows;
       GList *it;
 
       if (GTK_ORIENTATION_VERTICAL == orientation)
@@ -576,7 +586,7 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
                 }
               else
                 {
-                  GtkRequisition req = {0};
+                  GtkRequisition req = {0, 0};
                   guint width;
 
                   gtk_widget_size_request (GTK_WIDGET (child->item), &req);
@@ -598,7 +608,7 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
           gint row = -1;
           gboolean new_row = TRUE;
           guint col = 0, min_col, max_col = 0, all_items = 0;
-          guint i;
+          gint i;
 
           item_area.height = allocation->height - 2 * border_width;
           n_rows = MAX (item_area.height / item_size.height, min_rows);
@@ -631,7 +641,7 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
                 }
               else
                 {
-                  GtkRequisition req = {0};
+                  GtkRequisition req = {0, 0};
                   guint width;
 
                   gtk_widget_size_request (GTK_WIDGET (child->item), &req);
@@ -653,7 +663,7 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
               min_col = MAX (min_col, row_min_width[i]);
             }
 
-          /* simple linear search for minimal required columns if maximal row count is n_rows */
+          /* simple linear search for minimal required columns for the given maximal number of rows (n_rows) */
           for (n_columns = min_col; n_columns < max_col; n_columns ++)
             {
               new_row = TRUE;
@@ -684,7 +694,7 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
                     }
                   else
                     {
-                      GtkRequisition req = {0};
+                      GtkRequisition req = {0, 0};
                       guint width;
 
                       gtk_widget_size_request (GTK_WIDGET (child->item), &req);
@@ -746,7 +756,8 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
   GList *it;
 
-  guint n_columns, n_rows = 1, min_rows;
+  gint n_columns, n_rows = 1;
+  gint min_rows;
 
   GtkTextDirection direction = gtk_widget_get_direction (widget);
 
@@ -824,7 +835,7 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   /* when expanded or in transition, place the tool items in a grid like layout */
   if (!group->priv->collapsed || group->priv->animation_timeout)
     {
-      guint col = 0, row = 0;
+      gint col = 0, row = 0;
 
       for (it = group->priv->children; it != NULL; it = it->next)
         {
@@ -856,13 +867,13 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
           /* calculate the position and size of the item */
           if (!child->homogeneous)
             {
-              guint col_width;
-              guint width;
+              gint col_width;
+              gint width;
 
               if (child->expand)
                 col_width = n_columns - col;
               else
-                col_width = (guint) ceil (1.0 * child_requisition.width / item_size.width);
+                col_width = (gint) ceil (1.0 * child_requisition.width / item_size.width);
 
               width = col_width * item_size.width;
 
@@ -1373,12 +1384,28 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
   g_type_class_add_private (cls, sizeof (EggToolItemGroupPrivate));
 }
 
+/**
+ * egg_tool_item_group_new:
+ * @name: the name of the new group.
+ *
+ * Creates a new tool item group with name @name.
+ *
+ * Returns: a new #EggToolItemGroup.
+ */
 GtkWidget*
 egg_tool_item_group_new (const gchar *name)
 {
   return g_object_new (EGG_TYPE_TOOL_ITEM_GROUP, "name", name, NULL);
 }
 
+/**
+ * egg_tool_item_group_set_name:
+ * @group: an #EggToolItemGroup.
+ * @name: the new name of of the group.
+ *
+ * Sets the name of the tool item group. The name is displayed in the header
+ * of the group.
+ */
 void
 egg_tool_item_group_set_name (EggToolItemGroup *group,
                               const gchar      *name)
@@ -1482,6 +1509,13 @@ egg_tool_item_group_animation_cb (gpointer data)
   return (group->priv->animation_timeout != NULL);
 }
 
+/**
+ * egg_tool_item_group_set_collapsed:
+ * @group: an #EggToolItemGroup.
+ * @collapsed: whether the @group should be collapsed or expanded.
+ *
+ * Sets whether the @group should be collapsed or expanded.
+ */
 void
 egg_tool_item_group_set_collapsed (EggToolItemGroup *group,
                                    gboolean          collapsed)
@@ -1515,6 +1549,13 @@ egg_tool_item_group_set_collapsed (EggToolItemGroup *group,
     }
 }
 
+/**
+ * egg_tool_item_group_set_ellipsize:
+ * @group: an #EggToolItemGroup.
+ * @ellipsize: the #PangoEllipsizeMode labels in @group should use.
+ *
+ * Sets the ellipsization mode which should be used by labels in @group.
+ */
 void
 egg_tool_item_group_set_ellipsize (EggToolItemGroup   *group,
                                    PangoEllipsizeMode  ellipsize)
@@ -1532,6 +1573,14 @@ egg_tool_item_group_set_ellipsize (EggToolItemGroup   *group,
     }
 }
 
+/**
+ * egg_tool_item_group_get_name:
+ * @group: an #EggToolItemGroup.
+ *
+ * Gets the name of @group.
+ *
+ * Returns: the name of @group. The name is an internal string of @group and must not be modified.
+ */
 G_CONST_RETURN gchar*
 egg_tool_item_group_get_name (EggToolItemGroup *group)
 {
@@ -1543,6 +1592,14 @@ egg_tool_item_group_get_name (EggToolItemGroup *group)
   return gtk_label_get_text (GTK_LABEL (label));
 }
 
+/**
+ * egg_tool_item_group_get_collapsed:
+ * @group: an EggToolItemGroup.
+ *
+ * Gets whether @group is collapsed or expanded.
+ *
+ * Returns: %TRUE if @group is collapsed, %FALSE if it is expanded.
+ */
 gboolean
 egg_tool_item_group_get_collapsed (EggToolItemGroup *group)
 {
@@ -1550,6 +1607,14 @@ egg_tool_item_group_get_collapsed (EggToolItemGroup *group)
   return group->priv->collapsed;
 }
 
+/**
+ * egg_tool_item_group_get_ellipsize:
+ * @group: an #EggToolItemGroup.
+ *
+ * Gets the ellipsization mode of @group.
+ *
+ * Returns: the #PangoEllipsizeMode of @group.
+ */
 PangoEllipsizeMode
 egg_tool_item_group_get_ellipsize (EggToolItemGroup *group)
 {
@@ -1557,6 +1622,14 @@ egg_tool_item_group_get_ellipsize (EggToolItemGroup *group)
   return group->priv->ellipsize;
 }
 
+/**
+ * egg_tool_item_group_insert:
+ * @group: an #EggToolItemGroup.
+ * @item: the #GtkToolItem to insert into @group.
+ * @position: the position of @item in @group, starting with 0. The position -1 means end of list.
+ *
+ * Inserts @item at @position in the list of children of @group.
+ */
 void
 egg_tool_item_group_insert (EggToolItemGroup *group,
                             GtkToolItem      *item,
@@ -1586,6 +1659,14 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
   gtk_widget_set_parent (GTK_WIDGET (item), GTK_WIDGET (group));
 }
 
+/**
+ * egg_tool_item_group_set_item_position:
+ * @group: an #EggToolItemGroup.
+ * @item: the #GtkToolItem to move to a new position, should be a child of @group.
+ * @position: the new position of @item in @group, starting with 0. The position -1 means end of list.
+ *
+ * Sets the position of @item in the list of children of @group.
+ */
 void
 egg_tool_item_group_set_item_position (EggToolItemGroup *group,
                                        GtkToolItem      *item,
@@ -1615,6 +1696,15 @@ egg_tool_item_group_set_item_position (EggToolItemGroup *group,
     gtk_widget_queue_resize (GTK_WIDGET (group));
 }
 
+/**
+ * egg_tool_item_group_get_item_position:
+ * @group: an #EggToolItemGroup.
+ * @item: a #GtkToolItem.
+ *
+ * Gets the position of @item in @group as index.
+ *
+ * Returns: the index of @item in @group or -1 if @item is no child of @group.
+ */
 gint
 egg_tool_item_group_get_item_position (EggToolItemGroup *group,
                                        GtkToolItem      *item)
@@ -1630,6 +1720,14 @@ egg_tool_item_group_get_item_position (EggToolItemGroup *group,
   return -1;
 }
 
+/**
+ * egg_tool_item_group_get_n_items:
+ * @group: an #EggToolItemGroup.
+ *
+ * Gets the number of tool items in group.
+ *
+ * Returns: the number of tool items in group.
+ */
 guint
 egg_tool_item_group_get_n_items (EggToolItemGroup *group)
 {
@@ -1638,6 +1736,15 @@ egg_tool_item_group_get_n_items (EggToolItemGroup *group)
   return g_list_length (group->priv->children);
 }
 
+/**
+ * egg_tool_item_group_get_nth_item:
+ * @group: an #EggToolItemGroup.
+ * @index: the index.
+ *
+ * Gets the tool item at index in group.
+ *
+ * Returns: the #GtkToolItem at index.
+ */
 GtkToolItem*
 egg_tool_item_group_get_nth_item (EggToolItemGroup *group,
                                   guint             index)
@@ -1651,6 +1758,16 @@ egg_tool_item_group_get_nth_item (EggToolItemGroup *group,
   return child != NULL ? child->item : NULL;
 }
 
+/** 
+ * egg_tool_item_group_get_drop_item:
+ * @group: an #EggToolItemGroup.
+ * @x: the x position.
+ * @y: the y position.
+ *
+ * Gets the tool item at position (x, y).
+ *
+ * Returns: the #GtkToolItem at position (x, y).
+ */
 GtkToolItem*
 egg_tool_item_group_get_drop_item (EggToolItemGroup *group,
                                    gint              x,
@@ -1694,11 +1811,11 @@ void
 _egg_tool_item_group_item_size_request (EggToolItemGroup *group,
                                         GtkRequisition   *item_size,
                                         gboolean          homogeneous_only,
-                                        guint            *requested_rows)
+                                        gint             *requested_rows)
 {
   GtkRequisition child_requisition;
   GList *it;
-  guint rows = 0;
+  gint rows = 0;
   gboolean new_row = TRUE;
   GtkOrientation orientation;
   GtkToolbarStyle style;

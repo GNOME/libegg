@@ -1,3 +1,17 @@
+2008-06-21  Jan Arne Petersen  <jpetersen@openismus.com>
+
+	* doc/Makefile.am:
+	* doc/libegg-docs.xml:
+	* doc/libegg-sections.txt:
+	* doc/libegg.types:
+	* libegg/toolpalette/eggtoolitemgroup.[ch]:
+	* libegg/toolpalette/eggtoolpalette.[ch]:
+	* libegg/toolpalette/eggtoolpalette.h: Add API documentation.
+
+	* libegg/toolpalette/eggtoolpalette.[ch]
+	(egg_tool_palette_set_drag_source): Add additional target argument to
+	select the drag source as items, groups or both.
+
 2008-06-20  Christian Persch  <chpe@gnome.org>
 
 	* libegg/iconchooser/prop-editor.c: (connect_controller),

@@ -121,4 +121,10 @@
 
     <xi:include href="xml/eggintl.xml"/>
   </part>
+
+  <part id="toolpalette">
+    <title>Toolpalette</title>
+    <xi:include href="xml/EggToolPalette.xml"/>
+    <xi:include href="xml/EggToolItemGroup.xml"/>
+  </part>
 </book>

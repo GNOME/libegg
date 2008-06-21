@@ -54,6 +54,7 @@ GTKDOC_LIBS = \
   $(top_builddir)/libegg/druid/libegg-druid.la \
   $(top_builddir)/libegg/iconlist/libeggiconlist.la \
   $(top_builddir)/libegg/sidebar/libegg-sidebar.la \
+  $(top_builddir)/libegg/toolpalette/libeggtoolpalette.la \
   $(top_builddir)/libegg/util/libeggutil.la \
   $(EGG_LIBS) \
   `pkg-config --libs libxml-2.0`
@@ -89,6 +90,8 @@ DOC_STAMPS=scan-build.stamp tmpl-build.stamp xml-build.stamp html-build.stamp \
 SCANOBJ_FILES = 		\
 	$(DOC_MODULE).args 	\
 	$(DOC_MODULE).hierarchy \
+	$(DOC_MODULE).interfaces \
+	$(DOC_MODULE).prerequisites \
 	$(DOC_MODULE).signals
 
 if ENABLE_GTK_DOC
