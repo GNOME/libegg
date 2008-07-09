@@ -514,6 +514,13 @@ egg_tool_item_group_is_item_visible (EggToolItemGroup      *group,
      gtk_tool_item_get_visible_horizontal (child->item));
 }
 
+static inline unsigned
+udiv (unsigned x,
+      unsigned y)
+{
+  return (x + y - 1) / y;
+}
+
 static void
 egg_tool_item_group_real_size_query (GtkWidget      *widget,
                                      GtkAllocation  *allocation,
@@ -553,7 +560,7 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
 
       if (GTK_ORIENTATION_VERTICAL == orientation)
         {
-          gboolean new_row;
+          gboolean new_row = FALSE;
           gint row = -1;
           guint col = 0;
 
@@ -591,11 +598,14 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
 
                   gtk_widget_size_request (GTK_WIDGET (child->item), &req);
 
-                  width = (guint) ceil (1.0 * req.width / item_size.width);
+                  width = udiv (req.width, item_size.width);
                   col += width;
+
                   if (col > n_columns)
                     row++;
+
                   col = width;
+
                   if (col >= n_columns)
                     new_row = TRUE;
                 }
@@ -646,7 +656,8 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
 
                   gtk_widget_size_request (GTK_WIDGET (child->item), &req);
 
-                  width = (guint) ceil (1.0 * req.width / item_size.width);
+                  width = udiv (req.width, item_size.width);
+
                   col += width;
                   all_items += width;
 
@@ -657,7 +668,8 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
             }
 
           /* calculate minimal required cols */
-          min_col = (guint) ceil (1.0 * all_items / n_rows);
+          min_col = udiv (all_items, n_rows);
+
           for (i = 0; i <= row; i++)
             {
               min_col = MAX (min_col, row_min_width[i]);
@@ -699,11 +711,14 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
 
                       gtk_widget_size_request (GTK_WIDGET (child->item), &req);
 
-                      width = (guint) ceil (1.0 * req.width / item_size.width);
+                      width = udiv (req.width, item_size.width);
                       col += width;
+
                       if (col > n_columns)
                         row++;
+
                       col = width;
+
                       if (col >= n_columns)
                         new_row = TRUE;
                     }
@@ -840,6 +855,7 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
       for (it = group->priv->children; it != NULL; it = it->next)
         {
           EggToolItemGroupChild *child = it->data;
+          gint col_child;
 
           if (!egg_tool_item_group_is_item_visible (group, child))
             {
@@ -850,7 +866,8 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
 
           /* for non homogeneous widgets request the required size */
           child_requisition.width = 0;
-	  if (!child->homogeneous)
+
+          if (!child->homogeneous)
             {
               gtk_widget_size_request (GTK_WIDGET (child->item), &child_requisition);
               child_requisition.width = MIN (child_requisition.width, item_area.width);
@@ -864,30 +881,34 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
               child_allocation.y += child_allocation.height;
             }
 
+          col_child = col;
+
           /* calculate the position and size of the item */
           if (!child->homogeneous)
             {
               gint col_width;
               gint width;
 
-              if (child->expand)
-                col_width = n_columns - col;
+              if (!child->expand)
+                col_width = udiv (child_requisition.width, item_size.width);
               else
-                col_width = (gint) ceil (1.0 * child_requisition.width / item_size.width);
+                col_width = n_columns - col;
 
               width = col_width * item_size.width;
 
+              if (GTK_TEXT_DIR_RTL == direction)
+                col_child = (n_columns - col - col_width);
+
               if (child->fill)
                 {
-                  child_allocation.x = item_area.x + 
-			  (((GTK_TEXT_DIR_RTL == direction) ? (n_columns - col - col_width) : col) * item_size.width);
+                  child_allocation.x = item_area.x + col_child * item_size.width;
                   child_allocation.width = width;
                 }
               else
                 {
-                  child_allocation.x = item_area.x + 
-			  (((GTK_TEXT_DIR_RTL == direction) ? (n_columns - col - col_width) : col) * item_size.width) + 
-			  (width - child_requisition.width) / 2;
+                  child_allocation.x =
+                    (item_area.x + col_child * item_size.width +
+                    (width - child_requisition.width) / 2);
                   child_allocation.width = child_requisition.width;
                 }
 
@@ -895,8 +916,10 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
             }
           else
             {
-              child_allocation.x = item_area.x + 
-		      (((GTK_TEXT_DIR_RTL == direction) ? (n_columns - col - 1) : col) * item_size.width);
+              if (GTK_TEXT_DIR_RTL == direction)
+                col_child = (n_columns - col - 1);
+
+              child_allocation.x = item_area.x + col_child * item_size.width;
               child_allocation.width = item_size.width;
 
               col++;
