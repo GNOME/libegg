@@ -1,3 +1,22 @@
+2008-07-10  Mathias Hasselmann  <mathias@openismus.com>
+
+	Scroll when focusing tool palette item.
+
+	* libegg/toolpalette/eggtoolitemgroup.c (EggToolItemGroupPrivate,
+	  egg_tool_item_group_dispose(), egg_tool_item_group_set_focus_cb(),
+	  egg_tool_item_group_realize(), egg_tool_item_group_unrealize(),
+	  egg_tool_item_group_set_toplevel_window()): Hook to parent window's
+	  set-focus signal to track focus changes and actually scroll to the
+	  focused widget when it is one of our items.
+
+	* libegg/toolpalette/eggtoolpalette.c
+	 (egg_tool_palette_get_hadjustment(),
+	  egg_tool_palette_get_vadjustment()):
+	* libegg/toolpalette/eggtoolpalette.h
+	 (egg_tool_palette_get_hadjustment(),
+	  egg_tool_palette_get_vadjustment()):
+	  Provide adjustment accessors. Fix some formatting issues.
+
 2008-07-09  Mathias Hasselmann  <mathias@openismus.com>
 
 	Use integer division/rounding to silence gcc.

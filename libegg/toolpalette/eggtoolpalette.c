@@ -451,21 +451,25 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
        * widget as possible is calculated */
       if (widget == palette->priv->expanding_child)
         {
-          guint j;
+          gint limit =
+            GTK_ORIENTATION_VERTICAL == palette->priv->orientation ?
+            child_allocation.width : child_allocation.height;
+
           gint real_size;
-          gint limit = GTK_ORIENTATION_VERTICAL == palette->priv->orientation ? child_allocation.width : child_allocation.height;
+          guint j;
 
           min_offset = 0;
+
           for (j = 0; j < i; ++j)
-            {
-              min_offset += group_sizes[j];
-            }
+            min_offset += group_sizes[j];
+
           max_offset = min_offset + group_sizes[i];
 
-          real_size = _egg_tool_item_group_get_size_for_limit (EGG_TOOL_ITEM_GROUP (widget),
-                                                               limit,
-                                                               GTK_ORIENTATION_VERTICAL == palette->priv->orientation,
-                                                               FALSE);
+          real_size = _egg_tool_item_group_get_size_for_limit
+            (EGG_TOOL_ITEM_GROUP (widget), limit,
+             GTK_ORIENTATION_VERTICAL == palette->priv->orientation,
+             FALSE);
+
           if (size == real_size)
             palette->priv->expanding_child = NULL;
         }
@@ -479,9 +483,11 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
 
   if (max_offset != -1)
     {
-      gint limit = GTK_ORIENTATION_VERTICAL == palette->priv->orientation ? allocation->height : allocation->width;
+      gint limit =
+        GTK_ORIENTATION_VERTICAL == palette->priv->orientation ?
+        allocation->height : allocation->width;
 
-      offset = MIN(MAX (offset, max_offset - limit), min_offset);
+      offset = MIN (MAX (offset, max_offset - limit), min_offset);
     }
 
   if (remaining_space > 0)
@@ -562,24 +568,25 @@ egg_tool_palette_size_allocate (GtkWidget     *widget,
       adjustment->page_increment = page_size * 0.9;
       adjustment->step_increment = page_size * 0.1;
       adjustment->page_size = page_size;
-      if (GTK_ORIENTATION_HORIZONTAL == palette->priv->orientation &&
-          GTK_TEXT_DIR_RTL == direction)
-        {
-          adjustment->lower = page_size - MAX (0, page_start);
-          adjustment->upper = page_size;
 
-          offset = -offset;
-
-          value = MAX(offset, adjustment->lower);
-          gtk_adjustment_clamp_page (adjustment, offset, value + page_size);
-        }
-      else
+      if (GTK_ORIENTATION_VERTICAL == palette->priv->orientation ||
+          GTK_TEXT_DIR_LTR == direction)
         {
           adjustment->lower = 0;
           adjustment->upper = MAX (0, page_start);
 
           value = MIN (offset, adjustment->upper - adjustment->page_size);
           gtk_adjustment_clamp_page (adjustment, value, offset + page_size);
+        }
+      else
+        {
+          adjustment->lower = page_size - MAX (0, page_start);
+          adjustment->upper = page_size;
+
+          offset = -offset;
+
+          value = MAX (offset, adjustment->lower);
+          gtk_adjustment_clamp_page (adjustment, offset, value + page_size);
         }
 
       gtk_adjustment_changed (adjustment);
@@ -1597,15 +1604,29 @@ egg_tool_palette_get_drag_target_group (void)
 }
 
 void
-_egg_tool_palette_set_expanding_child (EggToolPalette   *palette,
-                                       GtkWidget        *widget)
+_egg_tool_palette_set_expanding_child (EggToolPalette *palette,
+                                       GtkWidget      *widget)
 {
   g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
-
   palette->priv->expanding_child = widget;
 }
 
+GtkAdjustment*
+egg_tool_palette_get_hadjustment (EggToolPalette *palette)
+{
+  g_return_val_if_fail (EGG_IS_TOOL_PALETTE (palette), NULL);
+  return palette->priv->hadjustment;
+}
+
+GtkAdjustment*
+egg_tool_palette_get_vadjustment (EggToolPalette *palette)
+{
+  g_return_val_if_fail (EGG_IS_TOOL_PALETTE (palette), NULL);
+  return palette->priv->vadjustment;
+}
+
 #ifdef HAVE_EXTENDED_TOOL_SHELL_SUPPORT_BUG_535090
+
 GtkSizeGroup *
 _egg_tool_palette_get_size_group (EggToolPalette *palette)
 {
@@ -1613,4 +1634,5 @@ _egg_tool_palette_get_size_group (EggToolPalette *palette)
 
   return palette->priv->text_size_group;
 }
+
 #endif

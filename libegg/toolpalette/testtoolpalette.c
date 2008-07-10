@@ -117,7 +117,7 @@ palette_drop_item (GtkToolItem      *drag_item,
   if (EGG_TOOL_ITEM_GROUP (drag_group) != drop_group)
     {
       gboolean homogeneous, expand, fill, new_row;
-      
+
       g_object_ref (drag_item);
       gtk_container_child_get (GTK_CONTAINER (drag_group), GTK_WIDGET (drag_item),
                                "homogeneous", &homogeneous,
@@ -433,6 +433,30 @@ load_stock_items (EggToolPalette *palette)
 }
 
 static void
+load_toggle_items (EggToolPalette *palette)
+{
+  GSList *toggle_group = NULL;
+  GtkToolItem *item;
+  GtkWidget *group;
+  char *label;
+  int i;
+
+  group = egg_tool_item_group_new (_("Radio Item"));
+  gtk_container_add (GTK_CONTAINER (palette), group);
+
+  for (i = 1; i <= 10; ++i)
+    {
+      label = g_strdup_printf ("#%d", i);
+      item = gtk_radio_tool_button_new (toggle_group);
+      gtk_tool_button_set_label (GTK_TOOL_BUTTON (item), label);
+      g_free (label);
+
+      egg_tool_item_group_insert (EGG_TOOL_ITEM_GROUP (group), item, -1);
+      toggle_group = gtk_radio_tool_button_get_group (GTK_RADIO_TOOL_BUTTON (item));
+    }
+}
+
+static void
 load_special_items (EggToolPalette *palette)
 {
   GtkToolItem *item;
@@ -720,6 +744,7 @@ create_ui (void)
   /* ===== palette ===== */
 
   load_stock_items (EGG_TOOL_PALETTE (palette));
+  load_toggle_items (EGG_TOOL_PALETTE (palette));
   load_special_items (EGG_TOOL_PALETTE (palette));
 
   g_signal_connect (palette, "notify::orientation",

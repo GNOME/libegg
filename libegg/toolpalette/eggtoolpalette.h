@@ -121,6 +121,9 @@ void                           egg_tool_palette_add_drag_dest         (EggToolPa
                                                                        EggToolPaletteDragTargets  targets,
                                                                        GdkDragAction              actions);
 
+GtkAdjustment*                 egg_tool_palette_get_hadjustment       (EggToolPalette            *palette);
+GtkAdjustment*                 egg_tool_palette_get_vadjustment       (EggToolPalette            *palette);
+
 G_CONST_RETURN GtkTargetEntry* egg_tool_palette_get_drag_target_item  (void) G_GNUC_CONST;
 G_CONST_RETURN GtkTargetEntry* egg_tool_palette_get_drag_target_group (void) G_GNUC_CONST;
 

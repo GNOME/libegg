@@ -80,8 +80,10 @@ struct _EggToolItemGroupPrivate
   gint               header_spacing;
   PangoEllipsizeMode ellipsize;
 
-  guint              collapsed : 1;
+  gulong             focus_set_id;
+  GtkWidget         *toplevel;
 
+  guint              collapsed : 1;
 };
 
 struct _EggToolItemGroupChild
@@ -444,6 +446,24 @@ egg_tool_item_group_finalize (GObject *object)
 }
 
 static void
+egg_tool_item_group_dispose (GObject *object)
+{
+  EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (object);
+
+  if (group->priv->toplevel)
+    {
+      /* disconnect focus tracking handler */
+      g_signal_handler_disconnect (group->priv->toplevel,
+                                   group->priv->focus_set_id);
+
+      group->priv->focus_set_id = 0;
+      group->priv->toplevel = NULL;
+    }
+
+  G_OBJECT_CLASS (egg_tool_item_group_parent_class)->dispose (object);
+}
+
+static void
 egg_tool_item_group_get_item_size (EggToolItemGroup *group,
                                    GtkRequisition   *item_size,
                                    gboolean          homogeneous_only,
@@ -800,7 +820,7 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
           child_allocation.width = child_requisition.width;
           child_allocation.height = allocation->height;
 
-	  if (GTK_TEXT_DIR_RTL == direction)
+          if (GTK_TEXT_DIR_RTL == direction)
             child_allocation.x = allocation->width - border_width - child_allocation.width;
         }
 
@@ -958,8 +978,116 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
 }
 
 static void
+egg_tool_item_group_set_focus_cb (GtkWidget *window G_GNUC_UNUSED,
+                                  GtkWidget *widget,
+                                  gpointer   user_data)
+{
+  GtkAdjustment *adjustment;
+  GtkWidget *p;
+
+  /* Find this group's parent widget in the focused widget's anchestry. */
+  for (p = widget; p; p = gtk_widget_get_parent (p))
+    if (p == user_data)
+      {
+        p = gtk_widget_get_parent (p);
+        break;
+      }
+
+  if (EGG_IS_TOOL_PALETTE (p))
+    {
+      /* Check that the focused widgets is fully visible within
+       * the group's parent widget and make it visible otherwise. */
+
+      adjustment = egg_tool_palette_get_hadjustment (EGG_TOOL_PALETTE (p));
+      adjustment = egg_tool_palette_get_vadjustment (EGG_TOOL_PALETTE (p));
+
+      if (adjustment)
+        {
+          int y;
+
+          /* Handle vertical adjustment. */
+          if (gtk_widget_translate_coordinates
+                (widget, p, 0, 0, NULL, &y) && y < 0)
+            {
+              y += adjustment->value;
+              gtk_adjustment_clamp_page (adjustment, y, y + widget->allocation.height);
+            }
+          else if (gtk_widget_translate_coordinates
+                      (widget, p, 0, widget->allocation.height, NULL, &y) &&
+                   y > p->allocation.height)
+            {
+              y += adjustment->value;
+              gtk_adjustment_clamp_page (adjustment, y - widget->allocation.height, y);
+            }
+        }
+
+      adjustment = egg_tool_palette_get_hadjustment (EGG_TOOL_PALETTE (p));
+
+      if (adjustment)
+        {
+          int x;
+
+          /* Handle horizontal adjustment. */
+          if (gtk_widget_translate_coordinates
+                (widget, p, 0, 0, &x, NULL) && x < 0)
+            {
+              x += adjustment->value;
+              gtk_adjustment_clamp_page (adjustment, x, x + widget->allocation.width);
+            }
+          else if (gtk_widget_translate_coordinates
+                      (widget, p, widget->allocation.width, 0, &x, NULL) &&
+                   x > p->allocation.width)
+            {
+              x += adjustment->value;
+              gtk_adjustment_clamp_page (adjustment, x - widget->allocation.width, x);
+            }
+
+          return;
+        }
+    }
+}
+
+static void
+egg_tool_item_group_set_toplevel_window (EggToolItemGroup *group,
+                                         GtkWidget        *toplevel)
+{
+  if (toplevel != group->priv->toplevel)
+    {
+      if (group->priv->toplevel)
+        {
+          /* Disconnect focus tracking handler. */
+          g_signal_handler_disconnect (group->priv->toplevel,
+                                       group->priv->focus_set_id);
+
+          group->priv->focus_set_id = 0;
+          group->priv->toplevel = NULL;
+        }
+
+      if (toplevel)
+        {
+          /* Install focus tracking handler. We connect to the window's
+           * set-focus signal instead of connecting to the focus signal of
+           * each child to:
+           *
+           * 1) Reduce the number of signal handlers used.
+           * 2) Avoid special handling for group headers.
+           * 3) Catch focus grabs not only for direct children,
+           *    but also for nested widgets.
+           */
+          group->priv->focus_set_id =
+            g_signal_connect (toplevel, "set-focus",
+                              G_CALLBACK (egg_tool_item_group_set_focus_cb),
+                              group);
+
+          group->priv->toplevel = toplevel;
+        }
+    }
+}
+
+static void
 egg_tool_item_group_realize (GtkWidget *widget)
 {
+  GtkWidget *toplevel_window;
   const gint border_width = GTK_CONTAINER (widget)->border_width;
   gint attributes_mask = GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL | GDK_WA_COLORMAP;
   GdkWindowAttr attributes;
@@ -995,6 +1123,17 @@ egg_tool_item_group_realize (GtkWidget *widget)
                         widget->window);
 
   gtk_widget_queue_resize_no_redraw (widget);
+
+  toplevel_window = gtk_widget_get_ancestor (widget, GTK_TYPE_WINDOW);
+  egg_tool_item_group_set_toplevel_window (EGG_TOOL_ITEM_GROUP (widget),
+                                           toplevel_window);
+}
+
+static void
+egg_tool_item_group_unrealize (GtkWidget *widget)
+{
+  egg_tool_item_group_set_toplevel_window (EGG_TOOL_ITEM_GROUP (widget), NULL);
+  GTK_WIDGET_CLASS (egg_tool_item_group_parent_class)->unrealize (widget);
 }
 
 static void
@@ -1305,10 +1444,12 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
   oclass->set_property       = egg_tool_item_group_set_property;
   oclass->get_property       = egg_tool_item_group_get_property;
   oclass->finalize           = egg_tool_item_group_finalize;
+  oclass->dispose            = egg_tool_item_group_dispose;
 
   wclass->size_request       = egg_tool_item_group_size_request;
   wclass->size_allocate      = egg_tool_item_group_size_allocate;
   wclass->realize            = egg_tool_item_group_realize;
+  wclass->unrealize          = egg_tool_item_group_unrealize;
   wclass->style_set          = egg_tool_item_group_style_set;
 
   cclass->add                = egg_tool_item_group_add;
@@ -1467,42 +1608,10 @@ egg_tool_item_group_animation_cb (gpointer data)
   EggToolItemGroup *group = EGG_TOOL_ITEM_GROUP (data);
   gint64 timestamp = egg_tool_item_group_get_animation_timestamp (group);
 
-  /* enque this early to reduce number of expose events */
+  /* Enque this early to reduce number of expose events. */
   gtk_widget_queue_resize_no_redraw (GTK_WIDGET (group));
 
-  if (GTK_WIDGET_REALIZED (group->priv->header))
-    {
-      GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
-      GdkRectangle area;
-
-      area.x = alignment->allocation.x;
-      area.y = alignment->allocation.y + (alignment->allocation.height - group->priv->expander_size) / 2;
-      area.height = group->priv->expander_size;
-      area.width = group->priv->expander_size;
-
-      gdk_window_invalidate_rect (group->priv->header->window, &area, TRUE);
-    }
-
-  if (GTK_WIDGET_REALIZED (group))
-    {
-      GtkWidget *widget = GTK_WIDGET (group);
-      GtkWidget *parent = gtk_widget_get_parent (widget);
-
-      gint width = widget->allocation.width;
-      gint height = widget->allocation.height;
-      gint x, y;
-
-      gtk_widget_translate_coordinates (widget, parent, 0, 0, &x, &y);
-
-      if (GTK_WIDGET_VISIBLE (group->priv->header))
-        {
-          height -= group->priv->header->allocation.height;
-          y += group->priv->header->allocation.height;
-        }
-
-      gtk_widget_queue_draw_area (parent, x, y, width, height);
-    }
-
+  /* Figure out current style of the expander arrow. */
   if (group->priv->collapsed)
     {
       if (group->priv->expander_style == GTK_EXPANDER_EXPANDED)
@@ -1518,6 +1627,44 @@ egg_tool_item_group_animation_cb (gpointer data)
         group->priv->expander_style = GTK_EXPANDER_EXPANDED;
     }
 
+  if (GTK_WIDGET_REALIZED (group->priv->header))
+    {
+      GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
+      GdkRectangle area;
+
+      /* Find the header button's arrow area... */
+      area.x = alignment->allocation.x;
+      area.y = alignment->allocation.y + (alignment->allocation.height - group->priv->expander_size) / 2;
+      area.height = group->priv->expander_size;
+      area.width = group->priv->expander_size;
+
+      /* ... and invalidated it to get it animated. */
+      gdk_window_invalidate_rect (group->priv->header->window, &area, TRUE);
+    }
+
+  if (GTK_WIDGET_REALIZED (group))
+    {
+      GtkWidget *widget = GTK_WIDGET (group);
+      GtkWidget *parent = gtk_widget_get_parent (widget);
+      int x, y, width, height;
+
+      /* Find the tool item area button's arrow area... */
+      width = widget->allocation.width;
+      height = widget->allocation.height;
+
+      gtk_widget_translate_coordinates (widget, parent, 0, 0, &x, &y);
+
+      if (GTK_WIDGET_VISIBLE (group->priv->header))
+        {
+          height -= group->priv->header->allocation.height;
+          y += group->priv->header->allocation.height;
+        }
+
+      /* ... and invalidated it to get it animated. */
+      gtk_widget_queue_draw_area (parent, x, y, width, height);
+    }
+
+  /* Finish animation when done. */
   if (timestamp >= ANIMATION_DURATION)
     group->priv->animation_timeout = NULL;
 
@@ -1560,8 +1707,10 @@ egg_tool_item_group_set_collapsed (EggToolItemGroup *group,
       group->priv->animation_timeout = g_timeout_source_new (ANIMATION_TIMEOUT);
 
       parent = gtk_widget_get_parent (GTK_WIDGET (group));
+
       if (EGG_IS_TOOL_PALETTE (parent) && !collapsed)
-        _egg_tool_palette_set_expanding_child (EGG_TOOL_PALETTE (parent), GTK_WIDGET (group));
+        _egg_tool_palette_set_expanding_child (EGG_TOOL_PALETTE (parent),
+                                               GTK_WIDGET (group));
 
       g_source_set_callback (group->priv->animation_timeout,
                              egg_tool_item_group_animation_cb,
