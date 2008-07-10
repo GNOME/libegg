@@ -1807,7 +1807,7 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
                             GtkToolItem      *item,
                             gint              position)
 {
-  GtkWidget *parent;
+  GtkWidget *parent, *child_widget;
   EggToolItemGroupChild *child;
 
   g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
@@ -1827,6 +1827,11 @@ egg_tool_item_group_insert (EggToolItemGroup *group,
 
   if (EGG_IS_TOOL_PALETTE (parent))
     _egg_tool_palette_child_set_drag_source (GTK_WIDGET (item), parent);
+
+  child_widget = gtk_bin_get_child (GTK_BIN (item));
+
+  if (GTK_IS_BUTTON (child_widget))
+    gtk_button_set_focus_on_click (GTK_BUTTON (child_widget), TRUE);
 
   gtk_widget_set_parent (GTK_WIDGET (item), GTK_WIDGET (group));
 }

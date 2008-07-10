@@ -1,5 +1,12 @@
 2008-07-10  Mathias Hasselmann  <mathias@openismus.com>
 
+	Set focus-on-click when buttons are added to the tool palette.
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	 (egg_tool_item_group_insert()): See above.
+
+2008-07-10  Mathias Hasselmann  <mathias@openismus.com>
+
 	Scroll when focusing tool palette item.
 
 	* libegg/toolpalette/eggtoolitemgroup.c (EggToolItemGroupPrivate,
