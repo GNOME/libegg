@@ -1,3 +1,15 @@
+2008-08-08  Felix Riemann  <friemann@svn.gnome.org>
+
+	* libegg/toolbareditor/egg-editable-toolbar.c:
+	* libegg/toolbareditor/egg-editable-toolbar.h:
+	* libegg/toolbareditor/egg-toolbar-editor.c:
+	* libegg/toolbareditor/egg-toolbar-editor.h:
+	* libegg/toolbareditor/egg-toolbars-model.c:
+	* libegg/toolbareditor/egg-toolbars-model.h:
+	* libegg/toolbareditor/eggtreemultidnd.c:
+	* libegg/toolbareditor/eggtreemultidnd.h:
+	Fix GDK/GTK includes to only use top level headers. Fixes bug #546945.
+
 2008-07-10  Mathias Hasselmann  <mathias@openismus.com>
 
 	Set focus-on-click when buttons are added to the tool palette.
