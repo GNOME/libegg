@@ -993,7 +993,7 @@ egg_tool_palette_set_style (EggToolPalette  *palette,
   g_return_if_fail (EGG_IS_TOOL_PALETTE (palette));
 
   if (style != palette->priv->style)
-    g_object_set (palette, "style", style, NULL);
+    g_object_set (palette, "toolbar-style", style, NULL);
 }
 
 /**

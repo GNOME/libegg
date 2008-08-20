@@ -1,3 +1,9 @@
+2008-08-20  Johannes Schmid  <johannes.schmid@openismus.com>
+
+	* libegg/toolpalette/eggtoolpalette.c (egg_tool_palette_set_style):
+	Correctly use "toolbar-style" instead of "style" for the property
+	(the latter crashes immediately...)
+
 2008-08-08  Felix Riemann  <friemann@svn.gnome.org>
 
 	* libegg/toolbareditor/egg-editable-toolbar.c:
