@@ -936,8 +936,6 @@ set_startup_notification_timeout (GdkDisplay *display,
 }
 #endif /* GTK 2.12 */
 
-extern char **environ;
-
 static GPtrArray *
 array_putenv (GPtrArray *env, char *variable)
 {
@@ -945,10 +943,20 @@ array_putenv (GPtrArray *env, char *variable)
 
   if (!env)
     {
+      char **envp;
+
       env = g_ptr_array_new ();
 
-      for (i = 0; environ[i]; i++)
-	g_ptr_array_add (env, g_strdup (environ[i]));
+      envp = g_listenv ();
+      for (i = 0; envp[i]; i++)
+        {
+          const char *value;
+
+          value = g_getenv (envp[i]);
+          g_ptr_array_add (env, g_strdup_printf ("%s=%s", envp[i],
+                                                 value ? value : ""));
+        }
+      g_strfreev (envp);
     }
 
   keylen = strcspn (variable, "=");
