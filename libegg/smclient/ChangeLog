@@ -1,3 +1,14 @@
+2008-09-23  Christian Persch <chpe@gnome.org>
+
+	* eggsmclient: Add --sm-disable for GnomeClient compat.
+	* egg-session-end.c: Use a format string when printing the error
+	message.
+	* logout-test.c: Fix for single includes.
+	* eggdesktopfile.c: Use GTK_CHECK_VERSION to check for
+	gdk_x11_display_broadcast_startup_message.
+	* eggdesktopfile.c: Use g_listenv() instead of extern environ. Bug
+	#550162.
+
 2008-08-31  Carlos Garcia Campos  <carlosgc@gnome.org>
 
 	* eggsmclient-xsmp.c (sm_client_xsmp_set_initial_properties): Fix
