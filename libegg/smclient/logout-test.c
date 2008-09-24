@@ -23,9 +23,9 @@
 
 #include <string.h>
 
-#include <gtk/gtk.h>
+#include <glib.h>
 #include <glib/gi18n.h>
-#include <glib/gthread.h>
+#include <gtk/gtk.h>
 
 GtkWidget *main_window, *logout_dialog;
 

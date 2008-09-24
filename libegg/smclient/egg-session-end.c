@@ -23,9 +23,9 @@
 
 #include <string.h>
 
+#include <glib.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <glib/gthread.h>
 
 EggSMClientEndStyle style = EGG_SM_CLIENT_END_SESSION_DEFAULT;
 gboolean confirm = TRUE;
