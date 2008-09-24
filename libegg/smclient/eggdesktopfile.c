@@ -32,8 +32,8 @@
 
 #include <glib/gi18n.h>
 #include <gdk/gdk.h>
-#include <gtk/gtkwindow.h>
 #include <gdk/gdkx.h>
+#include <gtk/gtk.h>
 
 struct EggDesktopFile {
   GKeyFile           *key_file;
@@ -823,7 +823,7 @@ parse_link (EggDesktopFile  *desktop_file,
   return TRUE;
 }
 
-#ifdef HAVE_GDK_X11_DISPLAY_BROADCAST_STARTUP_MESSAGE
+#if GTK_CHECK_VERSION (2, 12, 0)
 static char *
 start_startup_notification (GdkDisplay     *display,
 			    EggDesktopFile *desktop_file,
@@ -934,7 +934,7 @@ set_startup_notification_timeout (GdkDisplay *display,
   g_timeout_add (EGG_DESKTOP_FILE_SN_TIMEOUT_LENGTH,
 		 startup_notification_timeout, sn_data);
 }
-#endif /* HAVE_GDK_X11_DISPLAY_BROADCAST_STARTUP_MESSAGE */
+#endif /* GTK 2.12 */
 
 extern char **environ;
 
@@ -1113,7 +1113,7 @@ egg_desktop_file_launchv (EggDesktopFile *desktop_file,
 	}
       g_free (command);
 
-#ifdef HAVE_GDK_X11_DISPLAY_BROADCAST_STARTUP_MESSAGE
+#if GTK_CHECK_VERSION (2, 12, 0)
       startup_id = start_startup_notification (display, desktop_file,
 					       argv[0], screen_num,
 					       workspace, launch_time);
@@ -1126,7 +1126,7 @@ egg_desktop_file_launchv (EggDesktopFile *desktop_file,
 	}
 #else
       startup_id = NULL;
-#endif /* HAVE_GDK_X11_DISPLAY_BROADCAST_STARTUP_MESSAGE */
+#endif /* GTK 2.12 */
 
       current_success =
 	g_spawn_async_with_pipes (directory,
@@ -1141,7 +1141,7 @@ egg_desktop_file_launchv (EggDesktopFile *desktop_file,
 
       if (startup_id)
 	{
-#ifdef HAVE_GDK_X11_DISPLAY_BROADCAST_STARTUP_MESSAGE
+#if GTK_CHECK_VERSION (2, 12, 0)
 	  if (current_success)
 	    {
 	      set_startup_notification_timeout (display, startup_id);
@@ -1152,7 +1152,7 @@ egg_desktop_file_launchv (EggDesktopFile *desktop_file,
 		g_free (startup_id);
 	    }
 	  else
-#endif /* HAVE_GDK_X11_DISPLAY_BROADCAST_STARTUP_MESSAGE */
+#endif /* GTK 2.12 */
 	    g_free (startup_id);
 	}
       else if (ret_startup_id)
