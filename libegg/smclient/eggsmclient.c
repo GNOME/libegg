@@ -189,6 +189,10 @@ static GOptionEntry entries[] = {
   { "sm-client-id", 0, 0,
     G_OPTION_ARG_STRING, &sm_client_id,
     N_("Specify session management ID"), N_("ID") },
+  /* Compatibility options */
+  { "sm-disable", 0, G_OPTION_FLAG_HIDDEN,
+    G_OPTION_ARG_NONE, &sm_client_disable,
+    NULL, NULL },
   { NULL }
 };
 
