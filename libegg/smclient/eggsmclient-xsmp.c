@@ -66,7 +66,6 @@ typedef enum
 } EggSMClientXSMPState;
 
 static const char *state_names[] = {
-  "start",
   "idle",
   "save-yourself",
   "interact-request",

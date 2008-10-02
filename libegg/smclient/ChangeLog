@@ -7,6 +7,9 @@
 	* eggsmclient-libgnomeui.c:
 	* eggsmclient-xsmp.c: remove some trailing commas
 
+	* eggsmclient-xsmp.c (state_names): re-sync this to
+	EggSMClientXSMPState so debug messages print the right state
+
 2008-09-23  Christian Persch <chpe@gnome.org>
 
 	* eggsmclient: Add --sm-disable for GnomeClient compat.
