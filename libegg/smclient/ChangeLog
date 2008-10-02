@@ -1,5 +1,11 @@
 2008-10-02  Dan Winship  <danw@gnome.org>
 
+	* eggdesktopfile.c: Sync API changes from gnome-session
+
+	* eggsmclient-xsmp.c: update for that
+
+2008-10-02  Dan Winship  <danw@gnome.org>
+
 	* eggsmclient.c (sm_client_post_parse_func): copy
 	DESKTOP_AUTOSTART_ID handling over from gnome-session's copy of
 	eggsmclient
