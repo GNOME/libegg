@@ -1,3 +1,12 @@
+2008-10-02  Dan Winship  <danw@gnome.org>
+
+	* eggsmclient.c (sm_client_post_parse_func): copy
+	DESKTOP_AUTOSTART_ID handling over from gnome-session's copy of
+	eggsmclient
+
+	* eggsmclient-libgnomeui.c:
+	* eggsmclient-xsmp.c: remove some trailing commas
+
 2008-09-23  Christian Persch <chpe@gnome.org>
 
 	* eggsmclient: Add --sm-disable for GnomeClient compat.
