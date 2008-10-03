@@ -32,23 +32,33 @@ gboolean confirm = TRUE;
 gboolean gui = FALSE;
 
 static gboolean
-style_callback (const char *option_name, const char *value,
-		gpointer data, GError **error)
+logout_callback (const char *option_name, const char *value,
+		 gpointer data, GError **error)
 {
-  if (!strcmp (option_name, "logout"))
-    style = EGG_SM_CLIENT_LOGOUT;
-  else if (!strcmp (option_name, "reboot"))
-    style = EGG_SM_CLIENT_REBOOT;
-  else if (!strcmp (option_name, "shutdown"))
-    style = EGG_SM_CLIENT_SHUTDOWN;
+  style = EGG_SM_CLIENT_LOGOUT;
+  return TRUE;
+}
 
+static gboolean
+reboot_callback (const char *option_name, const char *value,
+		 gpointer data, GError **error)
+{
+  style = EGG_SM_CLIENT_REBOOT;
+  return TRUE;
+}
+
+static gboolean
+shutdown_callback (const char *option_name, const char *value,
+		   gpointer data, GError **error)
+{
+  style = EGG_SM_CLIENT_SHUTDOWN;
   return TRUE;
 }
 
 static const GOptionEntry options[] = {
-  { "logout", 'l', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, style_callback, N_("Logout (as opposed to rebooting or shutting down)"), NULL },
-  { "reboot", 'r', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, style_callback, N_("Reboot"), NULL },
-  { "shutdown", 's', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, style_callback, N_("Shut down computer"), NULL },
+  { "logout", 'l', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, logout_callback, N_("Logout (as opposed to rebooting or shutting down)"), NULL },
+  { "reboot", 'r', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, reboot_callback, N_("Reboot"), NULL },
+  { "shutdown", 's', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, shutdown_callback, N_("Shut down computer"), NULL },
 
   { "gui",  'g', 0, G_OPTION_ARG_NONE, &gui, N_("Use dialog boxes for errors"), NULL },
   { "no-confirmation",  'n', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &confirm, N_("Don't give the user a chance to confirm"), NULL },

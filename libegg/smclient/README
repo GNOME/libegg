@@ -8,7 +8,7 @@ option, because non-GUI apps like beagled want a chance to exit
 cleanly when the session ends too. OTOH, making glib depend on libSM
 would obviously suck. Using dlopen may be a good solution.
 
-EggDesktopItem is proposed gtk-level rewrite of GnomeDesktopItem. See
+EggDesktopFile is proposed gtk-level rewrite of GnomeDesktopItem. See
 http://bugzilla.gnome.org/show_bug.cgi?id=415070
 
 
@@ -34,6 +34,15 @@ If you are building on Windows:
         messages.
 
 	You need to call g_thread_null(NULL) to initialize threads.
+
+If you are building on OS X:
+
+	You need to link your application with the Cocoa framework
+	(-framework Cocoa). Libtool doesn't record framework
+	dependencies, and since for libegg purposes we're only
+	building libeggsmclient as a static library, the dependency
+	doesn't get recorded by the linker either, so you have to add
+	it by hand.
 
 
 Using EggSMClient
@@ -71,7 +80,7 @@ Initialization with plain gtk:
         gtk_get_option_group() to it. See egg-session-end.c for an
         example.)
 
-	You should also call egg_set_desktop_file() (in
+	On Linux/Unix, you should also call egg_set_desktop_file() (in
 	"eggdesktopfile.h"), passing it the path to your application's
 	installed .desktop file. (This will be used for some
 	SM-related purposes and will also be used to initialize your
@@ -134,10 +143,6 @@ CurrentDirectory, but KDE doesn't restore either of those properties
 when resuming a saved session, so it's better for apps to not depend
 on them. (If the application must have its working directory restored,
 it can just save and restore it itself.)
-
-(There probably needs to be a way to set _GSM_Priority, for
-compatibility with the current gnome-session; this will probably be
-done via another .desktop key.)
 
 The "save_yourself" signal/callback is split into two signals in
 EggSMClient: save_state and quit_requested. Most GnomeClient-based
@@ -217,7 +222,8 @@ Example code:
 	- egg-session-end.c: A replacement for gnome-session-save.
 	  (Well, actually only for "gnome-session-save --kill".)
 	  Yes, the --reboot and --shutdown arguments are only there to
-	  tease you.
+	  tease you (with the XSMP backend at least; they work on OS
+	  X.)
 
 	- logout-test.c: Sits around waiting for you to try to log
           out, and then asks "are you sure", to test
@@ -227,14 +233,6 @@ Example code:
           instead of GnomeClient.
 
 Non-functional backends:
-
-	- OS X: eggsmclient-osx.c is not quite a proof-of-concept.
-          It's more of a handwave-of-concept. I don't have a working
-          OS X machine at the moment, so I can't test/finish this.
-
-	  See http://developer.apple.com/documentation/MacOSX/Conceptual/BPSystemStartup/Articles/BootProcess.html#//apple_ref/doc/uid/20002130-114618
-	  and other URLs linked from it for more info on the OS X
-	  logout process.
 
 	- D-Bus: There are a few references in the code to a
           non-existent D-Bus session management client. The idea is

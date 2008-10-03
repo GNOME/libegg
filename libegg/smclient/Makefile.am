@@ -1,10 +1,13 @@
 if PLATFORM_WIN32
-platform_defines =
-platform_ltlibraries =
-platform_libs =
 platform_sources = eggsmclient-win32.c
-platform_app_ldflags = -mwindows
-platform_programs =
+platform_logout_test_ldflags = -mwindows
+else
+if PLATFORM_OSX
+platform_defines = -xobjective-c
+platform_ldflags = -framework Carbon
+platform_session_end_ldflags = -framework Carbon
+platform_logout_test_ldflags = -framework Carbon
+platform_sources = eggsmclient-osx.c
 else
 platform_defines = -DEGG_SM_CLIENT_BACKEND_XSMP
 platform_ltlibraries =                   \
@@ -12,8 +15,8 @@ platform_ltlibraries =                   \
 	libeggsmclient-gnome.la
 platform_libs = libeggdesktopfile.la -lSM -lICE
 platform_sources = eggsmclient-xsmp.c
-platform_app_ldflags =
 platform_programs = egg-launch
+endif
 endif
 
 INCLUDES =                               \
@@ -29,6 +32,9 @@ noinst_LTLIBRARIES =                     \
 libeggsmclient_la_LIBADD =               \
 	$(EGG_SMCLIENT_LIBS)             \
 	$(platform_libs)
+
+libeggsmclient_la_LDFLAGS =              \
+	$(platform_ldflags)
 
 libeggsmclient_la_SOURCES =              \
 	eggsmclient.c                    \
@@ -66,6 +72,9 @@ egg_session_end_SOURCES =                \
 egg_session_end_LDADD =                  \
 	libeggsmclient.la
 
+egg_session_end_LDFLAGS =                \
+	$(platform_session_end_ldflags)
+
 logout_test_SOURCES =                    \
 	logout-test.c
 
@@ -73,7 +82,7 @@ logout_test_LDADD =                      \
 	libeggsmclient.la
 
 logout_test_LDFLAGS =                    \
-	$(platform_app_ldflags)
+	$(platform_logout_test_ldflags)
 
 egg_launch_SOURCES =                     \
 	egg-launch.c
