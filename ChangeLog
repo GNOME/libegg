@@ -1,3 +1,8 @@
+2008-10-03  Dan Winship  <danw@gnome.org>
+
+	* configure.in: add a conditional for PLATFORM_OSX, for
+	eggsmclient
+
 2008-09-24  Dan Winship  <danw@gnome.org>
 
 	* configure.in: Remove an eggsmclient-related check that's no

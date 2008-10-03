@@ -12,18 +12,22 @@ AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
-AC_MSG_CHECKING([for some Win32 platform])
+AC_MSG_CHECKING([platform])
 case "$host" in
   *-*-mingw*|*-*-cygwin*)
-    platform_win32=yes
+    platform="win32"
     NO_UNDEFINED=-no-undefined
     ;;
+  *-apple-darwin*)
+    platform="os x"
+    ;;
   *)
-    platform_win32=no
+    platform="unix"
     ;;
 esac
-AC_MSG_RESULT([$platform_win32])
-AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
+AC_MSG_RESULT([$platform])
+AM_CONDITIONAL(PLATFORM_WIN32, test "$platform" = "win32")
+AM_CONDITIONAL(PLATFORM_OSX, test "$platform" = "os x")
 AC_SUBST(NO_UNDEFINED)
 
 changequote(,)dnl
