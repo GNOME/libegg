@@ -102,7 +102,6 @@ main (int argc, char **argv)
   GtkWidget *label;
 
   g_type_init ();
-  g_thread_init (NULL);
 
   goption_context = g_option_context_new (_("- Test logout functionality"));
   g_option_context_add_group (goption_context, gtk_get_option_group (TRUE));

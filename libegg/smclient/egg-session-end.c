@@ -73,7 +73,6 @@ main (int argc, char **argv)
   GError *err = NULL;
 
   g_type_init ();
-  g_thread_init (NULL);
 
   goption_context = g_option_context_new (_("- End the current session"));
   g_option_context_add_main_entries (goption_context, options, NULL);
