@@ -1,3 +1,7 @@
+2008-10-06  Dan Winship  <danw@gnome.org>
+
+	* configure.in (EGG_SMCLIENT_DBUS): add dbus checks
+
 2008-10-05  Dan Winship  <danw@gnome.org>
 
 	* configure.in (EGG_SMCLIENT): remove gthread-2.0
