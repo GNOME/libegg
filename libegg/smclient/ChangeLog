@@ -1,3 +1,15 @@
+2008-10-06  Dan Winship  <danw@gnome.org>
+
+	* eggsmclient-dbus.c: SM client based on the new gnome-session
+	2.24 D-Bus interfaces (or at least, the parts that map to the
+	existing EggSMClient API).
+
+	* eggsmclient.c (egg_sm_client_get): prefer XSMP to D-Bus rather
+	than the reverse, since at the moment, the XSMP backend is more
+	functional.
+
+	* Makefile.am: updates
+
 2008-10-05  Dan Winship  <danw@gnome.org>
 
 	* eggsmclient-win32.c: Redo using native Windows thread methods so

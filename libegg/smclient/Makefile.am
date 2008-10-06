@@ -16,6 +16,10 @@ platform_ltlibraries =                   \
 platform_libs = libeggdesktopfile.la -lSM -lICE
 platform_sources = eggsmclient-xsmp.c
 platform_programs = egg-launch
+if HAVE_DBUS
+platform_defines += -DEGG_SM_CLIENT_BACKEND_DBUS
+platform_sources += eggsmclient-dbus.c
+endif
 endif
 endif
 
@@ -23,6 +27,7 @@ INCLUDES =                               \
 	-DG_LOG_DOMAIN=\""EggSMClient"\" \
 	$(platform_defines)              \
 	$(EGG_SMCLIENT_CFLAGS)           \
+	$(EGG_SMCLIENT_DBUS_CFLAGS)      \
 	$(EGG_LIBGNOMEUI_CFLAGS)
 
 noinst_LTLIBRARIES =                     \
@@ -31,6 +36,7 @@ noinst_LTLIBRARIES =                     \
 
 libeggsmclient_la_LIBADD =               \
 	$(EGG_SMCLIENT_LIBS)             \
+	$(EGG_SMCLIENT_DBUS_LIBS)        \
 	$(platform_libs)
 
 libeggsmclient_la_LDFLAGS =              \
@@ -93,6 +99,7 @@ egg_launch_LDADD =                       \
 EXTRA_DIST =                             \
 	README                           \
 	gedit.diff                       \
+	eggsmclient-dbus.c               \
 	eggsmclient-osx.c                \
 	eggsmclient-win32.c              \
 	eggsmclient-xsmp.c
