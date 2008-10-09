@@ -1,3 +1,10 @@
+2008-10-09  Dan Winship  <danw@gnome.org>
+
+	* README: add more notes on exactly what files are needed, fix
+	some out of date comments
+
+	* NEWS: oops, belatedly update this
+
 2008-10-06  Dan Winship  <danw@gnome.org>
 
 	* eggsmclient-dbus.c: SM client based on the new gnome-session

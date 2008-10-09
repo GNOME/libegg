@@ -1,3 +1,16 @@
+2008-10-09
+
+	* Various bugfixes and leak fixes
+
+	* The osx backend works now, and the win32 backend no longer
+          requires a call to g_thread_init().
+
+	* There is now a D-Bus backend that uses the gnome-session
+          2.24 D-Bus API. See the notes at the end of README. Although
+          the Makefiles in this directory do not support it, it would
+          be possible to build libeggsmclient with support for D-Bus
+          and not XSMP.
+
 2007-05-02
 
 	* EggLauncher is now replaced by EggDesktopFile

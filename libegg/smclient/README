@@ -2,6 +2,9 @@ This is a draft of a replacement for GnomeClient. See also
 http://live.gnome.org/SessionManagement and
 http://bugzilla.gnome.org/show_bug.cgi?id=79285.
 
+See "NEWS" for a summary of changes since earlier revisions of
+EggSMClient.
+
 The eventual target of this code is gtk, gdk, glib, or some
 combination of them. Having it entirely in gtk/gdk may not be the best
 option, because non-GUI apps like beagled want a chance to exit
@@ -10,6 +13,53 @@ would obviously suck. Using dlopen may be a good solution.
 
 EggDesktopFile is proposed gtk-level rewrite of GnomeDesktopItem. See
 http://bugzilla.gnome.org/show_bug.cgi?id=415070
+
+
+Contents
+--------
+1. Adding the EggSMClient sources to your app
+2. Building your app with EggSMClient
+3. Using EggSMClient
+4. Notes on porting from GnomeClient or raw libSM
+5. More notes
+6. The D-Bus backend and the future
+
+
+Adding the EggSMClient sources to your app
+------------------------------------------
+
+Getting the files you need:
+
+	For basic use under Linux/Unix, you will need:
+		eggsmclient.c
+		eggsmclient.h
+		eggsmclient-private.h
+		eggsmclient-xsmp.c
+		eggdesktopfile.c
+		eggdesktopfile.h
+
+	If you want to use the D-Bus backend (see the notes below),
+	add eggsmclient-dbus.c, and optionally remove
+	eggsmclient-xsmp.c
+
+	For libgnomeui integration, add:
+		eggsmclient-libgnomeui.c
+		eggsmclient-libgnomeui.h
+
+	If your app supports Windows and/or OS X (gtk-quartz), add those
+	backends:
+		eggsmclient-win32.c
+		eggsmclient-osx.c
+
+	egg-launch.c, egg-session-end.c, and logout-test.c are test
+	programs, and you do not need them.
+
+Setting up the build:
+
+	You will need to take certain snippets of ../../configure.in
+	and ./Makefile.am. If you are only supporting a single
+	backend, you won't need all of the automake conditionals and
+	can remove that.
 
 
 Building your app with EggSMClient
@@ -33,7 +83,9 @@ If you are building on Windows:
         WM_QUERYENDSESSION (quit_requested) and WM_ENDSESSION (quit)
         messages.
 
-	You need to call g_thread_null(NULL) to initialize threads.
+	Previous versions of EggSMClient required you to initialize
+	glib threads (g_thread_init()) on Windows, even if your app
+	didn't otherwise use threads. This is no longer required.
 
 If you are building on OS X:
 
@@ -229,15 +281,30 @@ Example code:
           out, and then asks "are you sure", to test
           quit_requested/will_quit handling.
 
-	- gedit.diff: A patch to SVN gedit to make it use EggSMClient
-          instead of GnomeClient.
+	- gedit.diff: A patch to 2.22-era gedit to make it use
+          EggSMClient instead of GnomeClient. Note that as of 2.24,
+          gedit uses EggSMClient, although this was done as part of
+          migrating away from libgnomeui, so it is not the same as in
+          this patch.
 
-Non-functional backends:
 
-	- D-Bus: There are a few references in the code to a
-          non-existent D-Bus session management client. The idea is
-          that once we have a session manager that implements that,
-          EggSMClient will pick between the (sane) D-Bus and (nasty)
-          XSMP backends at runtime depending on what session manager
-          is running. Or in special environments, it could be compiled
-          with just XSMP or just D-Bus.
+The D-Bus backend and the future
+--------------------------------
+
+There is now a D-Bus-based EggSMClient backend, eggsmclient-dbus,
+which uses the APIs provided by gnome-session in 2.24. Note that the
+D-Bus API doesn't support saved sessions, so if you are using the
+"save_state" signal, you do not want to use the D-Bus backend. (In
+fact, at the moment, the only real reason you'd want to use the D-Bus
+backend instead of the XSMP one is if you have some good reason to
+want to avoid linking to libSM and libICE.)
+
+However, the gnome-session D-Bus API has some other bits that aren't
+yet supported by EggSMClient, to allow applications to more explicitly
+indicate their state to the session manager, and these APIs are very
+similar to some new APIs provided in Windows Vista. It is likely that
+a future version of EggSMClient will support these APIs if you use the
+D-Bus backend, but not if you use the XSMP backend.
+
+For now, the D-Bus backend is only used if the XSMP backend isn't
+compiled in, or if $SESSION_MANAGER isn't set in the environment.
