@@ -184,7 +184,7 @@ static GOptionEntry entries[] = {
     G_OPTION_ARG_NONE, &sm_client_disable,
     N_("Disable connection to session manager"), NULL },
   { "sm-client-state-file", 0, 0,
-    G_OPTION_ARG_STRING, &sm_client_state_file,
+    G_OPTION_ARG_FILENAME, &sm_client_state_file,
     N_("Specify file containing saved configuration"), N_("FILE") },
   { "sm-client-id", 0, 0,
     G_OPTION_ARG_STRING, &sm_client_id,
