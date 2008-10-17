@@ -1,3 +1,14 @@
+2008-10-17  Christian Persch <chpe@gnome.org>
+
+        * eggsmclient.c: No need to make the GOptionEntry struct global
+        static. Improve the option group description and help-description,
+        to make --help-sm-client look nicer.
+
+2008-10-17  Christian Persch <chpe@gnome.org>
+
+        * eggsmclient.c: Use G_OPTION_ARG_FILENAME for the
+        --sm-client-stat-file switch.
+
 2008-10-09  Dan Winship  <danw@gnome.org>
 
 	* README: add more notes on exactly what files are needed, fix
