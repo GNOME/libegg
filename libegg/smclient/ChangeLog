@@ -1,5 +1,10 @@
 2008-10-17  Christian Persch <chpe@gnome.org>
 
+        * eggsmclient-xsmp.c:
+        * eggdesktopfile.c: Fix signed/unsigned compare compiler warnings.
+
+2008-10-17  Christian Persch <chpe@gnome.org>
+
         * eggsmclient.c: No need to make the GOptionEntry struct global
         static. Improve the option group description and help-description,
         to make --help-sm-client look nicer.
