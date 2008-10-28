@@ -1,3 +1,12 @@
+2008-10-28  Mathias Hasselmann  <mathias@openismus.com>
+
+	Make demonstration of ellipsized EggToolItemGroup headers work again.
+
+	* libegg/toolpalette/testtoolpalette.c
+	 (create_entry_item(), load_special_items()):
+	  Change minimum size of entry items to make demonstration of
+	  ellipsized headers work again.
+
 2008-10-06  Dan Winship  <danw@gnome.org>
 
 	* configure.in (EGG_SMCLIENT_DBUS): add dbus checks
