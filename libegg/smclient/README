@@ -89,8 +89,8 @@ If you are building on Windows:
 
 If you are building on OS X:
 
-	You need to link your application with the Cocoa framework
-	(-framework Cocoa). Libtool doesn't record framework
+	You need to link your application with the Carbon framework
+	(-framework Carbon). Libtool doesn't record framework
 	dependencies, and since for libegg purposes we're only
 	building libeggsmclient as a static library, the dependency
 	doesn't get recorded by the linker either, so you have to add
