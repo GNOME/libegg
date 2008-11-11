@@ -1,3 +1,11 @@
+2008-11-11  Christian Persch  <chpe@gnome.org>
+
+	* libegg/datetime/egg-datetime.h:
+	* libegg/treeviewutils/eggtreemultidnd.c:
+	* libegg/treeviewutils/eggtreemultidnd.h: Fix build with
+	GTK_DISABLE_SINGLE_INCLUDES. Bug #559156 and 559159, patches by
+	Adam Schreiber.
+
 2008-11-11 Christian Persch <chpe@gnome.org>
 
 	* libegg/treeviewutils/eggtreemultidnd.c: Fix for gtk 2.14. Bug
