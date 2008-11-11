@@ -1,3 +1,8 @@
+2008-11-11 Christian Persch <chpe@gnome.org>
+
+	* libegg/treeviewutils/eggtreemultidnd.c: Fix for gtk 2.14. Bug
+	#559432.
+
 2008-10-28  Mathias Hasselmann  <mathias@openismus.com>
 
 	Make demonstration of ellipsized EggToolItemGroup headers work again.

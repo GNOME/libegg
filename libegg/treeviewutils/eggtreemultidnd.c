@@ -318,7 +318,7 @@ egg_tree_multi_drag_motion_event (GtkWidget      *widget,
 	{
 
 	  context = gtk_drag_begin (widget,
-				    di->source_target_list,
+                                    gtk_drag_source_get_target_list (widget),
 				    di->source_actions,
 				    priv_data->pressed_button,
 				    (GdkEvent*)event);
