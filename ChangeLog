@@ -1,5 +1,15 @@
 2008-11-11  Christian Persch  <chpe@gnome.org>
 
+	* libegg/treeviewutils/eggtreemultidnd.c:
+	(egg_tree_multi_drag_source_get_type): Include config.h.
+
+2008-11-11  Christian Persch  <chpe@gnome.org>
+
+	* libegg/treeviewutils/eggtreemultidnd.c:
+	(egg_tree_multi_drag_source_get_type): Don't make GTypeInfo static.
+
+2008-11-11  Christian Persch  <chpe@gnome.org>
+
 	* libegg/datetime/egg-datetime.h:
 	* libegg/treeviewutils/eggtreemultidnd.c:
 	* libegg/treeviewutils/eggtreemultidnd.h: Fix build with

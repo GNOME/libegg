@@ -17,6 +17,10 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <gtk/gtk.h>
 #include "eggtreemultidnd.h"
@@ -56,7 +60,7 @@ egg_tree_multi_drag_source_get_type (void)
 
   if (!our_type)
     {
-      static const GTypeInfo our_info =
+      const GTypeInfo our_info =
       {
         sizeof (EggTreeMultiDragSourceIface), /* class_size */
 	NULL,		/* base_init */
