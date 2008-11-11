@@ -1,3 +1,8 @@
+2008-11-12  Christian Persch  <chpe@gnome.org>
+
+	* libegg/toolbareditor/Makefile.am: Remove extraneous copy of
+	eggtreemultidnd.
+
 2008-11-11  Christian Persch  <chpe@gnome.org>
 
 	* libegg/treeviewutils/eggtreemultidnd.c:

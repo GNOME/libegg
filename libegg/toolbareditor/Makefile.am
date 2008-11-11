@@ -15,13 +15,11 @@ libegg_toolbareditor_la_LIBADD = $(EGG_LIBS) $(EGG_XML_LIBS) \
 	$(top_builddir)/libegg/util/libeggutil.la
 
 EGGSOURCES = \
-	eggtreemultidnd.c \
 	egg-editable-toolbar.c \
 	egg-toolbars-model.c \
 	egg-toolbar-editor.c
 
 EGGHEADERS = \
-	eggtreemultidnd.h \
 	egg-editable-toolbar.h \
 	egg-toolbars-model.h \
 	egg-toolbar-editor.h
