@@ -1,3 +1,9 @@
+2008-12-11  Philip Withnall  <philip@tecnocode.co.uk>
+
+	* modules/printbackends/cups/eggprintbackendcups.c
+	(cups_get_printer_list): Use g_timeout_add_seconds
+	where possible to allow for event grouping. Bug #564156.
+
 2006-03-23  John (J5) Palmieri  <johnp@redhat.com>
 
 	* modules/printbackends/cups/eggprintbackendcups.c:

@@ -1,3 +1,9 @@
+2008-12-11  Philip Withnall  <philip@tecnocode.co.uk>
+
+	* eggdesktopfile.c (set_startup_notification_timeout): Use
+	g_timeout_add_seconds where possible to allow for event grouping.
+	Bug #564156.
+
 2008-10-17  Christian Persch <chpe@gnome.org>
 
         * eggsmclient-xsmp.c:

@@ -801,8 +801,8 @@ egg_recent_model_monitor (EggRecentModel *model, gboolean should_monitor)
 			if (model->priv->poll_timeout > 0)
 				g_source_remove (model->priv->poll_timeout);
 			
-			model->priv->poll_timeout = g_timeout_add (
-				EGG_RECENT_MODEL_POLL_TIME * 1000,
+			model->priv->poll_timeout = g_timeout_add_seconds (
+				EGG_RECENT_MODEL_POLL_TIME,
 				egg_recent_model_poll_timeout,
 				model);
 		}

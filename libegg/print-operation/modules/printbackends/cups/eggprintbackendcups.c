@@ -953,9 +953,9 @@ cups_get_printer_list (EggPrintBackend *print_backend)
   if (cups_backend->list_printers_poll == 0)
     {
       cups_request_printer_list (cups_backend);
-      cups_backend->list_printers_poll = g_timeout_add (3000,
-                                                        (GSourceFunc) cups_request_printer_list,
-                                                        print_backend);
+      cups_backend->list_printers_poll = g_timeout_add_seconds (3,
+                                                                (GSourceFunc) cups_request_printer_list,
+                                                                print_backend);
     }
  
   return result;

@@ -129,7 +129,7 @@ main (int argc, char **argv)
   g_signal_connect (icon, "activate",
 		    G_CALLBACK (icon_activated), NULL);
 
-  g_timeout_add (2000, timeout_handler, icon);
+  g_timeout_add_seconds (2, timeout_handler, icon);
 
   gtk_main ();
 

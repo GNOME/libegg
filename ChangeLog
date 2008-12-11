@@ -1,3 +1,12 @@
+2008-12-11  Philip Withnall  <philip@tecnocode.co.uk>
+
+	* libegg/recent-files/egg-recent-model.c
+	(egg_recent_model_monitor):
+	* libegg/recentchooser/eggrecentmanager.c
+	(egg_recent_manager_init):
+	* libegg/tray/teststatusicon.c (main): Use g_timeout_add_seconds
+	where possible to allow for event grouping. Bug #564156.
+
 2008-11-12  Christian Persch  <chpe@gnome.org>
 
 	* libegg/toolbareditor/Makefile.am: Remove extraneous copy of

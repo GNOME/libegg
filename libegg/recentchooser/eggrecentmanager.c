@@ -53,7 +53,7 @@
 #define EGG_RECENTLY_USED_FILE	".recently-used.xbel"
 
 /* a poll per second should be enough */
-#define POLL_DELTA	1000
+#define POLL_DELTA	1
 
 /* return all items by default */
 #define DEFAULT_LIMIT	-1
@@ -247,9 +247,9 @@ egg_recent_manager_init (EggRecentManager *manager)
   
   build_recent_items_list (manager);
   
-  priv->poll_timeout = g_timeout_add (POLL_DELTA,
-  				      egg_recent_manager_poll_timeout,
-  				      manager);
+  priv->poll_timeout = g_timeout_add_seconds (POLL_DELTA,
+  					      egg_recent_manager_poll_timeout,
+  					      manager);
   
   priv->is_dirty = FALSE;
   priv->write_in_progress = FALSE;
