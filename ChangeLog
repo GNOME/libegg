@@ -1,3 +1,7 @@
+2008-12-15  Murray Cumming  <murrayc@murrayc.com>
+
+	* libegg/toolpalette/eggtoolpalette.h: Removed trailing , in enums.
+
 2008-12-11  Philip Withnall  <philip@tecnocode.co.uk>
 
 	* libegg/recent-files/egg-recent-model.c

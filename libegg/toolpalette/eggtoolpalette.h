@@ -49,7 +49,7 @@ typedef struct _EggToolPalettePrivate    EggToolPalettePrivate;
 typedef enum /*< flags >*/
 {
   EGG_TOOL_PALETTE_DRAG_ITEMS = (1 << 0),
-  EGG_TOOL_PALETTE_DRAG_GROUPS = (1 << 1),
+  EGG_TOOL_PALETTE_DRAG_GROUPS = (1 << 1)
 }
 EggToolPaletteDragTargets;
 
