@@ -603,7 +603,7 @@ egg_datetime_set_property (GObject	*object,
 		priv->year = g_value_get_uint (value);
 		break;
 	case ARG_MONTH:
-		priv->minute = g_value_get_uint (value);
+		priv->month = g_value_get_uint (value);
 		break;
 	case ARG_DAY:
 		priv->day = g_value_get_uint (value);
