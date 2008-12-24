@@ -1,8 +1,7 @@
 # This file will be processed with automake-1.7 to create Makefile.in
 
 INCLUDES = \
-	$(EGG_CFLAGS) \
-	-I$(top_srcdir)/libegg/md5
+	$(EGG_CFLAGS)
 
 noinst_LTLIBRARIES = \
 	libeggpixbufthumbnail.la
@@ -11,8 +10,7 @@ libeggpixbufthumbnail_la_CFLAGS = \
 	-DG_LOG_DOMAIN=\""EggPixbufThumbnail"\"
 
 libeggpixbufthumbnail_la_LIBADD = \
-	$(EGG_LIBS) \
-	$(top_builddir)/libegg/md5/libeggmd5.la
+	$(EGG_LIBS)
 
 libeggpixbufthumbnail_la_SOURCES = \
 	egg-pixbuf-thumbnail.c \
@@ -28,7 +26,6 @@ testeggpixbufthumbnail_CFLAGS = \
 
 testeggpixbufthumbnail_LDADD = \
 	$(EGG_LIBS) \
-	$(top_builddir)/libegg/md5/libeggmd5.la \
 	$(top_builddir)/libegg/pixbufthumbnail/libeggpixbufthumbnail.la
 
 testeggpixbufthumbnail_SOURCES = \

@@ -1,1 +1,0 @@
-#undef GETTEXT_PACKAGE

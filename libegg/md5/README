@@ -1,3 +1,3 @@
-This is an implementation of the 16-byte MD5 hash algorithm with some related utilities.
+This module has been merged in GLib 2.16:
 
-It's mostly copied from libgnomeui, and intended for GLib.
+EggMd5 has become GChecksum

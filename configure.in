@@ -67,21 +67,9 @@ PKG_CHECK_MODULES(EGG, gtk+-2.0 >= 2.5.0)
 AC_SUBST(EGG_LIBS)
 AC_SUBST(EGG_CFLAGS)
 
-PKG_CHECK_MODULES(EGG_RECENT, gtk+-2.0 >= 2.0.0 gnome-vfs-2.0 libbonoboui-2.0 librsvg-2.0 libgnomeui-2.0)
-AC_SUBST(EGG_RECENT_LIBS)
-AC_SUBST(EGG_RECENT_CFLAGS)
-
-PKG_CHECK_MODULES(EGG_EXEC, libglade-2.0 libgnome-2.0 >= 2.0.0 gtk+-2.0 >= 2.0.0)
-AC_SUBST(EGG_EXEC_LIBS)
-AC_SUBST(EGG_EXEC_CFLAGS)
-
-PKG_CHECK_MODULES(EGG_VFS_FS, gnome-vfs-2.0 libgnomeui-2.0)
-AC_SUBST(EGG_VFS_FS_LIBS)
-AC_SUBST(EGG_VFS_FS_CFLAGS)
-
-PKG_CHECK_MODULES(EGG_VFS_MODULE, gnome-vfs-module-2.0)
-AC_SUBST(EGG_VFS_MODULE_LIBS)
-AC_SUBST(EGG_VFS_MODULE_CFLAGS)
+PKG_CHECK_MODULES(EGG_DOCK, libglade-2.0)
+AC_SUBST(EGG_DOCK_LIBS)
+AC_SUBST(EGG_DOCK_CFLAGS)
 
 PKG_CHECK_MODULES(EGG_XML, libxml-2.0)
 AC_SUBST(EGG_XML_LIBS)
@@ -90,14 +78,6 @@ AC_SUBST(EGG_XML_CFLAGS)
 PKG_CHECK_MODULES(EGG_TRAY, gtk+-2.0 >= 2.2.0 libgnomeui-2.0 >=  2.2.0)
 AC_SUBST(EGG_TRAY_LIBS)
 AC_SUBST(EGG_TRAY_CFLAGS)
-
-PKG_CHECK_MODULES(EGG_DESKTOP_ENTRIES, glib-2.0 >= 2.4.0)
-AC_SUBST(EGG_DESKTOP_ENTRIES_LIBS)
-AC_SUBST(EGG_DESKTOP_ENTRIES_CFLAGS)
-
-PKG_CHECK_MODULES(EGG_RECENT, gtk+-2.0 >= 2.0.0 gnome-vfs-2.0 libbonoboui-2.0 librsvg-2.0 libgnomeui-2.0)
-AC_SUBST(EGG_RECENT_LIBS)
-AC_SUBST(EGG_RECENT_CFLAGS)
 
 PKG_CHECK_MODULES(EGG_LIBGNOMEUI, libgnomeui-2.0)
 AC_SUBST(EGG_LIBGNOMEUI_LIBS)
@@ -133,17 +113,6 @@ AM_CONDITIONAL(HAVE_GTK215, $PKG_CONFIG --atleast-version=2.15.0 gtk+-2.0)
 ## check if we have the X11 gtk+ backend
 AM_CONDITIONAL(HAVE_GTK_TARGET_X11, test `$PKG_CONFIG --variable=target gtk+-2.0` = x11)
 
-dnl
-dnl check if we have gtk+ 2.1.x (again - for multihead support)
-dnl
-AC_MSG_CHECKING([for gtk+ multihead support])
-if $PKG_CONFIG --atleast-version 2.1.0 gtk+-2.0; then
-   AC_DEFINE(HAVE_GTK_MULTIHEAD,,[gtk+ with multihead support found])
-   AC_MSG_RESULT(yes)
-else
-   AC_MSG_RESULT(no)
-fi
-
 GLIB_GENMARSHAL=`$PKG_CONFIG --variable=glib_genmarshal glib-2.0`  
 AC_SUBST(GLIB_GENMARSHAL)
 
@@ -168,33 +137,17 @@ AC_OUTPUT([
 Makefile
 libegg/Makefile
 libegg/util/Makefile
-libegg/druid/Makefile
-libegg/filesystem/Makefile
-libegg/menu/Makefile
-libegg/iconlist/Makefile
 libegg/background-monitor/Makefile
 libegg/sidebar/Makefile
-libegg/fileselector/Makefile
 libegg/tray/Makefile
 libegg/treeviewutils/Makefile
-libegg/toolbar/Makefile
 libegg/column-chooser/Makefile
-libegg/recent-files/Makefile
-libegg/combo/Makefile
 libegg/toolbareditor/Makefile
 libegg/dock/Makefile
 libegg/datetime/Makefile
-libegg/desktopentries/Makefile
-libegg/regex/Makefile
-libegg/regex/pcre/Makefile
-libegg/sequence/Makefile
-libegg/md5/Makefile
 libegg/pixbufthumbnail/Makefile
 libegg/thumbnailpreview/Makefile
 libegg/iconchooser/Makefile
-libegg/bookmarkfile/Makefile
-libegg/recentchooser/Makefile
-libegg/recentchooser/xdgmime/Makefile
 libegg/smclient/Makefile
 libegg/fileformatchooser/Makefile
 libegg/toolpalette/Makefile

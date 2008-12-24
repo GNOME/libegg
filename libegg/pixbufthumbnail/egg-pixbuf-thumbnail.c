@@ -33,12 +33,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <glib.h>
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
 
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
 
-#include "eggmd5.h"
 #include "egg-pixbuf-thumbnail.h"
 
 
@@ -316,7 +316,6 @@ parse_thumbnail_data (GdkPixbuf              *thumbnail,
 
   return (!data_required);
 }
-
 
 /* *************************************** *
  *  Global Thumbnails Directory Functions  *
@@ -1125,7 +1124,7 @@ egg_pixbuf_has_failed_thumbnail (const gchar *uri,
 
   retval = FALSE;
   
-  md5 = egg_str_get_md5_str (uri);
+  md5 = g_compute_checksum_for_string (G_CHECKSUM_MD5, uri, -1);
   basename = g_strconcat (md5, ".png", NULL);
   g_free (md5);
   filename = g_build_filename (g_get_home_dir (), ".thumbnails", FAIL_DIR_NAME,
@@ -1187,7 +1186,7 @@ egg_pixbuf_save_failed_thumbnail (const gchar  *uri,
       return;
     }
 
-  md5 = egg_str_get_md5_str (uri);
+  md5 = g_compute_checksum_for_string (G_CHECKSUM_MD5, uri, -1);
   basename = g_strconcat (md5, ".png", NULL);
   g_free (md5);
   filename = g_build_filename (g_get_home_dir (), ".thumbnails", FAIL_DIR_NAME,
@@ -1899,7 +1898,7 @@ egg_pixbuf_get_thumbnail_filename (const gchar           *uri,
   else
     home_dir = g_get_tmp_dir ();
 
-  md5 = egg_str_get_md5_str (uri);
+  md5 = g_compute_checksum_for_string (G_CHECKSUM_MD5, uri, -1);
   basename = g_strconcat (md5, ".png", NULL);
   filename = g_build_filename (home_dir, ".thumbnails", SIZE_TO_DIR (size),
 			       basename, NULL);

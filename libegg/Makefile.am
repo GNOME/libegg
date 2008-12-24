@@ -5,14 +5,8 @@ tray_SUBDIRS = tray
 endif
 endif
 
-if HAVE_GTK24
-else
-menu_SUBDIRS = menu
-endif
-
 if HAVE_GTK25
 thumbnail_SUBDIRS = \
-  md5 \
   pixbufthumbnail \
   thumbnailpreview
 endif
@@ -32,10 +26,10 @@ background_monitor_SUBDIRS = \
   background-monitor
 endif
 
-SUBDIRS = util column-chooser treeviewutils toolbar $(menu_SUBDIRS) iconlist \
-  sidebar druid filesystem $(background_monitor_SUBDIRS) recent-files \
-  $(tray_SUBDIRS) dock datetime desktopentries $(thumbnail_SUBDIRS) \
-  $(iconchooser_SUBDIRS) bookmarkfile recentchooser regex sequence smclient \
+SUBDIRS = util column-chooser treeviewutils \
+  sidebar $(background_monitor_SUBDIRS) \
+  $(tray_SUBDIRS) dock datetime $(thumbnail_SUBDIRS) \
+  $(iconchooser_SUBDIRS) smclient \
   fileformatchooser $(gtk215_SUBDIRS)
 
 INCLUDES = \

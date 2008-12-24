@@ -1,5 +1,5 @@
 This is an implementation of the Freedesktop.org thumbnailing specification
-for GdkPixbuf. It requires the md5 lib from libegg as well.
+for GdkPixbuf.
 
 It functions primarily as a loading/saving API, with convenience functions for
 reading the standardized thumbnail metadata values.

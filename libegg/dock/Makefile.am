@@ -1,6 +1,6 @@
 INCLUDES = \
 	$(EGG_CFLAGS) \
-	$(EGG_EXEC_CFLAGS) \
+	$(EGG_DOCK_CFLAGS) \
 	$(EGG_XML_CFLAGS) \
 	-DG_LOG_DOMAIN=\"Egg\" \
 	-DG_DISABLE_DEPRECATED \
@@ -51,7 +51,7 @@ libegg_dock_la_LDFLAGS = $(NO_UNDEFINED)
 
 libegg_dock_la_LIBADD = \
 	$(EGG_LIBS) \
-	$(EGG_EXEC_LIBS) \
+	$(EGG_DOCK_LIBS) \
 	$(EGG_XML_LIBS) \
 	$(top_builddir)/libegg/util/libeggutil.la
 

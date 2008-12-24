@@ -1,3 +1,36 @@
+2008-12-24  Vincent Untz  <vuntz@gnome.org>
+
+	* configure.in:
+	* libegg/Makefile.am:
+	* libegg/bookmarkfile/*:
+	* libegg/combo-old/*:
+	* libegg/combo/*:
+	* libegg/desktopentries/*:
+	* libegg/druid/*:
+	* libegg/fileselector/*:
+	* libegg/filesystem/*:
+	* libegg/iconlist/*:
+	* libegg/md5/*:
+	* libegg/menu/*:
+	* libegg/print-operation/*:
+	* libegg/print/*:
+	* libegg/recent-files/*:
+	* libegg/recentchooser/*:
+	* libegg/regex/*:
+	* libegg/sequence/*:
+	* libegg/toolbar/*: remove code that has been integrated in glib/gtk+
+	and update build system accordingly.
+
+	* libegg/dock/Makefile.am: use proper CFLAGS/LIBS
+
+	* libegg/pixbufthumbnail/Makefile.am:
+	* libegg/pixbufthumbnail/README:
+	* libegg/pixbufthumbnail/egg-pixbuf-thumbnail.c:
+	(egg_pixbuf_has_failed_thumbnail),
+	(egg_pixbuf_save_failed_thumbnail),
+	(egg_pixbuf_get_thumbnail_filename): Use GChecksum instead of EggMd5.
+	Fix bug #554869.
+
 2008-12-15  Murray Cumming  <murrayc@murrayc.com>
 
 	* libegg/toolpalette/eggtoolpalette.h: Removed trailing , in enums.
