@@ -1656,7 +1656,10 @@ egg_datetime_set_from_gdate (EggDateTime *edt, GDate *date)
 	g_return_if_fail (date != NULL);
 
 	if (g_date_valid (date))
-		egg_datetime_set_date (edt, date->year, date->month, date->day);
+		egg_datetime_set_date (edt,
+				       g_date_get_year (date),
+				       g_date_get_month (date),
+				       g_date_get_day (date));
 	else
 		egg_datetime_set_none (edt);
 }

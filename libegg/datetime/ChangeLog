@@ -1,5 +1,11 @@
 2008-12-24  Vincent Untz  <vuntz@gnome.org>
 
+	* egg-datetime.c: (egg_datetime_set_from_gdate): use accessor functions
+	for GDate so that it also works with a julian GDate.
+	Fix bug #533145, patch by J. Ali Harlow <ali@avrc.city.ac.uk>
+
+2008-12-24  Vincent Untz  <vuntz@gnome.org>
+
 	* egg-datetime.c: (egg_datetime_set_property): properly set the month
 	property. Fix bug #532781, patch by J. Ali Harlow <ali@avrc.city.ac.uk>
 
