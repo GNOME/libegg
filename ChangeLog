@@ -1,3 +1,10 @@
+2009-02-08  Xan Lopez  <xan@gnome.org>
+
+	* libegg/toolbareditor/egg-toolbars-model.h:
+
+	Correct the name of the get_type function for EggTbModelFlags.
+	This fixes the scanning of the header file by the g-ir-scanner.
+
 2008-12-24  Vincent Untz  <vuntz@gnome.org>
 
 	* configure.in:
