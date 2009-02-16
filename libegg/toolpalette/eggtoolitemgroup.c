@@ -53,6 +53,7 @@ enum
   PROP_NAME,
   PROP_COLLAPSED,
   PROP_ELLIPSIZE,
+  PROP_RELIEF
 };
 
 enum
@@ -396,7 +397,9 @@ egg_tool_item_group_set_property (GObject      *object,
       case PROP_ELLIPSIZE:
         egg_tool_item_group_set_ellipsize (group, g_value_get_enum (value));
         break;
-
+      case PROP_RELIEF:
+        egg_tool_item_group_set_header_relief (group, g_value_get_enum(value));
+        break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -423,6 +426,10 @@ egg_tool_item_group_get_property (GObject    *object,
 
       case PROP_ELLIPSIZE:
         g_value_set_enum (value, egg_tool_item_group_get_ellipsize (group));
+        break;
+
+      case PROP_RELIEF:
+        g_value_set_enum (value, egg_tool_item_group_get_header_relief (group));
         break;
 
       default:
@@ -1483,6 +1490,14 @@ egg_tool_item_group_class_init (EggToolItemGroupClass *cls)
                                                       G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
                                                       G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
+  g_object_class_install_property (oclass, PROP_ELLIPSIZE,
+                                   g_param_spec_enum ("header-relief",
+                                                      P_("header-relif"),
+                                                      P_("Relief of the group header button"),
+                                                      GTK_TYPE_RELIEF_STYLE, GTK_RELIEF_NORMAL,
+                                                      G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                                                      G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
+
   gtk_widget_class_install_style_property (wclass,
                                            g_param_spec_int ("expander-size",
                                                              P_("Expander Size"),
@@ -1592,6 +1607,22 @@ egg_tool_item_group_set_name (EggToolItemGroup *group,
 
       g_object_notify (G_OBJECT (group), "name");
     }
+}
+
+/**
+ * egg_tool_item_group_header_relief:
+ * @group: an #EggToolItemGroup.
+ * @style: The GtkReliefStyle
+ *
+ * Set the button relief of the group header. See #gtk_button_set_relief for
+ * details
+ */
+void
+egg_tool_item_group_set_header_relief (EggToolItemGroup   *group,
+                                       GtkReliefStyle      style)
+{
+  g_return_if_fail (EGG_IS_TOOL_ITEM_GROUP (group));
+  gtk_button_set_relief (GTK_BUTTON(group->priv->header), style);
 }
 
 static gint64
@@ -1792,6 +1823,21 @@ egg_tool_item_group_get_ellipsize (EggToolItemGroup *group)
 {
   g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), DEFAULT_ELLIPSIZE);
   return group->priv->ellipsize;
+}
+
+/**
+ * egg_tool_item_group_get_header_relief:
+ * @group: an #EggToolItemGroup.
+ *
+ * Gets the relief mode of the header button of @group.
+ *
+ * Returns: the #GtkReliefStyle
+ */
+GtkReliefStyle
+egg_tool_item_group_get_header_relief (EggToolItemGroup   *group)
+{
+  g_return_val_if_fail (EGG_IS_TOOL_ITEM_GROUP (group), GTK_RELIEF_NORMAL);
+  return gtk_button_get_relief (GTK_BUTTON (group->priv->header));
 }
 
 /**

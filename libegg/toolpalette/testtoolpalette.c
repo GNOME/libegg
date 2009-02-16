@@ -584,10 +584,27 @@ view_ellipsize_changed_cb (GtkWidget *widget,
 }
 
 static void
+view_relief_changed_cb (GtkWidget *widget,
+                           gpointer   data)
+{
+  GEnumValue *relief = data;
+
+  egg_tool_item_group_set_header_relief (EGG_TOOL_ITEM_GROUP (widget),
+                                         relief->value);
+}
+
+static void
 view_ellipsize_changed (GEnumValue *value,
                         gpointer    data)
 {
   gtk_container_foreach (data, view_ellipsize_changed_cb, value);
+}
+
+static void
+view_relief_changed (GEnumValue *value,
+                     gpointer    data)
+{
+  gtk_container_foreach (data, view_relief_changed_cb, value);
 }
 
 static void
@@ -666,6 +683,7 @@ create_ui (void)
         <toolitem action='ViewStyle' />         \
         <separator />                           \
         <toolitem action='ViewEllipsize' />     \
+        <toolitem action='ViewRelief' />        \
         <toolitem action='ViewExclusive' />     \
         <toolitem action='ViewExpand' />        \
         <separator />                           \
@@ -720,6 +738,10 @@ create_ui (void)
 
   action = egg_enum_action_new ("ViewEllipsize", _("Ellipsize Headers"), NULL, PANGO_TYPE_ELLIPSIZE_MODE);
   egg_enum_action_connect (EGG_ENUM_ACTION (action), view_ellipsize_changed, palette);
+  gtk_action_group_add_action (group, action);
+
+  action = egg_enum_action_new ("ViewRelief", _("Header Relief"), NULL, GTK_TYPE_RELIEF_STYLE);
+  egg_enum_action_connect (EGG_ENUM_ACTION (action), view_relief_changed, palette);
   gtk_action_group_add_action (group, action);
 
   action = GTK_ACTION (gtk_toggle_action_new ("ViewExclusive", _("Exclusive Groups"), NULL, NULL));

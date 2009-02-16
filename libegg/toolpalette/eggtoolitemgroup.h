@@ -63,10 +63,13 @@ void                  egg_tool_item_group_set_collapsed      (EggToolItemGroup  
                                                              gboolean            collapsed);
 void                  egg_tool_item_group_set_ellipsize     (EggToolItemGroup   *group,
                                                              PangoEllipsizeMode  ellipsize);
+void                  egg_tool_item_group_set_header_relief (EggToolItemGroup   *group,
+                                                             GtkReliefStyle      style);
 
 G_CONST_RETURN gchar* egg_tool_item_group_get_name          (EggToolItemGroup   *group);
 gboolean              egg_tool_item_group_get_collapsed     (EggToolItemGroup   *group);
 PangoEllipsizeMode    egg_tool_item_group_get_ellipsize     (EggToolItemGroup   *group);
+GtkReliefStyle        egg_tool_item_group_get_header_relief (EggToolItemGroup   *group);
 
 void                  egg_tool_item_group_insert            (EggToolItemGroup   *group,
                                                              GtkToolItem        *item,

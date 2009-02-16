@@ -1,3 +1,15 @@
+2009-02-16  Johannes Schmid  <jschmid@openismus.com>
+
+	* libegg/toolpalette/eggtoolitemgroup.c
+	(egg_tool_item_group_set_property),
+	(egg_tool_item_group_get_property),
+	(egg_tool_item_group_set_header_relief),
+	(egg_tool_item_group_get_header_relief):
+	* libegg/toolpalette/eggtoolitemgroup.h:
+	* libegg/toolpalette/testtoolpalette.c (view_relief_changed_cb),
+	(view_relief_changed), (create_ui):
+	Implemented "header-relief" property
+
 2009-02-10  Philip Withnall  <philip@tecnocode.co.uk>
 
 	* libegg/fileformatchooser/eggfileformatchooser.h: Fixed to use single
