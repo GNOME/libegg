@@ -16,7 +16,7 @@ FILES="egg-editable-toolbar.c \
        egg-toolbars-model.h \
        egg-toolbar-editor.h \
        eggtreemultidnd.h \
-       eggmarshalers.list" 
+       eggmarshalers.list"
 
 
 if [ -z $1 ]; then
@@ -27,7 +27,7 @@ fi
 if  [ "$1"  = "--update-sources" ]; then
 
   echo "Obtaining latest version of the sources"
-  for FILE in $FILES 
+  for FILE in $FILES
   do
     svn export $SVN_URI/$FILE
   done

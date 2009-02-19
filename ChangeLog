@@ -1,3 +1,10 @@
+2009-02-19  Felix Riemann  <friemann@svn.gnome.org>
+
+	* libegg/toolbareditor/*.c:
+	* libegg/toolbareditor/*.h:
+	Strip trailing whitespaces and readd accidentially removed
+	function prototype. Fixes bug #572418.
+
 2009-02-16  Johannes Schmid  <jschmid@openismus.com>
 
 	* libegg/toolpalette/eggtoolitemgroup.c
