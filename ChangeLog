@@ -1,5 +1,12 @@
 2009-02-19  Felix Riemann  <friemann@svn.gnome.org>
 
+	* libegg/toolbareditor/eggtreemultidnd.c:
+	* libegg/toolbareditor/eggtreemultidnd.h:
+	* libegg/toolbareditor/update-toolbareditor-from-libegg.sh:
+	Drop redundant eggtreemultidnd copy from tbeditor repository.
+
+2009-02-19  Felix Riemann  <friemann@svn.gnome.org>
+
 	* libegg/toolbareditor/*.c:
 	* libegg/toolbareditor/*.h:
 	Strip trailing whitespaces and readd accidentially removed
