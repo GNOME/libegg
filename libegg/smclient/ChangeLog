@@ -1,3 +1,9 @@
+2009-02-20  Philip Withnall  <philip@tecnocode.co.uk>
+
+	* eggdesktopfile.c (egg_desktop_file_launchv): Patch from Martin
+	<mnemo@minimum.se> to fix freeing uninitialised memory in libegg.
+	Bug #572540.
+
 2008-12-11  Philip Withnall  <philip@tecnocode.co.uk>
 
 	* eggdesktopfile.c (set_startup_notification_timeout): Use
