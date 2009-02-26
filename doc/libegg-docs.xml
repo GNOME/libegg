@@ -25,23 +25,6 @@
     <xi:include href="xml/eggtreemodelfilter.xml"/>
   </part>
 
-  <part id="menu">
-    <title>Action Based Menus</title>
-
-    <partintro>
-      <para>This section covers the new action based menu system
-      included in libegg</para>
-    </partintro>
-
-    <xi:include href="xml/egg-action.xml"/>
-    <xi:include href="xml/egg-action-group.xml"/>
-    <xi:include href="xml/egg-toggle-action.xml"/>
-    <xi:include href="xml/egg-radio-action.xml"/>
-    <xi:include href="xml/egg-menu-merge.xml"/>
-    <xi:include href="xml/egg-accel-dialog.xml"/>
-    <xi:include href="xml/egg-markup.xml"/>
-  </part>
-
   <part id="background-monitor">
     <title>Background Monitor</title>
 
@@ -57,32 +40,7 @@
   <!--
     <xi:include href="xml/eggcolumnmodel.xml"/>
     <xi:include href="xml/eggcolumnchooserdialog.xml"/>
-  -->
 
-  <part id="icon-list">
-    <title>Icon List</title>
-
-    <partintro>
-      <para>This is a new icon list widget.</para>
-    </partintro>
-
-    <xi:include href="xml/eggiconlist.xml"/>
-  </part>
-
-  <part id="druid">
-    <title>Druid</title>
-
-    <partintro>
-      <para>This is a new druid widget (also known as wizards).</para>
-    </partintro>
-
-    <xi:include href="xml/eggdruid.xml"/>
-    <xi:include href="xml/eggdruiddialog.xml"/>
-    <xi:include href="xml/eggdruidpage.xml"/>
-    <xi:include href="xml/eggdruidpagestandard.xml"/>
-  </part>
-
-  <!--
     <xi:include href="xml/eggtrayicon.xml"/>
     <xi:include href="xml/eggtraymanager.xml"/>
   -->
@@ -106,7 +64,6 @@
       <para>Utility functions related to thumbnailing, and a widget for
       displaying them.</para>
     </partintro>
-    <xi:include href="xml/eggmd5.xml"/>
     <xi:include href="xml/eggpixbufthumbnail.xml"/>
     <xi:include href="xml/eggthumbnailpreview.xml"/>
   </part>

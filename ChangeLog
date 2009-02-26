@@ -1,3 +1,12 @@
+2009-02-26  Vincent Untz  <vuntz@gnome.org>
+
+	* configure.in: add a note explaining how libegg works
+	* doc/*: fix the build
+	* libegg/Makefile.am: don't compile the icon chooser, it's broken right
+	now.
+	Based on patch by Martin Olsson <mnemo@minimum.se>
+	Fix bug #572557.
+
 2009-02-19  Felix Riemann  <friemann@svn.gnome.org>
 
 	* libegg/toolbareditor/eggtreemultidnd.c:

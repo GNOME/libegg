@@ -29,8 +29,10 @@ endif
 SUBDIRS = util column-chooser treeviewutils \
   sidebar $(background_monitor_SUBDIRS) \
   $(tray_SUBDIRS) dock datetime $(thumbnail_SUBDIRS) \
-  $(iconchooser_SUBDIRS) smclient \
+  smclient \
   fileformatchooser $(gtk215_SUBDIRS)
+# Don't compile broken code
+#$(iconchooser_SUBDIRS)
 
 INCLUDES = \
   $(EGG_CFLAGS)  \

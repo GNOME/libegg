@@ -153,3 +153,21 @@ libegg/fileformatchooser/Makefile
 libegg/toolpalette/Makefile
 doc/Makefile
 ])
+
+echo "
+
+libegg is not a regular library, it's a collection of various pieces of code
+that are or were aspiring to become included in one of the platform libraries.
+Whenever a part of libegg is accepted into a platform library, it's removed
+from libegg and a README file is left explaining where it moved.
+
+Note #1: It's not advised to build libegg by using "make" from the top
+directory. Instead you should run "make" inside the specific subdirectory that
+holds the feature you need to build and or modify. Each subdirectory typically
+contains a small test program as well.
+
+Note #2: Some GNOME applications have a source copy of libegg within their own
+source trees. If you fix a bug in such a copy of libegg, please make sure you
+also commit that bugfix in the upstream libegg module.
+
+"
