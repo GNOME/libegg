@@ -1,3 +1,12 @@
+2009-03-24  Christian Persch  <chpe@gnome.org>
+
+        * eggdesktopfile.c (egg_set_desktop_file): Fix crash when loading
+        the desktop file failed. Bug #572858.
+        * eggsmclient.c (egg_sm_client_get_option_group): Add a dummy
+        --sm-config-prefix option, so that resuming a session saved by a
+        GnomeClient application that has now switched to EggSMClient does
+        not fail when parsing its arguments. Bug #575308.
+
 2009-02-20  Philip Withnall  <philip@tecnocode.co.uk>
 
 	* eggdesktopfile.c (egg_desktop_file_launchv): Patch from Martin
