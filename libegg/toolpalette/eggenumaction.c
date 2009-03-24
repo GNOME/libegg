@@ -121,7 +121,7 @@ egg_enum_action_dispose (GObject *object)
 
   if (action->priv->model)
     {
-      g_type_class_unref (action->priv->model);
+      g_object_unref (action->priv->model);
       action->priv->model = NULL;
     }
 
