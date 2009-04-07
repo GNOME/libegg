@@ -1,3 +1,10 @@
+2009-04-07  Felix Riemann  <friemann@svn.gnome.org>
+
+	* libegg/toolbareditor/egg-editable-toolbar.c: (drag_begin_cb),
+	(drag_end_cb), (configure_item_tooltip):
+	Fix deprecated GTK+ symbols in the toolbareditor in a
+	backwards compatible way. Fixes bug #578219.
+
 2009-03-24  Christian Persch  <chpe@gnome.org>
 
 	* libegg/toolpalette/eggenumaction.c: (egg_enum_action_dispose): Use
