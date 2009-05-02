@@ -43,5 +43,5 @@ tracker reference if applicable) and so forth. Be concise but not too brief.
     rh means bugzilla.redhat.com, bnc means bugzilla.novell.com, lp means
     launchpad.net, etc.
 
-   - When a commit closes a bug, the commit message should contain a line like:
-     Closes: bgo#12345
+  - When a commit closes a bug, the commit message should contain a line like:
+    Closes: bgo#12345
