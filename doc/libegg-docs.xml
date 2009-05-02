@@ -40,9 +40,6 @@
   <!--
     <xi:include href="xml/eggcolumnmodel.xml"/>
     <xi:include href="xml/eggcolumnchooserdialog.xml"/>
-
-    <xi:include href="xml/eggtrayicon.xml"/>
-    <xi:include href="xml/eggtraymanager.xml"/>
   -->
 
   <part id="sidebar">

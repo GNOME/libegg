@@ -1,10 +1,3 @@
-if HAVE_GTK210
-else
-if HAVE_GTK21
-tray_SUBDIRS = tray
-endif
-endif
-
 if HAVE_GTK25
 thumbnail_SUBDIRS = \
   pixbufthumbnail \
@@ -28,7 +21,7 @@ endif
 
 SUBDIRS = util column-chooser treeviewutils \
   sidebar $(background_monitor_SUBDIRS) \
-  $(tray_SUBDIRS) dock datetime $(thumbnail_SUBDIRS) \
+  dock datetime $(thumbnail_SUBDIRS) \
   smclient \
   fileformatchooser $(gtk215_SUBDIRS)
 # Don't compile broken code

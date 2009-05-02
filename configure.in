@@ -75,10 +75,6 @@ PKG_CHECK_MODULES(EGG_XML, libxml-2.0)
 AC_SUBST(EGG_XML_LIBS)
 AC_SUBST(EGG_XML_CFLAGS)
 
-PKG_CHECK_MODULES(EGG_TRAY, gtk+-2.0 >= 2.2.0 libgnomeui-2.0 >=  2.2.0)
-AC_SUBST(EGG_TRAY_LIBS)
-AC_SUBST(EGG_TRAY_CFLAGS)
-
 PKG_CHECK_MODULES(EGG_LIBGNOMEUI, libgnomeui-2.0)
 AC_SUBST(EGG_LIBGNOMEUI_LIBS)
 AC_SUBST(EGG_LIBGNOMEUI_CFLAGS)
@@ -139,7 +135,6 @@ libegg/Makefile
 libegg/util/Makefile
 libegg/background-monitor/Makefile
 libegg/sidebar/Makefile
-libegg/tray/Makefile
 libegg/treeviewutils/Makefile
 libegg/column-chooser/Makefile
 libegg/toolbareditor/Makefile

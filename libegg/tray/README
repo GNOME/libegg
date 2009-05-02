@@ -1,4 +1,6 @@
-GTK+ 2.10 will come with GtkStatusIcon, which replaces eggtrayicon and eggstatusicon.
+GTK+ 2.10 will come with GtkStatusIcon, which replaces eggtrayicon and
+eggstatusicon. As of GTK+ 2.16, GtkStatusIcon has all the features to replace
+this code.
 
 eggtraymanager has been integrated in the notification area.
 

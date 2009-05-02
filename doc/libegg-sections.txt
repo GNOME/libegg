@@ -150,45 +150,6 @@ EGG_IS_COLUMN_CHOOSER_DIALOG_CLASS
 EGG_COLUMN_CHOOSER_DIALOG_GET_CLASS
 </SECTION>
 
-<INCLUDE>libegg/tray/eggtrayicon.h</INCLUDE>
-<SECTION>
-<FILE>eggtrayicon</FILE>
-<TITLE>EggTrayIcon</TITLE>
-egg_tray_icon_new_for_screen
-egg_tray_icon_new
-egg_tray_icon_send_message
-egg_tray_icon_cancel_message
-<SUBSECTION Standard>
-EGG_TRAY_ICON
-EGG_IS_TRAY_ICON
-EGG_TYPE_TRAY_ICON
-egg_tray_icon_get_type
-EGG_TRAY_ICON_CLASS
-EGG_IS_TRAY_ICON_CLASS
-EGG_TRAY_ICON_GET_CLASS
-</SECTION>
-
-<INCLUDE>libegg/tray/eggtraymanager.h</INCLUDE>
-<SECTION>
-<FILE>eggtraymanager</FILE>
-EggTrayManagerChild
-<TITLE>EggTrayManager</TITLE>
-egg_tray_manager_check_running
-egg_tray_manager_check_running_default_screen
-egg_tray_manager_new
-egg_tray_manager_manage_screen
-egg_tray_manager_manage
-egg_tray_manager_get_child_title
-<SUBSECTION Standard>
-EGG_TRAY_MANAGER
-EGG_IS_TRAY_MANAGER
-EGG_TYPE_TRAY_MANAGER
-egg_tray_manager_get_type
-EGG_TRAY_MANAGER_CLASS
-EGG_IS_TRAY_MANAGER_CLASS
-EGG_TRAY_MANAGER_GET_CLASS
-</SECTION>
-
 <INCLUDE>libegg/sidebar/eggsidebar.h</INCLUDE>
 <SECTION>
 <FILE>eggsidebar</FILE>
