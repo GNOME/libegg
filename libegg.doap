@@ -1,0 +1,26 @@
+<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:gnome="http://api.gnome.org/doap-extensions#"
+         xmlns="http://usefulinc.com/ns/doap#">
+
+  <name xml:lang="en">EGG library</name>
+  <shortdesc xml:lang="en">Incubator for GTK+ enhancements</shortdesc>
+
+  <mailing-list rdf:resource="http://mail.gnome.org/mailman/listinfo/gtk-devel-list" />
+  <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=libegg"/>
+  <category rdf:resource="http://api.gnome.org/doap-extensions#development" />
+
+  <!-- toolbar-editor -->
+
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Christian Persch</foaf:name>
+      <foaf:mbox rdf:resource="mailto:chpe%40gnome.org" />
+      <gnome:userid>chpe</gnome:userid>
+    </foaf:Person>
+  </maintainer>
+
+  <!-- FIXME: add the maintainers of the other parts here! -->
+
+</Project>
