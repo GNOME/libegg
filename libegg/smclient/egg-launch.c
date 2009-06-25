@@ -48,7 +48,8 @@ main (int argc, char **argv)
 {
   GOptionContext *ctx;
   EggDesktopFile *desktop_file;
-  char *desktop_file_path, *type, *command;
+  char *desktop_file_path, *command;
+  const char *type;
   GError *error = NULL;
   GdkDisplay *gdk_display;
   GdkScreen *screen;
@@ -136,6 +137,7 @@ main (int argc, char **argv)
     case EGG_DESKTOP_FILE_TYPE_LINK:
       type = "Link";
       break;
+    case EGG_DESKTOP_FILE_TYPE_UNRECOGNIZED:
     default:
       type = "Unrecognized";
       break;
