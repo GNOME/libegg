@@ -1823,3 +1823,14 @@ egg_editable_toolbar_get_model (EggEditableToolbar *etoolbar)
 {
   return etoolbar->priv->model;
 }
+
+/**
+ * egg_editable_toolbar_get_manager:
+ *
+ * Return value: (transfer none):
+ */
+GtkUIManager *
+egg_editable_toolbar_get_manager (EggEditableToolbar *etoolbar)
+{
+  return etoolbar->priv->manager;
+}
