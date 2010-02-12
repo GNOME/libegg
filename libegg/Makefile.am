@@ -9,6 +9,11 @@ iconchooser_SUBDIRS = \
   iconchooser
 endif
 
+if HAVE_GTK210
+gtk210_SUBDIRS = \
+  fileformatchooser
+endif
+
 if HAVE_GTK215
 gtk215_SUBDIRS = \
   toolpalette
@@ -23,7 +28,9 @@ SUBDIRS = util column-chooser treeviewutils \
   sidebar $(background_monitor_SUBDIRS) \
   dock datetime $(thumbnail_SUBDIRS) \
   smclient \
-  fileformatchooser $(gtk215_SUBDIRS)
+  $(gtk210_SUBDIRS) \
+  $(gtk215_SUBDIRS)
+
 # Don't compile broken code
 #$(iconchooser_SUBDIRS)
 
