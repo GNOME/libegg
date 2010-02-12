@@ -145,7 +145,6 @@ libegg/thumbnailpreview/Makefile
 libegg/iconchooser/Makefile
 libegg/smclient/Makefile
 libegg/fileformatchooser/Makefile
-libegg/toolpalette/Makefile
 doc/Makefile
 ])
 

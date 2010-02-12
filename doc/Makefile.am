@@ -52,7 +52,6 @@ GTKDOC_LIBS = \
   $(top_builddir)/libegg/treeviewutils/libegg-treeview.la \
   $(top_builddir)/libegg/background-monitor/libegg-background-monitor.la \
   $(top_builddir)/libegg/sidebar/libegg-sidebar.la \
-  $(top_builddir)/libegg/toolpalette/libeggtoolpalette.la \
   $(top_builddir)/libegg/util/libeggutil.la \
   $(EGG_LIBS) \
   `pkg-config --libs libxml-2.0`

@@ -15,8 +15,7 @@ gtk210_SUBDIRS = \
 endif
 
 if HAVE_GTK215
-gtk215_SUBDIRS = \
-  toolpalette
+gtk215_SUBDIRS =
 endif
 
 if HAVE_GTK_TARGET_X11
