@@ -992,7 +992,11 @@ egg_tool_item_group_size_allocate (GtkWidget     *widget,
 {
   egg_tool_item_group_real_size_allocate (widget, allocation);
 
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_mapped (widget))
+#else
   if (GTK_WIDGET_MAPPED (widget))
+#endif
     gdk_window_invalidate_rect (widget->window, NULL, FALSE);
 }
 
