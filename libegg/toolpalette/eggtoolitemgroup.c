@@ -536,7 +536,7 @@ egg_tool_item_group_is_item_visible (EggToolItemGroup      *group,
 
   return
 #if GTK_CHECK_VERSION(2,20,0)
-    (gtk_widget_get_visible (child->item)) &&
+    (gtk_widget_get_visible (GTK_WIDGET (child->item))) &&
 #else
     (GTK_WIDGET_VISIBLE (child->item)) &&
 #endif
@@ -1346,7 +1346,7 @@ egg_tool_item_group_set_item_packing (EggToolItemGroup *group,
   gtk_widget_thaw_child_notify (GTK_WIDGET (item));
 
 #if GTK_CHECK_VERSION(2,20,0)
-  if (changed && gtk_widget_get_visible (group) && gtk_widget_get_visible (item))
+  if (changed && gtk_widget_get_visible (GTK_WIDGET (group)) && gtk_widget_get_visible (GTK_WIDGET (item)))
 #else
   if (changed && GTK_WIDGET_VISIBLE (group) && GTK_WIDGET_VISIBLE (item))
 #endif
@@ -1698,7 +1698,7 @@ egg_tool_item_group_animation_cb (gpointer data)
     }
 
 #if GTK_CHECK_VERSION(2,20,0)
-  if (gtk_widget_get_realized (group))
+  if (gtk_widget_get_realized (GTK_WIDGET (group)))
 #else
   if (GTK_WIDGET_REALIZED (group))
 #endif
@@ -1948,7 +1948,7 @@ egg_tool_item_group_set_item_position (EggToolItemGroup *group,
 
   gtk_widget_child_notify (GTK_WIDGET (item), "position");
 #if GTK_CHECK_VERSION(2,20,0)
-  if (gtk_widget_get_visible (group) && gtk_widget_get_visible (item))
+  if (gtk_widget_get_visible (GTK_WIDGET (group)) && gtk_widget_get_visible (GTK_WIDGET (item)))
 #else
   if (GTK_WIDGET_VISIBLE (group) && GTK_WIDGET_VISIBLE (item))
 #endif
