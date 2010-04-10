@@ -553,7 +553,7 @@ egg_dock_size_request (GtkWidget      *widget,
 
     /* make request to root */
 #if GTK_CHECK_VERSION(2,20,0)
-    if (dock->root && gtk_widget_get_visible (dock->root))
+    if (dock->root && gtk_widget_get_visible (GTK_WIDGET (dock->root)))
 #else
     if (dock->root && GTK_WIDGET_VISIBLE (dock->root))
 #endif
@@ -593,7 +593,7 @@ egg_dock_size_allocate (GtkWidget     *widget,
     allocation->height = MAX (1, allocation->height - 2 * border_width);
 
 #if GTK_CHECK_VERSION(2,20,0)
-    if (dock->root && gtk_widget_get_visible (dock->root))
+    if (dock->root && gtk_widget_get_visible (GTK_WIDGET (dock->root)))
 #else
     if (dock->root && GTK_WIDGET_VISIBLE (dock->root))
 #endif
@@ -943,7 +943,7 @@ egg_dock_dock (EggDockObject    *object,
         /* Realize the item (create its corresponding GdkWindow) when 
            EggDock has been realized. */
 #if GTK_CHECK_VERSION(2,20,0)
-        if (gtk_widget_get_realized (dock))
+        if (gtk_widget_get_realized (GTK_WIDGET (dock)))
 #else
         if (GTK_WIDGET_REALIZED (dock))
 #endif
@@ -953,9 +953,9 @@ egg_dock_dock (EggDockObject    *object,
            been mapped. This is done to make sure that the GdkWindow is 
            visible. */
 #if GTK_CHECK_VERSION(2,20,0)
-        if (gtk_widget_get_visible (dock) && 
+        if (gtk_widget_get_visible (GTK_WIDGET (dock)) && 
             gtk_widget_get_visible (widget)) {
-            if (gtk_widget_get_mapped (dock))
+            if (gtk_widget_get_mapped (GTK_WIDGET (dock)))
 #else
         if (GTK_WIDGET_VISIBLE (dock) && 
             GTK_WIDGET_VISIBLE (widget)) {
@@ -1126,9 +1126,9 @@ egg_dock_add_floating_item (EggDock        *dock,
                                        NULL));
     
 #if GTK_CHECK_VERSION(2,20,0)
-    if (gtk_widget_get_visible (dock)) {
+    if (gtk_widget_get_visible (GTK_WIDGET (dock))) {
         gtk_widget_show (GTK_WIDGET (new_dock));
-        if (gtk_widget_get_mapped (dock))
+        if (gtk_widget_get_mapped (GTK_WIDGET (dock)))
 #else
     if (GTK_WIDGET_VISIBLE (dock)) {
         gtk_widget_show (GTK_WIDGET (new_dock));

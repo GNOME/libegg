@@ -831,7 +831,7 @@ egg_dock_item_realize (GtkWidget *widget)
     widget->style = gtk_style_attach (widget->style, widget->window);
 #if GTK_CHECK_VERSION(2,20,0)
     gtk_style_set_background (widget->style, widget->window, 
-                              gtk_widget_get_state (item));
+                              gtk_widget_get_state (GTK_WIDGET (item)));
 #else
     gtk_style_set_background (widget->style, widget->window, 
                               GTK_WIDGET_STATE (item));
@@ -1230,7 +1230,7 @@ egg_dock_item_dock (EggDockObject    *object,
 
     /* show automatic object */
 #if GTK_CHECK_VERSION(2,20,0)
-    if (gtk_widget_get_visible (object))
+    if (gtk_widget_get_visible (GTK_WIDGET (object)))
 #else
     if (GTK_WIDGET_VISIBLE (object))
 #endif
@@ -1303,7 +1303,7 @@ egg_dock_item_drag_start (EggDockItem *item)
     GdkCursor *fleur;
 
 #if GTK_CHECK_VERSION(2,20,0)
-    if (!gtk_widget_get_realized (item))
+    if (!gtk_widget_get_realized (GTK_WIDGET (item)))
 #else
     if (!GTK_WIDGET_REALIZED (item))
 #endif
