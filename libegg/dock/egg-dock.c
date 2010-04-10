@@ -918,7 +918,11 @@ egg_dock_dock (EggDockObject    *object,
 
         /* Realize the item (create its corresponding GdkWindow) when 
            EggDock has been realized. */
+#if GTK_CHECK_VERSION(2,20,0)
+        if (gtk_widget_get_realized (dock))
+#else
         if (GTK_WIDGET_REALIZED (dock))
+#endif
             gtk_widget_realize (widget);
         
         /* Map the widget if it's visible and the parent is visible and has 
@@ -1168,7 +1172,11 @@ egg_dock_xor_rect (EggDock      *dock,
     widget = GTK_WIDGET (dock);
 
     if (!dock->_priv->xor_gc) {
+#if GTK_CHECK_VERSION(2,20,0)
+        if (gtk_widget_get_realized (widget)) {
+#else
         if (GTK_WIDGET_REALIZED (widget)) {
+#endif
             GdkGCValues values;
 
             values.function = GDK_INVERT;

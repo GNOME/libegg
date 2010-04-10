@@ -334,7 +334,11 @@ clamp_to_screen (GtkWidget *widget,
   int monitor_num;
   GdkRectangle monitor;
 
+#if GTK_CHECK_VERSION(2,20,0)
+  g_return_if_fail (gtk_widget_get_realized (widget));
+#else
   g_return_if_fail (GTK_WIDGET_REALIZED (widget));
+#endif
 
   screen = gtk_widget_get_screen (widget);
   monitor_num = gdk_screen_get_monitor_at_window (screen, widget->window);
@@ -470,7 +474,11 @@ static void
 widget_default_size_changed (GtkFileChooserEmbed *embed,
 			     gpointer             user_data)
 {
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_realized (embed))
+#else
   if (GTK_WIDGET_REALIZED (embed))
+#endif
     widget_realized_default_size_changed (embed, user_data);
   else
     widget_unrealized_default_size_changed (embed, user_data);

@@ -1658,7 +1658,11 @@ egg_tool_item_group_animation_cb (gpointer data)
         group->priv->expander_style = GTK_EXPANDER_EXPANDED;
     }
 
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_realized (group->priv->header))
+#else
   if (GTK_WIDGET_REALIZED (group->priv->header))
+#endif
     {
       GtkWidget *alignment = egg_tool_item_group_get_alignment (group);
       GdkRectangle area;
@@ -1673,7 +1677,11 @@ egg_tool_item_group_animation_cb (gpointer data)
       gdk_window_invalidate_rect (group->priv->header->window, &area, TRUE);
     }
 
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_realized (group))
+#else
   if (GTK_WIDGET_REALIZED (group))
+#endif
     {
       GtkWidget *widget = GTK_WIDGET (group);
       GtkWidget *parent = gtk_widget_get_parent (widget);

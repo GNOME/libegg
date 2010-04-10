@@ -684,7 +684,11 @@ egg_dock_item_size_allocate (GtkWidget     *widget,
 
     widget->allocation = *allocation;
 
+#if GTK_CHECK_VERSION(2,20,0)
+    if (gtk_widget_get_realized (widget))
+#else
     if (GTK_WIDGET_REALIZED (widget))
+#endif
         gdk_window_move_resize (widget->window,
                                 widget->allocation.x,
                                 widget->allocation.y,
@@ -822,7 +826,11 @@ egg_dock_item_style_set (GtkWidget *widget,
     g_return_if_fail (EGG_IS_DOCK_ITEM (widget));
 
     /* FIXME: maybe remove this method altogether and use the default implementation */
+#if GTK_CHECK_VERSION(2,20,0)
+    if (gtk_widget_get_realized (widget) && !gtk_widget_get_has_window (widget)) {
+#else
     if (GTK_WIDGET_REALIZED (widget) && !GTK_WIDGET_NO_WINDOW (widget)) {
+#endif
         gtk_style_set_background (widget->style, widget->window,
                                   widget->state);
         if (GTK_WIDGET_DRAWABLE (widget))
@@ -1259,7 +1267,11 @@ egg_dock_item_drag_start (EggDockItem *item)
 {
     GdkCursor *fleur;
 
+#if GTK_CHECK_VERSION(2,20,0)
+    if (!gtk_widget_get_realized (item))
+#else
     if (!GTK_WIDGET_REALIZED (item))
+#endif
         gtk_widget_realize (GTK_WIDGET (item));
     
     EGG_DOCK_ITEM_SET_FLAGS (item, EGG_DOCK_IN_DRAG);

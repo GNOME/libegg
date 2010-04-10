@@ -327,7 +327,11 @@ egg_dock_tablabel_size_allocate (GtkWidget     *widget,
   
     widget->allocation = *allocation;
 
+#if GTK_CHECK_VERSION(2,20,0)
+    if (gtk_widget_get_realized (widget))
+#else
     if (GTK_WIDGET_REALIZED (widget))
+#endif
         gdk_window_move_resize (tablabel->event_window, 
                                 allocation->x, 
                                 allocation->y,
