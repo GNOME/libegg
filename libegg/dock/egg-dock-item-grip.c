@@ -62,7 +62,11 @@ egg_dock_item_grip_expose (GtkWidget      *widget,
                       rect->x, rect->y, rect->width, rect->height, 
                       grip->item->orientation);
 
+#if GTK_CHECK_VERSION(2,18,0)
+    if (gtk_widget_has_focus (widget)) {
+#else
     if (GTK_WIDGET_HAS_FOCUS (widget)) {
+#endif
         gint focus_width;
         gint focus_pad;
         GdkRectangle focus;

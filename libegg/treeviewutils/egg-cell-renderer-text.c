@@ -91,7 +91,11 @@ egg_cell_renderer_text_render (GtkCellRenderer    *cell,
 	
 	if ((flags & GTK_CELL_RENDERER_SELECTED) == GTK_CELL_RENDERER_SELECTED)
 	{
+#if GTK_CHECK_VERSION(2,18,0)
+		if (gtk_widget_has_focus (widget))
+#else
 		if (GTK_WIDGET_HAS_FOCUS (widget))
+#endif
 			state = GTK_STATE_SELECTED;
 		else
 			state = GTK_STATE_ACTIVE;
