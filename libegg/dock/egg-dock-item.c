@@ -807,8 +807,13 @@ egg_dock_item_realize (GtkWidget *widget)
     gdk_window_set_user_data (widget->window, widget);
   
     widget->style = gtk_style_attach (widget->style, widget->window);
+#if GTK_CHECK_VERSION(2,20,0)
+    gtk_style_set_background (widget->style, widget->window, 
+                              gtk_widget_get_state (item));
+#else
     gtk_style_set_background (widget->style, widget->window, 
                               GTK_WIDGET_STATE (item));
+#endif
     gdk_window_set_back_pixmap (widget->window, NULL, TRUE);
 
     if (item->child)
@@ -848,7 +853,11 @@ egg_dock_item_paint (GtkWidget      *widget,
 
     gtk_paint_box (widget->style,
                    widget->window,
+#if GTK_CHECK_VERSION(2,20,0)
+                   gtk_widget_get_state (widget),
+#else
                    GTK_WIDGET_STATE (widget),
+#endif
                    GTK_SHADOW_NONE,
                    &event->area, widget,
                    "dockitem",

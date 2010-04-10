@@ -98,7 +98,11 @@ egg_cell_renderer_text_render (GtkCellRenderer    *cell,
 	}
 	else
 	{
+#if GTK_CHECK_VERSION(2,20,0)
+		if (gtk_widget_get_state (widget) == GTK_STATE_INSENSITIVE)
+#else
 		if (GTK_WIDGET_STATE (widget) == GTK_STATE_INSENSITIVE)
+#endif
 			state = GTK_STATE_INSENSITIVE;
 		else
 			state = GTK_STATE_NORMAL;

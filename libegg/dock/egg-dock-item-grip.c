@@ -52,7 +52,11 @@ egg_dock_item_grip_expose (GtkWidget      *widget,
 
     gtk_paint_handle (widget->style,
                       widget->window,
+#if GTK_CHECK_VERSION(2,20,0)
+                      gtk_widget_get_state (widget),
+#else
                       GTK_WIDGET_STATE (widget),
+#endif
                       shadow,
                       clip, widget, "dockitem",
                       rect->x, rect->y, rect->width, rect->height, 
@@ -75,7 +79,11 @@ egg_dock_item_grip_expose (GtkWidget      *widget,
         focus.height -= 2 * (widget->style->xthickness + focus_pad);
 		
         gtk_paint_focus (widget->style, widget->window,
+#if GTK_CHECK_VERSION(2,20,0)
+                         gtk_widget_get_state (widget),
+#else
                          GTK_WIDGET_STATE (widget),
+#endif
                          clip, widget, "dockitem",
                          focus.x, focus.y,
                          focus.width, focus.height);
