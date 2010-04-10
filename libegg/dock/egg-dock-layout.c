@@ -953,13 +953,21 @@ egg_dock_layout_recursive_build (EggDockMaster *master,
                                                  parent);
                 else if (egg_dock_object_is_compound (parent)) {
                     gtk_container_add (GTK_CONTAINER (parent), GTK_WIDGET (object));
+#if GTK_CHECK_VERSION(2,20,0)
+                    if (gtk_widget_get_visible (parent))
+#else
                     if (GTK_WIDGET_VISIBLE (parent))
+#endif
                         gtk_widget_show (GTK_WIDGET (object));
                 }
             }
             else {
                 EggDockObject *controller = egg_dock_master_get_controller (master);
+#if GTK_CHECK_VERSION(2,20,0)
+                if (controller != object && gtk_widget_get_visible (controller))
+#else
                 if (controller != object && GTK_WIDGET_VISIBLE (controller))
+#endif
                     gtk_widget_show (GTK_WIDGET (object));
             }
                 

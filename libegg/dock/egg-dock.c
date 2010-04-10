@@ -552,7 +552,11 @@ egg_dock_size_request (GtkWidget      *widget,
     border_width = container->border_width;
 
     /* make request to root */
+#if GTK_CHECK_VERSION(2,20,0)
+    if (dock->root && gtk_widget_get_visible (dock->root))
+#else
     if (dock->root && GTK_WIDGET_VISIBLE (dock->root))
+#endif
         gtk_widget_size_request (GTK_WIDGET (dock->root), requisition);
     else {
         requisition->width = 0;
@@ -588,7 +592,11 @@ egg_dock_size_allocate (GtkWidget     *widget,
     allocation->width = MAX (1, allocation->width - 2 * border_width);
     allocation->height = MAX (1, allocation->height - 2 * border_width);
 
+#if GTK_CHECK_VERSION(2,20,0)
+    if (dock->root && gtk_widget_get_visible (dock->root))
+#else
     if (dock->root && GTK_WIDGET_VISIBLE (dock->root))
+#endif
         gtk_widget_size_allocate (GTK_WIDGET (dock->root), allocation);
 }
 
@@ -607,7 +615,11 @@ egg_dock_map (GtkWidget *widget)
 
     if (dock->root) {
         child = GTK_WIDGET (dock->root);
+#if GTK_CHECK_VERSION(2,20,0)
+        if (gtk_widget_get_visible (child) && !gtk_widget_get_mapped (child))
+#else
         if (GTK_WIDGET_VISIBLE (child) && !GTK_WIDGET_MAPPED (child))
+#endif
             gtk_widget_map (child);
     }
 }
@@ -627,7 +639,11 @@ egg_dock_unmap (GtkWidget *widget)
 
     if (dock->root) {
         child = GTK_WIDGET (dock->root);
+#if GTK_CHECK_VERSION(2,20,0)
+        if (gtk_widget_get_visible (child) && gtk_widget_get_mapped (child))
+#else
         if (GTK_WIDGET_VISIBLE (child) && GTK_WIDGET_MAPPED (child))
+#endif
             gtk_widget_unmap (child);
     }
     
@@ -711,14 +727,22 @@ egg_dock_remove (GtkContainer *container,
     g_return_if_fail (widget != NULL);
 
     dock = EGG_DOCK (container);
+#if GTK_CHECK_VERSION(2,20,0)
+    was_visible = gtk_widget_get_visible (widget);
+#else
     was_visible = GTK_WIDGET_VISIBLE (widget);
+#endif
 
     if (GTK_WIDGET (dock->root) == widget) {
         dock->root = NULL;
         EGG_DOCK_OBJECT_UNSET_FLAGS (widget, EGG_DOCK_ATTACHED);
         gtk_widget_unparent (widget);
 
+#if GTK_CHECK_VERSION(2,20,0)
+        if (was_visible && gtk_widget_get_visible (GTK_WIDGET (container)))
+#else
         if (was_visible && GTK_WIDGET_VISIBLE (GTK_WIDGET (container)))
+#endif
             gtk_widget_queue_resize (GTK_WIDGET (dock));
     }
 }
@@ -928,9 +952,15 @@ egg_dock_dock (EggDockObject    *object,
         /* Map the widget if it's visible and the parent is visible and has 
            been mapped. This is done to make sure that the GdkWindow is 
            visible. */
+#if GTK_CHECK_VERSION(2,20,0)
+        if (gtk_widget_get_visible (dock) && 
+            gtk_widget_get_visible (widget)) {
+            if (gtk_widget_get_mapped (dock))
+#else
         if (GTK_WIDGET_VISIBLE (dock) && 
             GTK_WIDGET_VISIBLE (widget)) {
             if (GTK_WIDGET_MAPPED (dock))
+#endif
                 gtk_widget_map (widget);
             
             /* Make the widget resize. */
@@ -1095,9 +1125,15 @@ egg_dock_add_floating_item (EggDock        *dock,
                                        "floaty", y,
                                        NULL));
     
+#if GTK_CHECK_VERSION(2,20,0)
+    if (gtk_widget_get_visible (dock)) {
+        gtk_widget_show (GTK_WIDGET (new_dock));
+        if (gtk_widget_get_mapped (dock))
+#else
     if (GTK_WIDGET_VISIBLE (dock)) {
         gtk_widget_show (GTK_WIDGET (new_dock));
         if (GTK_WIDGET_MAPPED (dock))
+#endif
             gtk_widget_map (GTK_WIDGET (new_dock));
         
         /* Make the widget resize. */

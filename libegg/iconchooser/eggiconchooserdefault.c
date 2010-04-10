@@ -1563,7 +1563,11 @@ icon_view_style_set (GtkWidget *icon_view,
 		     GtkStyle  *old_style,
 		     gpointer user_data)
 {
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_visible (icon_view))
+#else
   if (GTK_WIDGET_VISIBLE (icon_view))
+#endif
     gtk_widget_modify_bg (GTK_WIDGET (user_data), GTK_STATE_NORMAL,
 			  &(icon_view->style->base[icon_view->state]));
 }

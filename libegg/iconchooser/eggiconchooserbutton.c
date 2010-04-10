@@ -460,7 +460,11 @@ button_clicked_cb (GtkButton *button,
 
   priv = EGG_ICON_CHOOSER_BUTTON_GET_PRIVATE (user_data);
 
+#if GTK_CHECK_VERSION(2,20,0)
+  if (!gtk_widget_get_visible (priv->dialog))
+#else
   if (!GTK_WIDGET_VISIBLE (priv->dialog))
+#endif
     {
       GtkWidget *toplevel;
 

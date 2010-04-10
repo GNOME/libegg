@@ -575,7 +575,11 @@ egg_dock_item_remove (GtkContainer *container,
     
     item = EGG_DOCK_ITEM (container);
     if (item->_priv && widget == item->_priv->grip) {
+#if GTK_CHECK_VERSION(2,20,0)
+        gboolean grip_was_visible = gtk_widget_get_visible (widget);
+#else
         gboolean grip_was_visible = GTK_WIDGET_VISIBLE (widget);
+#endif
         gtk_widget_unparent (widget);
         item->_priv->grip = NULL;
         if (grip_was_visible)
@@ -589,7 +593,11 @@ egg_dock_item_remove (GtkContainer *container,
     
     g_return_if_fail (item->child == widget);
     
+#if GTK_CHECK_VERSION(2,20,0)
+    was_visible = gtk_widget_get_visible (widget);
+#else
     was_visible = GTK_WIDGET_VISIBLE (widget);
+#endif
 
     gtk_widget_unparent (widget);
     item->child = NULL;
@@ -695,7 +703,11 @@ egg_dock_item_size_allocate (GtkWidget     *widget,
                                 widget->allocation.width,
                                 widget->allocation.height);
 
+#if GTK_CHECK_VERSION(2,20,0)
+    if (item->child && gtk_widget_get_visible (item->child)) {
+#else
     if (item->child && GTK_WIDGET_VISIBLE (item->child)) {
+#endif
         GtkAllocation  child_allocation;
         int            border_width;
 
@@ -745,13 +757,23 @@ egg_dock_item_map (GtkWidget *widget)
     gdk_window_show (widget->window);
 
     if (item->child
+#if GTK_CHECK_VERSION(2,20,0)
+        && gtk_widget_get_visible (item->child)
+        && !gtk_widget_get_mapped (item->child))
+#else
         && GTK_WIDGET_VISIBLE (item->child)
         && !GTK_WIDGET_MAPPED (item->child))
+#endif
         gtk_widget_map (item->child);
 
     if (item->_priv->grip
+#if GTK_CHECK_VERSION(2,20,0)
+        && gtk_widget_get_visible (item->_priv->grip)
+        && !gtk_widget_get_mapped (item->_priv->grip))
+#else
         && GTK_WIDGET_VISIBLE (item->_priv->grip)
         && !GTK_WIDGET_MAPPED (item->_priv->grip))
+#endif
         gtk_widget_map (item->_priv->grip);
 }
 
@@ -1207,7 +1229,11 @@ egg_dock_item_dock (EggDockObject    *object,
         gtk_container_add (GTK_CONTAINER (parent), GTK_WIDGET (new_parent));
 
     /* show automatic object */
+#if GTK_CHECK_VERSION(2,20,0)
+    if (gtk_widget_get_visible (object))
+#else
     if (GTK_WIDGET_VISIBLE (object))
+#endif
         gtk_widget_show (GTK_WIDGET (new_parent));
     
     /* use extra docking parameter */

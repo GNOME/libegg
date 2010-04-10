@@ -338,7 +338,11 @@ egg_dock_tablabel_size_allocate (GtkWidget     *widget,
                                 allocation->width, 
                                 allocation->height);
 
+#if GTK_CHECK_VERSION(2,20,0)
+    if (bin->child && gtk_widget_get_visible (bin->child)) {
+#else
     if (bin->child && GTK_WIDGET_VISIBLE (bin->child)) {
+#endif
         GtkAllocation  child_allocation;
 
         child_allocation.x = widget->allocation.x + border_width;
@@ -394,7 +398,11 @@ egg_dock_tablabel_expose (GtkWidget      *widget,
     g_return_val_if_fail (EGG_IS_DOCK_TABLABEL (widget), FALSE);
     g_return_val_if_fail (event != NULL, FALSE);
 
+#if GTK_CHECK_VERSION(2,20,0)
+    if (gtk_widget_get_visible (widget) && gtk_widget_get_mapped (widget)) {
+#else
     if (GTK_WIDGET_VISIBLE (widget) && GTK_WIDGET_MAPPED (widget)) {
+#endif
         EGG_CALL_PARENT (GTK_WIDGET_CLASS, expose_event, (widget, event));
         egg_dock_tablabel_paint (widget, event);
     };

@@ -535,7 +535,11 @@ egg_tool_item_group_is_item_visible (EggToolItemGroup      *group,
     return FALSE;
 
   return
+#if GTK_CHECK_VERSION(2,20,0)
+    (gtk_widget_get_visible (child->item)) &&
+#else
     (GTK_WIDGET_VISIBLE (child->item)) &&
+#endif
     (GTK_ORIENTATION_VERTICAL == orientation ?
      gtk_tool_item_get_visible_vertical (child->item) :
      gtk_tool_item_get_visible_horizontal (child->item));
@@ -764,7 +768,11 @@ egg_tool_item_group_real_size_query (GtkWidget      *widget,
   inquery->height = 0;
 
   /* figure out header widget size */
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_visible (group->priv->header))
+#else
   if (GTK_WIDGET_VISIBLE (group->priv->header))
+#endif
     {
       GtkRequisition child_requisition;
 
@@ -813,7 +821,11 @@ egg_tool_item_group_real_size_allocate (GtkWidget      *widget,
   child_allocation.y = border_width;
 
   /* place the header widget */
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_visible (group->priv->header))
+#else
   if (GTK_WIDGET_VISIBLE (group->priv->header))
+#endif
     {
       gtk_widget_size_request (group->priv->header, &child_requisition);
 
@@ -1329,7 +1341,11 @@ egg_tool_item_group_set_item_packing (EggToolItemGroup *group,
 
   gtk_widget_thaw_child_notify (GTK_WIDGET (item));
 
+#if GTK_CHECK_VERSION(2,20,0)
+  if (changed && gtk_widget_get_visible (group) && gtk_widget_get_visible (item))
+#else
   if (changed && GTK_WIDGET_VISIBLE (group) && GTK_WIDGET_VISIBLE (item))
+#endif
     gtk_widget_queue_resize (GTK_WIDGET (group));
 }
 
@@ -1693,7 +1709,11 @@ egg_tool_item_group_animation_cb (gpointer data)
 
       gtk_widget_translate_coordinates (widget, parent, 0, 0, &x, &y);
 
+#if GTK_CHECK_VERSION(2,20,0)
+      if (gtk_widget_get_visible (group->priv->header))
+#else
       if (GTK_WIDGET_VISIBLE (group->priv->header))
+#endif
         {
           height -= group->priv->header->allocation.height;
           y += group->priv->header->allocation.height;
@@ -1923,7 +1943,11 @@ egg_tool_item_group_set_item_position (EggToolItemGroup *group,
   group->priv->children = g_list_insert (group->priv->children, child, position);
 
   gtk_widget_child_notify (GTK_WIDGET (item), "position");
+#if GTK_CHECK_VERSION(2,20,0)
+  if (gtk_widget_get_visible (group) && gtk_widget_get_visible (item))
+#else
   if (GTK_WIDGET_VISIBLE (group) && GTK_WIDGET_VISIBLE (item))
+#endif
     gtk_widget_queue_resize (GTK_WIDGET (group));
 }
 
@@ -2109,7 +2133,11 @@ _egg_tool_item_group_paint (EggToolItemGroup *group,
 
       v0 = v1 - 256;
 
+#if GTK_CHECK_VERSION(2,20,0)
+      if (!gtk_widget_get_visible (group->priv->header))
+#else
       if (!GTK_WIDGET_VISIBLE (group->priv->header))
+#endif
         v0 = MAX (v0, 0);
       else if (GTK_ORIENTATION_VERTICAL == orientation)
         v0 = MAX (v0, group->priv->header->allocation.height);
