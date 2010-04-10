@@ -860,7 +860,11 @@ egg_dock_item_style_set (GtkWidget *widget,
 #endif
         gtk_style_set_background (widget->style, widget->window,
                                   widget->state);
+#if GTK_CHECK_VERSION(2,18,0)
+        if (gtk_widget_is_drawable (widget))
+#else
         if (GTK_WIDGET_DRAWABLE (widget))
+#endif
             gdk_window_clear (widget->window);
     }
 }
@@ -894,7 +898,11 @@ egg_dock_item_expose (GtkWidget      *widget,
     g_return_val_if_fail (EGG_IS_DOCK_ITEM (widget), FALSE);
     g_return_val_if_fail (event != NULL, FALSE);
 
+#if GTK_CHECK_VERSION(2,18,0)
+    if (gtk_widget_is_drawable (widget) && event->window == widget->window) {
+#else
     if (GTK_WIDGET_DRAWABLE (widget) && event->window == widget->window) {
+#endif
         egg_dock_item_paint (widget, event);
         EGG_CALL_PARENT (GTK_WIDGET_CLASS, expose_event, (widget, event));
     }
@@ -1414,7 +1422,11 @@ egg_dock_item_real_set_orientation (EggDockItem    *item,
 {
     item->orientation = orientation;
     
+#if GTK_CHECK_VERSION(2,18,0)
+    if (gtk_widget_is_drawable (item))
+#else
     if (GTK_WIDGET_DRAWABLE (item))
+#endif
         gtk_widget_queue_draw (GTK_WIDGET (item));
     gtk_widget_queue_resize (GTK_WIDGET (item));
 }
