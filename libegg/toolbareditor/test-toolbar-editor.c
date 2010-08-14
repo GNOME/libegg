@@ -51,7 +51,7 @@ edit (GtkWidget *button, EggEditableToolbar *toolbar)
   gtk_window_set_title (GTK_WINDOW (dialog), "Toolbar editor");
 
   editor = egg_toolbar_editor_new (manager, model);
-  gtk_container_add (GTK_CONTAINER (GTK_DIALOG (dialog)->vbox), editor);
+  gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), editor);
   gtk_widget_show (editor);
   g_signal_connect (editor, "destroy", G_CALLBACK (editor_destroy_cb), toolbar);
   egg_editable_toolbar_set_edit_mode (toolbar, TRUE);
