@@ -587,6 +587,7 @@ create_item_from_action (EggEditableToolbar *etoolbar,
   if (strcmp (name, "_separator") == 0)
     {
       item = gtk_separator_tool_item_new ();
+      gtk_widget_show (GTK_WIDGET (item));
     }
   else
     {
@@ -604,8 +605,6 @@ create_item_from_action (EggEditableToolbar *etoolbar,
       g_signal_connect_object (action, "notify::sensitive",
                                G_CALLBACK (action_sensitive_cb), item, 0);
     }
-
-  gtk_widget_show (GTK_WIDGET (item));
 
   g_object_set_data_full (G_OBJECT (item), EGG_ITEM_NAME,
                           g_strdup (name), g_free);
