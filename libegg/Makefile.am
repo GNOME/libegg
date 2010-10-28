@@ -1,3 +1,8 @@
+if HAVE_GTK30
+spreadtable_SUBDIRS = \
+  spreadtable
+endif
+
 if HAVE_GTK25
 thumbnail_SUBDIRS = \
   pixbufthumbnail \
@@ -28,7 +33,8 @@ SUBDIRS = util column-chooser treeviewutils \
   dock datetime $(thumbnail_SUBDIRS) \
   smclient \
   $(gtk210_SUBDIRS) \
-  $(gtk215_SUBDIRS)
+  $(gtk215_SUBDIRS) \
+  $(gtk30_SUBDIRS)
 
 # Don't compile broken code
 #$(iconchooser_SUBDIRS)

@@ -106,6 +106,13 @@ AM_CONDITIONAL(HAVE_GTK210, $PKG_CONFIG --atleast-version=2.10.0 gtk+-2.0)
 ## check if we have gtk+ 2.15.x
 AM_CONDITIONAL(HAVE_GTK215, $PKG_CONFIG --atleast-version=2.15.0 gtk+-2.0)
 
+## check if we have gtk+ 3
+AM_CONDITIONAL(HAVE_GTK30, $PKG_CONFIG --atleast-version=2.91.1 gtk+-3.0)
+
+AM_COND_IF(HAVE_GTK30,
+  [PKG_CHECK_MODULES(EGG_30, gtk+-3.0)
+  AC_CONFIG_FILES()])
+
 ## check if we have the X11 gtk+ backend
 AM_CONDITIONAL(HAVE_GTK_TARGET_X11, test `$PKG_CONFIG --variable=target gtk+-2.0` = x11)
 
@@ -144,6 +151,7 @@ libegg/pixbufthumbnail/Makefile
 libegg/thumbnailpreview/Makefile
 libegg/iconchooser/Makefile
 libegg/smclient/Makefile
+libegg/spreadtable/Makefile
 libegg/fileformatchooser/Makefile
 doc/Makefile
 ])
