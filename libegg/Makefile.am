@@ -31,7 +31,7 @@ endif
 SUBDIRS = util column-chooser treeviewutils \
   sidebar $(background_monitor_SUBDIRS) \
   dock datetime $(thumbnail_SUBDIRS) \
-  smclient \
+  smclient $(spreadtable_SUBDIRS) \
   $(gtk210_SUBDIRS) \
   $(gtk215_SUBDIRS) \
   $(gtk30_SUBDIRS)
