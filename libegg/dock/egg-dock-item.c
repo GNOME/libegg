@@ -1,4 +1,4 @@
-/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*- 
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * egg-dock-item.c
  *
@@ -9,7 +9,7 @@
  *
  * Copyright (C) 1998 Ettore Perazzoli
  * Copyright (C) 1998 Elliot Lee
- * Copyright (C) 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald 
+ * Copyright (C) 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -108,7 +108,7 @@ static void     egg_dock_item_dock         (EggDockObject    *object,
                                             EggDockPlacement  position,
                                             GValue           *other_data);
 
-static void  egg_dock_item_popup_menu    (EggDockItem *item, 
+static void  egg_dock_item_popup_menu    (EggDockItem *item,
                                           guint        button,
                                           guint32      time);
 static void  egg_dock_item_drag_start    (EggDockItem *item);
@@ -118,7 +118,7 @@ static void  egg_dock_item_drag_end      (EggDockItem *item,
 static void  egg_dock_item_tab_button    (GtkWidget      *widget,
                                           GdkEventButton *event,
                                           gpointer        data);
-                                          
+
 static void  egg_dock_item_hide_cb       (GtkWidget   *widget,
                                           EggDockItem *item);
 
@@ -173,7 +173,7 @@ struct _EggDockItemPrivate {
     gboolean   grip_shown;
     GtkWidget *grip;
     guint      grip_size;
-    
+
     GtkWidget *tab_label;
 
     gint       preferred_width;
@@ -201,7 +201,7 @@ egg_dock_item_class_init (EggDockItemClass *klass)
     GtkWidgetClass     *widget_class;
     GtkContainerClass  *container_class;
     EggDockObjectClass *object_class;
-    
+
     g_object_class = G_OBJECT_CLASS (klass);
     gtk_object_class = GTK_OBJECT_CLASS (klass);
     widget_class = GTK_WIDGET_CLASS (klass);
@@ -225,12 +225,12 @@ egg_dock_item_class_init (EggDockItemClass *klass)
     widget_class->button_release_event = egg_dock_item_button_changed;
     widget_class->motion_notify_event = egg_dock_item_motion;
     widget_class->key_press_event = egg_dock_item_key_press;
-    
+
     container_class->add = egg_dock_item_add;
     container_class->remove = egg_dock_item_remove;
     container_class->forall = egg_dock_item_forall;
     container_class->child_type = egg_dock_item_child_type;
-    
+
     object_class->is_compound = FALSE;
 
     object_class->dock_request = egg_dock_item_dock_request;
@@ -253,7 +253,7 @@ egg_dock_item_class_init (EggDockItemClass *klass)
     g_value_register_transform_func (EGG_TYPE_DOCK_PARAM, GTK_TYPE_ORIENTATION,
                                      egg_dock_param_import_gtk_orientation);
     /* --- end of registration */
-    
+
     g_object_class_install_property (
         g_object_class, PROP_RESIZE,
         g_param_spec_boolean ("resize", _("Resizable"),
@@ -261,7 +261,7 @@ egg_dock_item_class_init (EggDockItemClass *klass)
                                 "docked in a paned"),
                               TRUE,
                               G_PARAM_READWRITE));
-                                     
+
     g_object_class_install_property (
         g_object_class, PROP_BEHAVIOR,
         g_param_spec_flags ("behavior", _("Item behavior"),
@@ -270,7 +270,7 @@ egg_dock_item_class_init (EggDockItemClass *klass)
                             EGG_TYPE_DOCK_ITEM_BEHAVIOR,
                             EGG_DOCK_ITEM_BEH_NORMAL,
                             G_PARAM_READWRITE));
-                                     
+
     g_object_class_install_property (
         g_object_class, PROP_GRIP_SIZE,
         g_param_spec_uint ("grip_size", _("Grip size"),
@@ -302,8 +302,8 @@ egg_dock_item_class_init (EggDockItemClass *klass)
                           G_PARAM_READWRITE));
 
     /* signals */
-    
-    egg_dock_item_signals [DOCK_DRAG_BEGIN] = 
+
+    egg_dock_item_signals [DOCK_DRAG_BEGIN] =
         g_signal_new ("dock_drag_begin",
                       G_TYPE_FROM_CLASS (klass),
                       G_SIGNAL_RUN_FIRST,
@@ -311,10 +311,10 @@ egg_dock_item_class_init (EggDockItemClass *klass)
                       NULL, /* accumulator */
                       NULL, /* accu_data */
                       _egg_marshal_VOID__VOID,
-                      G_TYPE_NONE, 
+                      G_TYPE_NONE,
                       0);
 
-    egg_dock_item_signals [DOCK_DRAG_MOTION] = 
+    egg_dock_item_signals [DOCK_DRAG_MOTION] =
         g_signal_new ("dock_drag_motion",
                       G_TYPE_FROM_CLASS (klass),
                       G_SIGNAL_RUN_FIRST,
@@ -322,12 +322,12 @@ egg_dock_item_class_init (EggDockItemClass *klass)
                       NULL, /* accumulator */
                       NULL, /* accu_data */
                       _egg_marshal_VOID__INT_INT,
-                      G_TYPE_NONE, 
+                      G_TYPE_NONE,
                       2,
                       G_TYPE_INT,
                       G_TYPE_INT);
 
-    egg_dock_item_signals [DOCK_DRAG_END] = 
+    egg_dock_item_signals [DOCK_DRAG_END] =
         g_signal_new ("dock_drag_end",
                       G_TYPE_FROM_CLASS (klass),
                       G_SIGNAL_RUN_FIRST,
@@ -335,7 +335,7 @@ egg_dock_item_class_init (EggDockItemClass *klass)
                       NULL, /* accumulator */
                       NULL, /* accu_data */
                       _egg_marshal_VOID__BOOLEAN,
-                      G_TYPE_NONE, 
+                      G_TYPE_NONE,
                       1,
                       G_TYPE_BOOLEAN);
 
@@ -349,10 +349,10 @@ egg_dock_item_class_init (EggDockItemClass *klass)
 static void
 egg_dock_item_instance_init (EggDockItem *item)
 {
-    GTK_WIDGET_UNSET_FLAGS (GTK_WIDGET (item), GTK_NO_WINDOW);
+    gtk_widget_set_has_window (GTK_WIDGET (item), TRUE);
 
     item->child = NULL;
-    
+
     item->orientation = GTK_ORIENTATION_HORIZONTAL;
     item->behavior = EGG_DOCK_ITEM_BEH_NORMAL;
 
@@ -376,9 +376,9 @@ egg_dock_item_constructor (GType                  type,
                            GObjectConstructParam *construct_param)
 {
     GObject *g_object;
-    
-    g_object = EGG_CALL_PARENT_WITH_DEFAULT (G_OBJECT_CLASS, 
-                                               constructor, 
+
+    g_object = EGG_CALL_PARENT_WITH_DEFAULT (G_OBJECT_CLASS,
+                                               constructor,
                                                (type,
                                                 n_construct_properties,
                                                 construct_param),
@@ -428,7 +428,7 @@ egg_dock_item_set_property  (GObject      *g_object,
                 g_object_notify (g_object, "locked");
                 egg_dock_item_showhide_grip (item);
             }
-            
+
             break;
         }
         case PROP_GRIP_SIZE:
@@ -474,7 +474,7 @@ egg_dock_item_get_property  (GObject      *g_object,
                              GParamSpec   *pspec)
 {
     EggDockItem *item = EGG_DOCK_ITEM (g_object);
-    
+
     switch (prop_id) {
         case PROP_ORIENTATION:
             g_value_set_enum (value, item->orientation);
@@ -510,7 +510,7 @@ egg_dock_item_destroy (GtkObject *object)
 
     if (item->_priv) {
         EggDockItemPrivate *priv = item->_priv;
-        
+
         if (priv->tab_label) {
             egg_dock_item_set_tablabel (item, NULL);
         };
@@ -526,7 +526,7 @@ egg_dock_item_destroy (GtkObject *object)
             g_object_unref (priv->ph);
             priv->ph = NULL;
         }
-        
+
         item->_priv = NULL;
         g_free (priv);
     }
@@ -534,12 +534,12 @@ egg_dock_item_destroy (GtkObject *object)
     EGG_CALL_PARENT (GTK_OBJECT_CLASS, destroy, (object));
 }
 
-static void 
+static void
 egg_dock_item_add (GtkContainer *container,
                    GtkWidget    *widget)
 {
     EggDockItem *item;
-    
+
     g_return_if_fail (EGG_IS_DOCK_ITEM (container));
 
     item = EGG_DOCK_ITEM (container);
@@ -564,15 +564,15 @@ egg_dock_item_add (GtkContainer *container,
     item->child = widget;
 }
 
-static void  
+static void
 egg_dock_item_remove (GtkContainer *container,
                       GtkWidget    *widget)
 {
     EggDockItem *item;
     gboolean     was_visible;
-    
+
     g_return_if_fail (EGG_IS_DOCK_ITEM (container));
-    
+
     item = EGG_DOCK_ITEM (container);
     if (item->_priv && widget == item->_priv->grip) {
 #if GTK_CHECK_VERSION(2,20,0)
@@ -586,13 +586,13 @@ egg_dock_item_remove (GtkContainer *container,
             gtk_widget_queue_resize (GTK_WIDGET (item));
         return;
     }
-    
+
     if (EGG_DOCK_ITEM_IN_DRAG (item)) {
         egg_dock_item_drag_end (item, TRUE);
     }
-    
+
     g_return_if_fail (item->child == widget);
-    
+
 #if GTK_CHECK_VERSION(2,20,0)
     was_visible = gtk_widget_get_visible (widget);
 #else
@@ -601,7 +601,7 @@ egg_dock_item_remove (GtkContainer *container,
 
     gtk_widget_unparent (widget);
     item->child = NULL;
-    
+
     if (was_visible)
         gtk_widget_queue_resize (GTK_WIDGET (container));
 }
@@ -613,12 +613,12 @@ egg_dock_item_forall (GtkContainer *container,
                       gpointer      callback_data)
 {
     EggDockItem *item = (EggDockItem *) container;
-    
+
     g_return_if_fail (callback != NULL);
-    
+
     if (include_internals && item->_priv->grip)
         (* callback) (item->_priv->grip, callback_data);
-    
+
     if (item->child)
         (* callback) (item->child, callback_data);
 }
@@ -627,7 +627,7 @@ static GType
 egg_dock_item_child_type (GtkContainer *container)
 {
     g_return_val_if_fail (EGG_IS_DOCK_ITEM (container), G_TYPE_NONE);
-    
+
     if (!EGG_DOCK_ITEM (container)->child)
         return GTK_TYPE_WIDGET;
     else
@@ -656,7 +656,7 @@ egg_dock_item_size_request (GtkWidget      *widget,
     }
 
     if (item->orientation == GTK_ORIENTATION_HORIZONTAL) {
-        requisition->width = 
+        requisition->width =
             EGG_DOCK_ITEM_GRIP_SHOWN (item) ? item->_priv->grip_size : 0;
         if (item->child) {
             requisition->width += child_requisition.width;
@@ -664,7 +664,7 @@ egg_dock_item_size_request (GtkWidget      *widget,
         } else
             requisition->height = 0;
     } else {
-        requisition->height = 
+        requisition->height =
             EGG_DOCK_ITEM_GRIP_SHOWN (item) ? item->_priv->grip_size : 0;
         if (item->child) {
             requisition->width = child_requisition.width;
@@ -684,10 +684,10 @@ egg_dock_item_size_allocate (GtkWidget     *widget,
                              GtkAllocation *allocation)
 {
     EggDockItem *item;
-  
+
     g_return_if_fail (EGG_IS_DOCK_ITEM (widget));
     g_return_if_fail (allocation != NULL);
-  
+
     item = EGG_DOCK_ITEM (widget);
 
     widget->allocation = *allocation;
@@ -717,18 +717,18 @@ egg_dock_item_size_allocate (GtkWidget     *widget,
         child_allocation.y = border_width;
         child_allocation.width = allocation->width - 2 * border_width;
         child_allocation.height = allocation->height - 2 * border_width;
-        
+
         if (EGG_DOCK_ITEM_GRIP_SHOWN (item)) {
             GtkAllocation grip_alloc = *allocation;
-            
+
             grip_alloc.x = grip_alloc.y = 0;
-            
+
             if (item->orientation == GTK_ORIENTATION_HORIZONTAL) {
                 child_allocation.width -= item->_priv->grip_size;
                 grip_alloc.width = item->_priv->grip_size;
                 if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
                     grip_alloc.x = child_allocation.x + child_allocation.width;
-                else 
+                else
                     child_allocation.x += item->_priv->grip_size;
             } else {
                 child_allocation.y += item->_priv->grip_size;
@@ -750,7 +750,7 @@ egg_dock_item_map (GtkWidget *widget)
     g_return_if_fail (widget != NULL);
     g_return_if_fail (EGG_IS_DOCK_ITEM (widget));
 
-    GTK_WIDGET_SET_FLAGS (widget, GTK_MAPPED);
+    gtk_widget_set_mapped (widget, TRUE);
 
     item = EGG_DOCK_ITEM (widget);
 
@@ -785,8 +785,8 @@ egg_dock_item_unmap (GtkWidget *widget)
     g_return_if_fail (widget != NULL);
     g_return_if_fail (EGG_IS_DOCK_ITEM (widget));
 
-    GTK_WIDGET_UNSET_FLAGS (widget, GTK_MAPPED);
-    
+    gtk_widget_set_mapped (widget, FALSE);
+
     item = EGG_DOCK_ITEM (widget);
 
     gdk_window_hide (widget->window);
@@ -807,7 +807,7 @@ egg_dock_item_realize (GtkWidget *widget)
 
     item = EGG_DOCK_ITEM (widget);
 
-    GTK_WIDGET_SET_FLAGS (widget, GTK_REALIZED);
+    gtk_widget_set_realized (widget, TRUE);
 
     /* widget window */
     attributes.x = widget->allocation.x;
@@ -824,23 +824,23 @@ egg_dock_item_realize (GtkWidget *widget)
                              GDK_BUTTON_PRESS_MASK |
                              GDK_BUTTON_RELEASE_MASK);
     attributes_mask = GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL | GDK_WA_COLORMAP;
-    widget->window = gdk_window_new (gtk_widget_get_parent_window (widget), 
+    widget->window = gdk_window_new (gtk_widget_get_parent_window (widget),
                                      &attributes, attributes_mask);
     gdk_window_set_user_data (widget->window, widget);
-  
+
     widget->style = gtk_style_attach (widget->style, widget->window);
 #if GTK_CHECK_VERSION(2,20,0)
-    gtk_style_set_background (widget->style, widget->window, 
+    gtk_style_set_background (widget->style, widget->window,
                               gtk_widget_get_state (GTK_WIDGET (item)));
 #else
-    gtk_style_set_background (widget->style, widget->window, 
+    gtk_style_set_background (widget->style, widget->window,
                               GTK_WIDGET_STATE (item));
 #endif
     gdk_window_set_back_pixmap (widget->window, NULL, TRUE);
 
     if (item->child)
         gtk_widget_set_parent_window (item->child, widget->window);
-    
+
     if (item->_priv->grip)
         gtk_widget_set_parent_window (item->_priv->grip, widget->window);
 }
@@ -906,7 +906,7 @@ egg_dock_item_expose (GtkWidget      *widget,
         egg_dock_item_paint (widget, event);
         EGG_CALL_PARENT (GTK_WIDGET_CLASS, expose_event, (widget, event));
     }
-  
+
     return FALSE;
 }
 
@@ -920,24 +920,24 @@ egg_dock_item_button_changed (GtkWidget      *widget,
     EggDockItem *item;
     gboolean     event_handled;
     gboolean     in_handle;
-  
+
     g_return_val_if_fail (widget != NULL, FALSE);
     g_return_val_if_fail (EGG_IS_DOCK_ITEM (widget), FALSE);
     g_return_val_if_fail (event != NULL, FALSE);
-    
+
     item = EGG_DOCK_ITEM (widget);
-    
+
     if (!(event->window == widget->window ||
           EVENT_IN_TABLABEL_EVENT_WINDOW (event, item->_priv->tab_label)))
         return FALSE;
-    
+
     /* Verify that the item is not locked. */
     if (!EGG_DOCK_ITEM_NOT_LOCKED (item))
         return FALSE;
 
     event_handled = FALSE;
 
-    /* Check if user clicked on the drag handle. */      
+    /* Check if user clicked on the drag handle. */
     switch (item->orientation) {
     case GTK_ORIENTATION_HORIZONTAL:
         if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
@@ -955,16 +955,16 @@ egg_dock_item_button_changed (GtkWidget      *widget,
 
     /* Left mousebutton click on dockitem. */
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS) {
-        /* Set in_drag flag, grab pointer and call begin drag operation. */      
+        /* Set in_drag flag, grab pointer and call begin drag operation. */
         if (in_handle) {
             item->_priv->start_x = event->x;
             item->_priv->start_y = event->y;
 
             EGG_DOCK_ITEM_SET_FLAGS (item, EGG_DOCK_IN_PREDRAG);
-        
+
             event_handled = TRUE;
         };
-        
+
     } else if (event->type == GDK_BUTTON_RELEASE && event->button == 1) {
         if (EGG_DOCK_ITEM_IN_DRAG (item)) {
             /* User dropped widget somewhere. */
@@ -975,10 +975,10 @@ egg_dock_item_button_changed (GtkWidget      *widget,
             EGG_DOCK_ITEM_UNSET_FLAGS (item, EGG_DOCK_IN_PREDRAG);
             event_handled = TRUE;
         }
-             
+
     } else if (event->button == 3 && event->type == GDK_BUTTON_PRESS && in_handle) {
         egg_dock_item_popup_menu (item, event->button, event->time);
-        event_handled = TRUE;    	
+        event_handled = TRUE;
     }
 
     return event_handled;
@@ -1014,14 +1014,14 @@ egg_dock_item_motion (GtkWidget      *widget,
             egg_dock_item_drag_start (item);
         }
     }
-    
+
     if (!EGG_DOCK_ITEM_IN_DRAG (item))
         return FALSE;
 
     new_x = event->x_root;
     new_y = event->y_root;
-    
-    g_signal_emit (item, egg_dock_item_signals [DOCK_DRAG_MOTION], 
+
+    g_signal_emit (item, egg_dock_item_signals [DOCK_DRAG_MOTION],
                    0, new_x, new_y);
 
     return TRUE;
@@ -1032,7 +1032,7 @@ egg_dock_item_key_press (GtkWidget   *widget,
                          GdkEventKey *event)
 {
     gboolean event_handled = FALSE;
-    
+
     if (EGG_DOCK_ITEM_IN_DRAG (widget)) {
         if (event->keyval == GDK_Escape) {
             egg_dock_item_drag_end (EGG_DOCK_ITEM (widget), TRUE);
@@ -1059,10 +1059,10 @@ egg_dock_item_dock_request (EggDockObject  *object,
     gint           rel_x, rel_y;
 
     /* we get (x,y) in our allocation coordinates system */
-    
+
     /* Get item's allocation. */
     alloc = &(GTK_WIDGET (object)->allocation);
-    
+
     /* Get coordinates relative to our window. */
     rel_x = x - alloc->x;
     rel_y = y - alloc->y;
@@ -1073,11 +1073,11 @@ egg_dock_item_dock_request (EggDockObject  *object,
         float rx, ry;
         GtkRequisition my, other;
         gint divider = -1;
-        
+
         /* this are for calculating the extra docking parameter */
         egg_dock_item_preferred_size (EGG_DOCK_ITEM (request->applicant), &other);
         egg_dock_item_preferred_size (EGG_DOCK_ITEM (object), &my);
-        
+
         /* Calculate location in terms of the available space (0-100%). */
         rx = (float) rel_x / alloc->width;
         ry = (float) rel_y / alloc->height;
@@ -1144,8 +1144,8 @@ egg_dock_item_dock_request (EggDockObject  *object,
            origin as our window */
         request->rect.x += alloc->x;
         request->rect.y += alloc->y;
-        
-        /* Set possible target location and return TRUE. */            
+
+        /* Set possible target location and return TRUE. */
         request->target = object;
 
         /* fill-in other dock information */
@@ -1155,10 +1155,10 @@ egg_dock_item_dock_request (EggDockObject  *object,
             g_value_init (&request->extra, G_TYPE_UINT);
             g_value_set_uint (&request->extra, (guint) divider);
         }
-        
-        return TRUE;         
+
+        return TRUE;
     }
-    else /* No docking possible at this location. */            
+    else /* No docking possible at this location. */
         return FALSE;
 }
 
@@ -1170,7 +1170,7 @@ egg_dock_item_dock (EggDockObject    *object,
 {
     EggDockObject *new_parent, *parent;
     gboolean       add_ourselves_first;
-    
+
     parent = egg_dock_object_get_parent_object (object);
 
     switch (position) {
@@ -1194,12 +1194,12 @@ egg_dock_item_dock (EggDockObject    *object,
                                        NULL);
             add_ourselves_first = TRUE;
             break;
-        default: 
+        default:
         {
             GEnumClass *enum_class = G_ENUM_CLASS (g_type_class_ref (EGG_TYPE_DOCK_PLACEMENT));
             GEnumValue *enum_value = g_enum_get_value (enum_class, position);
             gchar *name = enum_value ? enum_value->value_name : NULL;
-            
+
             g_warning (_("Unsupported docking strategy %s in dock object of type %s"),
                        name,  G_OBJECT_TYPE_NAME (object));
             g_type_class_unref (enum_class);
@@ -1219,10 +1219,10 @@ egg_dock_item_dock (EggDockObject    *object,
     /* freeze the new parent, so reduce won't get called before it's
        actually added to our parent */
     egg_dock_object_freeze (new_parent);
-    
+
     /* bind the new parent to our master, so the following adds work */
     egg_dock_object_bind (new_parent, G_OBJECT (EGG_DOCK_OBJECT_GET_MASTER (object)));
-    
+
     /* add the objects */
     if (add_ourselves_first) {
         gtk_container_add (GTK_CONTAINER (new_parent), GTK_WIDGET (object));
@@ -1243,16 +1243,16 @@ egg_dock_item_dock (EggDockObject    *object,
     if (GTK_WIDGET_VISIBLE (object))
 #endif
         gtk_widget_show (GTK_WIDGET (new_parent));
-    
+
     /* use extra docking parameter */
     if (position != EGG_DOCK_CENTER && other_data &&
         G_VALUE_HOLDS (other_data, G_TYPE_UINT)) {
-        
+
         g_object_set (G_OBJECT (new_parent),
                       "position", g_value_get_uint (other_data),
                       NULL);
     }
-    
+
     EGG_DOCK_OBJECT_UNSET_FLAGS (object, EGG_DOCK_IN_REFLOW);
     g_object_unref (object);
 
@@ -1266,13 +1266,13 @@ egg_dock_item_detach_menu (GtkWidget *widget,
                            GtkMenu   *menu)
 {
     EggDockItem *item;
-   
+
     item = EGG_DOCK_ITEM (widget);
     item->_priv->menu = NULL;
 }
 
 static void
-egg_dock_item_popup_menu (EggDockItem  *item, 
+egg_dock_item_popup_menu (EggDockItem  *item,
                           guint         button,
                           guint32       time)
 {
@@ -1284,11 +1284,11 @@ egg_dock_item_popup_menu (EggDockItem  *item,
         gtk_menu_attach_to_widget (GTK_MENU (item->_priv->menu),
                                    GTK_WIDGET (item),
                                    egg_dock_item_detach_menu);
-        
+
         /* Hide menuitem. */
         mitem = gtk_menu_item_new_with_label (_("Hide"));
         gtk_menu_shell_append (GTK_MENU_SHELL (item->_priv->menu), mitem);
-        g_signal_connect (mitem, "activate", 
+        g_signal_connect (mitem, "activate",
                           G_CALLBACK (egg_dock_item_hide_cb), item);
 
         /* Lock menuitem */
@@ -1301,7 +1301,7 @@ egg_dock_item_popup_menu (EggDockItem  *item,
 
     /* Show popup menu. */
     gtk_widget_show_all (item->_priv->menu);
-    gtk_menu_popup (GTK_MENU (item->_priv->menu), NULL, NULL, NULL, NULL, 
+    gtk_menu_popup (GTK_MENU (item->_priv->menu), NULL, NULL, NULL, NULL,
                     button, time);
 }
 
@@ -1316,17 +1316,17 @@ egg_dock_item_drag_start (EggDockItem *item)
     if (!GTK_WIDGET_REALIZED (item))
 #endif
         gtk_widget_realize (GTK_WIDGET (item));
-    
+
     EGG_DOCK_ITEM_SET_FLAGS (item, EGG_DOCK_IN_DRAG);
-            
+
     /* grab the pointer so we receive all mouse events */
     fleur = gdk_cursor_new (GDK_FLEUR);
 
     /* grab the keyboard & pointer */
     gtk_grab_add (GTK_WIDGET (item));
-    
+
     gdk_cursor_unref (fleur);
-            
+
     g_signal_emit (item, egg_dock_item_signals [DOCK_DRAG_BEGIN], 0);
 }
 
@@ -1336,13 +1336,13 @@ egg_dock_item_drag_end (EggDockItem *item,
 {
     /* Release pointer & keyboard. */
     gtk_grab_remove (gtk_grab_get_current ());
-    
+
     g_signal_emit (item, egg_dock_item_signals [DOCK_DRAG_END], 0, cancel);
-    
+
     EGG_DOCK_ITEM_UNSET_FLAGS (item, EGG_DOCK_IN_DRAG);
 }
 
-static void 
+static void
 egg_dock_item_tab_button (GtkWidget      *widget,
                           GdkEventButton *event,
                           gpointer        data)
@@ -1356,7 +1356,7 @@ egg_dock_item_tab_button (GtkWidget      *widget,
 
     switch (event->button) {
     case 1:
-        /* set dragoff_{x,y} as we the user clicked on the middle of the 
+        /* set dragoff_{x,y} as we the user clicked on the middle of the
            drag handle */
         switch (item->orientation) {
         case GTK_ORIENTATION_HORIZONTAL:
@@ -1381,11 +1381,11 @@ egg_dock_item_tab_button (GtkWidget      *widget,
 }
 
 static void
-egg_dock_item_hide_cb (GtkWidget   *widget, 
+egg_dock_item_hide_cb (GtkWidget   *widget,
                        EggDockItem *item)
 {
     EggDockMaster *master;
-    
+
     g_return_if_fail (item != NULL);
 
     master = EGG_DOCK_OBJECT_GET_MASTER (item);
@@ -1407,10 +1407,10 @@ egg_dock_item_showhide_grip (EggDockItem *item)
     if (item->_priv->grip) {
         if (EGG_DOCK_ITEM_GRIP_SHOWN (item)) {
             gtk_widget_show (item->_priv->grip);
-            GTK_WIDGET_SET_FLAGS (item->_priv->grip, GTK_CAN_FOCUS);
+            gtk_widget_set_can_focus (item->_priv->grip, TRUE);
         } else {
             gtk_widget_hide (item->_priv->grip);
-            GTK_WIDGET_UNSET_FLAGS (item->_priv->grip, GTK_CAN_FOCUS);
+            gtk_widget_set_can_focus (item->_priv->grip, FALSE);
         }
     }
     gtk_widget_queue_resize (GTK_WIDGET (item));
@@ -1421,7 +1421,7 @@ egg_dock_item_real_set_orientation (EggDockItem    *item,
                                     GtkOrientation  orientation)
 {
     item->orientation = orientation;
-    
+
 #if GTK_CHECK_VERSION(2,18,0)
     if (gtk_widget_is_drawable (item))
 #else
@@ -1441,8 +1441,8 @@ egg_dock_item_new (const gchar         *name,
 {
     EggDockItem *item;
 
-    item = EGG_DOCK_ITEM (g_object_new (EGG_TYPE_DOCK_ITEM, 
-                                        "name", name, 
+    item = EGG_DOCK_ITEM (g_object_new (EGG_TYPE_DOCK_ITEM,
+                                        "name", name,
                                         "long_name", long_name,
                                         "behavior", behavior,
                                         NULL));
@@ -1462,17 +1462,17 @@ egg_dock_item_dock_to (EggDockItem      *item,
     g_return_if_fail (item != NULL);
     g_return_if_fail (item != target);
     g_return_if_fail (target != NULL || position == EGG_DOCK_FLOATING);
-    
+
     if (position == EGG_DOCK_FLOATING || !target) {
         EggDockObject *controller;
-        
+
         if (!egg_dock_object_is_bound (EGG_DOCK_OBJECT (item))) {
             g_warning (_("Attempt to bind an unbound item %p"), item);
             return;
         }
 
         controller = egg_dock_master_get_controller (EGG_DOCK_OBJECT_GET_MASTER (item));
-        
+
         /* FIXME: save previous docking position for later
            re-docking... does this make sense now? */
 
@@ -1535,13 +1535,12 @@ egg_dock_item_set_tablabel (EggDockItem *item,
                                                   NULL, item);
             g_object_set (item->_priv->tab_label, "item", NULL, NULL);
         }
-        gtk_widget_unref (item->_priv->tab_label);
+        g_object_unref (item->_priv->tab_label);
         item->_priv->tab_label = NULL;
     }
-    
+
     if (tablabel) {
-        gtk_widget_ref (tablabel);
-        gtk_object_sink (GTK_OBJECT (tablabel));
+        g_object_ref_sink (tablabel);
         item->_priv->tab_label = tablabel;
         if (EGG_IS_DOCK_TABLABEL (tablabel)) {
             g_object_set (tablabel, "item", item, NULL);
@@ -1552,7 +1551,7 @@ egg_dock_item_set_tablabel (EggDockItem *item,
     }
 }
 
-void 
+void
 egg_dock_item_hide_grip (EggDockItem *item)
 {
     g_return_if_fail (item != NULL);
@@ -1579,7 +1578,7 @@ egg_dock_item_bind (EggDockItem *item,
 {
     g_return_if_fail (item != NULL);
     g_return_if_fail (dock == NULL || EGG_IS_DOCK (dock));
-    
+
     egg_dock_object_bind (EGG_DOCK_OBJECT (item),
                           G_OBJECT (EGG_DOCK_OBJECT_GET_MASTER (dock)));
 }
@@ -1601,30 +1600,29 @@ egg_dock_item_hide_item (EggDockItem *item)
     if (!EGG_DOCK_OBJECT_ATTACHED (item))
         /* already hidden/detached */
         return;
-    
+
     /* if the object is manual, create a new placeholder to be able to
        restore the position later */
     if (!EGG_DOCK_OBJECT_AUTOMATIC (item)) {
         if (item->_priv->ph)
             g_object_unref (item->_priv->ph);
-        
+
         item->_priv->ph = EGG_DOCK_PLACEHOLDER (
             g_object_new (EGG_TYPE_DOCK_PLACEHOLDER,
                           "sticky", FALSE,
                           "host", item,
                           NULL));
-        g_object_ref (item->_priv->ph);
-        gtk_object_sink (GTK_OBJECT (item->_priv->ph));
+        g_object_ref_sink (item->_priv->ph);
     }
-    
+
     egg_dock_object_freeze (EGG_DOCK_OBJECT (item));
-    
+
     /* hide our children first, so they can also set placeholders */
-    if (egg_dock_object_is_compound (EGG_DOCK_OBJECT (item))) 
+    if (egg_dock_object_is_compound (EGG_DOCK_OBJECT (item)))
         gtk_container_foreach (GTK_CONTAINER (item),
                                (GtkCallback) egg_dock_item_hide_item,
                                NULL);
-    
+
     /* detach the item recursively */
     egg_dock_object_detach (EGG_DOCK_OBJECT (item), TRUE);
 
@@ -1663,7 +1661,7 @@ egg_dock_item_unlock (EggDockItem *item)
     g_object_set (item, "locked", FALSE, NULL);
 }
 
-void 
+void
 egg_dock_item_set_default_position (EggDockItem   *item,
                                     EggDockObject *reference)
 {
@@ -1676,8 +1674,7 @@ egg_dock_item_set_default_position (EggDockItem   *item,
 
     if (reference && EGG_DOCK_OBJECT_ATTACHED (reference)) {
         if (EGG_IS_DOCK_PLACEHOLDER (reference)) {
-            g_object_ref (reference);
-            gtk_object_sink (GTK_OBJECT (reference));
+            g_object_ref_sink (reference);;
             item->_priv->ph = EGG_DOCK_PLACEHOLDER (reference);
         }
         else {
@@ -1686,13 +1683,12 @@ egg_dock_item_set_default_position (EggDockItem   *item,
                               "sticky", TRUE,
                               "host", reference,
                               NULL));
-            g_object_ref (item->_priv->ph);
-            gtk_object_sink (GTK_OBJECT (item->_priv->ph));
+            g_object_ref_sink (item->_priv->ph);
         }
     }
 }
 
-void 
+void
 egg_dock_item_preferred_size (EggDockItem    *item,
                               GtkRequisition *req)
 {
@@ -1708,7 +1704,7 @@ egg_dock_item_preferred_size (EggDockItem    *item,
 
 /* ----- gtk orientation type exporter/importer ----- */
 
-static void 
+static void
 egg_dock_param_export_gtk_orientation (const GValue *src,
                                        GValue       *dst)
 {
@@ -1717,7 +1713,7 @@ egg_dock_param_export_gtk_orientation (const GValue *src,
                          "horizontal" : "vertical");
 }
 
-static void 
+static void
 egg_dock_param_import_gtk_orientation (const GValue *src,
                                        GValue       *dst)
 {

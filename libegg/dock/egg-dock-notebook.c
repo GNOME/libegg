@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.  
+ * Boston, MA 02111-1307, USA.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -63,13 +63,13 @@ static void  egg_dock_notebook_dock          (EggDockObject    *object,
                                               GValue           *other_data);
 
 static void  egg_dock_notebook_switch_page_cb  (GtkNotebook     *nb,
-                                                GtkNotebookPage *page,
+                                                GtkWidget       *page,
                                                 gint             page_num,
                                                 gpointer         data);
 
 static void  egg_dock_notebook_set_orientation (EggDockItem     *item,
                                                 GtkOrientation   orientation);
-					       
+
 static gboolean egg_dock_notebook_child_placement (EggDockObject    *object,
                                                    EggDockObject    *child,
                                                    EggDockPlacement *placement);
@@ -114,22 +114,22 @@ egg_dock_notebook_class_init (EggDockNotebookClass *klass)
 
     g_object_class->set_property = egg_dock_notebook_set_property;
     g_object_class->get_property = egg_dock_notebook_get_property;
-    
+
     gtk_object_class->destroy = egg_dock_notebook_destroy;
 
     container_class->add = egg_dock_notebook_add;
     container_class->forall = egg_dock_notebook_forall;
     container_class->child_type = egg_dock_notebook_child_type;
-    
+
     object_class->is_compound = TRUE;
     object_class->dock = egg_dock_notebook_dock;
     object_class->child_placement = egg_dock_notebook_child_placement;
     object_class->present = egg_dock_notebook_present;
     object_class->reorder = egg_dock_notebook_reorder;
-    
+
     item_class->has_grip = TRUE;
-    item_class->set_orientation = egg_dock_notebook_set_orientation;    
-    
+    item_class->set_orientation = egg_dock_notebook_set_orientation;
+
     g_object_class_install_property (
         g_object_class, PROP_PAGE,
         g_param_spec_int ("page", _("Page"),
@@ -140,10 +140,10 @@ egg_dock_notebook_class_init (EggDockNotebookClass *klass)
                           EGG_DOCK_PARAM_EXPORT | EGG_DOCK_PARAM_AFTER));
 }
 
-static void 
+static void
 egg_dock_notebook_notify_cb (GObject    *g_object,
                              GParamSpec *pspec,
-                             gpointer    user_data) 
+                             gpointer    user_data)
 {
     g_return_if_fail (user_data != NULL && EGG_IS_DOCK_NOTEBOOK (user_data));
 
@@ -151,7 +151,7 @@ egg_dock_notebook_notify_cb (GObject    *g_object,
     g_object_notify (G_OBJECT (user_data), pspec->name);
 }
 
-static gboolean 
+static gboolean
 egg_dock_notebook_button_cb (GtkWidget      *widget,
                              GdkEventButton *event,
                              gpointer        user_data)
@@ -163,7 +163,7 @@ egg_dock_notebook_button_cb (GtkWidget      *widget,
 
     return FALSE;
 }
-    
+
 static void
 egg_dock_notebook_instance_init (EggDockNotebook *notebook)
 {
@@ -179,7 +179,7 @@ egg_dock_notebook_instance_init (EggDockNotebook *notebook)
     else
       {
 	if (gtk_widget_get_direction (GTK_WIDGET (item->child)) == GTK_TEXT_DIR_RTL)
-	  
+
 	  gtk_notebook_set_tab_pos (GTK_NOTEBOOK (item->child), GTK_POS_RIGHT);
 	else
 	  gtk_notebook_set_tab_pos (GTK_NOTEBOOK (item->child), GTK_POS_LEFT);
@@ -196,7 +196,7 @@ egg_dock_notebook_instance_init (EggDockNotebook *notebook)
     gtk_widget_show (item->child);
 }
 
-static void 
+static void
 egg_dock_notebook_set_property (GObject      *object,
                                 guint         prop_id,
                                 const GValue *value,
@@ -210,7 +210,7 @@ egg_dock_notebook_set_property (GObject      *object,
                 gtk_notebook_set_current_page (GTK_NOTEBOOK (item->child),
                                                g_value_get_int (value));
             }
-            
+
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -218,7 +218,7 @@ egg_dock_notebook_set_property (GObject      *object,
     }
 }
 
-static void 
+static void
 egg_dock_notebook_get_property (GObject    *object,
                                 guint       prop_id,
                                 GValue     *value,
@@ -232,7 +232,7 @@ egg_dock_notebook_get_property (GObject    *object,
                 g_value_set_int (value, gtk_notebook_get_current_page
                                  (GTK_NOTEBOOK (item->child)));
             }
-            
+
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -259,7 +259,7 @@ egg_dock_notebook_destroy (GtkObject *object)
 
 static void
 egg_dock_notebook_switch_page_cb (GtkNotebook     *nb,
-                                  GtkNotebookPage *page,
+                                  GtkWidget       *page,
                                   gint             page_num,
                                   gpointer         data)
 {
@@ -317,7 +317,7 @@ egg_dock_notebook_forall (GtkContainer *container,
 
     if (include_internals) {
         /* use EggDockItem's forall */
-        EGG_CALL_PARENT (GTK_CONTAINER_CLASS, forall, 
+        EGG_CALL_PARENT (GTK_CONTAINER_CLASS, forall,
                            (container, include_internals, callback, callback_data));
     }
     else {
@@ -332,7 +332,7 @@ egg_dock_notebook_child_type (GtkContainer *container)
 {
     return EGG_TYPE_DOCK_ITEM;
 }
-    
+
 static void
 egg_dock_notebook_dock_child (EggDockObject *requestor,
                               gpointer       user_data)
@@ -367,11 +367,11 @@ egg_dock_notebook_dock (EggDockObject    *object,
             } data;
 
             egg_dock_object_freeze (requestor);
-            
+
             data.object = object;
             data.position = position;
             data.other_data = other_data;
-             
+
             gtk_container_foreach (GTK_CONTAINER (requestor),
                                    (GtkCallback) egg_dock_notebook_dock_child, &data);
 
@@ -382,7 +382,7 @@ egg_dock_notebook_dock (EggDockObject    *object,
             EggDockItem *requestor_item = EGG_DOCK_ITEM (requestor);
             GtkWidget   *label;
             gint         position = -1;
-            
+
             label = egg_dock_item_get_tablabel (requestor_item);
             if (!label) {
                 label = egg_dock_tablabel_new (requestor_item);
@@ -396,8 +396,8 @@ egg_dock_notebook_dock (EggDockObject    *object,
 
             if (other_data && G_VALUE_HOLDS (other_data, G_TYPE_INT))
                 position = g_value_get_int (other_data);
-            
-            gtk_notebook_insert_page (GTK_NOTEBOOK (item->child), 
+
+            gtk_notebook_insert_page (GTK_NOTEBOOK (item->child),
                                       GTK_WIDGET (requestor), label,
                                       position);
             EGG_DOCK_OBJECT_SET_FLAGS (requestor, EGG_DOCK_ATTACHED);
@@ -415,10 +415,10 @@ egg_dock_notebook_set_orientation (EggDockItem    *item,
     if (item->child && GTK_IS_NOTEBOOK (item->child)) {
         if (orientation == GTK_ORIENTATION_HORIZONTAL)
             gtk_notebook_set_tab_pos (GTK_NOTEBOOK (item->child), GTK_POS_TOP);
-        else 
+        else
 	  {
 	    if (gtk_widget_get_direction (GTK_WIDGET (item->child)) == GTK_TEXT_DIR_RTL)
-	      
+
 	      gtk_notebook_set_tab_pos (GTK_NOTEBOOK (item->child), GTK_POS_RIGHT);
 	    else
 	      gtk_notebook_set_tab_pos (GTK_NOTEBOOK (item->child), GTK_POS_LEFT);
@@ -428,14 +428,14 @@ egg_dock_notebook_set_orientation (EggDockItem    *item,
     EGG_CALL_PARENT (EGG_DOCK_ITEM_CLASS, set_orientation, (item, orientation));
 }
 
-static gboolean 
+static gboolean
 egg_dock_notebook_child_placement (EggDockObject    *object,
                                    EggDockObject    *child,
                                    EggDockPlacement *placement)
 {
     EggDockItem      *item = EGG_DOCK_ITEM (object);
     EggDockPlacement  pos = EGG_DOCK_NONE;
-    
+
     if (item->child) {
         GList *children, *l;
 
@@ -464,7 +464,7 @@ egg_dock_notebook_present (EggDockObject *object,
 {
     EggDockItem *item = EGG_DOCK_ITEM (object);
     int i;
-    
+
     i = gtk_notebook_page_num (GTK_NOTEBOOK (item->child),
                                GTK_WIDGET (child));
     if (i >= 0)
@@ -473,7 +473,7 @@ egg_dock_notebook_present (EggDockObject *object,
     EGG_CALL_PARENT (EGG_DOCK_OBJECT_CLASS, present, (object, child));
 }
 
-static gboolean 
+static gboolean
 egg_dock_notebook_reorder (EggDockObject    *object,
                            EggDockObject    *requestor,
                            EggDockPlacement  new_position,
@@ -482,17 +482,17 @@ egg_dock_notebook_reorder (EggDockObject    *object,
     EggDockItem *item = EGG_DOCK_ITEM (object);
     gint         current_position, new_pos = -1;
     gboolean     handled = FALSE;
-    
+
     if (item->child && new_position == EGG_DOCK_CENTER) {
         current_position = gtk_notebook_page_num (GTK_NOTEBOOK (item->child),
                                                   GTK_WIDGET (requestor));
         if (current_position >= 0) {
             handled = TRUE;
-    
+
             if (other_data && G_VALUE_HOLDS (other_data, G_TYPE_INT))
                 new_pos = g_value_get_int (other_data);
-            
-            gtk_notebook_reorder_child (GTK_NOTEBOOK (item->child), 
+
+            gtk_notebook_reorder_child (GTK_NOTEBOOK (item->child),
                                         GTK_WIDGET (requestor),
                                         new_pos);
         }
@@ -509,6 +509,6 @@ egg_dock_notebook_new (void)
 
     notebook = EGG_DOCK_NOTEBOOK (g_object_new (EGG_TYPE_DOCK_NOTEBOOK, NULL));
     EGG_DOCK_OBJECT_UNSET_FLAGS (notebook, EGG_DOCK_AUTOMATIC);
-    
+
     return GTK_WIDGET (notebook);
 }

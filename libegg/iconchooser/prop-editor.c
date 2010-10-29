@@ -808,8 +808,7 @@ create_prop_editor (GObject   *object,
 			   gtk_widget_get_screen (GTK_WIDGET (object)));
 
   tips = gtk_tooltips_new ();
-  g_object_ref (tips);
-  gtk_object_sink (GTK_OBJECT (tips));
+  g_object_ref_sink (tips);
 
   /* Kill the tips when the widget goes away.  */
   g_signal_connect (win, "destroy", G_CALLBACK (kill_tips), tips);

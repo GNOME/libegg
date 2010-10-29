@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.  
+ * Boston, MA 02111-1307, USA.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -55,7 +55,7 @@ static void  egg_dock_tablabel_size_request  (GtkWidget          *widget,
                                               GtkRequisition     *requisition);
 static void  egg_dock_tablabel_size_allocate (GtkWidget          *widget,
                                               GtkAllocation      *allocation);
-                                              
+
 static void  egg_dock_tablabel_paint         (GtkWidget      *widget,
                                               GdkEventExpose *event);
 static gint  egg_dock_tablabel_expose        (GtkWidget      *widget,
@@ -111,7 +111,7 @@ egg_dock_tablabel_class_init (EggDockTablabelClass *klass)
     object_class = GTK_OBJECT_CLASS (klass);
     widget_class = GTK_WIDGET_CLASS (klass);
     container_class = GTK_CONTAINER_CLASS (klass);
-    
+
     g_object_class->set_property = egg_dock_tablabel_set_property;
     g_object_class->get_property = egg_dock_tablabel_get_property;
 
@@ -137,7 +137,7 @@ egg_dock_tablabel_class_init (EggDockTablabelClass *klass)
         g_signal_new ("button_pressed_handle",
                       G_TYPE_FROM_CLASS (klass),
                       G_SIGNAL_RUN_LAST,
-                      G_STRUCT_OFFSET (EggDockTablabelClass, 
+                      G_STRUCT_OFFSET (EggDockTablabelClass,
                                        button_pressed_handle),
                       NULL, NULL,
                       _egg_marshal_VOID__BOXED,
@@ -181,7 +181,7 @@ egg_dock_tablabel_set_property (GObject      *object,
     switch (prop_id) {
         case PROP_ITEM:
             if (tablabel->item) {
-                g_object_remove_weak_pointer (G_OBJECT (tablabel->item), 
+                g_object_remove_weak_pointer (G_OBJECT (tablabel->item),
                                               (gpointer *) &tablabel->item);
                 g_signal_handlers_disconnect_by_func (
                     tablabel->item, egg_dock_tablabel_item_notify, tablabel);
@@ -191,8 +191,8 @@ egg_dock_tablabel_set_property (GObject      *object,
             if (tablabel->item) {
                 gboolean locked;
                 gchar   *long_name;
-                
-                g_object_add_weak_pointer (G_OBJECT (tablabel->item), 
+
+                g_object_add_weak_pointer (G_OBJECT (tablabel->item),
                                            (gpointer *) &tablabel->item);
 
                 g_signal_connect (tablabel->item, "notify::locked",
@@ -213,7 +213,7 @@ egg_dock_tablabel_set_property (GObject      *object,
 
                 if (locked)
                     tablabel->drag_handle_size = 0;
-                
+
                 bin = GTK_BIN (tablabel);
                 if (bin->child && g_object_class_find_property (
                     G_OBJECT_GET_CLASS (bin->child), "label"))
@@ -221,7 +221,7 @@ egg_dock_tablabel_set_property (GObject      *object,
                 g_free (long_name);
             };
             break;
-            
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
             break;
@@ -257,7 +257,7 @@ egg_dock_tablabel_item_notify (GObject    *master,
     gboolean         locked;
     gchar           *label;
     GtkBin          *bin;
-    
+
     g_object_get (master,
                   "locked", &locked,
                   "grip_size", &tablabel->drag_handle_size,
@@ -298,7 +298,7 @@ egg_dock_tablabel_size_request (GtkWidget      *widget,
         gtk_widget_size_request (bin->child, &child_req);
     else
         child_req.width = child_req.height = 0;
-        
+
     requisition->width += child_req.width;
     requisition->height += child_req.height;
 
@@ -319,12 +319,12 @@ egg_dock_tablabel_size_allocate (GtkWidget     *widget,
     g_return_if_fail (widget != NULL);
     g_return_if_fail (EGG_IS_DOCK_TABLABEL (widget));
     g_return_if_fail (allocation != NULL);
-  
+
     bin = GTK_BIN (widget);
     tablabel = EGG_DOCK_TABLABEL (widget);
 
     border_width = GTK_CONTAINER (widget)->border_width;
-  
+
     widget->allocation = *allocation;
 
 #if GTK_CHECK_VERSION(2,20,0)
@@ -332,10 +332,10 @@ egg_dock_tablabel_size_allocate (GtkWidget     *widget,
 #else
     if (GTK_WIDGET_REALIZED (widget))
 #endif
-        gdk_window_move_resize (tablabel->event_window, 
-                                allocation->x, 
+        gdk_window_move_resize (tablabel->event_window,
+                                allocation->x,
                                 allocation->y,
-                                allocation->width, 
+                                allocation->width,
                                 allocation->height);
 
 #if GTK_CHECK_VERSION(2,20,0)
@@ -351,9 +351,9 @@ egg_dock_tablabel_size_allocate (GtkWidget     *widget,
 	if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_LTR)
 	  child_allocation.x += tablabel->drag_handle_size;
 
-        child_allocation.width = 
+        child_allocation.width =
             MAX (1, (int) allocation->width - tablabel->drag_handle_size - 2 * border_width);
-        child_allocation.height = 
+        child_allocation.height =
             MAX (1, (int) allocation->height - 2 * border_width);
 
         gtk_widget_size_allocate (bin->child, &child_allocation);
@@ -381,8 +381,8 @@ egg_dock_tablabel_paint (GtkWidget      *widget,
       rect.x = widget->allocation.x + widget->allocation.width - border_width - rect.width;
 
     if (gdk_rectangle_intersect (&event->area, &rect, &dest)) {
-        gtk_paint_handle (widget->style, widget->window, 
-                          tablabel->active ? GTK_STATE_NORMAL : GTK_STATE_ACTIVE, 
+        gtk_paint_handle (widget->style, widget->window,
+                          tablabel->active ? GTK_STATE_NORMAL : GTK_STATE_ACTIVE,
                           GTK_SHADOW_NONE,
                           &dest, widget, "dock_tablabel",
                           rect.x, rect.y, rect.width, rect.height,
@@ -406,28 +406,28 @@ egg_dock_tablabel_expose (GtkWidget      *widget,
         EGG_CALL_PARENT (GTK_WIDGET_CLASS, expose_event, (widget, event));
         egg_dock_tablabel_paint (widget, event);
     };
-  
+
     return FALSE;
 }
 
-static gboolean 
+static gboolean
 egg_dock_tablabel_button_event (GtkWidget      *widget,
                                 GdkEventButton *event)
 {
     EggDockTablabel *tablabel;
     gboolean         event_handled;
-  
+
     g_return_val_if_fail (widget != NULL, FALSE);
     g_return_val_if_fail (EGG_IS_DOCK_TABLABEL (widget), FALSE);
     g_return_val_if_fail (event != NULL, FALSE);
-    
+
     tablabel = EGG_DOCK_TABLABEL (widget);
-    
+
     event_handled = FALSE;
 
     if (event->window != tablabel->event_window)
         return FALSE;
-    
+
     switch (event->type) {
         case GDK_BUTTON_PRESS:
             if (tablabel->active) {
@@ -445,7 +445,7 @@ egg_dock_tablabel_button_event (GtkWidget      *widget,
 		if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
 		  rel_x = widget->allocation.width - rel_x;
 
-                /* Check if user clicked on the drag handle. */ 
+                /* Check if user clicked on the drag handle. */
 		in_handle = (rel_x < tablabel->drag_handle_size * HANDLE_RATIO) &&
 		  (rel_x > 0);
 
@@ -454,12 +454,12 @@ egg_dock_tablabel_button_event (GtkWidget      *widget,
                     tablabel->drag_start_event = *event;
                 }
                 else {
-                    g_signal_emit (widget, 
+                    g_signal_emit (widget,
                                    dock_tablabel_signals [BUTTON_PRESSED_HANDLE],
                                    0,
                                    event);
                 }
-                
+
                 event_handled = TRUE;
             }
             break;
@@ -471,7 +471,7 @@ egg_dock_tablabel_button_event (GtkWidget      *widget,
         default:
             break;
     }
-    
+
     if (!event_handled) {
         /* propagate the event to the parent's gdkwindow */
         GdkEventButton e;
@@ -480,31 +480,31 @@ egg_dock_tablabel_button_event (GtkWidget      *widget,
         e.window = gtk_widget_get_parent_window (widget);
         e.x += widget->allocation.x;
         e.y += widget->allocation.y;
-        
+
         gdk_event_put ((GdkEvent *) &e);
     };
 
     return event_handled;
 }
 
-static gboolean 
+static gboolean
 egg_dock_tablabel_motion_event (GtkWidget      *widget,
                                 GdkEventMotion *event)
 {
     EggDockTablabel *tablabel;
     gboolean         event_handled;
-  
+
     g_return_val_if_fail (widget != NULL, FALSE);
     g_return_val_if_fail (EGG_IS_DOCK_TABLABEL (widget), FALSE);
     g_return_val_if_fail (event != NULL, FALSE);
-    
+
     tablabel = EGG_DOCK_TABLABEL (widget);
-    
+
     event_handled = FALSE;
 
     if (event->window != tablabel->event_window)
         return FALSE;
-    
+
     if (tablabel->pre_drag) {
         if (gtk_drag_check_threshold (widget,
                                       tablabel->drag_start_event.x,
@@ -512,14 +512,14 @@ egg_dock_tablabel_motion_event (GtkWidget      *widget,
                                       event->x,
                                       event->y)) {
             tablabel->pre_drag = FALSE;
-            g_signal_emit (widget, 
+            g_signal_emit (widget,
                            dock_tablabel_signals [BUTTON_PRESSED_HANDLE],
                            0,
                            &tablabel->drag_start_event);
             event_handled = TRUE;
         }
     }
-    
+
     if (!event_handled) {
         /* propagate the event to the parent's gdkwindow */
         GdkEventMotion e;
@@ -528,22 +528,22 @@ egg_dock_tablabel_motion_event (GtkWidget      *widget,
         e.window = gtk_widget_get_parent_window (widget);
         e.x += widget->allocation.x;
         e.y += widget->allocation.y;
-        
+
         gdk_event_put ((GdkEvent *) &e);
     };
 
     return event_handled;
 }
 
-static void   
+static void
 egg_dock_tablabel_realize (GtkWidget *widget)
 {
     EggDockTablabel *tablabel;
     GdkWindowAttr attributes;
     int attributes_mask;
-    
+
     tablabel = EGG_DOCK_TABLABEL (widget);
-    
+
     attributes.window_type = GDK_WINDOW_CHILD;
     attributes.x = widget->allocation.x;
     attributes.y = widget->allocation.y;
@@ -551,52 +551,52 @@ egg_dock_tablabel_realize (GtkWidget *widget)
     attributes.height = widget->allocation.height;
     attributes.wclass = GDK_INPUT_ONLY;
     attributes.event_mask = gtk_widget_get_events (widget);
-    attributes.event_mask |= (GDK_EXPOSURE_MASK | 
+    attributes.event_mask |= (GDK_EXPOSURE_MASK |
                               GDK_BUTTON_PRESS_MASK |
-                              GDK_BUTTON_RELEASE_MASK | 
-                              GDK_ENTER_NOTIFY_MASK | 
-                              GDK_POINTER_MOTION_MASK | 
+                              GDK_BUTTON_RELEASE_MASK |
+                              GDK_ENTER_NOTIFY_MASK |
+                              GDK_POINTER_MOTION_MASK |
                               GDK_LEAVE_NOTIFY_MASK);
     attributes_mask = GDK_WA_X | GDK_WA_Y;
-    
+
     widget->window = gtk_widget_get_parent_window (widget);
     g_object_ref (widget->window);
-    
-    tablabel->event_window = 
+
+    tablabel->event_window =
         gdk_window_new (gtk_widget_get_parent_window (widget),
                         &attributes, attributes_mask);
     gdk_window_set_user_data (tablabel->event_window, widget);
-    
+
     widget->style = gtk_style_attach (widget->style, widget->window);
-    
-    GTK_WIDGET_SET_FLAGS (widget, GTK_REALIZED);
+
+    gtk_widget_set_realized (widget, TRUE);
 }
 
-static void   
+static void
 egg_dock_tablabel_unrealize (GtkWidget *widget)
 {
     EggDockTablabel *tablabel = EGG_DOCK_TABLABEL (widget);
-    
+
     if (tablabel->event_window) {
         gdk_window_set_user_data (tablabel->event_window, NULL);
         gdk_window_destroy (tablabel->event_window);
         tablabel->event_window = NULL;
     }
-    
+
     EGG_CALL_PARENT (GTK_WIDGET_CLASS, unrealize, (widget));
 }
 
-static void  
+static void
 egg_dock_tablabel_map (GtkWidget *widget)
 {
     EggDockTablabel *tablabel = EGG_DOCK_TABLABEL (widget);
-    
+
     EGG_CALL_PARENT (GTK_WIDGET_CLASS, map, (widget));
-    
+
     gdk_window_show (tablabel->event_window);
 }
 
-static void   
+static void
 egg_dock_tablabel_unmap (GtkWidget *widget)
 {
     EggDockTablabel *tablabel = EGG_DOCK_TABLABEL (widget);
@@ -616,7 +616,7 @@ egg_dock_tablabel_new (EggDockItem *item)
     tablabel = EGG_DOCK_TABLABEL (g_object_new (EGG_TYPE_DOCK_TABLABEL,
                                                 "item", item,
                                                 NULL));
-    
+
     return GTK_WIDGET (tablabel);
 }
 

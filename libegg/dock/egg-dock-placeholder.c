@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.  
+ * Boston, MA 02111-1307, USA.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -87,7 +87,7 @@ struct _EggDockPlaceholderPrivate {
     /* current object this placeholder is pinned to */
     EggDockObject    *host;
     gboolean          sticky;
-    
+
     /* when the placeholder is moved up the hierarchy, this stack
        keeps track of the necessary dock positions needed to get the
        placeholder to the original position */
@@ -104,14 +104,14 @@ struct _EggDockPlaceholderPrivate {
 EGG_CLASS_BOILERPLATE (EggDockPlaceholder, egg_dock_placeholder,
 			 EggDockObject, EGG_TYPE_DOCK_OBJECT);
 
-static void 
+static void
 egg_dock_placeholder_class_init (EggDockPlaceholderClass *klass)
 {
     GObjectClass       *g_object_class;
     GtkObjectClass     *gtk_object_class;
     GtkContainerClass  *container_class;
     EggDockObjectClass *object_class;
-    
+
     g_object_class = G_OBJECT_CLASS (klass);
     gtk_object_class = GTK_OBJECT_CLASS (klass);
     container_class = GTK_CONTAINER_CLASS (klass);
@@ -119,7 +119,7 @@ egg_dock_placeholder_class_init (EggDockPlaceholderClass *klass)
 
     g_object_class->get_property = egg_dock_placeholder_get_property;
     g_object_class->set_property = egg_dock_placeholder_set_property;
-    
+
     g_object_class_install_property (
 	g_object_class, PROP_STICKY,
 	g_param_spec_boolean ("sticky", _("Sticky"),
@@ -127,14 +127,14 @@ egg_dock_placeholder_class_init (EggDockPlaceholderClass *klass)
 				"move up the hierarchy when the host is redocked"),
 			      FALSE,
 			      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-    
+
     g_object_class_install_property (
 	g_object_class, PROP_HOST,
 	g_param_spec_object ("host", _("Host"),
 			     _("The dock object this placeholder is attached to"),
 			     EGG_TYPE_DOCK_OBJECT,
 			     G_PARAM_READWRITE));
-    
+
     /* this will return the top of the placement stack */
     g_object_class_install_property (
 	g_object_class, PROP_NEXT_PLACEMENT,
@@ -145,10 +145,10 @@ egg_dock_placeholder_class_init (EggDockPlaceholderClass *klass)
 			   EGG_DOCK_CENTER,
 			   G_PARAM_READWRITE |
                            EGG_DOCK_PARAM_EXPORT | EGG_DOCK_PARAM_AFTER));
-    
+
     gtk_object_class->destroy = egg_dock_placeholder_destroy;
     container_class->add = egg_dock_placeholder_add;
-    
+
     object_class->is_compound = FALSE;
     object_class->detach = egg_dock_placeholder_detach;
     object_class->reduce = egg_dock_placeholder_reduce;
@@ -156,16 +156,16 @@ egg_dock_placeholder_class_init (EggDockPlaceholderClass *klass)
     object_class->present = egg_dock_placeholder_present;
 }
 
-static void 
+static void
 egg_dock_placeholder_instance_init (EggDockPlaceholder *ph)
 {
-    GTK_WIDGET_SET_FLAGS (ph, GTK_NO_WINDOW);
-    GTK_WIDGET_UNSET_FLAGS (ph, GTK_CAN_FOCUS);
-    
+    gtk_widget_set_has_window (ph, FALSE);
+    gtk_widget_set_can_focus (ph, FALSE);
+
     ph->_priv = g_new0 (EggDockPlaceholderPrivate, 1);
 }
 
-static void 
+static void
 egg_dock_placeholder_set_property (GObject      *g_object,
 				   guint         prop_id,
 				   const GValue *value,
@@ -194,7 +194,7 @@ egg_dock_placeholder_set_property (GObject      *g_object,
     }
 }
 
-static void 
+static void
 egg_dock_placeholder_get_property (GObject    *g_object,
 				   guint       prop_id,
 				   GValue     *value,
@@ -242,20 +242,20 @@ egg_dock_placeholder_destroy (GtkObject *object)
     EGG_CALL_PARENT (GTK_OBJECT_CLASS, destroy, (object));
 }
 
-static void 
+static void
 egg_dock_placeholder_add (GtkContainer *container,
                           GtkWidget    *widget)
 {
     EggDockPlaceholder *ph;
     EggDockPlacement    pos = EGG_DOCK_CENTER;   /* default position */
-    
+
     g_return_if_fail (EGG_IS_DOCK_PLACEHOLDER (container));
     g_return_if_fail (EGG_IS_DOCK_ITEM (widget));
 
     ph = EGG_DOCK_PLACEHOLDER (container);
     if (ph->_priv->placement_stack)
         pos = (EggDockPlacement) ph->_priv->placement_stack->data;
-        
+
     egg_dock_object_dock (EGG_DOCK_OBJECT (ph), EGG_DOCK_OBJECT (widget),
                           pos, NULL);
 }
@@ -268,7 +268,7 @@ egg_dock_placeholder_detach (EggDockObject *object,
 
     /* disconnect handlers */
     disconnect_host (ph);
-    
+
     /* free the placement stack */
     g_slist_free (ph->_priv->placement_stack);
     ph->_priv->placement_stack = NULL;
@@ -276,21 +276,21 @@ egg_dock_placeholder_detach (EggDockObject *object,
     EGG_DOCK_OBJECT_UNSET_FLAGS (object, EGG_DOCK_ATTACHED);
 }
 
-static void 
+static void
 egg_dock_placeholder_reduce (EggDockObject *object)
 {
     /* placeholders are not reduced */
     return;
 }
 
-static void 
+static void
 egg_dock_placeholder_dock (EggDockObject    *object,
 			   EggDockObject    *requestor,
 			   EggDockPlacement  position,
 			   GValue           *other_data)
 {
     EggDockPlaceholder *ph = EGG_DOCK_PLACEHOLDER (object);
-    
+
     if (ph->_priv->host) {
         /* we simply act as a proxy for our host */
         egg_dock_object_dock (ph->_priv->host, requestor,
@@ -298,12 +298,12 @@ egg_dock_placeholder_dock (EggDockObject    *object,
     }
     else {
         EggDockObject *toplevel;
-        
+
         if (!egg_dock_object_is_bound (EGG_DOCK_OBJECT (ph))) {
             g_warning (_("Attempt to dock a dock object to an unbound placeholder"));
             return;
         }
-        
+
         /* dock the item as a floating of the controller */
         toplevel = egg_dock_master_get_controller (EGG_DOCK_OBJECT_GET_MASTER (ph));
         egg_dock_object_dock (toplevel, requestor,
@@ -330,13 +330,13 @@ print_placement_stack (EggDockPlaceholder *ph)
         g_string_append_printf (message, "%s, ", name);
     }
     g_message ("%s", message->str);
-    
+
     g_string_free (message, TRUE);
     g_type_class_unref (enum_class);
 }
 #endif
 
-static void 
+static void
 egg_dock_placeholder_present (EggDockObject *object,
                               EggDockObject *child)
 {
@@ -346,7 +346,7 @@ egg_dock_placeholder_present (EggDockObject *object,
 
 /* ----- Public interface ----- */
 
-GtkWidget * 
+GtkWidget *
 egg_dock_placeholder_new (gchar            *name,
                           EggDockObject    *object,
                           EggDockPlacement  position,
@@ -373,16 +373,16 @@ egg_dock_placeholder_new (gchar            *name,
         /* try a recursion */
         do_excursion (ph);
     }
-    
+
     return GTK_WIDGET (ph);
 }
 
-static void 
+static void
 egg_dock_placeholder_weak_notify (gpointer data,
                                   GObject *old_object)
 {
     EggDockPlaceholder *ph;
-    
+
     g_return_if_fail (data != NULL && EGG_IS_DOCK_PLACEHOLDER (data));
 
     ph = EGG_DOCK_PLACEHOLDER (data);
@@ -406,7 +406,7 @@ detach_cb (EggDockObject *object,
     EggDockObject      *new_host, *obj;
 
     g_return_if_fail (user_data != NULL && EGG_IS_DOCK_PLACEHOLDER (user_data));
-    
+
     /* we go up in the hierarchy and we store the hinted placement in
      * the placement stack so we can rebuild the docking layout later
      * when we get the host's dock signal.  */
@@ -418,17 +418,17 @@ detach_cb (EggDockObject *object,
                      "our host %p"), object, ph->_priv->host);
         return;
     }
-    
+
     /* skip sticky objects */
     if (ph->_priv->sticky)
         return;
-    
+
     /* go up in the hierarchy */
     new_host = egg_dock_object_get_parent_object (obj);
 
     while (new_host) {
         EggDockPlacement pos = EGG_DOCK_NONE;
-        
+
         /* get placement hint from the new host */
         if (egg_dock_object_child_placement (new_host, obj, &pos)) {
             ph->_priv->placement_stack = g_slist_prepend (
@@ -442,7 +442,7 @@ detach_cb (EggDockObject *object,
         if (!EGG_DOCK_OBJECT_IN_DETACH (new_host))
             /* we found a "stable" dock object */
             break;
-        
+
         obj = new_host;
         new_host = egg_dock_object_get_parent_object (obj);
     }
@@ -486,7 +486,7 @@ do_excursion (EggDockPlaceholder *ph)
             (EggDockPlacement) ph->_priv->placement_stack->data;
         GList           *children, *l;
         EggDockObject   *host = ph->_priv->host;
-        
+
         children = gtk_container_get_children (GTK_CONTAINER (host));
         for (l = children; l; l = l->next) {
             pos = stack_pos;
@@ -498,7 +498,7 @@ do_excursion (EggDockPlaceholder *ph)
                 ph->_priv->placement_stack =
                     g_slist_remove_link (ph->_priv->placement_stack,
                                          ph->_priv->placement_stack);
-                
+
                 /* connect to the new host */
                 disconnect_host (ph);
                 connect_host (ph, EGG_DOCK_OBJECT (l->data));
@@ -506,7 +506,7 @@ do_excursion (EggDockPlaceholder *ph)
                 /* recurse... */
                 if (!EGG_DOCK_OBJECT_IN_REFLOW (l->data))
                     do_excursion (ph);
-                
+
                 break;
             }
         }
@@ -514,7 +514,7 @@ do_excursion (EggDockPlaceholder *ph)
     }
 }
 
-static void 
+static void
 dock_cb (EggDockObject    *object,
          EggDockObject    *requestor,
          EggDockPlacement  position,
@@ -523,11 +523,11 @@ dock_cb (EggDockObject    *object,
 {
     EggDockPlacement    pos = EGG_DOCK_NONE;
     EggDockPlaceholder *ph;
-    
+
     g_return_if_fail (user_data != NULL && EGG_IS_DOCK_PLACEHOLDER (user_data));
     ph = EGG_DOCK_PLACEHOLDER (user_data);
     g_return_if_fail (ph->_priv->host == object);
-    
+
     /* see if the given position is compatible for the stack's top
        element */
     if (!ph->_priv->sticky && ph->_priv->placement_stack) {
@@ -549,7 +549,7 @@ disconnect_host (EggDockPlaceholder *ph)
 {
     if (!ph->_priv->host)
         return;
-    
+
     if (ph->_priv->host_detach_handler)
         g_signal_handler_disconnect (ph->_priv->host, ph->_priv->host_detach_handler);
     if (ph->_priv->host_dock_handler)
@@ -569,7 +569,7 @@ connect_host (EggDockPlaceholder *ph,
 {
     if (ph->_priv->host)
         disconnect_host (ph);
-    
+
     ph->_priv->host = new_host;
     g_object_weak_ref (G_OBJECT (ph->_priv->host),
                        egg_dock_placeholder_weak_notify, ph);
@@ -579,7 +579,7 @@ connect_host (EggDockPlaceholder *ph,
                           "detach",
                           (GCallback) detach_cb,
                           (gpointer) ph);
-    
+
     ph->_priv->host_dock_handler =
         g_signal_connect (ph->_priv->host,
                           "dock",
@@ -594,22 +594,22 @@ egg_dock_placeholder_attach (EggDockPlaceholder *ph,
     g_return_if_fail (ph != NULL && EGG_IS_DOCK_PLACEHOLDER (ph));
     g_return_if_fail (ph->_priv != NULL);
     g_return_if_fail (object != NULL);
-    
+
     /* object binding */
     if (!egg_dock_object_is_bound (EGG_DOCK_OBJECT (ph)))
         egg_dock_object_bind (EGG_DOCK_OBJECT (ph), object->master);
 
     g_return_if_fail (EGG_DOCK_OBJECT (ph)->master == object->master);
-        
+
     egg_dock_object_freeze (EGG_DOCK_OBJECT (ph));
-    
+
     /* detach from previous host first */
     if (ph->_priv->host)
         egg_dock_object_detach (EGG_DOCK_OBJECT (ph), FALSE);
 
     connect_host (ph, object);
-    
+
     EGG_DOCK_OBJECT_SET_FLAGS (ph, EGG_DOCK_ATTACHED);
-    
+
     egg_dock_object_thaw (EGG_DOCK_OBJECT (ph));
 }

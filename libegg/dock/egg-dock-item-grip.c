@@ -59,7 +59,7 @@ egg_dock_item_grip_expose (GtkWidget      *widget,
 #endif
                       shadow,
                       clip, widget, "dockitem",
-                      rect->x, rect->y, rect->width, rect->height, 
+                      rect->x, rect->y, rect->width, rect->height,
                       grip->item->orientation);
 
 #if GTK_CHECK_VERSION(2,18,0)
@@ -70,18 +70,18 @@ egg_dock_item_grip_expose (GtkWidget      *widget,
         gint focus_width;
         gint focus_pad;
         GdkRectangle focus;
-		
+
         gtk_widget_style_get (GTK_WIDGET (widget),
                               "focus-line-width", &focus_width,
                               "focus-padding", &focus_pad,
-                              NULL); 
-		
+                              NULL);
+
         focus = *rect;
         focus.x += widget->style->xthickness + focus_pad;
         focus.y += widget->style->ythickness + focus_pad;
         focus.width -= 2 * (widget->style->xthickness + focus_pad);
         focus.height -= 2 * (widget->style->xthickness + focus_pad);
-		
+
         gtk_paint_focus (widget->style, widget->window,
 #if GTK_CHECK_VERSION(2,20,0)
                          gtk_widget_get_state (widget),
@@ -116,8 +116,8 @@ egg_dock_item_grip_dispose (GObject *object)
 static void
 egg_dock_item_grip_instance_init (EggDockItemGrip *grip)
 {
-    GTK_WIDGET_SET_FLAGS (grip, GTK_CAN_FOCUS);
-    GTK_WIDGET_SET_FLAGS (grip, GTK_NO_WINDOW);
+    gtk_widget_set_can_focus (GTK_WIDGET (grip), TRUE);
+    gtk_widget_set_has_window (GTK_WIDGET (grip), FALSE);
 }
 
 static gint
