@@ -100,7 +100,7 @@ static void egg_spread_table_remove               (GtkContainer        *containe
 static void egg_spread_table_forall               (GtkContainer        *container,
 						   gboolean             include_internals,
 						   GtkCallback          callback,
-						   gpointer             callback_data); 
+						   gpointer             callback_data);
 static GType egg_spread_table_child_type          (GtkContainer        *container);
 
 
@@ -127,7 +127,7 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
   GObjectClass      *gobject_class    = G_OBJECT_CLASS (class);
   GtkWidgetClass    *widget_class     = GTK_WIDGET_CLASS (class);
   GtkContainerClass *container_class  = GTK_CONTAINER_CLASS (class);
-  
+
   gobject_class->get_property         = egg_spread_table_get_property;
   gobject_class->set_property         = egg_spread_table_set_property;
 
@@ -137,7 +137,7 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
   widget_class->get_preferred_height_for_width = egg_spread_table_get_height_for_width;
   widget_class->get_preferred_width_for_height = egg_spread_table_get_width_for_height;
   widget_class->size_allocate                  = egg_spread_table_size_allocate;
-  
+
   container_class->add                = egg_spread_table_add;
   container_class->remove             = egg_spread_table_remove;
   container_class->forall             = egg_spread_table_forall;
@@ -204,9 +204,9 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
 static void
 egg_spread_table_init (EggSpreadTable *spread_table)
 {
-  EggSpreadTablePrivate *priv; 
-  
-  spread_table->priv = priv = 
+  EggSpreadTablePrivate *priv;
+
+  spread_table->priv = priv =
     G_TYPE_INSTANCE_GET_PRIVATE (spread_table, EGG_TYPE_SPREAD_TABLE, EggSpreadTablePrivate);
 
   /* We are vertical by default */
@@ -217,7 +217,7 @@ egg_spread_table_init (EggSpreadTable *spread_table)
 }
 
 /*****************************************************
- *                  GObectClass                      * 
+ *                  GObectClass                      *
  *****************************************************/
 static void
 egg_spread_table_get_property (GObject      *object,
@@ -283,9 +283,9 @@ egg_spread_table_set_property (GObject      *object,
 
 
 /*****************************************************
- *  Geometric helper functions for request/allocate  * 
+ *  Geometric helper functions for request/allocate  *
  *****************************************************/
-static void 
+static void
 get_widget_size (GtkWidget      *widget,
 		 GtkOrientation  orientation,
 		 gint            for_size,
@@ -329,11 +329,11 @@ get_visible_children (EggSpreadTable *table)
   return g_list_reverse (visible);
 }
 
-/* This gets the widest child, it is used to reserve 
- * enough space for (columns * widest_child) 
+/* This gets the widest child, it is used to reserve
+ * enough space for (columns * widest_child)
  */
 static void
-get_largest_line_thickness (EggSpreadTable *table, 
+get_largest_line_thickness (EggSpreadTable *table,
 			    gint           *min_thickness,
 			    gint           *nat_thickness)
 {
@@ -363,7 +363,7 @@ get_largest_line_thickness (EggSpreadTable *table,
 }
 
 /* Gets the column width for a given width */
-static gint 
+static gint
 get_line_thickness (EggSpreadTable *table,
 		    gint            for_thickness)
 {
@@ -412,7 +412,7 @@ get_segment_length (EggSpreadTable *table,
 }
 
 static gboolean
-children_fit_segment_size (EggSpreadTable *table, 
+children_fit_segment_size (EggSpreadTable *table,
 			   GList          *children,
 			   gint            line_thickness,
 			   gint            size,
@@ -465,7 +465,7 @@ children_fit_segment_size (EggSpreadTable *table,
 }
 
 /* All purpose algorithm entry point, this function takes an allocated size
- * to fit the columns (or rows) and then splits up the child list into 
+ * to fit the columns (or rows) and then splits up the child list into
  * 'n' children per 'segment' in a way that it takes the least space as possible.
  *
  * If 'segments' is specified, it will be allocated the array of integers representing
@@ -474,7 +474,7 @@ children_fit_segment_size (EggSpreadTable *table,
  * The function returns the required space (the required height for all columns).
  */
 static gint
-segment_lines_for_size (EggSpreadTable *table, 
+segment_lines_for_size (EggSpreadTable *table,
 			gint            for_size,
 			gint          **segments)
 {
@@ -502,21 +502,21 @@ segment_lines_for_size (EggSpreadTable *table,
       segment_counts[0] = g_list_length (children);
       largest_size      = upper;
     }
-  else 
+  else
     {
       /* Start with half way between the average and total height */
       segment_size = lower + (upper - lower) / 2;
-      
+
       while (segment_size > lower && segment_size < upper)
 	{
 	  gint test_largest = 0;
-	  
+
 	  if (children_fit_segment_size (table, children, line_thickness,
 					 segment_size, test_counts, &test_largest))
 	    {
 	      upper         = segment_size;
 	      segment_size -= (segment_size - lower) / 2;
-	      
+
 	      /* Save the last arrangement that 'fit' */
 	      largest_size  = test_largest;
 	      memcpy (segment_counts, test_counts, sizeof (gint) * priv->lines);
@@ -527,7 +527,7 @@ segment_lines_for_size (EggSpreadTable *table,
 	      segment_size += (upper - segment_size) / 2;
 	    }
 	}
-      
+
       /* Perform some corrections: fill in any trailing columns that are missing widgets */
       for (i = 0; i < priv->lines; i++)
 	{
@@ -561,21 +561,21 @@ segment_lines_for_size (EggSpreadTable *table,
 
 
 /*****************************************************
- *                 GtkWidgetClass                    * 
+ *                 GtkWidgetClass                    *
  *****************************************************/
-static GtkSizeRequestMode 
+static GtkSizeRequestMode
 egg_spread_table_get_request_mode (GtkWidget *widget)
 {
   EggSpreadTable         *table = EGG_SPREAD_TABLE (widget);
   EggSpreadTablePrivate  *priv  = table->priv;
-  
+
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     return GTK_SIZE_REQUEST_HEIGHT_FOR_WIDTH;
   else
     return GTK_SIZE_REQUEST_WIDTH_FOR_HEIGHT;
 }
 
-static void 
+static void
 egg_spread_table_get_width (GtkWidget           *widget,
 			    gint                *minimum_size,
 			    gint                *natural_size)
@@ -586,11 +586,11 @@ egg_spread_table_get_width (GtkWidget           *widget,
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
     {
-      /* Get the width for minimum height */      
+      /* Get the width for minimum height */
       gint min_height;
 
       GTK_WIDGET_GET_CLASS (widget)->get_preferred_height (widget, &min_height, NULL);
-      GTK_WIDGET_GET_CLASS (widget)->get_preferred_width_for_height (widget, min_height, 
+      GTK_WIDGET_GET_CLASS (widget)->get_preferred_width_for_height (widget, min_height,
 								     &min_width, &nat_width);
     }
   else /* GTK_ORIENTATION_VERTICAL */
@@ -615,7 +615,7 @@ egg_spread_table_get_width (GtkWidget           *widget,
     *natural_size = nat_width;
 }
 
-static void 
+static void
 egg_spread_table_get_height (GtkWidget           *widget,
 			     gint                *minimum_size,
 			     gint                *natural_size)
@@ -639,7 +639,7 @@ egg_spread_table_get_height (GtkWidget           *widget,
       gint min_width;
 
       GTK_WIDGET_GET_CLASS (widget)->get_preferred_width (widget, &min_width, NULL);
-      GTK_WIDGET_GET_CLASS (widget)->get_preferred_height_for_width (widget, min_width, 
+      GTK_WIDGET_GET_CLASS (widget)->get_preferred_height_for_width (widget, min_width,
 								     &min_height, &nat_height);
     }
 
@@ -655,7 +655,7 @@ egg_spread_table_get_height (GtkWidget           *widget,
     *natural_size = nat_height;
 }
 
-static void 
+static void
 egg_spread_table_get_height_for_width (GtkWidget           *widget,
 				       gint                 width,
 				       gint                *minimum_height,
@@ -677,7 +677,7 @@ egg_spread_table_get_height_for_width (GtkWidget           *widget,
       /* Make sure its no smaller than the minimum */
       GTK_WIDGET_GET_CLASS (widget)->get_preferred_width (widget, &min_width, NULL);
 
-      /* This will segment the lines evenly and return the overall 
+      /* This will segment the lines evenly and return the overall
        * lengths of the split segments */
       nat_height = min_height = segment_lines_for_size (table, MAX (width, min_width), NULL);
     }
@@ -711,7 +711,7 @@ egg_spread_table_get_width_for_height (GtkWidget           *widget,
       /* Make sure its no smaller than the minimum */
       GTK_WIDGET_GET_CLASS (widget)->get_preferred_height (widget, &min_height, NULL);
 
-      /* This will segment the lines evenly and return the overall 
+      /* This will segment the lines evenly and return the overall
        * lengths of the split segments */
       nat_width = min_width = segment_lines_for_size (table, MAX (height, min_height), NULL);
     }
@@ -795,8 +795,8 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
 
   segment_lines_for_size (table, full_thickness, &segments);
 
-  for (list = priv->children, line_offset = 0, i = 0; 
-       i < priv->lines; 
+  for (list = priv->children, line_offset = 0, i = 0;
+       i < priv->lines;
        line_offset += line_thickness + line_spacing, i++)
     {
       for (j = 0, item_offset = 0; list && j < segments[i]; list = list->next)
@@ -822,7 +822,7 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
 }
 
 /*****************************************************
- *                GtkContainerClass                  * 
+ *                GtkContainerClass                  *
  *****************************************************/
 static void
 egg_spread_table_add (GtkContainer *container,
@@ -858,7 +858,7 @@ egg_spread_table_remove (GtkContainer *container,
 
 static void
 egg_spread_table_forall (GtkContainer *container,
-			 gboolean      include_internals,
+			 G_GNUC_UNUSED gboolean      include_internals,
 			 GtkCallback   callback,
 			 gpointer      callback_data)
 {
@@ -877,7 +877,7 @@ egg_spread_table_child_type (G_GNUC_UNUSED GtkContainer   *container)
 }
 
 /*****************************************************
- *                       API                         * 
+ *                       API                         *
  *****************************************************/
 
 /**
@@ -936,7 +936,7 @@ egg_spread_table_insert_child (EggSpreadTable *table,
  * @child: A Child of the @table.
  * @size: A size in the opposing orientation of @table
  *
- * Gets the line index in which @child would be positioned 
+ * Gets the line index in which @child would be positioned
  * if @table were to be allocated @size in the opposing
  * orientation of @table.
  *
@@ -1001,7 +1001,7 @@ egg_spread_table_get_child_line (EggSpreadTable *table,
  * has only 3 children; then the last line will appear empty.</para></note>
  */
 void
-egg_spread_table_set_lines (EggSpreadTable *table, 
+egg_spread_table_set_lines (EggSpreadTable *table,
 			    guint           lines)
 {
   EggSpreadTablePrivate *priv;
