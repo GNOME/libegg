@@ -864,10 +864,19 @@ egg_spread_table_forall (GtkContainer *container,
 {
   EggSpreadTable        *table = EGG_SPREAD_TABLE (container);
   EggSpreadTablePrivate *priv = table->priv;
-  GList                 *list;
+  GList                 *list = NULL;
 
-  for (list = priv->children; list; list = list->next)
-    (* callback) ((GtkWidget *)list->data, callback_data);
+  /* We use a copy of the list,
+   * because the callback could call egg_spread_table_remove(),
+   * which would change the list, causing us to use a list->next that
+   * is no longer valid.
+   */
+  for (list = g_list_copy(priv->children); list; list = list->next)
+  {
+    (* callback) ((GtkWidget*) list->data, callback_data);
+  }
+
+  g_list_free(list);
 }
 
 static GType
