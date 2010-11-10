@@ -1459,9 +1459,12 @@ egg_wrap_box_forall (GtkContainer *container,
   EggWrapBoxChild   *child;
   GList             *list;
 
-  for (list = priv->children; list; list = list->next)
+  list = priv->children;
+
+  while (list)
     {
       child = list->data;
+      list  = list->next;
 
       (* callback) (child->widget, callback_data);
     }
