@@ -1428,6 +1428,12 @@ egg_editable_toolbar_set_ui_manager (EggEditableToolbar *etoolbar,
   toolbar_visibility_refresh (etoolbar);
 }
 
+/**
+ * egg_editable_toolbar_get_selected:
+ * @etoolbar:
+ *
+ * Returns: (transfer none):
+ **/
 GtkWidget * egg_editable_toolbar_get_selected (EggEditableToolbar   *etoolbar)
 {
   return etoolbar->priv->selected;
@@ -1818,6 +1824,12 @@ _egg_editable_toolbar_new_separator_image (void)
   return image;
 }
 
+/**
+ * egg_editable_toolbar_get_model:
+ * @etoolbar:
+ *
+ * Returns: (transfer none):
+ **/
 EggToolbarsModel *
 egg_editable_toolbar_get_model (EggEditableToolbar *etoolbar)
 {
