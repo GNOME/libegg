@@ -1325,7 +1325,11 @@ egg_dock_item_drag_start (EggDockItem *item)
     /* grab the keyboard & pointer */
     gtk_grab_add (GTK_WIDGET (item));
 
+#if GTK_CHECK_VERSION (3,0,0)
+    g_object_unref (fleur);
+#else
     gdk_cursor_unref (fleur);
+#endif
 
     g_signal_emit (item, egg_dock_item_signals [DOCK_DRAG_BEGIN], 0);
 }

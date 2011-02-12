@@ -858,7 +858,11 @@ popup_show (GtkWindow *popup)
 			   | GDK_BUTTON_RELEASE_MASK
 			   | GDK_POINTER_MOTION_MASK),
 			  NULL, cursor, GDK_CURRENT_TIME);
+#if GTK_CHECK_VERSION (3,0,0)
+	g_object_unref (cursor);
+#else
 	gdk_cursor_unref (cursor);
+#endif
 }
 
 static void
