@@ -21,6 +21,7 @@
  */
 
 #include <eggspreadtable.h>
+#include <eggspreadtablednd.h>
 
 enum {
   IMAGE_NONE,
@@ -45,7 +46,7 @@ static void
 populate_spread_table_wrappy (EggSpreadTable *spread_table)
 {
   GList *children, *l;
-  GtkWidget *widget, *frame;
+  GtkWidget *widget, *frame, *eventbox;
   gsize i;
 
   const gchar *strings[] = {
@@ -71,10 +72,13 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
     {
       widget = gtk_label_new (strings[i]);
       frame  = gtk_frame_new (NULL);
+      eventbox = gtk_event_box_new ();
       gtk_widget_show (widget);
       gtk_widget_show (frame);
+      gtk_widget_show (eventbox);
 
       gtk_container_add (GTK_CONTAINER (frame), widget);
+      gtk_container_add (GTK_CONTAINER (eventbox), frame);
 
       gtk_label_set_line_wrap (GTK_LABEL (widget), TRUE);
       gtk_label_set_line_wrap_mode (GTK_LABEL (widget), PANGO_WRAP_WORD);
@@ -82,7 +86,7 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
 
       gtk_widget_set_halign (frame, child_halign);
 
-      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), frame, -1);
+      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), eventbox, -1);
     }
 
   /* Insert an image into the mix */
@@ -207,7 +211,7 @@ create_window (void)
   gtk_widget_show (swindow);
   gtk_container_add (GTK_CONTAINER (frame), swindow);
 
-  paper = egg_spread_table_new (GTK_ORIENTATION_VERTICAL, INITIAL_LINES);
+  paper = egg_spread_table_dnd_new (GTK_ORIENTATION_VERTICAL, INITIAL_LINES);
   egg_spread_table_set_vertical_spacing (EGG_SPREAD_TABLE (paper), INITIAL_VSPACING);
   egg_spread_table_set_horizontal_spacing (EGG_SPREAD_TABLE (paper), INITIAL_HSPACING);
   gtk_widget_show (paper);
