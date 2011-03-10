@@ -224,15 +224,11 @@ drag_data_get (GtkWidget         *widget,
   EggSpreadTableDndDragData drag_data = { spread_table, NULL };
   GdkAtom target;
 
-  g_print ("drag_data_get()\n");
-
   target = gtk_selection_data_get_target (selection);
 
   if (target == dnd_target_atom_child)
     {
       drag_data.child = widget;
-
-      g_print ("drag_data_get() setting selection data\n");
 
       gtk_selection_data_set (selection, target, 8,
 			      (guchar*) &drag_data, sizeof (drag_data));
