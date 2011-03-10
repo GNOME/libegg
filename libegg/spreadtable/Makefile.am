@@ -11,10 +11,12 @@ noinst_LTLIBRARIES = libegg-spreadtable.la
 libegg_spreadtable_la_LIBADD = $(EGG_30_LIBS)
 
 EGGSOURCES = \
-	eggspreadtable.c
+	eggspreadtable.c \
+	eggspreadtablednd.c
 
 EGGHEADERS = \
-	eggspreadtable.h
+	eggspreadtable.h \
+	eggspreadtablednd.h
 
 libegg_spreadtable_la_SOURCES = $(EGGSOURCES)
 
