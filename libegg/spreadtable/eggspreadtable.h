@@ -51,6 +51,10 @@ struct _EggSpreadTable
 struct _EggSpreadTableClass
 {
   GtkContainerClass parent_class;
+
+  void    ( *insert_child)   (EggSpreadTable *table,
+			      GtkWidget      *child,
+			      gint            index);
 };
 
 

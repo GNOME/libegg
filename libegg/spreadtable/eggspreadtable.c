@@ -1,5 +1,5 @@
 /* gtkspreadtable.c
- * Copyright (C) 2007-2010 Openismus GmbH
+ * Copyright (C) 2010 Openismus GmbH
  *
  * Authors:
  *      Tristan Van Berkom <tristanvb@openismus.com>
@@ -71,7 +71,6 @@ static void egg_spread_table_set_property         (GObject             *object,
 						   GParamSpec          *pspec);
 
 /* GtkWidgetClass */
-
 static GtkSizeRequestMode egg_spread_table_get_request_mode (GtkWidget *widget);
 static void egg_spread_table_get_width            (GtkWidget           *widget,
 						   gint                *minimum_size,
@@ -103,6 +102,11 @@ static void egg_spread_table_forall               (GtkContainer        *containe
 						   gpointer             callback_data);
 static GType egg_spread_table_child_type          (GtkContainer        *container);
 
+
+/* EggSpreadTableClass */
+static void  egg_spread_table_real_insert_child   (EggSpreadTable      *table,
+						   GtkWidget           *child,
+						   gint                 index);
 
 G_DEFINE_TYPE_WITH_CODE (EggSpreadTable, egg_spread_table, GTK_TYPE_CONTAINER,
 			 G_IMPLEMENT_INTERFACE (GTK_TYPE_ORIENTABLE, NULL))
@@ -142,6 +146,8 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
   container_class->remove             = egg_spread_table_remove;
   container_class->forall             = egg_spread_table_forall;
   container_class->child_type         = egg_spread_table_child_type;
+
+  class->insert_child = egg_spread_table_real_insert_child;
 
   gtk_container_class_handle_border_width (container_class);
 
@@ -781,7 +787,7 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
   gint                   item_spacing;
   GtkOrientation         opposite_orientation;
 
-  gtk_widget_set_allocation (widget, allocation);
+  GTK_WIDGET_CLASS (egg_spread_table_parent_class)->size_allocate (widget, allocation);
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
     full_thickness = allocation->height;
@@ -884,6 +890,28 @@ egg_spread_table_child_type (G_GNUC_UNUSED GtkContainer   *container)
   return GTK_TYPE_WIDGET;
 }
 
+
+/*****************************************************
+ *                EggSpreadTableClass                *
+ *****************************************************/
+static void
+egg_spread_table_real_insert_child (EggSpreadTable *table,
+				    GtkWidget      *child,
+				    gint            index)
+{
+  EggSpreadTablePrivate *priv;
+  GList                 *list;
+
+  priv = table->priv;
+
+  list = g_list_find (priv->children, child);
+  g_return_if_fail (list == NULL);
+
+  priv->children = g_list_insert (priv->children, child, index);
+
+  gtk_widget_set_parent (child, GTK_WIDGET (table));
+}
+
 /*****************************************************
  *                       API                         *
  *****************************************************/
@@ -920,20 +948,10 @@ egg_spread_table_insert_child (EggSpreadTable *table,
 			       GtkWidget      *child,
 			       gint            index)
 {
-  EggSpreadTablePrivate *priv;
-  GList                 *list;
-
   g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
   g_return_if_fail (GTK_IS_WIDGET (child));
 
-  priv = table->priv;
-
-  list = g_list_find (priv->children, child);
-  g_return_if_fail (list == NULL);
-
-  priv->children = g_list_insert (priv->children, child, index);
-
-  gtk_widget_set_parent (child, GTK_WIDGET (table));
+  EGG_SPREAD_TABLE_GET_CLASS (table)->insert_child (table, child, index);
 }
 
 
