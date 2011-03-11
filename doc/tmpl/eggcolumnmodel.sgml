@@ -14,11 +14,18 @@ EggColumnModel
 
 </para>
 
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION egg_column_model_get_type ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

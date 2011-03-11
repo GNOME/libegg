@@ -14,11 +14,18 @@ EggCellRendererText
 
 </para>
 
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION egg_cell_renderer_text_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

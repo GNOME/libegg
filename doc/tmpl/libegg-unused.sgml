@@ -18,6 +18,46 @@
 EggCellRendererPixbuf
 
 
+<!-- ##### SECTION ./tmpl/eggtrayicon.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/eggtrayicon.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/eggtrayicon.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/eggtrayicon.sgml:Title ##### -->
+EggTrayIcon
+
+
+<!-- ##### SECTION ./tmpl/eggtraymanager.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/eggtraymanager.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/eggtraymanager.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/eggtraymanager.sgml:Title ##### -->
+EggTrayManager
+
+
 <!-- ##### SECTION ./tmpl/gtktreemodelfilter.sgml:Long_Description ##### -->
 <para>
 
@@ -352,6 +392,12 @@ GtkTreeModelFilter
 
 @eggtoggleaction: the object which received the signal.
 
+<!-- ##### STRUCT EggTrayManagerChild ##### -->
+<para>
+
+</para>
+
+
 <!-- ##### ARG EggTreeModelFilter:child-model ##### -->
 <para>
 
@@ -614,11 +660,64 @@ GtkTreeModelFilter
 @filename: 
 @Returns: 
 
+<!-- ##### FUNCTION egg_tray_icon_cancel_message ##### -->
+<para>
+
+</para>
+
+@icon: 
+@id: 
+
+<!-- ##### FUNCTION egg_tray_icon_new ##### -->
+<para>
+
+</para>
+
+@name: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_icon_new_for_screen ##### -->
+<para>
+
+</para>
+
+@screen: 
+@name: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_icon_send_message ##### -->
+<para>
+
+</para>
+
+@icon: 
+@timeout: 
+@message: 
+@len: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_manager_check_running ##### -->
+<para>
+
+</para>
+
+@screen: 
+@Returns: 
+
 <!-- ##### FUNCTION egg_tray_manager_check_running_default_screen ##### -->
 <para>
 
 </para>
 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_manager_get_child_title ##### -->
+<para>
+
+</para>
+
+@manager: 
+@child: 
 @Returns: 
 
 <!-- ##### FUNCTION egg_tray_manager_manage ##### -->
@@ -627,6 +726,22 @@ GtkTreeModelFilter
 </para>
 
 @manager: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_manager_manage_screen ##### -->
+<para>
+
+</para>
+
+@manager: 
+@screen: 
+@Returns: 
+
+<!-- ##### FUNCTION egg_tray_manager_new ##### -->
+<para>
+
+</para>
+
 @Returns: 
 
 <!-- ##### FUNCTION egg_tree_store_reorder ##### -->
