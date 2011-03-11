@@ -14,6 +14,12 @@ EggTreeModelFilter
 
 </para>
 
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION egg_tree_model_filter_clear_cache ##### -->
 <para>
 

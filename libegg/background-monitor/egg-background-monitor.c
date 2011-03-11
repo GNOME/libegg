@@ -1,4 +1,4 @@
-/* 
+/*
  * (c) Copyright 2002 Ian McKellar <yakk@yakk.net>
  */
 
@@ -53,7 +53,7 @@ egg_background_monitor_finalize (GObject *object)
 	g_object_unref (G_OBJECT (monitor->gdkpixmap));
 	g_object_unref (G_OBJECT (monitor->gdkpixbuf));
 
-	gdk_window_remove_filter(monitor->gdkwindow, 
+	gdk_window_remove_filter(monitor->gdkwindow,
 			egg_background_monitor_xevent_filter, monitor);
 }
 
@@ -62,11 +62,11 @@ egg_background_monitor_class_init (EggBackgroundMonitorClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-	signals[CHANGED] = 
+	signals[CHANGED] =
 		g_signal_new ("changed",
 				G_OBJECT_CLASS_TYPE (object_class),
 				G_SIGNAL_RUN_LAST,
-				G_STRUCT_OFFSET (EggBackgroundMonitorClass, 
+				G_STRUCT_OFFSET (EggBackgroundMonitorClass,
 					changed),
 				NULL, NULL,
 				g_cclosure_marshal_VOID__VOID,
@@ -87,10 +87,10 @@ egg_background_monitor_init (EggBackgroundMonitor *monitor)
 	monitor->gdkpixmap = NULL;
 	monitor->gdkpixbuf = NULL;
 
-	gdk_window_add_filter(monitor->gdkwindow, 
+	gdk_window_add_filter(monitor->gdkwindow,
 			egg_background_monitor_xevent_filter, monitor);
 
-	gdk_window_set_events(monitor->gdkwindow, 
+	gdk_window_set_events(monitor->gdkwindow,
 			gdk_window_get_events(monitor->gdkwindow) |
 			GDK_PROPERTY_CHANGE_MASK);
 }
@@ -121,7 +121,7 @@ EggBackgroundMonitor *
 egg_background_monitor_new () {
 	EggBackgroundMonitor *p;
 
-	p = (EggBackgroundMonitor *)g_object_new (egg_background_monitor_get_type (), 
+	p = (EggBackgroundMonitor *)g_object_new (egg_background_monitor_get_type (),
 			NULL);
 	return p;
 }
@@ -161,11 +161,11 @@ egg_background_monitor_setup_pixmap (EggBackgroundMonitor *monitor)
 
 	prop_data.data = NULL;
 
-	gdk_property_get(monitor->gdkwindow, monitor->gdkatom, 0, 0, 10, 
+	gdk_property_get(monitor->gdkwindow, monitor->gdkatom, 0, 0, 10,
 			FALSE, &prop_type, NULL, NULL, &prop_data.data);
 
-	if ((prop_type == GDK_TARGET_PIXMAP) 
-			&& (prop_data.pixmap != NULL) 
+	if ((prop_type == GDK_TARGET_PIXMAP)
+			&& (prop_data.pixmap != NULL)
 			&& (prop_data.pixmap[0] != 0)) {
 		monitor->gdkpixmap = gdk_pixmap_foreign_new(prop_data.pixmap[0]);
 
@@ -176,7 +176,7 @@ egg_background_monitor_setup_pixmap (EggBackgroundMonitor *monitor)
 
 }
 
-static void 
+static void
 egg_background_monitor_setup_pixbuf (EggBackgroundMonitor *monitor)
 {
 	GdkColormap *colormap = NULL;
@@ -189,19 +189,19 @@ egg_background_monitor_setup_pixbuf (EggBackgroundMonitor *monitor)
 		return;
 	}
 
-	gdk_drawable_get_size (GDK_DRAWABLE (monitor->gdkpixmap), 
+	gdk_pixmap_get_size (monitor->gdkpixmap,
 			&pwidth, &pheight);
 
-	gdk_drawable_get_size (GDK_DRAWABLE (monitor->gdkwindow),
-			&rwidth, &rheight);
+  rwidth = gdk_window_get_width(monitor->gdkwindow);
+  rheight = gdk_window_get_height(monitor->gdkwindow);
 
 	monitor->width = MIN(pwidth, rwidth);
 	monitor->height = MIN(pheight, rheight);
 
 	colormap = gdk_drawable_get_colormap(monitor->gdkwindow);
 
-	monitor->gdkpixbuf = gdk_pixbuf_get_from_drawable(NULL, 
-			monitor->gdkpixmap, colormap, 0, 0, 0, 0, 
+	monitor->gdkpixbuf = gdk_pixbuf_get_from_drawable(NULL,
+			monitor->gdkpixmap, colormap, 0, 0, 0, 0,
 			monitor->width, monitor->height);
 
 }
@@ -232,7 +232,7 @@ egg_background_monitor_get_region (EggBackgroundMonitor *monitor, int x, int y,
 				height); /* who cares */
 	}
 
-	pixbuf = gdk_pixbuf_new_subpixbuf (monitor->gdkpixbuf, subx, suby, 
+	pixbuf = gdk_pixbuf_new_subpixbuf (monitor->gdkpixbuf, subx, suby,
 			subwidth, subheight);
 
 	/* FIXME: don't handle regions off the top or left edge */
@@ -258,8 +258,8 @@ egg_background_monitor_get_widget_background (EggBackgroundMonitor *monitor,
 	/* FIXME: do we need deskrelative_origin? screw E IMHO */
 	gdk_window_get_origin (widget->window, &x, &y);
 
-	return egg_background_monitor_get_region (monitor, x+widget->allocation.x, 
-			y+widget->allocation.y, 
-			widget->allocation.width, 
+	return egg_background_monitor_get_region (monitor, x+widget->allocation.x,
+			y+widget->allocation.y,
+			widget->allocation.width,
 			widget->allocation.height);
 }

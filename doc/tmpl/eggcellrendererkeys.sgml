@@ -14,11 +14,18 @@ EggCellRendererKeys
 
 </para>
 
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION egg_cell_renderer_keys_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -29,6 +36,7 @@ EggCellRendererKeys
 
 @keys: 
 @keyval: 
+@keycode: 
 @mask: 
 
 
