@@ -372,6 +372,19 @@ create_window (void)
 
   populate_spread_table_wrappy (EGG_SPREAD_TABLE (paper));
 
+  /* Embed the whole thing once again */
+  widget = egg_spread_table_dnd_new (GTK_ORIENTATION_VERTICAL, INITIAL_LINES);
+  egg_spread_table_set_vertical_spacing (EGG_SPREAD_TABLE (widget), INITIAL_VSPACING);
+  egg_spread_table_set_horizontal_spacing (EGG_SPREAD_TABLE (widget), INITIAL_HSPACING);
+
+  frame  = gtk_frame_new (NULL);
+  gtk_widget_show (widget);
+  gtk_widget_show (frame);
+  gtk_widget_set_size_request (widget, 40, 40);
+  gtk_container_add (GTK_CONTAINER (frame), widget);
+
+  egg_spread_table_insert_child (EGG_SPREAD_TABLE (paper), frame, 5);
+
   gtk_window_set_default_size (GTK_WINDOW (window), 500, 400);
 
   return window;
