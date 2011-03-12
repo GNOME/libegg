@@ -753,6 +753,12 @@ allocate_child (EggSpreadTable *table,
 
   gtk_widget_get_allocation (GTK_WIDGET (table), &widget_allocation);
 
+  if (gtk_widget_get_has_window (GTK_WIDGET (table)))
+    {
+      widget_allocation.x = 0;
+      widget_allocation.y = 0;
+    }
+
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
     {
       child_allocation.x      = widget_allocation.x + item_offset;
