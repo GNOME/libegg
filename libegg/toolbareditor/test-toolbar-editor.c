@@ -47,7 +47,6 @@ edit (GtkWidget *button, EggEditableToolbar *toolbar)
   GtkWidget *editor;
 
   dialog = gtk_dialog_new ();
-  gtk_dialog_set_has_separator (GTK_DIALOG (dialog), FALSE);
   gtk_window_set_title (GTK_WINDOW (dialog), "Toolbar editor");
 
   editor = egg_toolbar_editor_new (manager, model);
