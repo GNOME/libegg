@@ -1,6 +1,6 @@
 INCLUDES = \
   -DCURSOR_DIR=\".\" \
-  $(EGG_CFLAGS) \
+  $(EGG_30_CFLAGS) \
   $(EGG_XML_CFLAGS) \
   -DEGG_COMPILATION \
   -DGTK_DISABLE_DEPRECATED \
@@ -11,7 +11,7 @@ INCLUDES = \
 
 noinst_LTLIBRARIES = libegg-toolbareditor.la
 
-libegg_toolbareditor_la_LIBADD = $(EGG_LIBS) $(EGG_XML_LIBS) \
+libegg_toolbareditor_la_LIBADD = $(EGG_30_LIBS) $(EGG_XML_LIBS) \
 	$(top_builddir)/libegg/util/libeggutil.la
 
 EGGSOURCES = \
@@ -43,7 +43,7 @@ noinst_PROGRAMS = test-toolbar-editor
 
 test_toolbar_editor_SOURCES = test-toolbar-editor.c
 
-test_toolbar_editor_LDADD = $(EGG_LIBS) \
+test_toolbar_editor_LDADD = $(EGG_30_LIBS) \
   $(top_builddir)/libegg/toolbareditor/libegg-toolbareditor.la
 
 # Buidl sources 
