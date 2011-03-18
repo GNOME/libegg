@@ -25,8 +25,7 @@
 
 #include <glib/gi18n.h>
 
-#include <gtk/gtkimage.h>
-#include <gtk/gtklabel.h>
+#include <gtk/gtk.h>
 
 #include "egg-pixbuf-thumbnail.h"
 
@@ -484,7 +483,9 @@ label_style_set (GtkWidget *label,
 {
   PangoFontDescription *font_desc;
 
-  font_desc = pango_font_description_copy (label->style->font_desc);
+  GtkStyleContext *style = gtk_widget_get_style_context (label);
+  font_desc = pango_font_description_copy (
+				   gtk_style_context_get_font (style, GTK_STATE_FLAG_NORMAL));
   pango_font_description_set_size (font_desc,
 				   pango_font_description_get_size (font_desc) * PANGO_SCALE_SMALL);
   g_signal_handlers_block_by_func (label, label_style_set, NULL);

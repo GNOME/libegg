@@ -20,7 +20,7 @@
 #ifndef __EGG_THUMBNAIL_PREVIEW_H__
 #define __EGG_THUMBNAIL_PREVIEW_H__
 
-#include <gtk/gtkvbox.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

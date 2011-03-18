@@ -5,13 +5,13 @@ INCLUDES = \
 	-I$(top_srcdir)/libegg/util \
 	-I$(top_srcdir)/libegg/pixbufthumbnail \
 	-DG_LOG_DOMAIN=\""EggThumbnailPreview"\" \
-	$(EGG_CFLAGS)
+	$(EGG_30_CFLAGS)
 
 noinst_LTLIBRARIES = \
 	libeggthumbnailpreview.la
 
 libeggthumbnailpreview_la_LIBADD = \
-	$(EGG_LIBS) \
+	$(EGG_30_LIBS) \
 	$(top_builddir)/libegg/pixbufthumbnail/libeggpixbufthumbnail.la
 
 libeggthumbnailpreview_la_SOURCES = \
