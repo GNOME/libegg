@@ -1,5 +1,0 @@
-A widget implementing a toolbar button with an additional dropdown menu,
-like the "Back" and "Forward" buttons of Epiphany and Nautilus.
-
-Merged in GTK+ 2.6 with the name GtkMenuToolButton
-
