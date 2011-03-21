@@ -29,7 +29,7 @@ background_monitor_SUBDIRS = \
 endif
 
 SUBDIRS = util column-chooser treeviewutils \
-  sidebar $(background_monitor_SUBDIRS) \
+  $(background_monitor_SUBDIRS) \
   dock datetime $(thumbnail_SUBDIRS) \
   smclient $(spreadtable_SUBDIRS) \
   $(gtk210_SUBDIRS) \
