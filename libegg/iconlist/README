@@ -1,5 +1,0 @@
-This module has been merged in GTK+ 2.6:
-
-EggIconList has become GtkIconView
-
-Matthias Clasen, 2004-07-04

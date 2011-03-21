@@ -1,5 +1,0 @@
-This module has been merged in GTK+ 2.4:
-
-EggComboBox has become GtkComboBox
-
-Matthias Clasen, 2004-07-04
