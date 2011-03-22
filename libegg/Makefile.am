@@ -40,10 +40,7 @@ SUBDIRS = util column-chooser treeviewutils \
 #$(iconchooser_SUBDIRS)
 
 INCLUDES = \
-  $(EGG_CFLAGS)  \
-  -DEGG_COMPILATION  \
-  -DGTK_DISABLE_DEPRECATED \
-  -DGDK_DISABLE_DEPRECATED \
-  -DG_DISABLE_DEPRECATED
+  $(EGG_CFLAGS) $(EGG_WARNING_FLAGS)  \
+  -DEGG_COMPILATION
 
 ##noinst_LTLIBRARIES = libegg.la

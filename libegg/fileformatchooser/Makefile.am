@@ -1,10 +1,7 @@
 INCLUDES = \
-  $(EGG_30_CFLAGS) \
+  $(EGG_30_CFLAGS) $(EGG_WARNING_FLAGS) \
   -I$(top_srcdir)/libegg/util \
-  -DEGG_COMPILATION \
-  -DGTK_DISABLE_DEPRECATED \
-  -DGDK_DISABLE_DEPRECATED \
-  -DG_DISABLE_DEPRECATED
+  -DEGG_COMPILATION
 
 
 noinst_LTLIBRARIES = libeggfileformatchooser.la

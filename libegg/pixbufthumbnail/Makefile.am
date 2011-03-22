@@ -1,7 +1,7 @@
 # This file will be processed with automake-1.7 to create Makefile.in
 
 INCLUDES = \
-	$(EGG_CFLAGS)
+	$(EGG_CFLAGS) $(EGG_WARNING_FLAGS)
 
 noinst_LTLIBRARIES = \
 	libeggpixbufthumbnail.la

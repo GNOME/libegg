@@ -1,5 +1,7 @@
 AC_INIT(libegg/util/eggmarshalers.list)
 
+AC_CONFIG_MACRO_DIR(m4)
+
 AM_CONFIG_HEADER(config.h)
 
 AM_INIT_AUTOMAKE(libegg, 0.0.1)
@@ -134,14 +136,16 @@ fi
 AC_SUBST(HTML_DIR)
 AM_CONDITIONAL(ENABLE_GTK_DOC, true)
 
-
+DK_ARG_ENABLE_WARNINGS([EGG_WARNING_FLAGS],
+                       [-Wall -w1],
+                       [-pedantic -Wall -Wextra -w1],
+                       [GTK GDK GDK_PIXBUF G])
 
 AC_OUTPUT([
 Makefile
 libegg/Makefile
 libegg/util/Makefile
 libegg/background-monitor/Makefile
-libegg/sidebar/Makefile
 libegg/treeviewutils/Makefile
 libegg/column-chooser/Makefile
 libegg/toolbareditor/Makefile

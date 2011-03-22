@@ -46,7 +46,7 @@ extra_files =
 
 # CFLAGS and LDFLAGS for compiling scan program. Only needed if your app/lib
 # contains GtkObjects/GObjects and you want to document signals and properties.
-GTKDOC_CFLAGS = -I$(top_srcdir) $(EGG_CFLAGS) \
+GTKDOC_CFLAGS = -I$(top_srcdir) $(EGG_CFLAGS) $(EGG_WARNING_FLAGS) \
   `pkg-config --cflags libxml-2.0`
 GTKDOC_LIBS = \
   $(top_builddir)/libegg/treeviewutils/libegg-treeview.la \
