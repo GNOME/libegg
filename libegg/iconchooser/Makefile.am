@@ -6,7 +6,7 @@ INCLUDES = \
 	-I$(top_srcdir)/libegg/util \
 	-I$(top_srcdir)/libegg/pixbufthumbnail \
 	-I$(top_srcdir)/libegg/thumbnailpreview \
-	$(EGG_CFLAGS)
+	$(EGG_CFLAGS) $(EGG_WARNING_FLAGS)
 
 
 noinst_LTLIBRARIES = \
@@ -49,7 +49,7 @@ testiconchooser_SOURCES =	\
 	prop-editor.c
 
 testiconchooser_CFLAGS = \
-	$(EGG_CFLAGS) \
+	$(EGG_CFLAGS) $(EGG_WARNING_FLAGS) \
 	-DG_LOG_DOMAIN="\"TestIconChooser\""
 
 testiconchooser_LDFLAGS = \

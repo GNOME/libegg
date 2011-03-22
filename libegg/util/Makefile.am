@@ -1,5 +1,9 @@
 INCLUDES = \
 	$(EGG_CFLAGS)
+	
+# Note that we don't use EGG_WARNING_FLAGS here because
+# the marshalling code generally needs to ignore this warning:
+# "ISO C forbids conversion of object pointer to function pointer type"
 
 noinst_LTLIBRARIES=libeggutil.la
 

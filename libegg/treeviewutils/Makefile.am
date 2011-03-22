@@ -1,9 +1,6 @@
 INCLUDES = \
-  $(EGG_CFLAGS) \
+  $(EGG_CFLAGS) $(EGG_WARNING_FLAGS) \
   -DEGG_COMPILATION \
-  -DG_DISABLE_DEPRECATED \
-  -DGDK_DISABLE_DEPRECATED \
-  -DGTK_DISABLE_DEPRECATED \
   -I$(top_builddir)/libegg/util
 
 noinst_LTLIBRARIES = libegg-treeview.la
