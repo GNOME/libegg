@@ -1200,7 +1200,7 @@ egg_dock_item_dock (EggDockObject    *object,
         {
             GEnumClass *enum_class = G_ENUM_CLASS (g_type_class_ref (EGG_TYPE_DOCK_PLACEMENT));
             GEnumValue *enum_value = g_enum_get_value (enum_class, position);
-            gchar *name = enum_value ? enum_value->value_name : NULL;
+            const gchar *name = enum_value ? enum_value->value_name : NULL;
 
             g_warning (_("Unsupported docking strategy %s in dock object of type %s"),
                        name,  G_OBJECT_TYPE_NAME (object));
