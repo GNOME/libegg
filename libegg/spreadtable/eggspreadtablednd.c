@@ -96,7 +96,18 @@ static GtkWidget    *get_drag_child                    (EggSpreadTableDnd *sprea
 							const GtkSelectionData *selection);
 static GtkWidget    *get_child_at_position             (EggSpreadTableDnd *spread_table,
 							gint               x,
-							gint               y);
+							gint               y,
+							gboolean          *before);
+static void          cancel_drag                       (EggSpreadTableDnd *spread_table);
+
+
+static gboolean      drag_highlight_draw               (GtkWidget         *widget,
+							cairo_t           *cr,
+							gpointer           data);
+static void          highlight_drag                    (GtkWidget         *widget, 
+							gboolean           before);
+static void          unhighlight_drag                  (GtkWidget         *widget);
+
 
 struct _EggSpreadTableDndPrivate {
   GtkWidget *drop_target;  /* Remember which child widget has the drop highlight */
@@ -234,15 +245,11 @@ egg_spread_table_dnd_motion (GtkWidget         *widget,
       spread_table->priv->drag_child = 
 	get_child_at_position (spread_table, 
 			       spread_table->priv->press_start_x,
-			       spread_table->priv->press_start_y);
-
-      g_print ("[widget] Pointer motion threshold reached, maybe beginning drag on child %p\n", 
-	       spread_table->priv->drag_child);
-
+			       spread_table->priv->press_start_y, NULL);
 
       if (spread_table->priv->drag_child)
 	{
-	  gtk_drag_begin (widget,
+	  gtk_drag_begin (spread_table->priv->drag_child,
 			  gtk_drag_source_get_target_list (widget),
 			  GDK_ACTION_MOVE,
 			  spread_table->priv->pressed_button,
@@ -263,12 +270,14 @@ egg_spread_table_dnd_button_press (GtkWidget         *widget,
   if (event->button == 1 && event->type == GDK_BUTTON_PRESS)
     {
       /* Save press to possibly begin a drag */
-      if (get_child_at_position (spread_table, event->x, event->y) && 
+      if (get_child_at_position (spread_table, event->x, event->y, NULL) && 
 	  spread_table->priv->pressed_button < 0)
 	{
 	  spread_table->priv->pressed_button = event->button;
 	  spread_table->priv->press_start_x  = event->x;
 	  spread_table->priv->press_start_y  = event->y;
+
+	  handled = TRUE;
 	}
     }
 
@@ -294,7 +303,6 @@ static void
 egg_spread_table_dnd_drag_begin (GtkWidget         *widget,
 				 GdkDragContext    *context)
 {
-  g_print ("[source] Drag begin\n");
 
 }
 
@@ -302,7 +310,6 @@ static void
 egg_spread_table_dnd_drag_end (GtkWidget         *widget,
 			       GdkDragContext    *context)
 {
-  g_print ("[source] Drag end\n");
 
 }
 
@@ -316,8 +323,6 @@ egg_spread_table_dnd_drag_data_get (GtkWidget         *widget,
   EggSpreadTableDnd        *spread_table = EGG_SPREAD_TABLE_DND (widget);
   EggSpreadTableDndDragData drag_data    = { spread_table, NULL };
   GdkAtom target;
-
-  g_print ("[source] Drag data get\n");
 
   target = gtk_selection_data_get_target (selection);
 
@@ -336,7 +341,7 @@ static void
 egg_spread_table_dnd_drag_data_delete (GtkWidget         *widget,
 				       GdkDragContext    *context)
 {
-  g_print ("[source] Drag data delete\n");
+
 }
 
 /*****************************************************
@@ -347,7 +352,11 @@ egg_spread_table_dnd_drag_leave (GtkWidget         *widget,
 				 GdkDragContext    *context,
 				 guint              time_)
 {
-  g_print ("[dest] Drag leave\n");
+  EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
+
+  /* Cancel the drag here also, so that highlights go away when
+   * leaving the target spread table */
+  cancel_drag (spread_table);
 }
 
 static gboolean
@@ -359,21 +368,17 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 {
   EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
   GtkWidget         *drop_target;
+  gboolean           before;
 
-  drop_target = get_child_at_position (spread_table, x, y);
+  drop_target = get_child_at_position (spread_table, x, y, &before);
 
-  if (drop_target != spread_table->priv->drop_target)
-    {
-      if (spread_table->priv->drop_target)
-	gtk_drag_unhighlight (spread_table->priv->drop_target);
+  if (spread_table->priv->drop_target)
+    unhighlight_drag (spread_table->priv->drop_target);
 
-      spread_table->priv->drop_target = drop_target;
+  spread_table->priv->drop_target = drop_target;
 
-      if (spread_table->priv->drop_target)
-	gtk_drag_highlight (spread_table->priv->drop_target);
-    }
-
-  g_print ("[dest] Drag motion at %d/%d\n", x, y);
+  if (spread_table->priv->drop_target)
+    highlight_drag (spread_table->priv->drop_target, before);
 
   return FALSE;
 }
@@ -385,7 +390,10 @@ egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
 				gint               y,
 				guint              time_)
 {
-  g_print ("[dest] Drag drop at %d/%d\n", x, y);
+  EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
+
+  /* Cancel the drag here too (otherwise the highlight can remain) */
+  cancel_drag (spread_table);
 
   return FALSE;
 }
@@ -410,8 +418,9 @@ egg_spread_table_dnd_drag_data_received (GtkWidget        *widget,
       GtkWidget  *drop_widget;
       gint        index = -1, orig_index;
       GList      *children;
+      gboolean    before;
 
-      drop_widget = get_child_at_position (spread_table, x, y);
+      drop_widget = get_child_at_position (spread_table, x, y, &before);
 
       if (drop_widget)
 	{
@@ -422,6 +431,9 @@ egg_spread_table_dnd_drag_data_received (GtkWidget        *widget,
 
 	  if (index >= 0 && orig_index >= 0 && orig_index < index)
 	    index--;
+
+	  if (!before)
+	    index++;
 	}
 
       /* It might have been inside another spread table in the same application */
@@ -429,17 +441,10 @@ egg_spread_table_dnd_drag_data_received (GtkWidget        *widget,
       gtk_container_remove (GTK_CONTAINER (gtk_widget_get_parent (drag_child)), drag_child);
       egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), drag_child, index);
       g_object_unref (drag_child);
+
     }
 
-  if (spread_table->priv->drop_target)
-    {
-      gtk_drag_unhighlight (spread_table->priv->drop_target);
-      spread_table->priv->drop_target = NULL;
-    }
-
-  spread_table->priv->pressed_button = -1;
-
-  g_print ("[dest] Drag data received at %d/%d\n", x, y);
+  cancel_drag (spread_table);
 
 }
 
@@ -448,7 +453,6 @@ egg_spread_table_dnd_drag_failed (GtkWidget         *widget,
 				  GdkDragContext    *context,
 				  GtkDragResult      result)
 {
-  g_print ("[dest] Drag data failed\n");
 
   return FALSE;
 }
@@ -501,15 +505,11 @@ drag_data_get (GtkWidget         *widget,
   EggSpreadTableDndDragData drag_data = { spread_table, NULL };
   GdkAtom target;
 
-  g_print ("drag_data_get()\n");
-
   target = gtk_selection_data_get_target (selection);
 
   if (target == dnd_target_atom_child)
     {
       drag_data.child = widget;
-
-      g_print ("drag_data_get() setting selection data\n");
 
       gtk_selection_data_set (selection, target, 8,
 			      (guchar*) &drag_data, sizeof (drag_data));
@@ -530,21 +530,28 @@ get_drag_child (EggSpreadTableDnd      *spread_table,
 
   data = (EggSpreadTableDndDragData*) gtk_selection_data_get_data (selection);
 
-  /* Unhighlight it here since we can drag and drop from one spread table
-   * to another */
-  if (data->table->priv->drop_target)
-    {
-      gtk_drag_unhighlight (data->table->priv->drop_target);
-      data->table->priv->drop_target = NULL;
-    }
+  /* Cancel the drag on the original drag data (incase this is a table-to-table dnd) */
+  cancel_drag (data->table);
 
   return data->child;
+}
+
+static void
+cancel_drag (EggSpreadTableDnd *spread_table)
+{
+  if (spread_table->priv->drop_target)
+    {
+      unhighlight_drag (spread_table->priv->drop_target);
+      spread_table->priv->drop_target = NULL;
+    }
+  spread_table->priv->pressed_button = -1;
 }
 
 static GtkWidget *
 get_child_at_position (EggSpreadTableDnd *spread_table,
 		       gint               x,
-		       gint               y)
+		       gint               y,
+		       gboolean          *before)
 {
   GtkWidget    *child, *ret_child = NULL;
   GList        *children, *l;
@@ -563,13 +570,91 @@ get_child_at_position (EggSpreadTableDnd *spread_table,
 
       if (x >= allocation.x && x <= allocation.x + allocation.width &&
 	  y >= allocation.y && y <= allocation.y + allocation.height)
-	ret_child = child;
+	{
+	  ret_child = child;
+
+	  if (before)
+	    {
+	      if (y < allocation.y + allocation.height / 2)
+		*before = TRUE;
+	      else
+		*before = FALSE;
+	    }
+	}
     }
 
   g_list_free (children);
 
   return ret_child;
 }
+
+
+static gboolean
+drag_highlight_draw (GtkWidget *widget,
+		     cairo_t   *cr,
+		     gpointer   data)
+{
+  int width = gtk_widget_get_allocated_width (widget);
+  int height = gtk_widget_get_allocated_height (widget);
+  int y = 0;
+  gboolean before = GPOINTER_TO_INT (data);
+  GtkStyleContext *context;
+
+  if (before)
+    height = 2;
+  else
+    {
+      y = height - 2;
+      height = 2;
+    }
+
+  context = gtk_widget_get_style_context (widget);
+
+  gtk_style_context_save (context);
+  gtk_style_context_add_class (context, GTK_STYLE_CLASS_DND);
+
+  gtk_render_frame (context, cr, 0, y, width, height);
+
+  gtk_style_context_restore (context);
+
+  cairo_set_source_rgb (cr, 0.0, 0.0, 0.0); /* black */
+  cairo_set_line_width (cr, 1.0);
+  cairo_rectangle (cr,
+                   0.5, y + 0.5,
+                   width - 1, height - 1);
+  cairo_stroke (cr);
+
+  return FALSE;
+}
+
+static void 
+highlight_drag (GtkWidget  *widget, 
+		gboolean    before)
+{
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+
+  g_signal_connect_after (widget, "draw",
+			  G_CALLBACK (drag_highlight_draw),
+			  GINT_TO_POINTER (before));
+
+  gtk_widget_queue_draw (widget);
+}
+
+static void 
+unhighlight_drag (GtkWidget *widget)
+{
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+
+  g_signal_handlers_disconnect_by_func (widget,
+					drag_highlight_draw,
+					GINT_TO_POINTER (TRUE));
+  g_signal_handlers_disconnect_by_func (widget,
+					drag_highlight_draw,
+					GINT_TO_POINTER (FALSE));
+  
+  gtk_widget_queue_draw (widget);
+}
+
 
 /*****************************************************
  *                       API                         *
