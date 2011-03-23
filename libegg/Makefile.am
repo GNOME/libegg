@@ -19,10 +19,6 @@ gtk210_SUBDIRS = \
   fileformatchooser
 endif
 
-if HAVE_GTK215
-gtk215_SUBDIRS =
-endif
-
 if HAVE_GTK_TARGET_X11
 background_monitor_SUBDIRS = \
   background-monitor
@@ -33,8 +29,7 @@ SUBDIRS = util column-chooser treeviewutils \
   dock datetime $(thumbnail_SUBDIRS) \
   smclient $(spreadtable_SUBDIRS) \
   $(gtk210_SUBDIRS) \
-  $(gtk215_SUBDIRS) \
-  $(gtk30_SUBDIRS)
+  $(gtk215_SUBDIRS)
 
 # Don't compile broken code
 #$(iconchooser_SUBDIRS)

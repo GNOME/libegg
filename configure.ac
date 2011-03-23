@@ -90,12 +90,6 @@ AC_SUBST(EGG_SMCLIENT_DBUS_LIBS)
 AC_SUBST(EGG_SMCLIENT_DBUS_CFLAGS)
 AM_CONDITIONAL(HAVE_DBUS, test "$have_dbus" = "yes")
 
-## check if we have gtk+ 2.1.x
-AM_CONDITIONAL(HAVE_GTK21, $PKG_CONFIG --atleast-version=2.1.0 gtk+-2.0)
-
-## check if we have gtk+ 2.4.x
-AM_CONDITIONAL(HAVE_GTK24, $PKG_CONFIG --atleast-version=2.4.0 gtk+-2.0)
-
 ## check if we have gtk+ 2.5.x
 AM_CONDITIONAL(HAVE_GTK25, $PKG_CONFIG --atleast-version=2.5.0 gtk+-2.0)
 
@@ -105,15 +99,10 @@ AM_CONDITIONAL(HAVE_GTK27, $PKG_CONFIG --atleast-version=2.7.0 gtk+-2.0)
 ## check if we have gtk+ 2.10.x
 AM_CONDITIONAL(HAVE_GTK210, $PKG_CONFIG --atleast-version=2.10.0 gtk+-2.0)
 
-## check if we have gtk+ 2.15.x
-AM_CONDITIONAL(HAVE_GTK215, $PKG_CONFIG --atleast-version=2.15.0 gtk+-2.0)
-
 ## check if we have gtk+ 3
 AM_CONDITIONAL(HAVE_GTK30, $PKG_CONFIG --atleast-version=2.91.1 gtk+-3.0)
 
-AM_COND_IF(HAVE_GTK30,
-  [PKG_CHECK_MODULES(EGG_30, gtk+-3.0)
-  AC_CONFIG_FILES()])
+AM_COND_IF(HAVE_GTK30, [PKG_CHECK_MODULES(EGG_30, gtk+-3.0)])
 
 ## check if we have the X11 gtk+ backend
 AM_CONDITIONAL(HAVE_GTK_TARGET_X11, test `$PKG_CONFIG --variable=target gtk+-2.0` = x11)
