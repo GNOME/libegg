@@ -12,4 +12,4 @@ noinst_HEADERS = egg-datetime.h
 
 noinst_PROGRAMS = test-datetime
 test_datetime_SOURCES = test-datetime.c
-test_datetime_LDADD = $(EGG_LIBS) $(top_builddir)/libegg/datetime/libeggdatetime.la
+test_datetime_LDADD = $(EGG_LIBS) libeggdatetime.la
