@@ -41,7 +41,11 @@
 #include "egg-dock-notebook.h"
 #include "egg-dock-placeholder.h"
 
-typedef struct _EggDockObjectPrivate {
+/* Borrowed from gedit. */
+#define GBOOLEAN_TO_POINTER(i) (GINT_TO_POINTER ((i) ? 2 : 1))
+#define GPOINTER_TO_BOOLEAN(i) ((gboolean) ((GPOINTER_TO_INT(i) == 2) ? TRUE : FALSE))
+
+struct _EggDockObjectPrivate {
 	gpointer unused;
 };
 
@@ -261,7 +265,7 @@ static void
 egg_dock_object_foreach_detach (EggDockObject *object,
                                 gpointer       user_data)
 {
-    egg_dock_object_detach (object, TRUE);
+    egg_dock_object_detach (object, GPOINTER_TO_BOOLEAN(TRUE));
 }
 
 static void
@@ -339,7 +343,7 @@ egg_dock_object_real_detach (EggDockObject *object,
     if (recursive && egg_dock_object_is_compound (object)) {
         gtk_container_foreach (GTK_CONTAINER (object),
                                (GtkCallback) egg_dock_object_detach,
-                               (gpointer) recursive);
+                               GBOOLEAN_TO_POINTER(recursive));
     }
     
     /* detach the object itself */
@@ -432,7 +436,7 @@ egg_dock_object_is_compound (EggDockObject *object)
 
 void
 egg_dock_object_detach (EggDockObject *object,
-                        gboolean       recursive)
+                        gpointer       recursive)
 {
     g_return_if_fail (object != NULL);
 
@@ -442,7 +446,7 @@ egg_dock_object_detach (EggDockObject *object,
     /* freeze the object to avoid reducing while detaching children */
     egg_dock_object_freeze (object);
     EGG_DOCK_OBJECT_SET_FLAGS (object, EGG_DOCK_IN_DETACH);
-    g_signal_emit (object, egg_dock_object_signals [DETACH], 0, recursive);
+    g_signal_emit (object, egg_dock_object_signals [DETACH], 0, GPOINTER_TO_BOOLEAN(recursive));
     EGG_DOCK_OBJECT_UNSET_FLAGS (object, EGG_DOCK_IN_DETACH);
     egg_dock_object_thaw (object);
 }
@@ -602,7 +606,7 @@ egg_dock_object_unbind (EggDockObject *object)
 
     /* detach the object first */
     if (EGG_DOCK_OBJECT_ATTACHED (object))
-        egg_dock_object_detach (object, TRUE);
+        egg_dock_object_detach (object, GBOOLEAN_TO_POINTER(TRUE));
     
     if (object->master) {
         GObject *master = object->master;

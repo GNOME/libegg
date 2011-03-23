@@ -159,8 +159,8 @@ egg_dock_placeholder_class_init (EggDockPlaceholderClass *klass)
 static void
 egg_dock_placeholder_instance_init (EggDockPlaceholder *ph)
 {
-    gtk_widget_set_has_window (ph, FALSE);
-    gtk_widget_set_can_focus (ph, FALSE);
+    gtk_widget_set_has_window (GTK_WIDGET (ph), FALSE);
+    gtk_widget_set_can_focus (GTK_WIDGET (ph), FALSE);
 
     ph->_priv = g_new0 (EggDockPlaceholderPrivate, 1);
 }
@@ -185,7 +185,7 @@ egg_dock_placeholder_set_property (GObject      *g_object,
             if (ph->_priv) {
                 ph->_priv->placement_stack =
                     g_slist_prepend (ph->_priv->placement_stack,
-                                     (gpointer) g_value_get_enum (value));
+                                     GINT_TO_POINTER (g_value_get_enum (value)));
             }
             break;
 	default:

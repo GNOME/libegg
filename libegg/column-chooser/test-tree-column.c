@@ -87,7 +87,7 @@ main (int argc, char *argv[])
 
   gtk_container_add (GTK_CONTAINER (scrolled_window), tree_view);
   gtk_box_pack_start (GTK_BOX (vbox), scrolled_window, TRUE, TRUE, 0);
-  gtk_widget_show_all (egg_column_chooser_dialog_new (tree_view));
+  gtk_widget_show_all (egg_column_chooser_dialog_new (GTK_TREE_VIEW(tree_view)));
 
   gtk_widget_show_all (window);
   gtk_main ();

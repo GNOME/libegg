@@ -13,7 +13,7 @@ main (int argc, char *argv[])
   gtk_init (&argc, &argv);
 
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  model = gtk_list_store_new (1, G_TYPE_STRING);
+  model = GTK_TREE_MODEL (gtk_list_store_new (1, G_TYPE_STRING));
 
   for (i = 0; i < 20; i++)
     {

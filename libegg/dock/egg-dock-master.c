@@ -37,6 +37,9 @@
 #include "egg-dock-item.h"
 #include <util/eggmarshalers.h>
 
+/* Borrowed from gedit. */
+#define GBOOLEAN_TO_POINTER(i) (GINT_TO_POINTER ((i) ? 2 : 1))
+#define GPOINTER_TO_BOOLEAN(i) ((gboolean) ((GPOINTER_TO_INT(i) == 2) ? TRUE : FALSE))
 
 /* ----- Private prototypes ----- */
 
@@ -299,16 +302,16 @@ egg_dock_master_dispose (GObject *g_object)
 
 static void 
 foreach_lock_unlock (EggDockItem *item,
-                     gboolean     locked)
+                     gpointer     locked)
 {
     if (!EGG_IS_DOCK_ITEM (item))
         return;
     
-    g_object_set (item, "locked", locked, NULL);
+    g_object_set (item, "locked", GPOINTER_TO_BOOLEAN (locked), NULL);
     if (egg_dock_object_is_compound (EGG_DOCK_OBJECT (item)))
         gtk_container_foreach (GTK_CONTAINER (item),
                                (GtkCallback) foreach_lock_unlock,
-                               (gpointer) locked);
+                               locked);
 }
 
 static void
@@ -320,13 +323,13 @@ egg_dock_master_lock_unlock (EggDockMaster *master,
     for (l = master->toplevel_docks; l; l = l->next) {
         EggDock *dock = EGG_DOCK (l->data);
         if (dock->root)
-            foreach_lock_unlock (EGG_DOCK_ITEM (dock->root), locked);
+            foreach_lock_unlock (EGG_DOCK_ITEM (dock->root), GBOOLEAN_TO_POINTER (locked));
     }
 
     /* just to be sure hidden items are set too */
     egg_dock_master_foreach (master,
                              (GFunc) foreach_lock_unlock,
-                             (gpointer) locked);
+                             GBOOLEAN_TO_POINTER (locked));
 }
 
 static void

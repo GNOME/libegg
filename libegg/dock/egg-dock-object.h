@@ -152,7 +152,7 @@ GType          egg_dock_object_get_type          (void);
 gboolean       egg_dock_object_is_compound       (EggDockObject    *object);
 
 void           egg_dock_object_detach            (EggDockObject    *object,
-                                                  gboolean          recursive);
+                                                  gpointer          recursive);
 
 EggDockObject *egg_dock_object_get_parent_object (EggDockObject    *object);
 
