@@ -118,7 +118,7 @@ egg_background_monitor_get_type (void)
 }
 
 EggBackgroundMonitor *
-egg_background_monitor_new () {
+egg_background_monitor_new (void) {
 	EggBackgroundMonitor *p;
 
 	p = (EggBackgroundMonitor *)g_object_new (egg_background_monitor_get_type (),
