@@ -1,6 +1,6 @@
-INCLUDES = \
+AM_CPPFLAGS = \
   -DCURSOR_DIR=\".\" \
-  $(EGG_30_CFLAGS) $(EGG_WARNING_FLAGS) \
+  $(EGG_30_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED) \
   $(EGG_XML_CFLAGS) \
   -DEGG_COMPILATION \
   -I$(top_builddir)/libegg/util \

@@ -136,10 +136,8 @@ fi
 AC_SUBST(HTML_DIR)
 AM_CONDITIONAL(ENABLE_GTK_DOC, true)
 
-DK_ARG_ENABLE_WARNINGS([EGG_WARNING_FLAGS],
-                       [-Wall -w1],
-                       [-pedantic -Wall -Wextra -w1],
-                       [GTK GDK GDK_PIXBUF G])
+GNOME_COMPILE_WARNINGS
+GNOME_MAINTAINER_MODE_DEFINES
 
 AC_OUTPUT([
 Makefile

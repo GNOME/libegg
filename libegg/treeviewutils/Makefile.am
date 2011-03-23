@@ -1,5 +1,5 @@
-INCLUDES = \
-  $(EGG_CFLAGS) $(EGG_WARNING_FLAGS) \
+AM_CPPFLAGS = \
+  $(EGG_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED) \
   -DEGG_COMPILATION \
   -I$(top_builddir)/libegg/util
 

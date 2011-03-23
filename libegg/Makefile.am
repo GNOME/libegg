@@ -39,8 +39,8 @@ SUBDIRS = util column-chooser treeviewutils \
 # Don't compile broken code
 #$(iconchooser_SUBDIRS)
 
-INCLUDES = \
-  $(EGG_CFLAGS) $(EGG_WARNING_FLAGS)  \
+AM_CPPFLAGS = \
+  $(EGG_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED) \
   -DEGG_COMPILATION
 
 ##noinst_LTLIBRARIES = libegg.la

@@ -1,11 +1,8 @@
-# This file will be processed with automake-1.7 to create Makefile.in
-
-
-INCLUDES = \
+AM_CPPFLAGS = \
 	-I$(top_srcdir)/libegg/util \
 	-I$(top_srcdir)/libegg/pixbufthumbnail \
 	-DG_LOG_DOMAIN=\""EggThumbnailPreview"\" \
-	$(EGG_30_CFLAGS) $(EGG_WARNING_FLAGS)
+	$(EGG_30_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED)
 
 noinst_LTLIBRARIES = \
 	libeggthumbnailpreview.la
