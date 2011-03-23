@@ -1,12 +1,12 @@
 # This file will be processed with automake-1.7 to create Makefile.in
 
 
-INCLUDES = \
+AM_CPPFLAGS = \
 	-DG_LOG_DOMAIN="\"EggIconChooser\"" \
 	-I$(top_srcdir)/libegg/util \
 	-I$(top_srcdir)/libegg/pixbufthumbnail \
 	-I$(top_srcdir)/libegg/thumbnailpreview \
-	$(EGG_CFLAGS) $(EGG_WARNING_FLAGS)
+	$(EGG_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED)
 
 
 noinst_LTLIBRARIES = \
@@ -49,7 +49,7 @@ testiconchooser_SOURCES =	\
 	prop-editor.c
 
 testiconchooser_CFLAGS = \
-	$(EGG_CFLAGS) $(EGG_WARNING_FLAGS) \
+	$(EGG_CFLAGS) $(WARN_CFLAGS) \
 	-DG_LOG_DOMAIN="\"TestIconChooser\""
 
 testiconchooser_LDFLAGS = \

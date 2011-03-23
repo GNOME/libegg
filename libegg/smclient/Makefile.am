@@ -23,12 +23,14 @@ endif
 endif
 endif
 
-INCLUDES =                               \
+AM_CPPFLAGS =                            \
 	-DG_LOG_DOMAIN=\""EggSMClient"\" \
 	$(platform_defines)              \
 	$(EGG_SMCLIENT_CFLAGS)           \
 	$(EGG_SMCLIENT_DBUS_CFLAGS)      \
-	$(EGG_LIBGNOMEUI_CFLAGS)
+	$(EGG_LIBGNOMEUI_CFLAGS)         \
+	$(WARN_CFLAGS)                   \
+	$(DISABLE_DEPRECATED)
 
 noinst_LTLIBRARIES =                     \
 	libeggsmclient.la                \
