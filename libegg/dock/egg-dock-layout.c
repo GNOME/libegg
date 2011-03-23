@@ -36,6 +36,8 @@
 #include "egg-dock-layout.h"
 #include "egg-dock-placeholder.h"
 
+/* Borrowed from gedit. */
+#define GBOOLEAN_TO_POINTER(i) (GINT_TO_POINTER ((i) ? 2 : 1))
 
 /* ----- Private variables ----- */
 
@@ -983,7 +985,7 @@ egg_dock_layout_recursive_build (EggDockMaster *master,
 static void
 _egg_dock_layout_foreach_detach (EggDockObject *object)
 {
-    egg_dock_object_detach (object, TRUE);
+    egg_dock_object_detach (object, GBOOLEAN_TO_POINTER (TRUE));
 }
 
 static void

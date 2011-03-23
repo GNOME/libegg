@@ -49,6 +49,8 @@
 #include "libeggdocktypebuiltins.h"
 #include <util/eggmarshalers.h>
 
+/* Borrowed from gedit. */
+#define GBOOLEAN_TO_POINTER(i) (GINT_TO_POINTER ((i) ? 2 : 1))
 
 /* ----- Private prototypes ----- */
 
@@ -1427,7 +1429,7 @@ egg_dock_item_real_set_orientation (EggDockItem    *item,
     item->orientation = orientation;
 
 #if GTK_CHECK_VERSION(2,18,0)
-    if (gtk_widget_is_drawable (item))
+    if (gtk_widget_is_drawable (GTK_WIDGET (item)))
 #else
     if (GTK_WIDGET_DRAWABLE (item))
 #endif
@@ -1628,7 +1630,7 @@ egg_dock_item_hide_item (EggDockItem *item)
                                NULL);
 
     /* detach the item recursively */
-    egg_dock_object_detach (EGG_DOCK_OBJECT (item), TRUE);
+    egg_dock_object_detach (EGG_DOCK_OBJECT (item), GBOOLEAN_TO_POINTER (TRUE));
 
     egg_dock_object_thaw (EGG_DOCK_OBJECT (item));
 }

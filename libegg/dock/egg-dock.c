@@ -35,6 +35,8 @@
 
 #include <util/eggmarshalers.h>
 
+/* Borrowed from gedit. */
+#define GBOOLEAN_TO_POINTER(i) (GINT_TO_POINTER ((i) ? 2 : 1))
 
 /* ----- Private prototypes ----- */
 
@@ -779,7 +781,7 @@ egg_dock_detach (EggDockObject *object,
 
     /* detach children */
     if (recursive && dock->root) {
-        egg_dock_object_detach (dock->root, recursive);
+        egg_dock_object_detach (dock->root, GBOOLEAN_TO_POINTER (recursive));
     }
     EGG_DOCK_OBJECT_UNSET_FLAGS (object, EGG_DOCK_ATTACHED);
 }
