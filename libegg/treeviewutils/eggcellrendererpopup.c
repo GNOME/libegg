@@ -21,14 +21,6 @@
 #include "eggcellrendererpopup.h"
 
 static void             egg_cell_renderer_popup_class_init    (EggCellRendererPopupClass *cell_popup_class);
-static GtkCellEditable *egg_cell_renderer_popup_start_editing (GtkCellRenderer          *cell,
-							      GdkEvent                 *event,
-							      GtkWidget                *widget,
-							      const gchar              *path,
-							      GdkRectangle             *background_area,
-							      GdkRectangle             *cell_area,
-							      GtkCellRendererState      flags);
-
 
 GType
 egg_cell_renderer_popup_get_type (void)
@@ -54,11 +46,6 @@ egg_cell_renderer_popup_get_type (void)
     }
 
   return cell_popup_type;
-}
-
-static void
-egg_cell_renderer_popup_init (EggCellRendererPopup *cell_popup)
-{
 }
 
 static void

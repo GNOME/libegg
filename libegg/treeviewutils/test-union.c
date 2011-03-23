@@ -151,7 +151,6 @@ main (int argc, char **argv)
 	GtkWidget *window;
 	GtkWidget *sw;
 	GtkWidget *treeview;
-	GtkWidget *mainbox;
 	GtkTreeModel *model;
 	GtkListStore *l1, *l3;
 	GtkTreeStore *l2;
