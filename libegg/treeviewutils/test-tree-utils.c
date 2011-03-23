@@ -217,7 +217,7 @@ key_test (void)
 	gtk_container_add (GTK_CONTAINER (sw), tv);
 	column = gtk_tree_view_column_new ();
 	rend = egg_cell_renderer_keys_new ();
-	g_object_set (G_OBJECT (rend), "accel_mode", EGG_CELL_RENDERER_KEYS_MODE_X);
+	g_object_set (G_OBJECT (rend), "accel_mode", EGG_CELL_RENDERER_KEYS_MODE_X, NULL);
 	g_signal_connect (G_OBJECT (rend),
 			  "keys_edited",
 			  G_CALLBACK (accel_edited_callback),
