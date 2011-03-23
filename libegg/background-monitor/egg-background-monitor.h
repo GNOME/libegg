@@ -20,7 +20,7 @@ typedef struct _EggBackgroundMonitorClass EggBackgroundMonitorClass;
 typedef struct _EggBackgroundMonitor EggBackgroundMonitor;
 
 GType			egg_background_monitor_get_type 			(void);
-EggBackgroundMonitor*	egg_background_monitor_new			();
+EggBackgroundMonitor*	egg_background_monitor_new			(void);
 GdkPixbuf * 		egg_background_monitor_get_region (EggBackgroundMonitor *monitor, int x, int y, int width, int height);
 GdkPixbuf * 		egg_background_monitor_get_widget_background (EggBackgroundMonitor *monitor, GtkWidget *widget);
 #endif /* EGG_BACKGROUND_MONITOR_H */
