@@ -50,7 +50,6 @@ main (int argc, char *argv[])
 {
   GtkWidget *window;
   GtkWidget *vbox;
-  GtkWidget *hbox;
   GtkWidget *scrolled_window;
  
   GtkTreeModel *model;
