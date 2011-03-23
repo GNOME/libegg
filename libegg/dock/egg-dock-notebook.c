@@ -24,7 +24,7 @@
 #endif
 
 #include <util/eggintl.h>
-#include <gtk/gtknotebook.h>
+#include <gtk/gtk.h>
 #include <util/egg-macros.h>
 
 #include "egg-dock-notebook.h"

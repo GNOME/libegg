@@ -7,7 +7,7 @@
 #ifndef __EGG_TREE_MODEL_UNION_H__
 #define __EGG_TREE_MODEL_UNION_H__
 
-#include <gtk/gtktreemodel.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

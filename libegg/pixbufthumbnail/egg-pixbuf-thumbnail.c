@@ -37,7 +37,7 @@
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
 
-#include <gdk-pixbuf/gdk-pixbuf-io.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include "egg-pixbuf-thumbnail.h"
 

@@ -20,7 +20,7 @@
 #ifndef __EGG_CELL_RENDERER_POPUP_H__
 #define __EGG_CELL_RENDERER_POPUP_H__
 
-#include <gtk/gtkcellrenderertext.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

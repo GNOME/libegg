@@ -26,8 +26,7 @@
 
 #include <util/eggintl.h>
 #include <string.h>
-#include <gtk/gtkhpaned.h>
-#include <gtk/gtkvpaned.h>
+#include <gtk/gtk.h>
 #include <util/egg-macros.h>
 
 #include "egg-dock-paned.h"

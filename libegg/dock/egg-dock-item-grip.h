@@ -14,7 +14,7 @@
 #ifndef _EGG_DOCK_ITEM_GRIP_H_
 #define _EGG_DOCK_ITEM_GRIP_H_
 
-#include <gtk/gtkwidget.h>
+#include <gtk/gtk.h>
 #include <dock/egg-dock-item.h>
 
 G_BEGIN_DECLS
