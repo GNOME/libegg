@@ -1019,7 +1019,8 @@ egg_dock_layout_foreach_object_save (EggDockObject *object,
     } *info = user_data, info_child;
 
     xmlNodePtr   node;
-    gint         n_props, i;
+    gint         i;
+    guint        n_props;
     GParamSpec **props;
     GValue       attr = { 0, };
     
