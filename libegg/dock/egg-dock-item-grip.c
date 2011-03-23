@@ -18,10 +18,9 @@
 #include <util/eggintl.h>
 #include <string.h>
 #include <glib-object.h>
-#include <atk/atkstateset.h>
+#include <atk/atk.h>
 #include <gdk/gdkkeysyms.h>
-#include <gtk/gtkaccessible.h>
-#include <gtk/gtkbindings.h>
+#include <gtk/gtk.h>
 #include <util/egg-macros.h>
 #include "egg-dock-item.h"
 #include "egg-dock-item-grip.h"

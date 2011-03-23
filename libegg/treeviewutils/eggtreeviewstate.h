@@ -21,7 +21,7 @@
 #ifndef __EGG_TREE_VIEW_STATE_H__
 #define __EGG_TREE_VIEW_STATE_H__
 
-#include <gtk/gtktreeview.h>
+#include <gtk/gtk.h>
 
 gboolean egg_tree_view_state_apply_from_string (GtkTreeView *tree_view, const gchar *string, GError **error);
 

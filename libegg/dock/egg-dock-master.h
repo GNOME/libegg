@@ -24,7 +24,7 @@
 #define __EGG_DOCK_MASTER_H__
 
 #include <glib-object.h>
-#include <gtk/gtktypeutils.h>
+#include <gtk/gtk.h>
 #include <dock/egg-dock-object.h>
 
 
