@@ -150,43 +150,6 @@ EGG_IS_COLUMN_CHOOSER_DIALOG_CLASS
 EGG_COLUMN_CHOOSER_DIALOG_GET_CLASS
 </SECTION>
 
-<INCLUDE>libegg/sidebar/eggsidebar.h</INCLUDE>
-<SECTION>
-<FILE>eggsidebar</FILE>
-EggSidebarPriv
-<TITLE>EggSidebar</TITLE>
-EggSidebarDNDType
-egg_sidebar_new
-egg_sidebar_append
-egg_sidebar_remove
-egg_sidebar_save_layout
-egg_sidebar_load_layout
-<SUBSECTION Standard>
-EGG_SIDEBAR
-EGG_IS_SIDEBAR
-EGG_TYPE_SIDEBAR
-egg_sidebar_get_type
-EGG_SIDEBAR_CLASS
-EGG_IS_SIDEBAR_CLASS
-EGG_SIDEBAR_GET_CLASS
-</SECTION>
-
-<INCLUDE>libegg/sidebar/eggsidebarbutton.h</INCLUDE>
-<SECTION>
-<FILE>eggsidebarbutton</FILE>
-egg_sidebar_button_new
-egg_sidebar_button_set
-egg_sidebar_button_get
-<SUBSECTION Standard>
-EGG_SIDEBAR_BUTTON
-EGG_IS_SIDEBAR_BUTTON
-EGG_TYPE_SIDEBAR_BUTTON
-egg_sidebar_button_get_type
-RB_SIDEBAR_BUTTON_CLASS
-EGG_IS_SIDEBAR_BUTTON_CLASS
-EGG_SIDEBAR_BUTTON_GET_CLASS
-</SECTION>
-
 <INCLUDE>libegg/pixbufthumbnail/egg-pixbuf-thumbnail.h</INCLUDE>
 <INCLUDE>pixbufthumbnail/egg-pixbuf-thumbnail.h</INCLUDE>
 <FILE>eggpixbufthumbnail</FILE>

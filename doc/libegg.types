@@ -6,14 +6,9 @@
 
 #include <libegg/background-monitor/egg-background-monitor.h>
 
-#include <libegg/sidebar/eggsidebar.h>
-#include <libegg/sidebar/eggsidebarbutton.h>
-
 egg_cell_renderer_keys_get_type
 egg_cell_renderer_popup_get_type
 egg_cell_renderer_text_get_type
 egg_tree_multi_drag_source_get_type
 egg_tree_model_filter_get_type
 egg_background_monitor_get_type
-egg_sidebar_get_type
-egg_sidebar_button_get_type
