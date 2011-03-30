@@ -489,7 +489,7 @@ label_style_set (GtkWidget *label,
   pango_font_description_set_size (font_desc,
 				   pango_font_description_get_size (font_desc) * PANGO_SCALE_SMALL);
   g_signal_handlers_block_by_func (label, label_style_set, NULL);
-  gtk_widget_modify_font (label, font_desc);
+  gtk_widget_override_font (label, font_desc);
   g_signal_handlers_unblock_by_func (label, label_style_set, NULL);
   pango_font_description_free (font_desc);
 }
