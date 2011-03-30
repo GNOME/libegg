@@ -18,6 +18,10 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "eggtreemodelfilter.h"
 #include <gtk/gtksignal.h>
 #include <string.h>

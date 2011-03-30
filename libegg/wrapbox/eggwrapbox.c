@@ -40,6 +40,10 @@
  * Unlike a GtkTable, the child widgets do not need to align in a grid.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "eggwrapbox.h"
 
 #define P_(msgid) (msgid)
