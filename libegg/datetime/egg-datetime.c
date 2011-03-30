@@ -230,7 +230,11 @@ static void	 egg_datetime_get_property	(GObject		*object,
 						 GValue			*value,
 						 GParamSpec		*pspec);
 
+#if GTK_CHECK_VERSION (2,90,0)
+static void      egg_datetime_destroy           (GtkWidget *widget);
+#else
 static void	 egg_datetime_destroy		(GtkObject *object);
+#endif
 static void	 egg_datetime_finalize		(GObject		*object);
 
 static gchar	*get_time_string		(guint8 hour, guint8 minute, guint8 second);
@@ -294,19 +298,21 @@ static void
 egg_datetime_class_init (EggDateTimeClass *klass)
 {
 	GObjectClass *o_class;
-	GtkObjectClass *go_class;
 	GParamSpec *pspec;
 
 	parent_class = g_type_class_peek_parent (klass);
 
 	o_class  = (GObjectClass *)   klass;
-	go_class = (GtkObjectClass *) klass;
 
 	o_class->finalize     = egg_datetime_finalize;
         o_class->set_property = egg_datetime_set_property;
         o_class->get_property = egg_datetime_get_property;
-	go_class->destroy     = egg_datetime_destroy;
 
+#if GTK_CHECK_VERSION (2,90,0)
+        ((GtkWidgetClass*)klass)->destroy     = egg_datetime_destroy;
+#else
+        ((GtkObjectClass*)klass)->destroy     = egg_datetime_destroy;
+#endif
 	/* Properties */
 
 	pspec = g_param_spec_uint ("display-flags",
@@ -547,8 +553,6 @@ egg_datetime_init (EggDateTime *edt)
 
 	priv->calendar = gtk_calendar_new ();
 	cal_options = GTK_CALENDAR_SHOW_DAY_NAMES | GTK_CALENDAR_SHOW_HEADING;
-	if (priv->week_start_monday)
-		cal_options |= GTK_CALENDAR_WEEK_START_MONDAY;
 	gtk_calendar_set_display_options (GTK_CALENDAR (priv->calendar), cal_options);
         gtk_container_add (GTK_CONTAINER (priv->cal_popup), priv->calendar);
 	g_signal_connect_swapped (G_OBJECT (priv->calendar), "day-selected",
@@ -734,9 +738,13 @@ egg_datetime_get_property (GObject	*object,
 }
 
 static void
-egg_datetime_destroy (GtkObject *object)
+#if GTK_CHECK_VERSION (2,90,0)
+egg_datetime_destroy (GtkWidget *widget)
+#else
+egg_datetime_destroy (GtkObject *widget)
+#endif
 {
-	EggDateTime *edt = EGG_DATETIME (object);
+	EggDateTime *edt = EGG_DATETIME (widget);
 	EggDateTimePrivate *priv = edt->priv;
 
 	if (priv->cal_popup) {
@@ -749,8 +757,13 @@ egg_datetime_destroy (GtkObject *object)
 		priv->time_popup = NULL;
 	}
 
+#if GTK_CHECK_VERSION (2,90,0)
+        if (GTK_WIDGET_CLASS (parent_class)->destroy)
+                (* GTK_WIDGET_CLASS (parent_class)->destroy) (widget);
+#else
 	if (GTK_OBJECT_CLASS (parent_class)->destroy)
-		(* GTK_OBJECT_CLASS (parent_class)->destroy) (object);
+		(* GTK_OBJECT_CLASS (parent_class)->destroy) (widget);
+#endif
 }
 
 static void
@@ -821,16 +834,22 @@ get_time_string (guint8 hour, guint8 minute, guint8 second)
 static void
 popup_position (GtkWidget *widget, GtkWindow *popup)
 {
+	GtkAllocation allocation;
 	GtkRequisition requisition;
 	gint x, y, width, height;
 
+#if GTK_CHECK_VERSION (3,0,0)
+	gtk_widget_get_preferred_size (GTK_WIDGET (popup), NULL, &requisition);
+#else
 	gtk_widget_size_request (GTK_WIDGET (popup), &requisition);
-	gdk_window_get_origin (widget->window, &x, &y);
+#endif
+	gdk_window_get_origin (gtk_widget_get_window (widget), &x, &y);
 
-	x += widget->allocation.x;
-	y += widget->allocation.y;
-	width  = widget->allocation.width;
-	height = widget->allocation.height;
+	gtk_widget_get_allocation (widget, &allocation);
+	x += allocation.x;
+	y += allocation.y;
+	width  = allocation.width;
+	height = allocation.height;
 
 	x += width - requisition.width;
 	y += height;
@@ -853,14 +872,23 @@ popup_show (GtkWindow *popup)
 	gtk_grab_add (GTK_WIDGET (popup));
 
 	cursor = gdk_cursor_new (GDK_ARROW);
-	gdk_pointer_grab (GTK_WIDGET (popup)->window, TRUE,
+#if GTK_CHECK_VERSION (3,0,0)
+	gdk_device_grab (gdk_device_manager_get_client_pointer (gdk_display_get_device_manager (gdk_display_get_default ())),
+			 gtk_widget_get_window (GTK_WIDGET (popup)),
+			 GDK_OWNERSHIP_APPLICATION,
+			 TRUE,
+			 (GDK_BUTTON_PRESS_MASK
+			  | GDK_BUTTON_RELEASE_MASK
+			  | GDK_POINTER_MOTION_MASK),
+			 cursor,
+			 GDK_CURRENT_TIME);
+	g_object_unref (cursor);
+#else
+	gdk_pointer_grab (gtk_widget_get_window (GTK_WIDGET (popup)), TRUE,
 			  (GDK_BUTTON_PRESS_MASK
 			   | GDK_BUTTON_RELEASE_MASK
 			   | GDK_POINTER_MOTION_MASK),
 			  NULL, cursor, GDK_CURRENT_TIME);
-#if GTK_CHECK_VERSION (3,0,0)
-	g_object_unref (cursor);
-#else
 	gdk_cursor_unref (cursor);
 #endif
 }
@@ -870,7 +898,12 @@ popup_hide (GtkWindow *popup)
 {
 	gtk_widget_hide (GTK_WIDGET (popup));
 	gtk_grab_remove (GTK_WIDGET (popup));
+#if GTK_CHECK_VERSION (3,0,0)
+	gdk_device_ungrab(gdk_device_manager_get_client_pointer (gdk_display_get_device_manager (gdk_display_get_default ())),
+			  GDK_CURRENT_TIME);
+#else
 	gdk_pointer_ungrab (GDK_CURRENT_TIME);
+#endif
 }
 
 /*
@@ -928,7 +961,7 @@ cal_popup_double_click (EggDateTime *edt, GtkCalendar *calendar)
 static gboolean
 cal_popup_key_pressed (EggDateTime *edt, GdkEventKey *event, GtkWidget *widget)
 {
-	if (event->keyval != GDK_Escape)
+	if (event->keyval != GDK_KEY_Escape)
 		return FALSE;
 
 	g_signal_stop_emission_by_name (G_OBJECT (widget), "key_press_event");
@@ -956,7 +989,7 @@ cal_popup_button_pressed (EggDateTime *edt, GdkEventButton *event, GtkWidget *wi
 		while (child) {
 			if (child == widget)
 				return FALSE;
-			child = child->parent;
+			child = gtk_widget_get_parent (child);
 		}
 	}
 
@@ -1033,7 +1066,7 @@ time_popup_changed (EggDateTime *edt, Timelist *timelist)
 static gboolean
 time_popup_key_pressed (EggDateTime *edt, GdkEventKey *event, GtkWidget *widget)
 {
-	if (event->keyval != GDK_Escape)
+	if (event->keyval != GDK_KEY_Escape)
 		return FALSE;
 
 	g_signal_stop_emission_by_name (G_OBJECT (widget), "key_press_event");
@@ -1061,7 +1094,7 @@ time_popup_button_pressed (EggDateTime *edt, GdkEventButton *event, GtkWidget *w
 		while (child) {
 			if (child == widget)
 				return FALSE;
-			child = child->parent;
+			child = gtk_widget_get_parent (child);
 		}
 	}
 
