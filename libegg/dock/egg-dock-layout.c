@@ -228,9 +228,9 @@ egg_dock_layout_build_doc (EggDockLayout *layout)
 {
     g_return_if_fail (layout->_priv->doc == NULL);
 
-    layout->_priv->doc = xmlNewDoc ("1.0");
+    layout->_priv->doc = xmlNewDoc (BAD_CAST "1.0");
     layout->_priv->doc->children = xmlNewDocNode (layout->_priv->doc, NULL, 
-                                                  ROOT_ELEMENT, NULL);
+                                                  BAD_CAST ROOT_ELEMENT, NULL);
 }
 
 static xmlNodePtr
@@ -248,9 +248,9 @@ egg_dock_layout_find_layout (EggDockLayout *layout,
     /* get document root */
     node = layout->_priv->doc->children;
     for (node = node->children; node; node = node->next) {
-        gchar *layout_name;
+        xmlChar *layout_name;
         
-        if (strcmp (node->name, LAYOUT_ELEMENT_NAME))
+        if (xmlStrcmp (node->name, BAD_CAST LAYOUT_ELEMENT_NAME))
             /* skip non-layout element */
             continue;
 
@@ -258,8 +258,8 @@ egg_dock_layout_find_layout (EggDockLayout *layout,
         if (!name)
             break;
 
-        layout_name = xmlGetProp (node, NAME_ATTRIBUTE_NAME);
-        if (!strcmp (name, layout_name))
+        layout_name = xmlGetProp (node, BAD_CAST NAME_ATTRIBUTE_NAME);
+        if (!xmlStrcmp (BAD_CAST name, layout_name))
             found = TRUE;
         xmlFree (layout_name);
 
@@ -805,15 +805,16 @@ egg_dock_layout_setup_object (EggDockMaster *master,
     GObjectClass  *object_class = NULL;
 
     GParamSpec   **props;
-    gint           n_props, i;
+    guint          n_props;
+    gint           i;
     GParameter    *params = NULL;
     gint           n_params = 0;
     GValue         serialized = { 0, };
     
-    object_name = xmlGetProp (node, EGG_DOCK_NAME_PROPERTY);
-    if (object_name && strlen (object_name) > 0) {
+    object_name = xmlGetProp (node, BAD_CAST EGG_DOCK_NAME_PROPERTY);
+    if (object_name && xmlStrlen (object_name) > 0) {
         /* the object must already be bound to the master */
-        object = egg_dock_master_get_object (master, object_name);
+        object = egg_dock_master_get_object (master, (gchar *) object_name);
 
         xmlFree (object_name);
         object_type = object ? G_TYPE_FROM_INSTANCE (object) : G_TYPE_NONE;
@@ -821,7 +822,7 @@ egg_dock_layout_setup_object (EggDockMaster *master,
     else {
         /* the object should be automatic, so create it by
            retrieving the object type from the dock registry */
-        object_type = egg_dock_object_type_from_nick (node->name);
+        object_type = egg_dock_object_type_from_nick ((gchar *) node->name);
         if (object_type == G_TYPE_NONE) {
             g_warning (_("While loading layout: don't know how to create "
                          "a dock object whose nick is '%s'"), node->name);
@@ -854,9 +855,9 @@ egg_dock_layout_setup_object (EggDockMaster *master,
             continue;
 
         /* get the property from xml if there is one */
-        xml_prop = xmlGetProp (node, props [i]->name);
+        xml_prop = xmlGetProp (node, BAD_CAST props [i]->name);
         if (xml_prop) {
-            g_value_set_static_string (&serialized, xml_prop);
+            g_value_set_static_string (&serialized, (gchar *) xml_prop);
             
             if (!EGG_DOCK_PARAM_CONSTRUCTION (props [i]) &&
                 (props [i]->flags & EGG_DOCK_PARAM_AFTER)) {
@@ -1029,7 +1030,7 @@ egg_dock_layout_foreach_object_save (EggDockObject *object,
     
     node = xmlNewChild (info->where,
                         NULL,               /* ns */
-                        egg_dock_object_nick_from_type (G_TYPE_FROM_INSTANCE (object)),
+                        BAD_CAST egg_dock_object_nick_from_type (G_TYPE_FROM_INSTANCE (object)),
                         NULL);              /* contents */
 
     /* get object exported attributes */
@@ -1054,7 +1055,7 @@ egg_dock_layout_foreach_object_save (EggDockObject *object,
             if (strcmp (p->name, EGG_DOCK_NAME_PROPERTY) ||
                 g_value_get_string (&v)) {
                 if (g_value_transform (&v, &attr))
-                    xmlSetProp (node, p->name, g_value_get_string (&attr));
+                    xmlSetProp (node, BAD_CAST p->name, BAD_CAST g_value_get_string (&attr));
             }
             
             /* free the parameter value */
@@ -1261,8 +1262,8 @@ egg_dock_layout_save_layout (EggDockLayout *layout,
 
     /* create the new node */
     node = xmlNewChild (layout->_priv->doc->children, NULL, 
-                        LAYOUT_ELEMENT_NAME, NULL);
-    xmlSetProp (node, NAME_ATTRIBUTE_NAME, layout_name);
+                        BAD_CAST LAYOUT_ELEMENT_NAME, NULL);
+    xmlSetProp (node, BAD_CAST NAME_ATTRIBUTE_NAME, BAD_CAST layout_name);
 
     /* save the layout */
     egg_dock_layout_save (layout->master, node);
@@ -1344,7 +1345,7 @@ egg_dock_layout_load_from_file (EggDockLayout *layout,
         if (layout->_priv->doc) {
             xmlNodePtr root = layout->_priv->doc->children;
             /* minimum validation: test the root element */
-            if (root && !strcmp (root->name, ROOT_ELEMENT)) {
+            if (root && !xmlStrcmp (root->name, BAD_CAST ROOT_ELEMENT)) {
                 update_layouts_model (layout);
                 retval = TRUE;
             } else {
@@ -1408,14 +1409,14 @@ egg_dock_layout_get_layouts (EggDockLayout *layout,
 
     node = layout->_priv->doc->children;
     for (node = node->children; node; node = node->next) {
-        gchar *name;
+        xmlChar *name;
 
-        if (strcmp (node->name, LAYOUT_ELEMENT_NAME))
+        if (xmlStrcmp (node->name, BAD_CAST LAYOUT_ELEMENT_NAME))
             continue;
 
-        name = xmlGetProp (node, NAME_ATTRIBUTE_NAME);
-        if (include_default || strcmp (name, DEFAULT_LAYOUT))
-            retval = g_list_prepend (retval, g_strdup (name));
+        name = xmlGetProp (node, BAD_CAST NAME_ATTRIBUTE_NAME);
+        if (include_default || xmlStrcmp (name, BAD_CAST DEFAULT_LAYOUT))
+            retval = g_list_prepend (retval, g_strdup ((gchar *) name));
         xmlFree (name);
     };
     retval = g_list_reverse (retval);
