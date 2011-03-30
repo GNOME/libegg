@@ -115,25 +115,24 @@ egg_cell_renderer_text_render (GtkCellRenderer    *cell,
 	if ( state == GTK_STATE_SELECTED  && celltext->background_set)
 	{
 		GdkColor color;
-		GdkGC *gc;
+		cairo_t *cr;
 		
 		color.red = celltext->background.red;
 		color.green = celltext->background.green;
 		color.blue = celltext->background.blue;
 		
-		gc = gdk_gc_new (window);
-		
-		gdk_gc_set_rgb_fg_color (gc, &color);
-		
-		gdk_draw_rectangle (window,
-				    gc,
-				    TRUE,
-				    background_area->x,
-				    background_area->y + cell->ypad,
-				    background_area->width,
-				    background_area->height - 2 * cell->ypad);
-		
-		g_object_unref (G_OBJECT (gc));
+		cr = gdk_cairo_create (window);
+
+		gdk_cairo_set_source_color (cr, &color);
+
+		cairo_rectangle (cr,
+		                 background_area->x,
+				 background_area->y + cell->ypad,
+				 background_area->width,
+				 background_area->height - 2 * cell->ypad);
+
+		cairo_fill (cr);
+		cairo_destroy (cr);
 	}
 
 	GTK_CELL_RENDERER_CLASS (parent_class)->render (cell, window, widget, background_area,

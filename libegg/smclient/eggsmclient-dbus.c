@@ -185,7 +185,11 @@ sm_client_dbus_startup (EggSMClient *client,
 			 G_TYPE_INVALID))
     {
       gdk_threads_enter ();
+#if !GTK_CHECK_VERSION(2,23,3) && !GTK_CHECK_VERSION(3,0,0)
       gdk_set_sm_client_id (ret_client_id);
+#else
+      gdk_x11_set_sm_client_id (ret_client_id);
+#endif
       gdk_threads_leave ();
 
       g_debug ("Got client ID \"%s\"", ret_client_id);

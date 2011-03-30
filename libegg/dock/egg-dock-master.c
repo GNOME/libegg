@@ -593,11 +593,7 @@ egg_dock_master_xor_rect (EggDockMaster *master)
     
     rect = &master->_priv->drag_request->rect;
 
-#ifdef GDK_WINDOWING_X11
-    window = gdk_window_lookup (gdk_x11_get_default_root_xwindow ());
-#else
     window = gdk_get_default_root_window (); /* ??? */
-#endif
 
     if (!master->_priv->root_xor_gc) {
         GdkGCValues values;

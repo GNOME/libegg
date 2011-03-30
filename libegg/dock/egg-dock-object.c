@@ -391,7 +391,7 @@ egg_dock_object_real_reduce (EggDockObject *object)
             g_object_unref (child);
         }
         /* sink the widget, so any automatic floating widget is destroyed */
-        gtk_object_sink (GTK_OBJECT (object)); /* TODO: This function is deprecated. */
+        g_object_ref_sink (GTK_OBJECT (object));
         /* don't reenter */
         object->reduce_pending = FALSE;
         egg_dock_object_thaw (object);
