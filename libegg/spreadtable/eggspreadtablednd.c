@@ -117,16 +117,14 @@ struct _EggSpreadTableDndPrivate {
 
   GtkWidget *drag_child;   /* The widget that is currently being dragged */
 
-  GList     *placeholders; /* A list of placeholders that may be present while a drag operation
-			    * is active and the mouse is over this spread table (or presently disappearing
-			    * after the mouse has left the area) */
-
   gint       drag_origin;  /* The original index of the drag child when the drag began (this is captured
 			    * in order to restore the original child in the case of a failed drag).
 			    */
 
   gint       drag_child_width;  /* The original size of the drag child */
   gint       drag_child_height;
+
+  gint       disappearing;
 
   gint pressed_button;
   gint press_start_x;
@@ -413,7 +411,11 @@ placeholder_animated_out (GtkWidget         *placeholder,
   /* Adjust line segment here manually since table may be locked */
   adjust_line_segment (spread_table, line, -1);
 
+  g_print ("finished animating out a placeholder, removing one index from line %d\n", line);
+
   gtk_container_remove (GTK_CONTAINER (spread_table), placeholder);
+
+  spread_table->priv->disappearing--;
 }
 
 static gboolean
@@ -426,9 +428,17 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
   EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
   gint               index, line;
 
+  /* Dont do anything until the currently drop target placeholder finishes animating in */
+  if ((spread_table->priv->drop_target &&
+       egg_placeholder_get_animating 
+       (EGG_PLACEHOLDER (spread_table->priv->drop_target)) == EGG_PLACEHOLDER_ANIM_IN) ||
+      spread_table->priv->disappearing > 0)
+    return FALSE;
+
   index = get_index_at_position (spread_table, x, y, &line);
 
-  g_print ("[drag motion] index for position returned is %d\n", index);
+  g_print ("[drag motion] index for position returned is %d for line %d, current drop index is %d\n", 
+	   index, line, spread_table->priv->drop_index);
 
   if (/* !EGG_IS_PLACEHOLDER (child) && */
       index != spread_table->priv->drop_index)
@@ -441,6 +451,7 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 	  g_signal_connect (spread_table->priv->drop_target, "animation-done",
 			    G_CALLBACK (placeholder_animated_out), spread_table);
 
+	  spread_table->priv->disappearing++;
 	  spread_table->priv->drop_target = NULL;
 
 	}
@@ -451,6 +462,8 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
       if (index >= 0)
 	{
 	  adjust_line_segment (spread_table, line, 1);
+
+	  g_print ("Adding a placeholder, adding one index to line %d\n", line);
 
 	  spread_table->priv->drop_target = 
 	    egg_placeholder_new (spread_table->priv->drag_child_width, 
@@ -671,6 +684,7 @@ cancel_drag (EggSpreadTableDnd *spread_table)
       g_signal_connect (spread_table->priv->drop_target, "animation-done",
 			G_CALLBACK (placeholder_animated_out), spread_table);
 
+      spread_table->priv->disappearing++;
       spread_table->priv->drop_target = NULL;
     }
   spread_table->priv->pressed_button = -1;
@@ -683,10 +697,10 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
 		       gint              *line_ret)
 {
   EggSpreadTable *table;
-  GtkWidget      *widget, *child, *ret_child = NULL;
+  GtkWidget      *widget, *child;
   GList          *children, *l;
   GtkAllocation   allocation;
-  gint            last_child_half = -1, anim_out_cnt = 0;
+  gint            placeholder_cnt = 0;
   GtkOrientation  orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (spread_table));
   gint           *segments, lines, line = -1, i, full_size, spacing, position, line_width, first_child;
   gint            index = -1;
@@ -720,7 +734,10 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
       gint start, end;
 
       start = line_width * i + (spacing / 2) * i;
-      end   = start + line_width + spacing / 2;
+      end   = start + line_width + (spacing / 2) * i;
+
+      if (i == lines - 1)
+	end = full_size;
 
       if (position >= start && position <= end)
 	{
@@ -746,28 +763,34 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
 
       gtk_widget_get_allocation (child, &allocation);
 
-      /* When it's a newly added placeholder that did not reach it's potential
-       * size yet, assume that it will potentially be it's full size (avoid flickering) */
-      if (EGG_IS_PLACEHOLDER (child))
+      if (child == spread_table->priv->drop_target)
 	{
-	  if (egg_placeholder_get_animating (EGG_PLACEHOLDER (child)) == EGG_PLACEHOLDER_ANIM_OUT)
-	    anim_out_cnt++;
+	  if (orientation == GTK_ORIENTATION_VERTICAL)
+	    {
+	      if (y < allocation.y + allocation.height)
+		index = first_child + i;
+	    }
+	  else
+	    {
+	      if (x < allocation.x + allocation.width)
+		index = first_child + i;
+	    }
 
-	  allocation.width = spread_table->priv->drag_child_width;
-	  allocation.height = spread_table->priv->drag_child_height;
-	}
-
-      if (orientation == GTK_ORIENTATION_VERTICAL)
-	{
-	  if (y < allocation.y + allocation.height / 2)
-	    index = first_child + i;
-	}
+	  placeholder_cnt++;
+	} 
       else
 	{
-	  if (x < allocation.x + allocation.width / 2)
-	    index = first_child + i;
+	  if (orientation == GTK_ORIENTATION_VERTICAL)
+	    {
+	      if (y < allocation.y + allocation.height / 2)
+		index = first_child + i + placeholder_cnt;
+	    }
+	  else
+	    {
+	      if (x < allocation.x + allocation.width / 2)
+		index = first_child + i + placeholder_cnt;
+	    }
 	}
-
       i++;
     }
 
@@ -781,7 +804,7 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
   if (line_ret)
     *line_ret = line;
 
-  return index + anim_out_cnt;
+  return index;
 }
 
 static GtkWidget *
