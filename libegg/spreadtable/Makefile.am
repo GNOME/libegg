@@ -12,11 +12,13 @@ libegg_spreadtable_la_LIBADD = $(EGG_30_LIBS)
 
 EGGSOURCES = \
 	eggspreadtable.c \
-	eggspreadtablednd.c
+	eggspreadtablednd.c \
+	eggplaceholder.c
 
 EGGHEADERS = \
 	eggspreadtable.h \
-	eggspreadtablednd.h
+	eggspreadtablednd.h \
+	eggplaceholder.h
 
 libegg_spreadtable_la_SOURCES = $(EGGSOURCES)
 
