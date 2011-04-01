@@ -68,6 +68,18 @@ void                  egg_spread_table_insert_child              (EggSpreadTable
 								  GtkWidget      *child,
 								  gint            index);
 
+void                  egg_spread_table_reorder_child             (EggSpreadTable *table,
+								  GtkWidget      *widget,
+								  guint           index);
+
+void                  egg_spread_table_lock                      (EggSpreadTable *table);
+void                  egg_spread_table_unlock                    (EggSpreadTable *table);
+
+gint                 *egg_spread_table_get_segments              (EggSpreadTable *table);
+void                  egg_spread_table_set_segment_length        (EggSpreadTable *table,
+								  gint            segment,
+								  gint            length);
+
 guint                 egg_spread_table_get_child_line            (EggSpreadTable *table,
 								  GtkWidget      *child,
 								  gint            size);

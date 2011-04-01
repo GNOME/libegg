@@ -50,10 +50,17 @@ enum {
   PROP_LINES
 };
 
+enum {
+  CHILD_PROP_0,
+  CHILD_PROP_POSITION
+};
+
 struct _EggSpreadTablePrivate {
   GList         *children;
 
   GtkOrientation orientation;
+
+  gint          *locked_config;
 
   guint16        lines;
   guint16        horizontal_spacing;
@@ -94,14 +101,22 @@ static void egg_spread_table_add                  (GtkContainer        *containe
 						   GtkWidget           *widget);
 static void egg_spread_table_remove               (GtkContainer        *container,
 						   GtkWidget           *widget);
-
-
 static void egg_spread_table_forall               (GtkContainer        *container,
 						   gboolean             include_internals,
 						   GtkCallback          callback,
 						   gpointer             callback_data);
 static GType egg_spread_table_child_type          (GtkContainer        *container);
 
+static void  egg_spread_table_get_child_property  (GtkContainer        *container,
+						   GtkWidget           *child,
+						   guint                property_id,
+						   GValue              *value,
+						   GParamSpec          *pspec);
+static void  egg_spread_table_set_child_property  (GtkContainer        *container,
+						   GtkWidget           *child,
+						   guint                property_id,
+						   const GValue        *value,
+						   GParamSpec          *pspec);
 
 /* EggSpreadTableClass */
 static void  egg_spread_table_real_insert_child   (EggSpreadTable      *table,
@@ -146,6 +161,8 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
   container_class->remove             = egg_spread_table_remove;
   container_class->forall             = egg_spread_table_forall;
   container_class->child_type         = egg_spread_table_child_type;
+  container_class->get_child_property = egg_spread_table_get_child_property;
+  container_class->set_child_property = egg_spread_table_set_child_property;
 
   class->insert_child = egg_spread_table_real_insert_child;
 
@@ -203,6 +220,20 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
 						      65535,
 						      0,
 						      G_PARAM_READABLE | G_PARAM_WRITABLE));
+
+  /**
+   * EggSpreadTable:position:
+   *
+   * The position of the child in the spread table.
+   *
+   */
+  gtk_container_class_install_child_property (container_class, 
+					      CHILD_PROP_POSITION,
+					      g_param_spec_int ("position",
+								P_("Position"),
+								P_("The index of the child in the table"),
+								-1, G_MAXINT, -1,
+								G_PARAM_READABLE | G_PARAM_WRITABLE));
 
   g_type_class_add_private (class, sizeof (EggSpreadTablePrivate));
 }
@@ -470,6 +501,41 @@ children_fit_segment_size (EggSpreadTable *table,
   return (l == NULL);
 }
 
+
+static gint
+get_size_for_locked_config (EggSpreadTable *table,
+			    gint            line_thickness)
+{
+  EggSpreadTablePrivate *priv = table->priv;
+  GList                 *l;
+  gint                   line = 0, i = 0;
+  gint                   largest_line = 0, line_size = 0, widget_size;
+
+  for (l = priv->children; l && line < priv->lines; l = l->next)
+    {
+      GtkWidget *child = l->data;
+
+      if (!gtk_widget_get_visible (child))
+        continue;
+
+      get_widget_size (child, priv->orientation, line_thickness, NULL, &widget_size);
+
+      line_size += widget_size;
+      if (i > 0)
+	line_size += ITEM_SPACING (table);
+
+      if (i++ >= priv->locked_config[line])
+	{
+	  largest_line = MAX (largest_line, line_size);
+
+	  line_size = 0;
+	  i         = 0;
+	  line++;
+	}
+    }
+  return largest_line;
+}
+
 /* All purpose algorithm entry point, this function takes an allocated size
  * to fit the columns (or rows) and then splits up the child list into
  * 'n' children per 'segment' in a way that it takes the least space as possible.
@@ -491,8 +557,17 @@ segment_lines_for_size (EggSpreadTable *table,
   gint                    upper, lower, segment_size, largest_size = 0;
   gint                    i, j;
 
-  priv           = table->priv;
+  priv = table->priv;
+
   line_thickness = get_line_thickness (table, for_size);
+
+  if (priv->locked_config)
+    {
+      if (segments)
+	*segments = g_memdup (priv->locked_config, sizeof (gint) * priv->lines);
+
+      return get_size_for_locked_config (table, line_thickness);
+    }
 
   segment_counts = g_new0 (gint, priv->lines);
   test_counts    = g_new0 (gint, priv->lines);
@@ -896,6 +971,49 @@ egg_spread_table_child_type (G_GNUC_UNUSED GtkContainer   *container)
   return GTK_TYPE_WIDGET;
 }
 
+static void
+egg_spread_table_get_child_property (GtkContainer        *container,
+				     GtkWidget           *child,
+				     guint                property_id,
+				     GValue              *value,
+				     GParamSpec          *pspec)
+{
+  EggSpreadTable        *table = EGG_SPREAD_TABLE (container);
+  EggSpreadTablePrivate *priv = table->priv;
+  gint                   position;
+
+  switch (property_id)
+    {
+    case CHILD_PROP_POSITION:
+      position = g_list_index (priv->children, child);
+      g_value_set_int (value, position);
+      break;
+
+    default:
+      GTK_CONTAINER_WARN_INVALID_CHILD_PROPERTY_ID (container, property_id, pspec);
+      break;
+    }
+}
+
+static void
+egg_spread_table_set_child_property (GtkContainer        *container,
+				     GtkWidget           *child,
+				     guint                property_id,
+				     const GValue        *value,
+				     GParamSpec          *pspec)
+{
+  switch (property_id)
+    {
+    case CHILD_PROP_POSITION:
+      egg_spread_table_reorder_child (EGG_SPREAD_TABLE (container), child, g_value_get_int (value));
+      break;
+
+    default:
+      GTK_CONTAINER_WARN_INVALID_CHILD_PROPERTY_ID (container, property_id, pspec);
+      break;
+    }
+}
+
 
 /*****************************************************
  *                EggSpreadTableClass                *
@@ -960,6 +1078,129 @@ egg_spread_table_insert_child (EggSpreadTable *table,
   EGG_SPREAD_TABLE_GET_CLASS (table)->insert_child (table, child, index);
 }
 
+/**
+ * egg_spread_table_reorder_child:
+ * @spread_table: An #EggSpreadTable
+ * @widget: The child to reorder
+ * @index: The new child position
+ *
+ * Reorders the child @widget in @spread_table's list of children.
+ */
+void
+egg_spread_table_reorder_child (EggSpreadTable *spread_table,
+				GtkWidget      *widget,
+				guint           index)
+{
+  EggSpreadTablePrivate *priv;
+  GList                 *link;
+
+  g_return_if_fail (EGG_IS_SPREAD_TABLE (spread_table));
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+
+  priv = spread_table->priv;
+
+  link = g_list_find (priv->children, widget);
+  g_return_if_fail (link != NULL);
+
+  if (g_list_position (priv->children, link) != index)
+    {
+      priv->children = g_list_delete_link (priv->children, link);
+      priv->children = g_list_insert (priv->children, widget, index);
+      gtk_widget_queue_resize (GTK_WIDGET (spread_table));
+    }
+}
+
+/**
+ * egg_spread_table_lock:
+ * @spread_table: An #EggSpreadTable
+ *
+ * Locks @spread_table into the current configuration, while
+ * the table is locked children stay in their respective columns/rows.
+ *
+ * Before adding or removing widgets from the table while it is locked,
+ * calls to egg_spread_table_set_segment_length() should be made to
+ * hand configure where the newly inserted widgets will appear.
+ */
+void
+egg_spread_table_lock (EggSpreadTable *table)
+
+{
+  g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
+
+  if (table->priv->locked_config == NULL)
+    table->priv->locked_config = egg_spread_table_get_segments (table);
+}
+
+/**
+ * egg_spread_table_unlock:
+ * @spread_table: An #EggSpreadTable
+ *
+ * Unlocks @spread_table (see egg_spread_table_lock()).
+ */
+void
+egg_spread_table_unlock (EggSpreadTable *table)
+{
+  g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
+
+  g_free (table->priv->locked_config);
+  table->priv->locked_config = NULL;
+}
+
+/**
+ * egg_spread_table_get_segments:
+ * @table: A #EggSpreadTable
+ * 
+ * Gets the number of children distributed in each line.
+ *
+ * Returns: An array of integers representing how many
+ *          widgets are in each line, the returned array
+ *          is the length of the amount of lines 
+ *          (see egg_spread_table_get_lines()).
+ */
+gint *
+egg_spread_table_get_segments (EggSpreadTable *table)
+{
+  EggSpreadTablePrivate *priv;
+  GtkAllocation          allocation;
+  gint                  *segments = NULL;
+  gint                   size;
+
+  g_return_val_if_fail (EGG_IS_SPREAD_TABLE (table), NULL);
+
+  priv = table->priv;
+
+  gtk_widget_get_allocation (GTK_WIDGET (table), &allocation);
+
+  if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
+    size = allocation.height;
+  else
+    size = allocation.width;
+
+  segment_lines_for_size (table, size, &segments);
+
+  return segments;
+}
+
+/**
+ * egg_spread_table_set_segment_length:
+ * @table: A #EggSpreadTable
+ * @segment: The segment or 'line' which to adjust the length
+ * @length: The new length for @segment
+ * 
+ * This is used to manually configure the length of segments
+ * while @table is locked (see egg_spread_table_lock()).
+ */
+void
+egg_spread_table_set_segment_length (EggSpreadTable *table,
+				     gint            segment,
+				     gint            length)
+{
+  g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
+  g_return_if_fail (table->priv->locked_config != NULL);
+  g_return_if_fail (segment >= 0 && segment < table->priv->lines);
+
+  table->priv->locked_config[segment] = length;
+}
 
 
 /**
