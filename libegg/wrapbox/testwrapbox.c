@@ -287,10 +287,10 @@ create_window (void)
   gtk_box_pack_start (GTK_BOX (vbox), expander, FALSE, FALSE, 0);
 
   /* Add Allocation mode control */
-  widget = gtk_combo_box_new_text ();
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Wrap Freely");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Align items");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Homogeneous");
+  widget = gtk_combo_box_text_new ();
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Wrap Freely");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Align items");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Homogeneous");
   gtk_combo_box_set_active (GTK_COMBO_BOX (widget), INITIAL_ALLOCATION_MODE);
   gtk_widget_show (widget);
 
@@ -301,11 +301,11 @@ create_window (void)
                     G_CALLBACK (mode_changed), wrapbox);
 
   /* Add Spreading controls */
-  widget = gtk_combo_box_new_text ();
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread Start");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread End");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread Even");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread Expand");
+  widget = gtk_combo_box_text_new ();
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread Start");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread End");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread Even");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread Expand");
   gtk_combo_box_set_active (GTK_COMBO_BOX (widget), INITIAL_SPREADING);
   gtk_widget_show (widget);
 
@@ -315,11 +315,11 @@ create_window (void)
   g_signal_connect (G_OBJECT (widget), "changed",
                     G_CALLBACK (horizontal_spreading_changed), wrapbox);
 
-  widget = gtk_combo_box_new_text ();
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread Start");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread End");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread Even");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Spread Expand");
+  widget = gtk_combo_box_text_new ();
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread Start");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread End");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread Even");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Spread Expand");
   gtk_combo_box_set_active (GTK_COMBO_BOX (widget), INITIAL_SPREADING);
   gtk_widget_show (widget);
 
@@ -330,9 +330,9 @@ create_window (void)
                     G_CALLBACK (vertical_spreading_changed), wrapbox);
 
   /* Add Orientation control */
-  widget = gtk_combo_box_new_text ();
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Horizontal");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Vertical");
+  widget = gtk_combo_box_text_new ();
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Horizontal");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Vertical");
   gtk_combo_box_set_active (GTK_COMBO_BOX (widget), 0);
   gtk_widget_show (widget);
 
@@ -409,10 +409,10 @@ create_window (void)
   gtk_box_pack_start (GTK_BOX (vbox), expander, FALSE, FALSE, 0);
 
   /* Add Items control */
-  widget = gtk_combo_box_new_text ();
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Simple");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Wrappy");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Stock");
+  widget = gtk_combo_box_text_new ();
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Simple");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Wrappy");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Stock");
   gtk_combo_box_set_active (GTK_COMBO_BOX (widget), 0);
   gtk_widget_show (widget);
 
@@ -424,9 +424,9 @@ create_window (void)
 
 
   /* Add Text Orientation control */
-  widget = gtk_combo_box_new_text ();
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Horizontal");
-  gtk_combo_box_append_text (GTK_COMBO_BOX (widget), "Vertical");
+  widget = gtk_combo_box_text_new ();
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Horizontal");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Vertical");
   gtk_combo_box_set_active (GTK_COMBO_BOX (widget), 0);
   gtk_widget_show (widget);
 
