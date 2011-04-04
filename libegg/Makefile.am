@@ -1,6 +1,8 @@
 if HAVE_GTK30
 spreadtable_SUBDIRS = \
   spreadtable
+wrapbox_SUBDIRS = \
+  wrapbox
 endif
 
 if HAVE_GTK25
@@ -28,6 +30,7 @@ SUBDIRS = util column-chooser treeviewutils \
   $(background_monitor_SUBDIRS) \
   dock datetime $(thumbnail_SUBDIRS) \
   smclient $(spreadtable_SUBDIRS) \
+  $(wrapbox_SUBDIRS) \
   $(gtk210_SUBDIRS) \
   $(gtk215_SUBDIRS)
 

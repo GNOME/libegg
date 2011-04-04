@@ -138,6 +138,7 @@ libegg/thumbnailpreview/Makefile
 libegg/iconchooser/Makefile
 libegg/smclient/Makefile
 libegg/spreadtable/Makefile
+libegg/wrapbox/Makefile
 libegg/fileformatchooser/Makefile
 doc/Makefile
 ])
