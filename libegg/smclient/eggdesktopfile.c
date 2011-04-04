@@ -185,6 +185,9 @@ egg_desktop_file_new_from_key_file (GKeyFile    *key_file,
 	{
 	  g_set_error (error, EGG_DESKTOP_FILE_ERROR,
 		       EGG_DESKTOP_FILE_ERROR_INVALID,
+		       /* translators: 'Version' is from a desktop file, and
+			* should not be translated. '%s' would probably be a
+			* version number. */
 		       _("Unrecognized desktop file Version '%s'"), version);
 	  g_free (version);
 	  g_key_file_free (key_file);
