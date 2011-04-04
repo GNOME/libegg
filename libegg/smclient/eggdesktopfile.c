@@ -1383,6 +1383,8 @@ egg_desktop_file_launch (EggDesktopFile *desktop_file,
 	{
 	  g_set_error (error, EGG_DESKTOP_FILE_ERROR,
 		       EGG_DESKTOP_FILE_ERROR_NOT_LAUNCHABLE,
+		       /* translators: The 'Type=Link' string is found in a
+			* desktop file, and should not be translated. */
 		       _("Can't pass document URIs to a 'Type=Link' desktop entry"));
 	  return FALSE;
 	}	  
