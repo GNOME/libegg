@@ -22,6 +22,14 @@
 
 static void egg_cell_renderer_text_class_init    
                                    (EggCellRendererTextClass *cell_text_class);
+#if GTK_CHECK_VERSION (3,0,0)
+static void egg_cell_renderer_text_render (GtkCellRenderer     *cell,
+					   cairo_t             *cr,
+					   GtkWidget           *widget,
+					   const GdkRectangle  *background_area,
+					   const GdkRectangle  *cell_area,
+					   GtkCellRendererState flags);
+#else
 static void egg_cell_renderer_text_render     (GtkCellRenderer          *cell,
 					       GdkWindow                *window,
 					       GtkWidget                *widget,
@@ -29,6 +37,7 @@ static void egg_cell_renderer_text_render     (GtkCellRenderer          *cell,
 					       const GdkRectangle       *cell_area,
 					       const GdkRectangle       *expose_area,
 					       GtkCellRendererState      flags);
+#endif
 
 static GtkCellRendererTextClass *parent_class = NULL;
 
@@ -77,6 +86,59 @@ egg_cell_renderer_text_new (void)
   return GTK_CELL_RENDERER (g_object_new (EGG_TYPE_CELL_RENDERER_TEXT, NULL));
 }
 
+#if GTK_CHECK_VERSION (3,0,0)
+static void
+egg_cell_renderer_text_render (GtkCellRenderer     *cell,
+			       cairo_t             *cr,
+			       GtkWidget           *widget,
+			       const GdkRectangle  *background_area,
+			       const GdkRectangle  *cell_area,
+			       GtkCellRendererState flags)
+{
+	GtkCellRendererText *celltext = (GtkCellRendererText *) cell;
+	GtkStateType state;
+	gboolean background_set;
+
+	if ((flags & GTK_CELL_RENDERER_SELECTED) == GTK_CELL_RENDERER_SELECTED)
+	{
+		if (gtk_widget_has_focus (widget))
+			state = GTK_STATE_SELECTED;
+		else
+			state = GTK_STATE_ACTIVE;
+	}
+	else
+	{
+		if (gtk_widget_get_state (widget) == GTK_STATE_INSENSITIVE)
+			state = GTK_STATE_INSENSITIVE;
+		else
+			state = GTK_STATE_NORMAL;
+	}
+
+	g_object_get (celltext, "cell-background-set", &background_set, NULL);
+	if (state == GTK_STATE_SELECTED && background_set)
+	{
+		GdkRGBA color;
+		guint ypad;
+
+		g_object_get (celltext, "cell-background-rgba", &color,
+		                        "ypad", &ypad, NULL);
+
+		gdk_cairo_set_source_rgba (cr, &color);
+
+		cairo_rectangle (cr,
+		                 background_area->x,
+				 background_area->y + ypad,
+				 background_area->width,
+				 background_area->height - 2 * ypad);
+
+		cairo_fill (cr);
+	}
+
+	GTK_CELL_RENDERER_CLASS (parent_class)->render (cell, cr, widget,
+							background_area,
+							cell_area, flags);
+}
+#else /* !GTK_CHECK_VERSION (3,0,0) */
 static void
 egg_cell_renderer_text_render (GtkCellRenderer     *cell,
 			       GdkWindow           *window,
@@ -141,3 +203,4 @@ egg_cell_renderer_text_render (GtkCellRenderer     *cell,
 	GTK_CELL_RENDERER_CLASS (parent_class)->render (cell, window, widget, background_area,
 			       cell_area, expose_area, flags);
 }
+#endif /* GTK_CHECK_VERSION (3,0,0) */

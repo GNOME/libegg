@@ -23,7 +23,7 @@
 #endif
 
 #include "eggtreemodelfilter.h"
-#include <gtk/gtksignal.h>
+#include <gtk/gtk.h>
 #include <string.h>
 
 /* FIXME: remove this when we move it to GTK+ */

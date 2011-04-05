@@ -219,7 +219,7 @@ key_test (void)
 	rend = egg_cell_renderer_keys_new ();
 	g_object_set (G_OBJECT (rend), "accel_mode", EGG_CELL_RENDERER_KEYS_MODE_X, NULL);
 	g_signal_connect (G_OBJECT (rend),
-			  "keys_edited",
+			  "accel_edited",
 			  G_CALLBACK (accel_edited_callback),
 			  store);
 
@@ -311,7 +311,8 @@ main (gint argc, gchar **argv)
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw),
 				  GTK_POLICY_AUTOMATIC,
 				  GTK_POLICY_AUTOMATIC);
-  gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), sw, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (dialog))),
+		      sw, TRUE, TRUE, 0);
 
   model = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_POINTER);
 
