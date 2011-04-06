@@ -131,7 +131,6 @@ libegg/background-monitor/Makefile
 libegg/treeviewutils/Makefile
 libegg/column-chooser/Makefile
 libegg/toolbareditor/Makefile
-libegg/dock/Makefile
 libegg/datetime/Makefile
 libegg/pixbufthumbnail/Makefile
 libegg/thumbnailpreview/Makefile
