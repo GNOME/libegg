@@ -478,6 +478,12 @@ children_fit_segment_size (EggSpreadTable *table,
 	  GtkWidget *child = l->data;
 	  gint       widget_size;
 
+	  if (!gtk_widget_get_visible (child))
+	    {
+	      l = l->next;
+	      continue;
+	    }
+
 	  get_widget_size (child, priv->orientation, line_thickness, NULL, &widget_size);
 
 	  if (segment_size != 0)
@@ -886,7 +892,7 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
        i < priv->lines;
        line_offset += line_thickness + line_spacing, i++)
     {
-      for (j = 0, item_offset = 0; list && j < segments[i]; list = list->next)
+      for (j = 0, item_offset = 0; list && j < segments[i]; list = list->next, j++)
 	{
 	  GtkWidget *child = list->data;
 	  gint       child_size;
@@ -900,8 +906,6 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
 	  allocate_child (table, child, item_offset, line_offset, child_size, line_thickness);
 
 	  item_offset += child_size + item_spacing;
-
-	  j++;
 	}
     }
 
@@ -1144,6 +1148,8 @@ egg_spread_table_unlock (EggSpreadTable *table)
 
   g_free (table->priv->locked_config);
   table->priv->locked_config = NULL;
+
+  gtk_widget_queue_resize (GTK_WIDGET (table));
 }
 
 /**
@@ -1196,10 +1202,10 @@ egg_spread_table_set_segment_length (EggSpreadTable *table,
 				     gint            length)
 {
   g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
-  g_return_if_fail (table->priv->locked_config != NULL);
   g_return_if_fail (segment >= 0 && segment < table->priv->lines);
 
-  table->priv->locked_config[segment] = length;
+  if (table->priv->locked_config)
+    table->priv->locked_config[segment] = length;
 }
 
 
