@@ -12,8 +12,8 @@ static void      egg_placeholder_get_preferred_height (GtkWidget  *widget,
 						       gint       *min_height,
 						       gint       *nat_height);
 
-#define ANIMATION_STEP 0.15F  /* How much percentage of the size to animate per iteration */
-#define ANIMATION_FREQ 20     /* At what frequency in millisecs to animate */
+#define ANIMATION_STEP 0.2F  /* How much percentage of the size to animate per iteration */
+#define ANIMATION_FREQ 20    /* At what frequency in millisecs to animate */
 
 enum {
   SIGNAL_ANIMATION_DONE,
