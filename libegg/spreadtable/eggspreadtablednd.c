@@ -803,6 +803,8 @@ drag_failed (GtkWidget         *widget,
 {
   g_print ("[source] Drag failed\n");
 
+  gtk_widget_show (widget);
+
   return FALSE;
 }
 
