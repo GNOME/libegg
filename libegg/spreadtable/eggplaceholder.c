@@ -121,8 +121,10 @@ placeholder_animate (EggPlaceholder *placeholder)
 {
   if (placeholder->priv->animation_direction == EGG_PLACEHOLDER_ANIM_IN)
     placeholder->priv->animation_percent += ANIMATION_STEP;
-  else
+  else if (placeholder->priv->animation_direction == EGG_PLACEHOLDER_ANIM_OUT)
     placeholder->priv->animation_percent -= ANIMATION_STEP;
+  else
+    g_error ("Placeholder animation called while not animating");
 
   placeholder->priv->animation_percent =
     CLAMP (placeholder->priv->animation_percent, 0.0, 1.0);
