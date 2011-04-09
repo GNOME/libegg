@@ -345,27 +345,6 @@ get_widget_size (GtkWidget      *widget,
     }
 }
 
-
-static GList *
-get_visible_children (EggSpreadTable *table)
-{
-  EggSpreadTablePrivate  *priv = table->priv;
-  GtkWidget              *child;
-  GList                  *list, *visible = NULL;
-
-  for (list = priv->children; list; list = list->next)
-    {
-      child = list->data;
-
-      if (!gtk_widget_get_visible (child))
-        continue;
-
-      visible = g_list_prepend (visible, child);
-    }
-
-  return g_list_reverse (visible);
-}
-
 /* This gets the widest child, it is used to reserve
  * enough space for (columns * widest_child)
  */
@@ -480,6 +459,7 @@ children_fit_segment_size (EggSpreadTable *table,
 
 	  if (!gtk_widget_get_visible (child))
 	    {
+	      segments[i]++;
 	      l = l->next;
 	      continue;
 	    }
@@ -579,7 +559,7 @@ segment_lines_for_size (EggSpreadTable *table,
   test_counts    = g_new0 (gint, priv->lines);
 
   /* Start by getting the child list/total size/average size */
-  children = get_visible_children (table);
+  children = priv->children;
   upper    = get_segment_length (table, line_thickness, children);
   lower    = upper / priv->lines;
 
@@ -1205,7 +1185,20 @@ egg_spread_table_set_segment_length (EggSpreadTable *table,
   g_return_if_fail (segment >= 0 && segment < table->priv->lines);
 
   if (table->priv->locked_config)
-    table->priv->locked_config[segment] = length;
+    {
+      gint len = g_list_length (table->priv->children);
+      gint cnt = 0, i;
+
+      table->priv->locked_config[segment] = length;
+
+      for (i = 0; i < table->priv->lines; i++)
+	cnt += table->priv->locked_config[i];
+
+      if (cnt != len)
+	g_warning ("set_segment_length cause unbalanced child count %d (number of children %d)",
+		   cnt, len);
+
+    }
 }
 
 
@@ -1257,6 +1250,10 @@ egg_spread_table_get_child_line (EggSpreadTable *table,
       if (child_idx < child_count)
 	break;
     }
+
+  if (i >= priv->lines)
+    g_warning ("[table %p] Crappy lines, child_index %d, child_count %d, children %d\n",
+	       table, child_idx, child_count, g_list_length (priv->children));
 
   g_assert (i < priv->lines);
 
