@@ -39,18 +39,11 @@ static gboolean      egg_spread_table_dnd_button_release     (GtkWidget         
 							      GdkEventButton    *event);
 
 /* GtkWidgetClass drag-source */
-static void          egg_spread_table_dnd_drag_begin         (GtkWidget         *widget,
-							      GdkDragContext    *context);
-static void          egg_spread_table_dnd_drag_end	     (GtkWidget         *widget,
-							      GdkDragContext    *context);
 static void          egg_spread_table_dnd_drag_data_get      (GtkWidget         *widget,
 							      GdkDragContext    *context,
 							      GtkSelectionData  *selection_data,
 							      guint              info,
 							      guint              time_);
-static void          egg_spread_table_dnd_drag_data_delete   (GtkWidget         *widget,
-							      GdkDragContext    *context);
-
 
 /* GtkWidgetClass drag-dest */
 static void          egg_spread_table_dnd_drag_leave         (GtkWidget         *widget,
@@ -73,9 +66,6 @@ static void          egg_spread_table_dnd_drag_data_received (GtkWidget         
 							      GtkSelectionData  *data,
 							      guint              info,
 							      guint              time);
-static gboolean      egg_spread_table_dnd_drag_failed        (GtkWidget         *widget,
-							      GdkDragContext    *context,
-							      GtkDragResult      result);
 
 /* GtkContainerClass */
 static void          egg_spread_table_dnd_remove       (GtkContainer      *container,
@@ -156,11 +146,7 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
   widget_class->motion_notify_event  = egg_spread_table_dnd_motion;
 
   /* Drag source */
-  widget_class->drag_begin         = egg_spread_table_dnd_drag_begin;
-  widget_class->drag_end           = egg_spread_table_dnd_drag_end;
   widget_class->drag_data_get      = egg_spread_table_dnd_drag_data_get;
-  widget_class->drag_data_delete   = egg_spread_table_dnd_drag_data_delete;
-  widget_class->drag_failed        = egg_spread_table_dnd_drag_failed;
 
   /* Drag dest */
   widget_class->drag_leave         = egg_spread_table_dnd_drag_leave;
@@ -200,10 +186,6 @@ egg_spread_table_dnd_init (EggSpreadTableDnd *spread_table)
 
   gtk_widget_set_has_window (GTK_WIDGET (spread_table), TRUE);
 }
-
-/*****************************************************
- *                  GObectClass                      *
- *****************************************************/
 
 /*****************************************************
  *                 GtkWidgetClass                    *
@@ -310,19 +292,6 @@ egg_spread_table_dnd_button_release (GtkWidget      *widget,
 /*****************************************************
  *            GtkWidgetClass drag source             *
  *****************************************************/
-static void
-egg_spread_table_dnd_drag_begin (GtkWidget         *widget,
-				 GdkDragContext    *context)
-{
-  g_print ("[source] Spread table drag begin\n");
-}
-
-static void
-egg_spread_table_dnd_drag_end (GtkWidget         *widget,
-			       GdkDragContext    *context)
-{
-  g_print ("[source] Spread table drag end\n");
-}
 
 static void
 egg_spread_table_dnd_drag_data_get (GtkWidget         *widget,
@@ -335,8 +304,6 @@ egg_spread_table_dnd_drag_data_get (GtkWidget         *widget,
   EggSpreadTableDndDragData drag_data    = { spread_table, NULL };
   GdkAtom target;
 
-  g_print ("[source] Spread table drag_data_get\n");
-
   target = gtk_selection_data_get_target (selection);
 
   if (spread_table->priv->drag_child && 
@@ -347,26 +314,6 @@ egg_spread_table_dnd_drag_data_get (GtkWidget         *widget,
       gtk_selection_data_set (selection, target, 8,
 			      (guchar*) &drag_data, sizeof (drag_data));
     }
-}
-
-static void
-egg_spread_table_dnd_drag_data_delete (GtkWidget         *widget,
-				       GdkDragContext    *context)
-{
-
-  g_print ("[source] Spread table drag_data_delete\n");
-
-}
-
-
-static gboolean
-egg_spread_table_dnd_drag_failed (GtkWidget         *widget,
-				  GdkDragContext    *context,
-				  GtkDragResult      result)
-{
-  g_print ("[source] Drag failed\n");
-
-  return FALSE;
 }
 
 /*****************************************************
@@ -406,15 +353,11 @@ placeholder_animated_out (GtkWidget         *placeholder,
 {
   gint line = -1;
 
-  g_print ("[table %p] finished animating out placeholder (%p)\n", spread_table, placeholder);
-
   if (spread_table->priv->drop_target == placeholder)
     spread_table->priv->drop_target = NULL;
 
   if (spread_table->priv->dragging)
     line = get_child_line (spread_table, placeholder);
-
-  g_print ("[table %p] removing one index from line %d\n", spread_table, line);
 
   gtk_container_remove (GTK_CONTAINER (spread_table), placeholder);
   
@@ -435,15 +378,10 @@ egg_spread_table_dnd_drag_leave (GtkWidget         *widget,
 {
   EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
 
-  g_print ("[dest] Spread table drag_leave\n");
-
   if (spread_table->priv->drop_target &&
       egg_placeholder_get_animating 
       (EGG_PLACEHOLDER (spread_table->priv->drop_target)) != EGG_PLACEHOLDER_ANIM_OUT)
     {
-      g_print ("[dest table %p] Drag leave animating out the placeholder (%p)\n", 
-	       widget, spread_table->priv->drop_target);
-
       egg_placeholder_animate_out (EGG_PLACEHOLDER (spread_table->priv->drop_target),
 				   gtk_orientable_get_orientation (GTK_ORIENTABLE (spread_table)));
 
@@ -560,15 +498,10 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 
   index = get_index_at_position (spread_table, x, y, &line);
 
-  //g_print ("Drag motion found new drop index %d, old index %d\n", index, drop_index);
-
   if (index != drop_index)
     {
       if (spread_table->priv->drop_target)
 	{
-	  g_print ("[dest table %p] Drag motion animating out the placeholder (%p)\n", 
-		   widget, spread_table->priv->drop_target);
-
 	  egg_placeholder_animate_out (EGG_PLACEHOLDER (spread_table->priv->drop_target),
 				       gtk_orientable_get_orientation (GTK_ORIENTABLE (spread_table)));
 
@@ -590,11 +523,6 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 					 spread_table->priv->drop_target, index);
 	  adjust_line_segment (spread_table, line, 1);
 
-	  g_print ("[table %p] Drag motion adding a placeholder (%p) at new drop index %d, "
-		   "adding one index to line %d\n", 
-		   spread_table, spread_table->priv->drop_target, index, line);
-
-
 	  egg_placeholder_animate_in (EGG_PLACEHOLDER (spread_table->priv->drop_target),
 				      gtk_orientable_get_orientation (GTK_ORIENTABLE (spread_table)));
 	}
@@ -613,8 +541,6 @@ egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
   EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
 
   gtk_drag_get_data (widget, context, dnd_target_atom_child, time_);
-
-  g_print ("[dest %p] drag_drop()\n", spread_table);
 
   if (spread_table->priv->drop_target &&
       spread_table->priv->drag_data.child)
@@ -767,10 +693,6 @@ drag_begin (GtkWidget         *widget,
 
   /* Hide the drag child (we cant remove it because it needs a GdkWindow in the mean time) */
   gtk_widget_hide (spread_table->priv->drag_child);
-
-  g_print ("[child %p] Drag began at index %d, added placeholder (%p) there with width %d and height %d\n", 
-	   widget, drop_index, spread_table->priv->drop_target, allocation.width, allocation.height);
-
 }
 
 static void
@@ -801,8 +723,6 @@ drag_failed (GtkWidget         *widget,
 	     GtkDragResult      result,
 	     EggSpreadTableDnd *spread_table)
 {
-  g_print ("[source] Drag failed\n");
-
   gtk_widget_show (widget);
 
   return FALSE;
@@ -906,9 +826,6 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
     index = first_child + segments[line];
 
   g_list_free (children);
-
-  /* g_print ("index for position is %d for line %d[first child %d with %d widgets], current drop index is %d\n", */
-  /* 	   index, line, first_child, segments[line], spread_table->priv->drop_index); */
 
   g_free (segments);
 
