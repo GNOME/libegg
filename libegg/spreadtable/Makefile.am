@@ -7,15 +7,20 @@ noinst_LTLIBRARIES = libegg-spreadtable.la
 
 libegg_spreadtable_la_LIBADD = $(EGG_30_LIBS)
 
+BUILT_SOURCES = eggmarshalers.c eggmarshalers.h
+
 EGGSOURCES = \
 	eggspreadtable.c \
 	eggspreadtablednd.c \
-	eggplaceholder.c
+	eggplaceholder.c \
+	eggmarshalers.c
+
 
 EGGHEADERS = \
 	eggspreadtable.h \
 	eggspreadtablednd.h \
-	eggplaceholder.h
+	eggplaceholder.h \
+	eggmarshalers.h
 
 libegg_spreadtable_la_SOURCES = $(EGGSOURCES)
 
@@ -29,3 +34,14 @@ testspreadtable_SOURCES = testspreadtable.c
 
 testspreadtable_LDADD = $(EGG_30_LIBS) \
   $(top_builddir)/libegg/spreadtable/libegg-spreadtable.la
+
+
+#Marshallers rules
+eggmarshalers.h: eggmarshalers.list
+	$(GLIB_GENMARSHAL) --prefix=_egg_marshal $(srcdir)/eggmarshalers.list --header > eggmarshalers-h.tmp \
+	&& mv eggmarshalers-h.tmp eggmarshalers.h \
+	|| ( rm -f eggmarshalers-h.tmp && exit 1)
+eggmarshalers.c: eggmarshalers.list
+	$(GLIB_GENMARSHAL) --prefix=_egg_marshal $(srcdir)/eggmarshalers.list --body --header > eggmarshalers-c.tmp     \
+	&& mv eggmarshalers-c.tmp eggmarshalers.c \
+	|| ( rm -f eggmarshalers-c.tmp && exit 1 )

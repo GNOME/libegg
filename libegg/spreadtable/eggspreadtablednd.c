@@ -25,6 +25,7 @@
 #include <string.h>
 #include "eggspreadtablednd.h"
 #include "eggplaceholder.h"
+#include "eggmarshalers.h"
 
 #define DEFAULT_LINES 2
 #define P_(msgid) (msgid)
@@ -76,6 +77,10 @@ static void          egg_spread_table_dnd_insert_child (EggSpreadTable    *sprea
 							GtkWidget         *child,
 							gint               index);
 
+/* EggSpreadTableDndClass */
+static gboolean      egg_spread_table_dnd_drop_possible(EggSpreadTableDnd *table, 
+							GtkWidget         *widget);
+
 /* Drag and Drop callbacks & other utilities */
 static void          drag_begin                        (GtkWidget         *widget,
 							GdkDragContext    *context,
@@ -98,7 +103,13 @@ static gint          get_index_at_position             (EggSpreadTableDnd *sprea
 							gint               x,
 							gint               y,
 							gint              *line_ret);
+static gboolean      boolean_handled_accumulator       (GSignalInvocationHint *ihint,
+							GValue                *return_accu,
+							const GValue          *handler_return,
+							gpointer               dummy);
 
+static gboolean      drop_possible                     (EggSpreadTableDnd *spread_table,
+							GtkWidget         *widget);
 
 typedef struct {
   EggSpreadTableDnd *table;
@@ -126,10 +137,19 @@ struct _EggSpreadTableDndPrivate {
   gint       press_start_y;
 };
 
+
+enum {
+  SIGNAL_DROP_POSSIBLE,
+  LAST_SIGNAL
+};
+
+static guint                dnd_table_signals [LAST_SIGNAL] = { 0 };
 static GdkAtom              dnd_target_atom_child = GDK_NONE;
 static const GtkTargetEntry dnd_targets[] = {
   { "application/x-egg-spread-table-dnd-child", GTK_TARGET_SAME_APP, 0 }
 };
+
+
 
 G_DEFINE_TYPE (EggSpreadTableDnd, egg_spread_table_dnd, EGG_TYPE_SPREAD_TABLE)
 
@@ -154,8 +174,34 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
   widget_class->drag_drop          = egg_spread_table_dnd_drag_drop;
   widget_class->drag_data_received = egg_spread_table_dnd_drag_data_received;
 
-  container_class->remove = egg_spread_table_dnd_remove;
+  container_class->remove    = egg_spread_table_dnd_remove;
+
   spread_class->insert_child = egg_spread_table_dnd_insert_child;
+
+  class->widget_drop_possible = egg_spread_table_dnd_drop_possible;
+
+  /**
+   * EggSpreadTableDnd::widget-drop-possible
+   *
+   * Emitted to check if a widget can be dropped into this spread table.
+   *
+   * The first connected signal to return TRUE decides that the widget
+   * can be dropped.
+   *
+   * By default EggSpreadTableDnd accepts drops from the same table
+   * (the only way to dissallow drops from the same spread table is
+   * to implement a subclass which overrides the 
+   * EggSpreadTableDndClass.widget_drop_possible() virtual method).
+   */
+  dnd_table_signals[SIGNAL_DROP_POSSIBLE] = 
+        g_signal_new ("widget-drop-possible",
+		      G_TYPE_FROM_CLASS (class),
+		      G_SIGNAL_RUN_LAST,
+		      G_STRUCT_OFFSET (EggSpreadTableDndClass, widget_drop_possible),
+		      boolean_handled_accumulator, NULL,
+		      _egg_marshal_BOOLEAN__OBJECT,
+		      G_TYPE_BOOLEAN, 1, GTK_TYPE_WIDGET);
+
 
   dnd_target_atom_child = gdk_atom_intern_static_string (dnd_targets[0].target);
 
@@ -476,10 +522,14 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 
   /* Could be comming from another spread table, lock it now incase
    * its not already locked. */
-  egg_spread_table_lock (EGG_SPREAD_TABLE (spread_table));
-  spread_table->priv->dragging = TRUE;
 
   gtk_drag_get_data (widget, context, dnd_target_atom_child, time_);
+
+  if (!drop_possible (spread_table, spread_table->priv->drag_data.child))
+    return FALSE;
+
+  egg_spread_table_lock (EGG_SPREAD_TABLE (spread_table));
+  spread_table->priv->dragging = TRUE;
 
   /* Dont do anything until the currently drop target placeholder finishes animating in */
   if ((spread_table->priv->drop_target &&
@@ -573,14 +623,14 @@ egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
       egg_spread_table_unlock (EGG_SPREAD_TABLE (spread_table));
 
       gtk_drag_finish (context, TRUE, TRUE, time_);
+      return TRUE;
     }
   else
     {
-      g_warning ("drag-drop signal received with no active drop target\n");
       gtk_drag_finish (context, FALSE, TRUE, time_);
+      return FALSE;
     }
 
-  return TRUE;
 }
 
 static void
@@ -654,6 +704,16 @@ egg_spread_table_dnd_insert_child (EggSpreadTable *spread_table,
 }
 
 /*****************************************************
+ *              EggSpreadTableDndClass               *
+ *****************************************************/
+static gboolean
+egg_spread_table_dnd_drop_possible (EggSpreadTableDnd *table, 
+				    GtkWidget         *widget)
+{
+  return (GTK_WIDGET (table) == gtk_widget_get_parent (widget));
+}
+
+/*****************************************************
  *       Drag'n'Drop signals & other functions       *
  *****************************************************/
 
@@ -669,7 +729,8 @@ drag_begin (GtkWidget         *widget,
   egg_spread_table_lock (EGG_SPREAD_TABLE (spread_table));
   spread_table->priv->dragging = TRUE;
 
-  /* Hold on to the drag child incase the drag fails */
+  /* Just assign a drag child, this is only important for
+   * child widgets that dont have a GdkWindow though really */
   spread_table->priv->drag_child = widget;
 
   /* Save the drag origin in case of failed drags and insert a placeholder as the first 
@@ -867,6 +928,34 @@ get_child_at_position (EggSpreadTableDnd *spread_table,
   g_list_free (children);
 
   return ret_child;
+}
+
+static gboolean
+drop_possible (EggSpreadTableDnd *spread_table,
+	       GtkWidget         *widget)
+{
+  gboolean possible = FALSE;
+
+  g_signal_emit (spread_table, dnd_table_signals[SIGNAL_DROP_POSSIBLE], 0, widget, &possible);
+
+  return possible;
+}
+
+/* Copy of _gtk_boolean_handled_accumulator */
+static gboolean
+boolean_handled_accumulator (GSignalInvocationHint *ihint,
+			     GValue                *return_accu,
+			     const GValue          *handler_return,
+			     gpointer               dummy)
+{
+  gboolean continue_emission;
+  gboolean signal_handled;
+
+  signal_handled = g_value_get_boolean (handler_return);
+  g_value_set_boolean (return_accu, signal_handled);
+  continue_emission = !signal_handled;
+
+  return continue_emission;
 }
 
 /*****************************************************

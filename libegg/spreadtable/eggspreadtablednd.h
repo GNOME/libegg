@@ -52,6 +52,8 @@ struct _EggSpreadTableDnd
 struct _EggSpreadTableDndClass
 {
   EggSpreadTableClass parent_class;
+
+  gboolean  (* widget_drop_possible) (EggSpreadTableDnd *table, GtkWidget *widget);
 };
 
 GType                 egg_spread_table_dnd_get_type              (void) G_GNUC_CONST;
