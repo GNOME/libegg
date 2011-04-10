@@ -439,7 +439,7 @@ egg_spread_table_dnd_drag_leave (GtkWidget         *widget,
 
   if (spread_table->priv->drop_target &&
       egg_placeholder_get_animating 
-      (EGG_PLACEHOLDER (spread_table->priv->drop_target)) == EGG_PLACEHOLDER_ANIM_NONE)
+      (EGG_PLACEHOLDER (spread_table->priv->drop_target)) != EGG_PLACEHOLDER_ANIM_OUT)
     {
       g_print ("[dest table %p] Drag leave animating out the placeholder (%p)\n", 
 	       widget, spread_table->priv->drop_target);
