@@ -155,13 +155,13 @@ egg_placeholder_animate_in (EggPlaceholder *placeholder,
   placeholder->priv->animation_direction   = EGG_PLACEHOLDER_ANIM_IN;
 
   if (placeholder->priv->animation_id == 0)
-    placeholder->priv->animation_percent = 0.0F;
-
-  if (placeholder->priv->animation_id == 0)
-    placeholder->priv->animation_id = 
-      gdk_threads_add_timeout (ANIMATION_FREQ, 
-			       (GSourceFunc)placeholder_animate, 
-			       placeholder);
+    {
+      placeholder->priv->animation_percent = 0.0F;
+      placeholder->priv->animation_id = 
+	gdk_threads_add_timeout (ANIMATION_FREQ, 
+				 (GSourceFunc)placeholder_animate, 
+				 placeholder);
+    }
 
   gtk_widget_queue_resize (GTK_WIDGET (placeholder));
 }
@@ -176,13 +176,13 @@ egg_placeholder_animate_out (EggPlaceholder *placeholder,
   placeholder->priv->animation_direction   = EGG_PLACEHOLDER_ANIM_OUT;
 
   if (placeholder->priv->animation_id == 0)
-    placeholder->priv->animation_percent = 1.0F;
-
-  if (placeholder->priv->animation_id == 0)
-    placeholder->priv->animation_id = 
-      gdk_threads_add_timeout (ANIMATION_FREQ, 
-			       (GSourceFunc)placeholder_animate, 
-			       placeholder);
+    {
+      placeholder->priv->animation_percent = 1.0F;
+      placeholder->priv->animation_id = 
+	gdk_threads_add_timeout (ANIMATION_FREQ, 
+				 (GSourceFunc)placeholder_animate, 
+				 placeholder);
+    }
 
   gtk_widget_queue_resize (GTK_WIDGET (placeholder));
 }
