@@ -54,7 +54,7 @@ struct _EggSpreadTableDndClass
   EggSpreadTableClass parent_class;
 };
 
-GType                 egg_spread_table_get_type                  (void) G_GNUC_CONST;
+GType                 egg_spread_table_dnd_get_type              (void) G_GNUC_CONST;
 GtkWidget            *egg_spread_table_dnd_new                   (GtkOrientation  orientation,
 								  guint           lines);
 
