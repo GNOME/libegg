@@ -165,7 +165,6 @@ sm_client_dbus_startup (EggSMClient *client,
 			       G_CALLBACK (dbus_client_end_session),
 			       dbus, NULL);
   dbus_g_proxy_add_signal (dbus->client_proxy, "CancelEndSession",
-			   G_TYPE_UINT,
 			   G_TYPE_INVALID);
   dbus_g_proxy_connect_signal (dbus->client_proxy, "CancelEndSession",
 			       G_CALLBACK (dbus_client_cancel_end_session),

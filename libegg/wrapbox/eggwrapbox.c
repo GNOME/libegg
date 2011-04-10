@@ -40,7 +40,12 @@
  * Unlike a GtkTable, the child widgets do not need to align in a grid.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "eggwrapbox.h"
+#include "eggwrapbox-enums.h"
 
 #define P_(msgid) (msgid)
 #define GTK_PARAM_READWRITE (G_PARAM_READABLE | G_PARAM_WRITABLE)
@@ -315,7 +320,7 @@ egg_wrap_box_class_init (EggWrapBoxClass *class)
                                               ("packing",
                                                P_("Packing"),
                                                P_("The packing options to use for this child"),
-                                               GTK_TYPE_WRAP_BOX_PACKING, 0,
+                                               EGG_TYPE_WRAP_BOX_PACKING, 0,
                                                GTK_PARAM_READWRITE));
 
   g_type_class_add_private (class, sizeof (EggWrapBoxPrivate));

@@ -131,13 +131,13 @@ libegg/background-monitor/Makefile
 libegg/treeviewutils/Makefile
 libegg/column-chooser/Makefile
 libegg/toolbareditor/Makefile
-libegg/dock/Makefile
 libegg/datetime/Makefile
 libegg/pixbufthumbnail/Makefile
 libegg/thumbnailpreview/Makefile
 libegg/iconchooser/Makefile
 libegg/smclient/Makefile
 libegg/spreadtable/Makefile
+libegg/wrapbox/Makefile
 libegg/fileformatchooser/Makefile
 doc/Makefile
 ])

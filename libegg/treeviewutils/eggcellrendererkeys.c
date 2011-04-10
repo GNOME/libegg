@@ -31,8 +31,8 @@ static GtkCellEditable *egg_cell_renderer_keys_start_editing (GtkCellRenderer   
 							      GdkEvent                 *event,
 							      GtkWidget                *widget,
 							      const gchar              *path,
-							      GdkRectangle             *background_area,
-							      GdkRectangle             *cell_area,
+							      const GdkRectangle       *background_area,
+							      const GdkRectangle       *cell_area,
 							      GtkCellRendererState      flags);
 
 
@@ -44,13 +44,13 @@ static void egg_cell_renderer_keys_set_property (GObject         *object,
 						 guint            param_id,
 						 const GValue    *value,
 						 GParamSpec      *pspec);
-static void egg_cell_renderer_keys_get_size     (GtkCellRenderer *cell,
-						 GtkWidget       *widget,
-						 GdkRectangle    *cell_area,
-						 gint            *x_offset,
-						 gint            *y_offset,
-						 gint            *width,
-						 gint            *height);
+static void egg_cell_renderer_keys_get_size     (GtkCellRenderer    *cell,
+						 GtkWidget          *widget,
+						 const GdkRectangle *cell_area,
+						 gint               *x_offset,
+						 gint               *y_offset,
+						 gint               *width,
+						 gint               *height);
 
 
 enum {
@@ -365,13 +365,13 @@ is_modifier (guint keycode)
 }
 
 static void
-egg_cell_renderer_keys_get_size (GtkCellRenderer *cell,
-				 GtkWidget       *widget,
-				 GdkRectangle    *cell_area,
-				 gint            *x_offset,
-				 gint            *y_offset,
-				 gint            *width,
-				 gint            *height)
+egg_cell_renderer_keys_get_size (GtkCellRenderer       *cell,
+				 GtkWidget             *widget,
+				 const GdkRectangle    *cell_area,
+				 gint                  *x_offset,
+				 gint                  *y_offset,
+				 gint                  *width,
+				 gint                  *height)
 
 {
   EggCellRendererKeys *keys = (EggCellRendererKeys *) cell;
@@ -380,7 +380,11 @@ egg_cell_renderer_keys_get_size (GtkCellRenderer *cell,
   if (keys->sizing_label == NULL)
     keys->sizing_label = gtk_label_new (TOOLTIP_TEXT);
 
+#if GTK_CHECK_VERSION (3,0,0)
+  gtk_widget_get_preferred_size (keys->sizing_label, NULL, &requisition);
+#else
   gtk_widget_size_request (keys->sizing_label, &requisition);
+#endif
   (* GTK_CELL_RENDERER_CLASS (parent_class)->get_size) (cell, widget, cell_area, x_offset, y_offset, width, height);
   /* FIXME: need to take the cell_area et al. into account */
   if (width)
@@ -425,8 +429,8 @@ grab_key_callback (GtkWidget    *widget,
 
   upper = event->keyval;
   accel_keyval = gdk_keyval_to_lower (upper);
-  if (accel_keyval == GDK_ISO_Left_Tab)
-    accel_keyval = GDK_Tab;
+  if (accel_keyval == GDK_KEY_ISO_Left_Tab)
+    accel_keyval = GDK_KEY_Tab;
 
 
 
@@ -460,11 +464,11 @@ grab_key_callback (GtkWidget    *widget,
   else
     g_assert_not_reached ();
 
-  if (accel_mods == 0 && accel_keyval == GDK_Escape)
+  if (accel_mods == 0 && accel_keyval == GDK_KEY_Escape)
     goto out; /* cancel */
 
   /* clear the accelerator on Backspace */
-  if (accel_mods == 0 && accel_keyval == GDK_BackSpace)
+  if (accel_mods == 0 && accel_keyval == GDK_KEY_BackSpace)
     {
       cleared = TRUE;
       goto out;
@@ -569,29 +573,37 @@ egg_cell_renderer_keys_start_editing (GtkCellRenderer      *cell,
 				      GdkEvent             *event,
 				      GtkWidget            *widget,
 				      const gchar          *path,
-				      GdkRectangle         *background_area,
-				      GdkRectangle         *cell_area,
+				      const GdkRectangle   *background_area,
+				      const GdkRectangle   *cell_area,
 				      GtkCellRendererState  flags)
 {
   GtkCellRendererText *celltext;
   EggCellRendererKeys *keys;
   GtkWidget *label;
   GtkWidget *eventbox;
+  GdkWindow *window;
+  gboolean editable;
+#if GTK_CHECK_VERSION (3,0,0)
+  GdkRGBA box_color;
+  GdkRGBA label_color;
+#endif
 
   celltext = GTK_CELL_RENDERER_TEXT (cell);
   keys = EGG_CELL_RENDERER_KEYS (cell);
 
   /* If the cell isn't editable we return NULL. */
-  if (celltext->editable == FALSE)
+  g_object_get (celltext, "editable", &editable, NULL);
+  if (editable == FALSE)
     return NULL;
 
-  g_return_val_if_fail (widget->window != NULL, NULL);
+  window = gtk_widget_get_window (widget);
+  g_return_val_if_fail (window != NULL, NULL);
 
-  if (gdk_keyboard_grab (widget->window, FALSE,
+  if (gdk_keyboard_grab (window, FALSE,
                          gdk_event_get_time (event)) != GDK_GRAB_SUCCESS)
     return NULL;
 
-  if (gdk_pointer_grab (widget->window, FALSE,
+  if (gdk_pointer_grab (window, FALSE,
                         GDK_BUTTON_PRESS_MASK,
                         NULL, NULL,
                         gdk_event_get_time (event)) != GDK_GRAB_SUCCESS)
@@ -615,11 +627,22 @@ egg_cell_renderer_keys_start_editing (GtkCellRenderer      *cell,
   label = gtk_label_new (NULL);
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
 
+#if GTK_CHECK_VERSION (3,0,0)
+  gtk_style_context_get_background_color (gtk_widget_get_style_context (widget),
+                                          GTK_STATE_SELECTED,
+                                         &box_color);
+  gtk_widget_override_background_color (eventbox, GTK_STATE_NORMAL, &box_color);
+  gtk_style_context_get_color (gtk_widget_get_style_context (widget),
+                               GTK_STATE_SELECTED,
+                              &label_color);
+  gtk_widget_override_color (label, GTK_STATE_NORMAL, &label_color);
+#else
   gtk_widget_modify_bg (eventbox, GTK_STATE_NORMAL,
-                        &widget->style->bg[GTK_STATE_SELECTED]);
+                        &(gtk_widget_get_style (widget)->bg[GTK_STATE_SELECTED]));
 
   gtk_widget_modify_fg (label, GTK_STATE_NORMAL,
-                        &widget->style->fg[GTK_STATE_SELECTED]);
+                        &(gtk_widget_get_style (widget)->fg[GTK_STATE_SELECTED]));
+#endif
 
   gtk_label_set_text (GTK_LABEL (label),
 		  TOOLTIP_TEXT);
