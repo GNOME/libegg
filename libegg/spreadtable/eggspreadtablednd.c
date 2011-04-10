@@ -446,7 +446,7 @@ get_placeholder_size (EggSpreadTableDnd *spread_table,
 
       gtk_widget_get_preferred_width (spread_table->priv->drag_data.child, &min_width, NULL);  
 
-      *width = MIN (line_width, min_width);
+      *width = MAX (line_width, min_width);
       
       gtk_widget_get_preferred_height_for_width (spread_table->priv->drag_data.child,
 						 *width, height, NULL);
@@ -457,7 +457,7 @@ get_placeholder_size (EggSpreadTableDnd *spread_table,
 
       gtk_widget_get_preferred_width (spread_table->priv->drag_data.child, &min_height, NULL);  
 
-      *height = MIN (line_width, min_height);
+      *height = MAX (line_width, min_height);
       
       gtk_widget_get_preferred_width_for_height (spread_table->priv->drag_data.child,
 						 *height, width, NULL);
