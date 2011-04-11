@@ -12,7 +12,7 @@ static void      egg_placeholder_get_preferred_height (GtkWidget  *widget,
 						       gint       *min_height,
 						       gint       *nat_height);
 
-#define ANIMATION_STEP 0.2F  /* How much percentage of the size to animate per iteration */
+#define ANIMATION_STEP 0.12F  /* How much percentage of the size to animate per iteration */
 #define ANIMATION_FREQ 20    /* At what frequency in millisecs to animate */
 
 enum {
@@ -131,8 +131,8 @@ placeholder_animate (EggPlaceholder *placeholder)
 
   gtk_widget_queue_resize (GTK_WIDGET (placeholder));
 
-  if (placeholder->priv->animation_percent == 1.0 ||
-      placeholder->priv->animation_percent == 0.0)
+  if (placeholder->priv->animation_percent >= 1.0 ||
+      placeholder->priv->animation_percent <= 0.0)
     {
       placeholder->priv->animation_id = 0;
       placeholder->priv->animation_direction = EGG_PLACEHOLDER_ANIM_NONE;
