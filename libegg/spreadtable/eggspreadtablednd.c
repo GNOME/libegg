@@ -416,6 +416,7 @@ allocate_child (EggSpreadTableDnd *table,
 
 static void
 get_spread_table_dimentions (EggSpreadTableDnd *spread_table,
+			     gint               for_size,
 			     gint              *line_spacing,
 			     gint              *item_spacing,
 			     gint              *full_size,
@@ -430,13 +431,13 @@ get_spread_table_dimentions (EggSpreadTableDnd *spread_table,
 
   if (gtk_orientable_get_orientation (GTK_ORIENTABLE (table)) == GTK_ORIENTATION_VERTICAL)
     {
-      local_full_size    = allocation.width;
+      local_full_size    = for_size < 0 ? allocation.width : for_size;
       local_spacing      = egg_spread_table_get_horizontal_spacing (table);
       local_item_spacing = egg_spread_table_get_vertical_spacing (table);
     }
   else
     {
-      local_full_size    = allocation.height;
+      local_full_size    = for_size < 0 ? allocation.height : for_size;
       local_spacing      = egg_spread_table_get_vertical_spacing (table);
       local_item_spacing = egg_spread_table_get_horizontal_spacing (table);
     }
@@ -475,7 +476,7 @@ egg_spread_table_dnd_size_allocate (GtkWidget         *widget,
   parent_parent_class = g_type_class_peek_parent (egg_spread_table_dnd_parent_class);
   parent_parent_class->size_allocate (widget, allocation);
 
-  get_spread_table_dimentions (table, &line_spacing, &item_spacing, &full_thickness, &line_thickness);
+  get_spread_table_dimentions (table, -1, &line_spacing, &item_spacing, &full_thickness, &line_thickness);
   lines       = egg_spread_table_get_lines (EGG_SPREAD_TABLE (table));
   orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (table));
 
@@ -624,7 +625,7 @@ get_placeholder_size (EggSpreadTableDnd *spread_table,
   gint           line_width;
 
   /* Calculate the size of the required placeholder based on the dimentions of the drag widget */
-  get_spread_table_dimentions (spread_table, NULL, NULL, NULL, &line_width);
+  get_spread_table_dimentions (spread_table, -1, NULL, NULL, NULL, &line_width);
 
   if (orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -852,48 +853,52 @@ egg_spread_table_dnd_build_segments (EggSpreadTable *table,
 {
   EggSpreadTableDnd        *dnd_table = EGG_SPREAD_TABLE_DND (table);
   EggSpreadTableDndPrivate *priv = dnd_table->priv;
-  GList                    *l, *children;
-  gint                      line = 0, i = 0, lines;
-  gint                      largest_line = 0, line_size = 0, widget_size;
+  GList                    *list, *children;
+  gint                      i, j, lines;
+  gint                      largest_line = 0, line_size = 0;
   gint                      line_thickness;
   gint                      spacing;
   GtkOrientation            orientation;
+  gboolean                  first_widget = TRUE;
 
   if (!priv->locked_config)
     return EGG_SPREAD_TABLE_CLASS
       (egg_spread_table_dnd_parent_class)->build_segments_for_size (table, for_size, segments);
 
-  get_spread_table_dimentions (dnd_table, NULL, &spacing, NULL, &line_thickness);
+  get_spread_table_dimentions (dnd_table, for_size, NULL, &spacing, NULL, &line_thickness);
 
   children    = gtk_container_get_children (GTK_CONTAINER (table));
   orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (table));
   lines       = egg_spread_table_get_lines (table);
 
-  for (l = children; l && line < lines; l = l->next)
+  for (list = children, i = 0; i < lines; i++)
     {
-      GtkWidget *child = l->data;
-
-      if (!gtk_widget_get_visible (child))
-        continue;
-
-      get_widget_size (child, orientation, line_thickness, NULL, &widget_size);
-
-      line_size += widget_size;
-      if (i > 0)
-	line_size += spacing;
-
-      if (i++ >= priv->locked_config[line])
+      for (j = 0; list && j < priv->locked_config[i]; list = list->next, j++)
 	{
-	  largest_line = MAX (largest_line, line_size);
+	  GtkWidget *child = list->data;
+	  gint       child_size;
 
-	  line_size = 0;
-	  i         = 0;
-	  line++;
+	  if (!gtk_widget_get_visible (child))
+	    continue;
+
+	  get_widget_size (child, orientation, line_thickness, NULL, &child_size);
+
+	  line_size += child_size;
+	  if (!first_widget)
+	    line_size += spacing;
+	  else
+	    first_widget = FALSE;
 	}
+
+      largest_line = MAX (largest_line, line_size);
+      line_size = 0;
+      first_widget = TRUE;
     }
 
   if (segments)
     *segments = g_memdup (priv->locked_config, lines * sizeof (gint));
+
+  g_list_free (children);
 
   return largest_line;
 }
@@ -1007,7 +1012,7 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
   lines    = egg_spread_table_get_lines (table);
   segments = egg_spread_table_get_segments (table);
 
-  get_spread_table_dimentions (spread_table, &spacing, NULL, &full_size, &line_width);
+  get_spread_table_dimentions (spread_table, -1, &spacing, NULL, &full_size, &line_width);
 
   if (orientation == GTK_ORIENTATION_VERTICAL)
     position = x;
