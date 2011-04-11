@@ -60,8 +60,6 @@ struct _EggSpreadTablePrivate {
 
   GtkOrientation orientation;
 
-  gint          *locked_config;
-
   guint16        lines;
   guint16        horizontal_spacing;
   guint16        vertical_spacing;
@@ -119,6 +117,10 @@ static void  egg_spread_table_set_child_property  (GtkContainer        *containe
 						   GParamSpec          *pspec);
 
 /* EggSpreadTableClass */
+static gint  egg_spread_table_build_segments      (EggSpreadTable *table,
+						   gint            for_size,
+						   gint          **segments);
+
 static void  egg_spread_table_real_insert_child   (EggSpreadTable      *table,
 						   GtkWidget           *child,
 						   gint                 index);
@@ -164,6 +166,7 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
   container_class->get_child_property = egg_spread_table_get_child_property;
   container_class->set_child_property = egg_spread_table_set_child_property;
 
+  class->build_segments_for_size = egg_spread_table_build_segments;
   class->insert_child = egg_spread_table_real_insert_child;
 
   gtk_container_class_handle_border_width (container_class);
@@ -486,146 +489,7 @@ children_fit_segment_size (EggSpreadTable *table,
   /* If we placed all the widgets in the target size, the size fits. */
   return (l == NULL);
 }
-
-
-static gint
-get_size_for_locked_config (EggSpreadTable *table,
-			    gint            line_thickness)
-{
-  EggSpreadTablePrivate *priv = table->priv;
-  GList                 *l;
-  gint                   line = 0, i = 0;
-  gint                   largest_line = 0, line_size = 0, widget_size;
-
-  for (l = priv->children; l && line < priv->lines; l = l->next)
-    {
-      GtkWidget *child = l->data;
-
-      if (!gtk_widget_get_visible (child))
-        continue;
-
-      get_widget_size (child, priv->orientation, line_thickness, NULL, &widget_size);
-
-      line_size += widget_size;
-      if (i > 0)
-	line_size += ITEM_SPACING (table);
-
-      if (i++ >= priv->locked_config[line])
-	{
-	  largest_line = MAX (largest_line, line_size);
-
-	  line_size = 0;
-	  i         = 0;
-	  line++;
-	}
-    }
-  return largest_line;
-}
-
-/* All purpose algorithm entry point, this function takes an allocated size
- * to fit the columns (or rows) and then splits up the child list into
- * 'n' children per 'segment' in a way that it takes the least space as possible.
- *
- * If 'segments' is specified, it will be allocated the array of integers representing
- * how many children are to be fit per line segment (and must be freed afterwards with g_free()).
- *
- * The function returns the required space (the required height for all columns).
- */
-static gint
-segment_lines_for_size (EggSpreadTable *table,
-			gint            for_size,
-			gint          **segments)
-{
-  EggSpreadTablePrivate  *priv;
-  GList                  *children;
-  gint                    line_thickness;
-  gint                   *segment_counts = NULL, *test_counts;
-  gint                    upper, lower, segment_size, largest_size = 0;
-  gint                    i, j;
-
-  priv = table->priv;
-
-  line_thickness = get_line_thickness (table, for_size);
-
-  if (priv->locked_config)
-    {
-      if (segments)
-	*segments = g_memdup (priv->locked_config, sizeof (gint) * priv->lines);
-
-      return get_size_for_locked_config (table, line_thickness);
-    }
-
-  segment_counts = g_new0 (gint, priv->lines);
-  test_counts    = g_new0 (gint, priv->lines);
-
-  /* Start by getting the child list/total size/average size */
-  children = priv->children;
-  upper    = get_segment_length (table, line_thickness, children);
-  lower    = upper / priv->lines;
-
-  /* Handle a single line spread table as a special case */
-  if (priv->lines == 1)
-    {
-      segment_counts[0] = g_list_length (children);
-      largest_size      = upper;
-    }
-  else
-    {
-      /* Start with half way between the average and total height */
-      segment_size = lower + (upper - lower) / 2;
-
-      while (segment_size > lower && segment_size < upper)
-	{
-	  gint test_largest = 0;
-
-	  if (children_fit_segment_size (table, children, line_thickness,
-					 segment_size, test_counts, &test_largest))
-	    {
-	      upper         = segment_size;
-	      segment_size -= (segment_size - lower) / 2;
-
-	      /* Save the last arrangement that 'fit' */
-	      largest_size  = test_largest;
-	      memcpy (segment_counts, test_counts, sizeof (gint) * priv->lines);
-	    }
-	  else
-	    {
-	      lower         = segment_size;
-	      segment_size += (upper - segment_size) / 2;
-	    }
-	}
-
-      /* Perform some corrections: fill in any trailing columns that are missing widgets */
-      for (i = 0; i < priv->lines; i++)
-	{
-	  /* If this column has no widgets... */
-	  if (!segment_counts[i])
-	    {
-	      /* rewind to the last column that had more than 1 widget */
-	      for (j = i - 1; j >= 0; j--)
-		{
-		  if (segment_counts[j] > 1)
-		    {
-		      /* put an available widget in the empty column */
-		      segment_counts[j]--;
-		      segment_counts[i]++;
-		      break;
-		    }
-		}
-	    }
-	}
-    }
-
-  if (segments)
-    *segments = segment_counts;
-  else
-    g_free (segment_counts);
-
-  g_free (test_counts);
-
-  return largest_size;
-}
-
+ 
 
 /*****************************************************
  *                 GtkWidgetClass                    *
@@ -739,14 +603,9 @@ egg_spread_table_get_height_for_width (GtkWidget           *widget,
     }
   else /* GTK_ORIENTATION_VERTICAL */
     {
-      gint min_width;
-
-      /* Make sure its no smaller than the minimum */
-      GTK_WIDGET_GET_CLASS (widget)->get_preferred_width (widget, &min_width, NULL);
-
       /* This will segment the lines evenly and return the overall
        * lengths of the split segments */
-      nat_height = min_height = segment_lines_for_size (table, MAX (width, min_width), NULL);
+      nat_height = min_height = egg_spread_table_build_segments_for_size (table, width, NULL);
     }
 
 #if 0
@@ -773,14 +632,9 @@ egg_spread_table_get_width_for_height (GtkWidget           *widget,
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
     {
-      gint min_height;
-
-      /* Make sure its no smaller than the minimum */
-      GTK_WIDGET_GET_CLASS (widget)->get_preferred_height (widget, &min_height, NULL);
-
       /* This will segment the lines evenly and return the overall
        * lengths of the split segments */
-      nat_width = min_width = segment_lines_for_size (table, MAX (height, min_height), NULL);
+      nat_width = min_width = egg_spread_table_build_segments_for_size (table, height, NULL);
     }
   else /* GTK_ORIENTATION_VERTICAL */
     {
@@ -852,7 +706,6 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
   gint                   line_thickness;
   gint                   line_spacing;
   gint                   item_spacing;
-  GtkOrientation         opposite_orientation;
 
   GTK_WIDGET_CLASS (egg_spread_table_parent_class)->size_allocate (widget, allocation);
 
@@ -864,9 +717,8 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
   line_thickness       = get_line_thickness (table, full_thickness);
   line_spacing         = LINE_SPACING (table);
   item_spacing         = ITEM_SPACING (table);
-  opposite_orientation = OPPOSITE_ORIENTATION (table);
 
-  segment_lines_for_size (table, full_thickness, &segments);
+  egg_spread_table_build_segments_for_size (table, full_thickness, &segments);
 
   for (list = priv->children, line_offset = 0, i = 0;
        i < priv->lines;
@@ -884,6 +736,7 @@ egg_spread_table_size_allocate (GtkWidget     *widget,
 			   line_thickness, NULL, &child_size);
 
 	  allocate_child (table, child, item_offset, line_offset, child_size, line_thickness);
+
 
 	  item_offset += child_size + item_spacing;
 	}
@@ -925,7 +778,6 @@ egg_spread_table_remove (GtkContainer *container,
         gtk_widget_queue_resize (GTK_WIDGET (container));
     }
 }
-
 
 static void
 egg_spread_table_forall (GtkContainer *container,
@@ -1002,6 +854,92 @@ egg_spread_table_set_child_property (GtkContainer        *container,
 /*****************************************************
  *                EggSpreadTableClass                *
  *****************************************************/
+static gint  
+egg_spread_table_build_segments (EggSpreadTable *table,
+				 gint            for_size,
+				 gint          **segments)
+{
+  EggSpreadTablePrivate  *priv;
+  GList                  *children;
+  gint                    line_thickness;
+  gint                   *segment_counts = NULL, *test_counts;
+  gint                    upper, lower, segment_size, largest_size = 0;
+  gint                    i, j;
+
+  priv = table->priv;
+
+  line_thickness = get_line_thickness (table, for_size);
+  segment_counts = g_new0 (gint, priv->lines);
+  test_counts    = g_new0 (gint, priv->lines);
+
+  /* Start by getting the child list/total size/average size */
+  children = priv->children;
+  upper    = get_segment_length (table, line_thickness, children);
+  lower    = upper / priv->lines;
+
+  /* Handle a single line spread table as a special case */
+  if (priv->lines == 1)
+    {
+      segment_counts[0] = g_list_length (children);
+      largest_size      = upper;
+    }
+  else
+    {
+      /* Start with half way between the average and total height */
+      segment_size = lower + (upper - lower) / 2;
+
+      while (segment_size > lower && segment_size < upper)
+	{
+	  gint test_largest = 0;
+
+	  if (children_fit_segment_size (table, children, line_thickness,
+					 segment_size, test_counts, &test_largest))
+	    {
+	      upper         = segment_size;
+	      segment_size -= (segment_size - lower) / 2;
+
+	      /* Save the last arrangement that 'fit' */
+	      largest_size  = test_largest;
+	      memcpy (segment_counts, test_counts, sizeof (gint) * priv->lines);
+	    }
+	  else
+	    {
+	      lower         = segment_size;
+	      segment_size += (upper - segment_size) / 2;
+	    }
+	}
+
+      /* Perform some corrections: fill in any trailing columns that are missing widgets */
+      for (i = 0; i < priv->lines; i++)
+	{
+	  /* If this column has no widgets... */
+	  if (!segment_counts[i])
+	    {
+	      /* rewind to the last column that had more than 1 widget */
+	      for (j = i - 1; j >= 0; j--)
+		{
+		  if (segment_counts[j] > 1)
+		    {
+		      /* put an available widget in the empty column */
+		      segment_counts[j]--;
+		      segment_counts[i]++;
+		      break;
+		    }
+		}
+	    }
+	}
+    }
+
+  if (segments)
+    *segments = segment_counts;
+  else
+    g_free (segment_counts);
+
+  g_free (test_counts);
+
+  return largest_size;
+}
+
 static void
 egg_spread_table_real_insert_child (EggSpreadTable *table,
 				    GtkWidget      *child,
@@ -1094,42 +1032,43 @@ egg_spread_table_reorder_child (EggSpreadTable *spread_table,
     }
 }
 
-/**
- * egg_spread_table_lock:
- * @spread_table: An #EggSpreadTable
+
+/* All purpose algorithm entry point, this function takes an allocated size
+ * to fit the columns (or rows) and then splits up the child list into
+ * 'n' children per 'segment' in a way that it takes the least space as possible.
  *
- * Locks @spread_table into the current configuration, while
- * the table is locked children stay in their respective columns/rows.
+ * If 'segments' is specified, it will be allocated the array of integers representing
+ * how many children are to be fit per line segment (and must be freed afterwards with g_free()).
  *
- * Before adding or removing widgets from the table while it is locked,
- * calls to egg_spread_table_set_segment_length() should be made to
- * hand configure where the newly inserted widgets will appear.
+ * The function returns the required space (the required height for all columns).
  */
-void
-egg_spread_table_lock (EggSpreadTable *table)
-
-{
-  g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
-
-  if (table->priv->locked_config == NULL)
-    table->priv->locked_config = egg_spread_table_get_segments (table);
-}
 
 /**
- * egg_spread_table_unlock:
- * @spread_table: An #EggSpreadTable
+ * egg_spread_table_build_segments_for_size:
+ * @table: An #EggSpreadTable
+ * @for_size: The hypothetical width if vertically oriented, otherwise the hypothetical height.
+ * @segments: The return location to store the calculated segments, or %NULL.
+ * 
+ * This function takes an allocated size to fit the columns (or rows) and then splits 
+ * up the child list into 'n' children per 'segment' in a way that it takes the 
+ * least space as possible.
  *
- * Unlocks @spread_table (see egg_spread_table_lock()).
+ * If 'segments' is specified, it will be allocated the array of integers representing
+ * how many children are to be fit per line segment. The array returned in @segments will
+ * be "lines" long and must be freed afterwards with g_free()).
+ *
+ * Returns: The minimum height for a width of 'for_size' if @table is vertically oriented,
+ * otherwise a width for a height of 'for_size'.
  */
-void
-egg_spread_table_unlock (EggSpreadTable *table)
+gint
+egg_spread_table_build_segments_for_size (EggSpreadTable *table,
+					  gint            for_size,
+					  gint          **segments)
 {
-  g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
+  g_return_val_if_fail (EGG_IS_SPREAD_TABLE (table), 0);
 
-  g_free (table->priv->locked_config);
-  table->priv->locked_config = NULL;
-
-  gtk_widget_queue_resize (GTK_WIDGET (table));
+  return EGG_SPREAD_TABLE_GET_CLASS
+    (table)->build_segments_for_size (table, for_size, segments);
 }
 
 /**
@@ -1162,45 +1101,10 @@ egg_spread_table_get_segments (EggSpreadTable *table)
   else
     size = allocation.width;
 
-  segment_lines_for_size (table, size, &segments);
+  egg_spread_table_build_segments_for_size (table, size, &segments);
 
   return segments;
 }
-
-/**
- * egg_spread_table_set_segment_length:
- * @table: A #EggSpreadTable
- * @segment: The segment or 'line' which to adjust the length
- * @length: The new length for @segment
- * 
- * This is used to manually configure the length of segments
- * while @table is locked (see egg_spread_table_lock()).
- */
-void
-egg_spread_table_set_segment_length (EggSpreadTable *table,
-				     gint            segment,
-				     gint            length)
-{
-  g_return_if_fail (EGG_IS_SPREAD_TABLE (table));
-  g_return_if_fail (segment >= 0 && segment < table->priv->lines);
-
-  if (table->priv->locked_config)
-    {
-      gint len = g_list_length (table->priv->children);
-      gint cnt = 0, i;
-
-      table->priv->locked_config[segment] = length;
-
-      for (i = 0; i < table->priv->lines; i++)
-	cnt += table->priv->locked_config[i];
-
-      if (cnt != len)
-	g_warning ("set_segment_length cause unbalanced child count %d (number of children %d)",
-		   cnt, len);
-
-    }
-}
-
 
 /**
  * egg_spread_table_get_child_line:
@@ -1235,7 +1139,7 @@ egg_spread_table_get_child_line (EggSpreadTable *table,
 
   priv = table->priv;
 
-  segment_lines_for_size (table, size, &segments);
+  egg_spread_table_build_segments_for_size (table, size, &segments);
 
   /* Get child index in list */
   l = g_list_find (priv->children, child);

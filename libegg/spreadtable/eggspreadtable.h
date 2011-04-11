@@ -52,9 +52,13 @@ struct _EggSpreadTableClass
 {
   GtkContainerClass parent_class;
 
-  void    ( *insert_child)   (EggSpreadTable *table,
-			      GtkWidget      *child,
-			      gint            index);
+  gint    (* build_segments_for_size) (EggSpreadTable *table,
+				       gint            for_size,
+				       gint          **segments);
+
+  void    ( *insert_child)            (EggSpreadTable *table,
+				       GtkWidget      *child,
+				       gint            index);
 };
 
 
@@ -72,13 +76,10 @@ void                  egg_spread_table_reorder_child             (EggSpreadTable
 								  GtkWidget      *widget,
 								  guint           index);
 
-void                  egg_spread_table_lock                      (EggSpreadTable *table);
-void                  egg_spread_table_unlock                    (EggSpreadTable *table);
-
 gint                 *egg_spread_table_get_segments              (EggSpreadTable *table);
-void                  egg_spread_table_set_segment_length        (EggSpreadTable *table,
-								  gint            segment,
-								  gint            length);
+gint                  egg_spread_table_build_segments_for_size   (EggSpreadTable *table,
+								  gint            for_size,
+								  gint          **segments);
 
 guint                 egg_spread_table_get_child_line            (EggSpreadTable *table,
 								  GtkWidget      *child,
