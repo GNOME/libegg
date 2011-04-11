@@ -38,6 +38,8 @@ static gboolean      egg_spread_table_dnd_button_press       (GtkWidget         
 							      GdkEventButton    *event);
 static gboolean      egg_spread_table_dnd_button_release     (GtkWidget         *widget,
 							      GdkEventButton    *event);
+static void          egg_spread_table_dnd_size_allocate      (GtkWidget         *widget,
+							      GtkAllocation     *allocation);
 
 /* GtkWidgetClass drag-source */
 static void          egg_spread_table_dnd_drag_data_get      (GtkWidget         *widget,
@@ -69,13 +71,16 @@ static void          egg_spread_table_dnd_drag_data_received (GtkWidget         
 							      guint              time);
 
 /* GtkContainerClass */
-static void          egg_spread_table_dnd_remove       (GtkContainer      *container,
-							GtkWidget         *child);
+static void          egg_spread_table_dnd_remove             (GtkContainer      *container,
+							      GtkWidget         *child);
 
 /* EggSpreadTableClass */
-static void          egg_spread_table_dnd_insert_child (EggSpreadTable    *spread_table,
-							GtkWidget         *child,
-							gint               index);
+static void          egg_spread_table_dnd_insert_child       (EggSpreadTable    *spread_table,
+							      GtkWidget         *child,
+							      gint               index);
+static gint          egg_spread_table_dnd_build_segments     (EggSpreadTable    *table,
+							      gint               for_size,
+							      gint             **segments);
 
 /* EggSpreadTableDndClass */
 static gboolean      egg_spread_table_dnd_drop_possible(EggSpreadTableDnd *table, 
@@ -110,6 +115,12 @@ static gboolean      boolean_handled_accumulator       (GSignalInvocationHint *i
 
 static gboolean      drop_possible                     (EggSpreadTableDnd *spread_table,
 							GtkWidget         *widget);
+static void          adjust_line_segment               (EggSpreadTableDnd *table,
+							gint               segment,
+							gint               offset);
+static void          lock_table                        (EggSpreadTableDnd *spread_table);
+static void          unlock_table                      (EggSpreadTableDnd *spread_table);
+
 
 typedef struct {
   EggSpreadTableDnd *table;
@@ -135,6 +146,10 @@ struct _EggSpreadTableDndPrivate {
   gint       pressed_button;
   gint       press_start_x;
   gint       press_start_y;
+
+  /* Caching and locking the child configuration */
+  gint      *locked_config;
+
 };
 
 
@@ -164,6 +179,7 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
   widget_class->button_press_event   = egg_spread_table_dnd_button_press;
   widget_class->button_release_event = egg_spread_table_dnd_button_release;
   widget_class->motion_notify_event  = egg_spread_table_dnd_motion;
+  widget_class->size_allocate        = egg_spread_table_dnd_size_allocate;
 
   /* Drag source */
   widget_class->drag_data_get      = egg_spread_table_dnd_drag_data_get;
@@ -176,7 +192,8 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
 
   container_class->remove    = egg_spread_table_dnd_remove;
 
-  spread_class->insert_child = egg_spread_table_dnd_insert_child;
+  spread_class->insert_child            = egg_spread_table_dnd_insert_child;
+  spread_class->build_segments_for_size = egg_spread_table_dnd_build_segments;
 
   class->widget_drop_possible = egg_spread_table_dnd_drop_possible;
 
@@ -335,6 +352,172 @@ egg_spread_table_dnd_button_release (GtkWidget      *widget,
   return TRUE;
 }
 
+static void
+get_widget_size (GtkWidget      *widget,
+		 GtkOrientation  orientation,
+		 gint            for_size,
+		 gint           *min_size,
+		 gint           *nat_size)
+{
+  if (orientation == GTK_ORIENTATION_HORIZONTAL)
+    {
+      if (for_size < 0)
+	gtk_widget_get_preferred_width (widget, min_size, nat_size);
+      else
+	gtk_widget_get_preferred_width_for_height (widget, for_size, min_size, nat_size);
+    }
+  else
+    {
+      if (for_size < 0)
+	gtk_widget_get_preferred_height (widget, min_size, nat_size);
+      else
+	gtk_widget_get_preferred_height_for_width (widget, for_size, min_size, nat_size);
+    }
+}
+
+static void
+allocate_child (EggSpreadTableDnd *table,
+                GtkWidget         *child,
+                gint               item_offset,
+                gint               line_offset,
+                gint               item_size,
+                gint               line_size)
+{
+  GtkAllocation           widget_allocation;
+  GtkAllocation           child_allocation;
+  GtkOrientation          orientation;
+
+  gtk_widget_get_allocation (GTK_WIDGET (table), &widget_allocation);
+  orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (table));
+
+  if (gtk_widget_get_has_window (GTK_WIDGET (table)))
+    {
+      widget_allocation.x = 0;
+      widget_allocation.y = 0;
+    }
+
+  if (orientation == GTK_ORIENTATION_HORIZONTAL)
+    {
+      child_allocation.x      = widget_allocation.x + item_offset;
+      child_allocation.y      = widget_allocation.y + line_offset;
+      child_allocation.width  = item_size;
+      child_allocation.height = line_size;
+    }
+  else /* GTK_ORIENTATION_VERTICAL */
+    {
+      child_allocation.x      = widget_allocation.x + line_offset;
+      child_allocation.y      = widget_allocation.y + item_offset;
+      child_allocation.width  = line_size;
+      child_allocation.height = item_size;
+    }
+
+  gtk_widget_size_allocate (child, &child_allocation);
+}
+
+static void
+get_spread_table_dimentions (EggSpreadTableDnd *spread_table,
+			     gint              *line_spacing,
+			     gint              *item_spacing,
+			     gint              *full_size,
+			     gint              *line_width)
+{
+  EggSpreadTable *table = EGG_SPREAD_TABLE (spread_table);
+  gint local_full_size, local_item_spacing, local_spacing;
+  gint lines = egg_spread_table_get_lines (table);
+  GtkAllocation allocation;
+
+  gtk_widget_get_allocation (GTK_WIDGET (table), &allocation);
+
+  if (gtk_orientable_get_orientation (GTK_ORIENTABLE (table)) == GTK_ORIENTATION_VERTICAL)
+    {
+      local_full_size    = allocation.width;
+      local_spacing      = egg_spread_table_get_horizontal_spacing (table);
+      local_item_spacing = egg_spread_table_get_vertical_spacing (table);
+    }
+  else
+    {
+      local_full_size    = allocation.height;
+      local_spacing      = egg_spread_table_get_vertical_spacing (table);
+      local_item_spacing = egg_spread_table_get_horizontal_spacing (table);
+    }
+
+  if (full_size)
+    *full_size = local_full_size;
+  if (line_spacing)
+    *line_spacing = local_spacing;
+  if (item_spacing)
+    *item_spacing = local_item_spacing;
+
+  if (line_width)
+    *line_width = (local_full_size - (local_spacing * (lines -1))) / lines;
+}
+
+static void
+egg_spread_table_dnd_size_allocate (GtkWidget         *widget,
+				    GtkAllocation     *allocation)
+{
+  EggSpreadTableDnd        *table = EGG_SPREAD_TABLE_DND (widget);
+  GList                    *list, *children;
+  gint                     *segments = NULL;
+  gint                      full_thickness;
+  gint                      i, j;
+  gint                      line_offset, item_offset;
+  gint                      line_thickness;
+  gint                      line_spacing;
+  gint                      item_spacing;
+  gint                      placeholder_cnt = 0;
+  gint                      lines;
+  GtkWidgetClass           *parent_parent_class;
+  GtkOrientation            orientation;
+
+  /* Skip the EggSpreadTableClass allocator, chain up to it's parent to resize
+   * the GdkWindow properly */
+  parent_parent_class = g_type_class_peek_parent (egg_spread_table_dnd_parent_class);
+  parent_parent_class->size_allocate (widget, allocation);
+
+  get_spread_table_dimentions (table, &line_spacing, &item_spacing, &full_thickness, &line_thickness);
+  lines       = egg_spread_table_get_lines (EGG_SPREAD_TABLE (table));
+  orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (table));
+
+  egg_spread_table_build_segments_for_size (EGG_SPREAD_TABLE (table), full_thickness, &segments);
+
+  children = gtk_container_get_children (GTK_CONTAINER (table));
+
+  for (list = children, line_offset = 0, i = 0; i < lines;
+       line_offset += line_thickness + line_spacing, i++)
+    {
+      /* Count the placeholders on each line */
+      placeholder_cnt = 0;
+
+      for (j = 0, item_offset = 0; list && j < segments[i]; list = list->next, j++)
+	{
+	  GtkWidget *child = list->data;
+	  gint       child_size;
+
+	  if (!gtk_widget_get_visible (child))
+	    continue;
+
+	  get_widget_size (child, orientation, line_thickness, NULL, &child_size);
+
+	  /* Stop allocating children on this line after 2 placeholders 
+	   * this avoids annoying flicker when moving a widget inside a single column */
+	  if (placeholder_cnt >= 2)
+	    continue;
+
+	  if (placeholder_cnt < 2 && EGG_IS_PLACEHOLDER (child))
+	      placeholder_cnt++;
+
+	  allocate_child (table, child, item_offset, line_offset, child_size, line_thickness);
+
+	  item_offset += child_size + item_spacing;
+	}
+    }
+
+  g_list_free (children);
+  g_free (segments);
+}
+
+
 /*****************************************************
  *            GtkWidgetClass drag source             *
  *****************************************************/
@@ -380,27 +563,17 @@ get_child_line (EggSpreadTableDnd *table,
 }
 
 static void
-adjust_line_segment (EggSpreadTableDnd *spread_table,
-		     gint               line,
-		     gint               offset)
-{
-  gint *segments;
-
-  segments = egg_spread_table_get_segments (EGG_SPREAD_TABLE (spread_table));
-  g_return_if_fail (segments[line] + offset >= 0);
-  egg_spread_table_set_segment_length (EGG_SPREAD_TABLE (spread_table), 
-				       line, segments[line] + offset);
-  g_free (segments);
-}
-
-static void
 placeholder_animated_out (GtkWidget         *placeholder,
 			  EggSpreadTableDnd *spread_table)
 {
   gint line = -1;
+  gboolean last_target = FALSE;
 
   if (spread_table->priv->drop_target == placeholder)
-    spread_table->priv->drop_target = NULL;
+    {
+      spread_table->priv->drop_target = NULL;
+      last_target = TRUE;
+    }
 
   if (spread_table->priv->dragging)
     line = get_child_line (spread_table, placeholder);
@@ -410,9 +583,9 @@ placeholder_animated_out (GtkWidget         *placeholder,
   /* Adjust line segment here manually since table may be locked */
   if (spread_table->priv->dragging)
     adjust_line_segment (spread_table, line, -1);
-  else
+  else if (last_target)
     /* Unlock the table after the drag is finished */
-    egg_spread_table_unlock (EGG_SPREAD_TABLE (spread_table));
+    unlock_table (spread_table);
 
   spread_table->priv->disappearing--;
 }
@@ -443,39 +616,6 @@ egg_spread_table_dnd_drag_leave (GtkWidget         *widget,
 }
 
 static void
-get_spread_table_dimentions (EggSpreadTableDnd *spread_table,
-			     gint              *line_spacing,
-			     gint              *full_size,
-			     gint              *line_width)
-{
-  EggSpreadTable *table = EGG_SPREAD_TABLE (spread_table);
-  gint local_full_size, local_spacing;
-  gint lines = egg_spread_table_get_lines (table);
-  GtkAllocation allocation;
-
-  gtk_widget_get_allocation (GTK_WIDGET (table), &allocation);
-
-  if (gtk_orientable_get_orientation (GTK_ORIENTABLE (table)) == GTK_ORIENTATION_VERTICAL)
-    {
-      local_full_size  = allocation.width;
-      local_spacing    = egg_spread_table_get_horizontal_spacing (table);
-    }
-  else
-    {
-      local_full_size = allocation.height;
-      local_spacing   = egg_spread_table_get_vertical_spacing (table);
-    }
-
-  if (full_size)
-    *full_size = local_full_size;
-  if (line_spacing)
-    *line_spacing = local_spacing;
- 
-  if (line_width)
-    *line_width = (local_full_size - (local_spacing * (lines -1))) / lines;
-}
-
-static void
 get_placeholder_size (EggSpreadTableDnd *spread_table,
 		      gint              *width,
 		      gint              *height)
@@ -484,7 +624,7 @@ get_placeholder_size (EggSpreadTableDnd *spread_table,
   gint           line_width;
 
   /* Calculate the size of the required placeholder based on the dimentions of the drag widget */
-  get_spread_table_dimentions (spread_table, NULL, NULL, &line_width);
+  get_spread_table_dimentions (spread_table, NULL, NULL, NULL, &line_width);
 
   if (orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -528,7 +668,7 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
   if (!drop_possible (spread_table, spread_table->priv->drag_data.child))
     return FALSE;
 
-  egg_spread_table_lock (EGG_SPREAD_TABLE (spread_table));
+  lock_table (spread_table);
   spread_table->priv->dragging = TRUE;
 
   /* Dont do anything until the currently drop target placeholder finishes animating in */
@@ -605,7 +745,7 @@ egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
 
       /* Get the appropriate target index */
       gtk_container_child_get (GTK_CONTAINER (spread_table), 
-			       spread_table->priv->drop_target, 
+			       spread_table->priv->drop_target,
 			       "position", &drop_index,
 			       NULL);
 
@@ -618,9 +758,11 @@ egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
       /* Ensure visibility */
       gtk_widget_show (spread_table->priv->drag_data.child);
 
-      /* Unlock the target spread table, any other spread table
-       * should have been unlocked at drag_leave time */
-      egg_spread_table_unlock (EGG_SPREAD_TABLE (spread_table));
+      /* Hide the drop target placeholder in the target spread table, 
+       * it will be removed and the spread table unlocked after animating out
+       * (the placeholder started animating out at "drag-leave" time).
+       */
+      gtk_widget_hide (spread_table->priv->drop_target);
 
       gtk_drag_finish (context, TRUE, TRUE, time_);
       return TRUE;
@@ -703,6 +845,60 @@ egg_spread_table_dnd_insert_child (EggSpreadTable *spread_table,
     }
 }
 
+static gint
+egg_spread_table_dnd_build_segments (EggSpreadTable *table,
+				     gint            for_size,
+				     gint          **segments)
+{
+  EggSpreadTableDnd        *dnd_table = EGG_SPREAD_TABLE_DND (table);
+  EggSpreadTableDndPrivate *priv = dnd_table->priv;
+  GList                    *l, *children;
+  gint                      line = 0, i = 0, lines;
+  gint                      largest_line = 0, line_size = 0, widget_size;
+  gint                      line_thickness;
+  gint                      spacing;
+  GtkOrientation            orientation;
+
+  if (!priv->locked_config)
+    return EGG_SPREAD_TABLE_CLASS
+      (egg_spread_table_dnd_parent_class)->build_segments_for_size (table, for_size, segments);
+
+  get_spread_table_dimentions (dnd_table, NULL, &spacing, NULL, &line_thickness);
+
+  children    = gtk_container_get_children (GTK_CONTAINER (table));
+  orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (table));
+  lines       = egg_spread_table_get_lines (table);
+
+  for (l = children; l && line < lines; l = l->next)
+    {
+      GtkWidget *child = l->data;
+
+      if (!gtk_widget_get_visible (child))
+        continue;
+
+      get_widget_size (child, orientation, line_thickness, NULL, &widget_size);
+
+      line_size += widget_size;
+      if (i > 0)
+	line_size += spacing;
+
+      if (i++ >= priv->locked_config[line])
+	{
+	  largest_line = MAX (largest_line, line_size);
+
+	  line_size = 0;
+	  i         = 0;
+	  line++;
+	}
+    }
+
+  if (segments)
+    *segments = g_memdup (priv->locked_config, lines * sizeof (gint));
+
+  return largest_line;
+}
+
+
 /*****************************************************
  *              EggSpreadTableDndClass               *
  *****************************************************/
@@ -726,7 +922,7 @@ drag_begin (GtkWidget         *widget,
   gint            drop_index;
 
   /* Mark the spread table for an active drag */
-  egg_spread_table_lock (EGG_SPREAD_TABLE (spread_table));
+  lock_table (spread_table);
   spread_table->priv->dragging = TRUE;
 
   /* Just assign a drag child, this is only important for
@@ -811,7 +1007,7 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
   lines    = egg_spread_table_get_lines (table);
   segments = egg_spread_table_get_segments (table);
 
-  get_spread_table_dimentions (spread_table, &spacing, &full_size, &line_width);
+  get_spread_table_dimentions (spread_table, &spacing, NULL, &full_size, &line_width);
 
   if (orientation == GTK_ORIENTATION_VERTICAL)
     position = x;
@@ -956,6 +1152,33 @@ boolean_handled_accumulator (GSignalInvocationHint *ihint,
   continue_emission = !signal_handled;
 
   return continue_emission;
+}
+
+static void
+adjust_line_segment (EggSpreadTableDnd *table,
+		     gint               segment,
+		     gint               offset)
+{
+  if (table->priv->locked_config)
+    table->priv->locked_config[segment] += offset;
+}
+
+static void
+lock_table (EggSpreadTableDnd *table)
+
+{
+  if (table->priv->locked_config == NULL)
+    table->priv->locked_config = egg_spread_table_get_segments (EGG_SPREAD_TABLE (table));
+}
+
+static void
+unlock_table (EggSpreadTableDnd *table)
+{
+
+  g_free (table->priv->locked_config);
+  table->priv->locked_config = NULL;
+
+  gtk_widget_queue_resize (GTK_WIDGET (table));
 }
 
 /*****************************************************
