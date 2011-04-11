@@ -20,32 +20,24 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <eggspreadtable.h>
-
-enum {
-  IMAGE_NONE,
-  IMAGE_SMALL,
-  IMAGE_LARGE,
-  IMAGE_HUGE
-};
+#include <eggspreadtablednd.h>
 
 #define INITIAL_HSPACING        2
 #define INITIAL_VSPACING        2
 #define INITIAL_LINES           3
 #define INITIAL_HALIGN          GTK_ALIGN_FILL
-#define INITIAL_IMAGE           IMAGE_NONE
-#define INITIAL_IMAGE_INDEX     10
 
 static GtkWidget *paper = NULL;
 static GtkAlign   child_halign     = INITIAL_HALIGN;
-static int        test_image       = INITIAL_IMAGE;
-static int        test_image_index = INITIAL_IMAGE_INDEX;
+static gboolean   child_accepts_drops = TRUE;
+static gboolean   parent_accepts_drops = TRUE;
+
 
 static void
 populate_spread_table_wrappy (EggSpreadTable *spread_table)
 {
   GList *children, *l;
-  GtkWidget *widget, *frame;
+  GtkWidget *widget, *frame, *eventbox;
   gsize i;
 
   const gchar *strings[] = {
@@ -71,10 +63,13 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
     {
       widget = gtk_label_new (strings[i]);
       frame  = gtk_frame_new (NULL);
+      eventbox = gtk_event_box_new ();
       gtk_widget_show (widget);
       gtk_widget_show (frame);
+      gtk_widget_show (eventbox);
 
       gtk_container_add (GTK_CONTAINER (frame), widget);
+      gtk_container_add (GTK_CONTAINER (eventbox), frame);
 
       gtk_label_set_line_wrap (GTK_LABEL (widget), TRUE);
       gtk_label_set_line_wrap_mode (GTK_LABEL (widget), PANGO_WRAP_WORD);
@@ -82,35 +77,7 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
 
       gtk_widget_set_halign (frame, child_halign);
 
-      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), frame, -1);
-    }
-
-  /* Insert an image into the mix */
-  if (test_image)
-    {
-      widget = gtk_image_new_from_file ("apple-red.png");
-
-      switch (test_image)
-	{
-	case IMAGE_SMALL:
-	  gtk_widget_set_size_request (widget, 100, 100);
-	  break;
-	case IMAGE_LARGE:
-	  gtk_widget_set_size_request (widget, 150, 200);
-	  break;
-	case IMAGE_HUGE:
-	  gtk_widget_set_size_request (widget, 200, 300);
-	  break;
-	default:
-	  break;
-	}
-
-      frame  = gtk_frame_new (NULL);
-      gtk_widget_show (widget);
-      gtk_widget_show (frame);
-      
-      gtk_container_add (GTK_CONTAINER (frame), widget);
-      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), frame, test_image_index);
+      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), eventbox, -1);
     }
 }
 
@@ -156,26 +123,35 @@ halign_changed (GtkComboBox   *box,
   populate_spread_table_wrappy (EGG_SPREAD_TABLE (paper));
 }
 
-static void
-test_image_changed (GtkComboBox   *box,
-		    EggSpreadTable  *paper)
-{
-  test_image = gtk_combo_box_get_active (box);
 
-  populate_spread_table_wrappy (EGG_SPREAD_TABLE (paper));
+static gboolean
+parent_drop_possible (EggSpreadTableDnd *table,
+		      GtkWidget         *child,
+		      gpointer           unused)
+{
+  if (parent_accepts_drops)
+    return TRUE;
+
+  return FALSE;
 }
 
-
-
-static void
-test_image_index_changed (GtkSpinButton *button,
-			  G_GNUC_UNUSED gpointer       data)
+static gboolean
+child_drop_possible (EggSpreadTableDnd *table,
+		     GtkWidget         *child,
+		     gpointer           unused)
 {
-  test_image_index = gtk_spin_button_get_value_as_int (button);
+  if (child_accepts_drops)
+    return TRUE;
 
-  populate_spread_table_wrappy (EGG_SPREAD_TABLE (paper));
+  return FALSE;
 }
 
+static void
+set_boolean (GtkToggleButton *button,
+	     gboolean        *value)
+{
+  *value = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button));
+}
 
 static GtkWidget *
 create_window (void)
@@ -207,7 +183,7 @@ create_window (void)
   gtk_widget_show (swindow);
   gtk_container_add (GTK_CONTAINER (frame), swindow);
 
-  paper = egg_spread_table_new (GTK_ORIENTATION_VERTICAL, INITIAL_LINES);
+  paper = egg_spread_table_dnd_new (GTK_ORIENTATION_VERTICAL, INITIAL_LINES);
   egg_spread_table_set_vertical_spacing (EGG_SPREAD_TABLE (paper), INITIAL_VSPACING);
   egg_spread_table_set_horizontal_spacing (EGG_SPREAD_TABLE (paper), INITIAL_HSPACING);
   gtk_widget_show (paper);
@@ -280,6 +256,18 @@ create_window (void)
 
   gtk_box_pack_start (GTK_BOX (paper_cntl), hbox, FALSE, FALSE, 0);
 
+  /* Add widget-drop-possible controls */
+  widget = gtk_toggle_button_new_with_label ("parent accept drop");
+  gtk_widget_show (widget);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
+  gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
+  g_signal_connect (widget, "toggled", G_CALLBACK (set_boolean), &parent_accepts_drops);
+
+  widget = gtk_toggle_button_new_with_label ("child accept drop");
+  gtk_widget_show (widget);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
+  gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
+  g_signal_connect (widget, "toggled", G_CALLBACK (set_boolean), &parent_accepts_drops);
 
   /* Add lines controls */
   hbox = gtk_hbox_new (FALSE, 2);
@@ -328,47 +316,30 @@ create_window (void)
   g_signal_connect (G_OBJECT (widget), "changed",
                     G_CALLBACK (halign_changed), paper);
 
-
-  /* Add image control */
-  widget = gtk_combo_box_text_new ();
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "None");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Small");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Large");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Huge");
-  gtk_combo_box_set_active (GTK_COMBO_BOX (widget), INITIAL_IMAGE);
-  gtk_widget_show (widget);
-
-  gtk_widget_set_tooltip_text (widget, "Use an image to test the container");
-  gtk_box_pack_start (GTK_BOX (items_cntl), widget, FALSE, FALSE, 0);
-
-  g_signal_connect (G_OBJECT (widget), "changed",
-                    G_CALLBACK (test_image_changed), paper);
-
-
-  /* Add horizontal/vertical spacing controls */
-  hbox = gtk_hbox_new (FALSE, 2);
-  gtk_widget_show (hbox);
-
-  widget = gtk_label_new ("Image index");
-  gtk_widget_show (widget);
-  gtk_box_pack_start (GTK_BOX (hbox), widget, TRUE, TRUE, 0);
-
-  widget = gtk_spin_button_new_with_range (0, 25, 1);
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (widget), INITIAL_IMAGE_INDEX);
-  gtk_widget_show (widget);
-
-  gtk_widget_set_tooltip_text (widget, "Set the child list index for the optional test image");
-  gtk_box_pack_start (GTK_BOX (hbox), widget, FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (items_cntl), hbox, FALSE, FALSE, 0);
-
-  g_signal_connect (G_OBJECT (widget), "changed",
-                    G_CALLBACK (test_image_index_changed), GINT_TO_POINTER (GTK_ORIENTATION_HORIZONTAL));
-  g_signal_connect (G_OBJECT (widget), "value-changed",
-                    G_CALLBACK (test_image_index_changed), GINT_TO_POINTER (GTK_ORIENTATION_HORIZONTAL));
-
   populate_spread_table_wrappy (EGG_SPREAD_TABLE (paper));
 
+  /* Embed another dnd spread table */
+  widget = egg_spread_table_dnd_new (GTK_ORIENTATION_VERTICAL, INITIAL_LINES);
+  egg_spread_table_set_vertical_spacing (EGG_SPREAD_TABLE (widget), INITIAL_VSPACING);
+  egg_spread_table_set_horizontal_spacing (EGG_SPREAD_TABLE (widget), INITIAL_HSPACING);
+
+  frame  = gtk_frame_new (NULL);
+  gtk_widget_show (widget);
+  gtk_widget_show (frame);
+  gtk_widget_set_size_request (widget, 40, 40);
+  gtk_container_add (GTK_CONTAINER (frame), widget);
+
+  egg_spread_table_insert_child (EGG_SPREAD_TABLE (paper), frame, 5);
+
   gtk_window_set_default_size (GTK_WINDOW (window), 500, 400);
+
+
+  /* Signals to control drop allowed or not */
+  g_signal_connect (G_OBJECT (paper), "widget-drop-possible",
+                    G_CALLBACK (parent_drop_possible), NULL);
+  g_signal_connect (G_OBJECT (widget), "widget-drop-possible",
+                    G_CALLBACK (child_drop_possible), NULL);
+
 
   return window;
 }

@@ -28,11 +28,14 @@ noinst_HEADERS = $(EGG_HEADERS)
 
 #Test program
 
-noinst_PROGRAMS = testspreadtable
+noinst_PROGRAMS = testspreadtable testspreadtablednd
 
 testspreadtable_SOURCES = testspreadtable.c
-
 testspreadtable_LDADD = $(EGG_30_LIBS) \
+  $(top_builddir)/libegg/spreadtable/libegg-spreadtable.la
+
+testspreadtablednd_SOURCES = testspreadtablednd.c
+testspreadtablednd_LDADD = $(EGG_30_LIBS) \
   $(top_builddir)/libegg/spreadtable/libegg-spreadtable.la
 
 
