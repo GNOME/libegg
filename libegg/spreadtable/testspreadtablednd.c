@@ -267,7 +267,7 @@ create_window (void)
   gtk_widget_show (widget);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
   gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
-  g_signal_connect (widget, "toggled", G_CALLBACK (set_boolean), &parent_accepts_drops);
+  g_signal_connect (widget, "toggled", G_CALLBACK (set_boolean), &child_accepts_drops);
 
   /* Add lines controls */
   hbox = gtk_hbox_new (FALSE, 2);
