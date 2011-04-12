@@ -1,26 +1,3 @@
-if HAVE_GTK30
-spreadtable_SUBDIRS = \
-  spreadtable
-wrapbox_SUBDIRS = \
-  wrapbox
-endif
-
-if HAVE_GTK25
-thumbnail_SUBDIRS = \
-  pixbufthumbnail \
-  thumbnailpreview
-endif
-
-if HAVE_GTK27
-iconchooser_SUBDIRS = \
-  iconchooser
-endif
-
-if HAVE_GTK210
-gtk210_SUBDIRS = \
-  fileformatchooser
-endif
-
 if HAVE_GTK_TARGET_X11
 background_monitor_SUBDIRS = \
   background-monitor
@@ -28,14 +5,16 @@ endif
 
 SUBDIRS = util column-chooser treeviewutils \
   $(background_monitor_SUBDIRS) \
-  datetime $(thumbnail_SUBDIRS) \
-  smclient $(spreadtable_SUBDIRS) \
-  $(wrapbox_SUBDIRS) \
-  $(gtk210_SUBDIRS) \
-  $(gtk215_SUBDIRS)
+  datetime \
+  fileformatchooser \
+  pixbufthumbnail \
+  spreadtable \
+  thumbnailpreview \
+  smclient \
+  wrapbox
 
 # Don't compile broken code
-#$(iconchooser_SUBDIRS)
+# SUBDIRS += iconchooser
 
 AM_CPPFLAGS = \
   $(EGG_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED) \

@@ -65,47 +65,30 @@ AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(memmove strerror timegm)
 
 ## here we get the flags we'll actually use
-PKG_CHECK_MODULES(EGG, gtk+-2.0 >= 2.5.0)
+PKG_CHECK_MODULES(EGG, gtk+-3.0 >= 3.0.0)
 AC_SUBST(EGG_LIBS)
 AC_SUBST(EGG_CFLAGS)
-
-PKG_CHECK_MODULES(EGG_DOCK, libglade-2.0)
-AC_SUBST(EGG_DOCK_LIBS)
-AC_SUBST(EGG_DOCK_CFLAGS)
 
 PKG_CHECK_MODULES(EGG_XML, libxml-2.0)
 AC_SUBST(EGG_XML_LIBS)
 AC_SUBST(EGG_XML_CFLAGS)
 
+## TODO: Use GDBus from glib instead?
 PKG_CHECK_EXISTS(dbus-glib-1, have_dbus=yes, have_dbus=no)
 AS_IF([test "x$have_dbus" = "xyes"], [DBUS_DEPS="dbus-glib-1"])
 AM_CONDITIONAL(HAVE_DBUS, test "$have_dbus" = "yes")
 
-PKG_CHECK_MODULES(EGG_SMCLIENT, gtk+-2.0 libgnomeui-2.0 $DBUS_DEPS)
+PKG_CHECK_MODULES(EGG_SMCLIENT, gtk+-3.0 $DBUS_DEPS)
 AC_SUBST(EGG_SMCLIENT_LIBS)
 AC_SUBST(EGG_SMCLIENT_CFLAGS)
 
-## check if we have gtk+ 2.5.x
-AM_CONDITIONAL(HAVE_GTK25, $PKG_CONFIG --atleast-version=2.5.0 gtk+-2.0)
-
-## check if we have gtk+ 2.7.x
-AM_CONDITIONAL(HAVE_GTK27, $PKG_CONFIG --atleast-version=2.7.0 gtk+-2.0)
-
-## check if we have gtk+ 2.10.x
-AM_CONDITIONAL(HAVE_GTK210, $PKG_CONFIG --atleast-version=2.10.0 gtk+-2.0)
-
-## check if we have gtk+ 3
-AM_CONDITIONAL(HAVE_GTK30, $PKG_CONFIG --atleast-version=2.91.1 gtk+-3.0)
-
-AM_COND_IF(HAVE_GTK30, [PKG_CHECK_MODULES(EGG_30, gtk+-3.0)])
-
 ## check if we have the X11 gtk+ backend
-AM_CONDITIONAL(HAVE_GTK_TARGET_X11, test `$PKG_CONFIG --variable=target gtk+-2.0` = x11)
+AM_CONDITIONAL(HAVE_GTK_TARGET_X11, test `$PKG_CONFIG --variable=target gtk+-3.0` = x11)
 
-GLIB_GENMARSHAL=`$PKG_CONFIG --variable=glib_genmarshal glib-2.0`  
+GLIB_GENMARSHAL=`$PKG_CONFIG --variable=glib_genmarshal glib-2.0`
 AC_SUBST(GLIB_GENMARSHAL)
 
-GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`  
+GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
 AC_SUBST(GLIB_MKENUMS)
 
 # Honor aclocal flags

@@ -16,10 +16,13 @@ platform_ltlibraries =                   \
 platform_libs = libeggdesktopfile.la -lSM -lICE
 platform_sources = eggsmclient-xsmp.c
 platform_programs = egg-launch
+
+# TODO: Use GDBus from glib instead?
 if HAVE_DBUS
 platform_defines += -DEGG_SM_CLIENT_BACKEND_DBUS
 platform_sources += eggsmclient-dbus.c
 endif
+
 endif
 endif
 

@@ -1,9 +1,9 @@
 AM_CPPFLAGS = \
-	$(EGG_30_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED)
+	$(EGG_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED)
 
 noinst_LTLIBRARIES = libegg-wrapbox.la
 
-libegg_wrapbox_la_LIBADD = $(EGG_30_LIBS)
+libegg_wrapbox_la_LIBADD = $(EGG_LIBS)
 
 libegg_wrapbox_la_SOURCES = \
 	$(enum_data) \
@@ -49,7 +49,7 @@ noinst_PROGRAMS = testwrapbox
 
 testwrapbox_SOURCES = testwrapbox.c
 
-testwrapbox_LDADD = $(EGG_30_LIBS) \
+testwrapbox_LDADD = $(EGG_LIBS) \
 	libegg-wrapbox.la
 
 CLEANFILES = $(enum_data)

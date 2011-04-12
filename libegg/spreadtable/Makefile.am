@@ -1,11 +1,11 @@
 AM_CPPFLAGS = \
-  $(EGG_30_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED) \
+  $(EGG_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED) \
   -DEGG_COMPILATION \
   -DGETTEXT_PACKAGE=\"libegg\"
 
 noinst_LTLIBRARIES = libegg-spreadtable.la
 
-libegg_spreadtable_la_LIBADD = $(EGG_30_LIBS)
+libegg_spreadtable_la_LIBADD = $(EGG_LIBS)
 
 BUILT_SOURCES = eggmarshalers.c eggmarshalers.h
 
@@ -31,11 +31,11 @@ noinst_HEADERS = $(EGG_HEADERS)
 noinst_PROGRAMS = testspreadtable testspreadtablednd
 
 testspreadtable_SOURCES = testspreadtable.c
-testspreadtable_LDADD = $(EGG_30_LIBS) \
+testspreadtable_LDADD = $(EGG_LIBS) \
   $(top_builddir)/libegg/spreadtable/libegg-spreadtable.la
 
 testspreadtablednd_SOURCES = testspreadtablednd.c
-testspreadtablednd_LDADD = $(EGG_30_LIBS) \
+testspreadtablednd_LDADD = $(EGG_LIBS) \
   $(top_builddir)/libegg/spreadtable/libegg-spreadtable.la
 
 

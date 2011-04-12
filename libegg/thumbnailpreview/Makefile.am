@@ -2,13 +2,13 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/libegg/util \
 	-I$(top_srcdir)/libegg/pixbufthumbnail \
 	-DG_LOG_DOMAIN=\""EggThumbnailPreview"\" \
-	$(EGG_30_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED)
+	$(EGG_CFLAGS) $(WARN_CFLAGS) $(DISABLE_DEPRECATED)
 
 noinst_LTLIBRARIES = \
 	libeggthumbnailpreview.la
 
 libeggthumbnailpreview_la_LIBADD = \
-	$(EGG_30_LIBS) \
+	$(EGG_LIBS) \
 	$(top_builddir)/libegg/pixbufthumbnail/libeggpixbufthumbnail.la
 
 libeggthumbnailpreview_la_SOURCES = \
