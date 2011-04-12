@@ -20,7 +20,7 @@
 #ifndef __EGG_ICON_CHOOSER_DEFAULT_H__
 #define __EGG_ICON_CHOOSER_DEFAULT_H__ 1
 
-#include <gtk/gtkwidget.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

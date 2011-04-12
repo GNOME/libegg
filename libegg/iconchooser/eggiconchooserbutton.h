@@ -20,7 +20,7 @@
 #ifndef __EGG_ICON_CHOOSER_BUTTON_H__
 #define __EGG_ICON_CHOOSER_BUTTON_H__ 1
 
-#include <gtk/gtkvbox.h>
+#include <gtk/gtk.h>
 #include "eggiconchooser.h"
 
 G_BEGIN_DECLS

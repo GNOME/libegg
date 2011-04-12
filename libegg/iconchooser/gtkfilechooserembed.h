@@ -21,7 +21,7 @@
 #ifndef __GTK_FILE_CHOOSER_EMBED_H__
 #define __GTK_FILE_CHOOSER_EMBED_H__
 
-#include <gtk/gtkwidget.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

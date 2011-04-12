@@ -25,8 +25,7 @@
 
 #include <glib/gi18n.h>
 
-#include <gtk/gtkenums.h>
-#include <gtk/gtktypebuiltins.h>
+#include <gtk/gtk.h>
 
 #include "eggiconchoosertypebuiltins.h"
 #include "eggiconchooserprivate.h"

@@ -21,7 +21,7 @@
 #ifndef __GTK_FILE_CHOOSER_PRIVATE_H__
 #define __GTK_FILE_CHOOSER_PRIVATE_H__
 
-#include <gtk/gtkfilechooser.h>
+#include <gtk/gtk.h>
 #define GTK_FILE_SYSTEM_ENABLE_UNSUPPORTED
 #include <gtk/gtkfilesystem.h>
 

@@ -20,7 +20,7 @@
 #ifndef __EGG_ICON_CHOOSER_DIALOG_H__
 #define __EGG_ICON_CHOOSER_DIALOG_H__ 1
 
-#include <gtk/gtkdialog.h>
+#include <gtk/gtk.h>
 #include "eggiconchooser.h"
 
 G_BEGIN_DECLS

@@ -25,11 +25,7 @@
 
 #include <string.h>
 
-#include <gtk/gtkbutton.h>
-#include <gtk/gtkiconfactory.h>
-#include <gtk/gtkicontheme.h>
-#include <gtk/gtkimage.h>
-#include <gtk/gtkstock.h>
+#include <gtk/gtk.h>
 
 #include "eggiconchooserutils.h"
 #include "eggiconchooserdialog.h"

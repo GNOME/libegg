@@ -1,7 +1,7 @@
 
 #include <config.h>
 
-#include <gtk/gtkfilechooserwidget.h>
+#include <gtk/gtk.h>
 
 #include "gtkfilechooserembed.h"
 

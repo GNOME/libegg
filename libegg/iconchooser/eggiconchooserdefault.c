@@ -25,27 +25,7 @@
 
 #include <string.h>
 
-#include <gtk/gtkcelllayout.h>
-#include <gtk/gtkcellrendererpixbuf.h>
-#include <gtk/gtkcellrenderertext.h>
-#include <gtk/gtkcombobox.h>
-#include <gtk/gtkeventbox.h>
-#include <gtk/gtkfilechooserwidget.h>
-#include <gtk/gtkhbox.h>
-#include <gtk/gtkiconfactory.h>
-#include <gtk/gtkicontheme.h>
-#include <gtk/gtkiconview.h>
-#include <gtk/gtkimage.h>
-#include <gtk/gtklabel.h>
-#include <gtk/gtkliststore.h>
-#include <gtk/gtknotebook.h>
-#include <gtk/gtkprogressbar.h>
-#include <gtk/gtkscrolledwindow.h>
-#include <gtk/gtkstock.h>
-#include <gtk/gtktable.h>
-#include <gtk/gtktreemodelfilter.h>
-#include <gtk/gtktreeview.h>
-#include <gtk/gtkvbox.h>
+#include <gtk/gtk.h>
 
 #include "eggiconchoosertypebuiltins.h"
 #include "egg-pixbuf-thumbnail.h"
