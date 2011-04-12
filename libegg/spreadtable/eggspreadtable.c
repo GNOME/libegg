@@ -230,7 +230,7 @@ egg_spread_table_class_init (EggSpreadTableClass *class)
    * The position of the child in the spread table.
    *
    */
-  gtk_container_class_install_child_property (container_class, 
+  gtk_container_class_install_child_property (container_class,
 					      CHILD_PROP_POSITION,
 					      g_param_spec_int ("position",
 								P_("Position"),
@@ -489,7 +489,7 @@ children_fit_segment_size (EggSpreadTable *table,
   /* If we placed all the widgets in the target size, the size fits. */
   return (l == NULL);
 }
- 
+
 
 /*****************************************************
  *                 GtkWidgetClass                    *
@@ -796,7 +796,7 @@ egg_spread_table_forall (GtkContainer *container,
     {
       child = list->data;
       list  = list->next;
-      
+
       (* callback) ((GtkWidget*) child, callback_data);
     }
 }
@@ -854,7 +854,7 @@ egg_spread_table_set_child_property (GtkContainer        *container,
 /*****************************************************
  *                EggSpreadTableClass                *
  *****************************************************/
-static gint  
+static gint
 egg_spread_table_build_segments (EggSpreadTable *table,
 				 gint            for_size,
 				 gint          **segments)
@@ -1024,7 +1024,7 @@ egg_spread_table_reorder_child (EggSpreadTable *spread_table,
   link = g_list_find (priv->children, widget);
   g_return_if_fail (link != NULL);
 
-  if (g_list_position (priv->children, link) != index)
+  if (g_list_position (priv->children, link) != (gint)index)
     {
       priv->children = g_list_delete_link (priv->children, link);
       priv->children = g_list_insert (priv->children, widget, index);
@@ -1048,9 +1048,9 @@ egg_spread_table_reorder_child (EggSpreadTable *spread_table,
  * @table: An #EggSpreadTable
  * @for_size: The hypothetical width if vertically oriented, otherwise the hypothetical height.
  * @segments: The return location to store the calculated segments, or %NULL.
- * 
- * This function takes an allocated size to fit the columns (or rows) and then splits 
- * up the child list into 'n' children per 'segment' in a way that it takes the 
+ *
+ * This function takes an allocated size to fit the columns (or rows) and then splits
+ * up the child list into 'n' children per 'segment' in a way that it takes the
  * least space as possible.
  *
  * If 'segments' is specified, it will be allocated the array of integers representing
@@ -1074,12 +1074,12 @@ egg_spread_table_build_segments_for_size (EggSpreadTable *table,
 /**
  * egg_spread_table_get_segments:
  * @table: A #EggSpreadTable
- * 
+ *
  * Gets the number of children distributed in each line.
  *
  * Returns: An array of integers representing how many
  *          widgets are in each line, the returned array
- *          is the length of the amount of lines 
+ *          is the length of the amount of lines
  *          (see egg_spread_table_get_lines()).
  */
 gint *
