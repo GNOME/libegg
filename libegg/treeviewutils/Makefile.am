@@ -11,7 +11,6 @@ libegg_treeview_la_SOURCES = \
   eggcellrendererkeys.c \
   eggcellrendererpopup.c \
   egg-cell-renderer-text.c \
-  eggtreemodelfilter.c \
   eggtreemodelunion.c \
   eggtreemultidnd.c \
   eggtreeviewstate.c
@@ -21,7 +20,6 @@ noinst_HEADERS = \
   eggcellrendererkeys.h \
   eggcellrendererpopup.h \
   egg-cell-renderer-text.h \
-  eggtreemodelfilter.h \
   eggtreemultidnd.h \
   eggtreeviewstate.h
 
