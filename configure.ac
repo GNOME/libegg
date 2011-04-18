@@ -110,7 +110,6 @@ AC_OUTPUT([
 Makefile
 libegg/Makefile
 libegg/util/Makefile
-libegg/background-monitor/Makefile
 libegg/treeviewutils/Makefile
 libegg/column-chooser/Makefile
 libegg/toolbareditor/Makefile
