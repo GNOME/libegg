@@ -85,7 +85,7 @@ static gint          egg_spread_table_dnd_build_segments     (EggSpreadTable    
 							      gint             **segments);
 
 /* EggSpreadTableDndClass */
-static gboolean      egg_spread_table_dnd_drop_possible(EggSpreadTableDnd *table, 
+static gboolean      egg_spread_table_dnd_drop_possible(EggSpreadTableDnd *table,
 							GtkWidget         *widget);
 
 /* Drag and Drop callbacks & other utilities */
@@ -145,7 +145,7 @@ struct _EggSpreadTableDndPrivate {
 			    * keeps a hold on which child is being dragged */
 
   guint      dragging : 1; /* Whether the drag'n'drop operation is currently active over this table */
-  
+
   gint       disappearing; /* Count of placeholders that are currently disappearing */
 
   /* These states are used to trigger a drag operation on a child widget with no window */
@@ -215,10 +215,10 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
    *
    * By default EggSpreadTableDnd accepts drops from the same table
    * (the only way to dissallow drops from the same spread table is
-   * to implement a subclass which overrides the 
+   * to implement a subclass which overrides the
    * EggSpreadTableDndClass.widget_drop_possible() virtual method).
    */
-  dnd_table_signals[SIGNAL_DROP_POSSIBLE] = 
+  dnd_table_signals[SIGNAL_DROP_POSSIBLE] =
         g_signal_new ("widget-drop-possible",
 		      G_TYPE_FROM_CLASS (class),
 		      G_SIGNAL_RUN_LAST,
@@ -249,7 +249,7 @@ egg_spread_table_dnd_init (EggSpreadTableDnd *spread_table)
 		     dnd_targets, G_N_ELEMENTS (dnd_targets),
 		     GDK_ACTION_MOVE);
 
-  /* Setup the spread table as a drag source for our target type also 
+  /* Setup the spread table as a drag source for our target type also
    * (to handle no-window widget children) */
   gtk_drag_source_set (GTK_WIDGET (spread_table),
 		       0, dnd_targets, G_N_ELEMENTS (dnd_targets),
@@ -306,8 +306,8 @@ egg_spread_table_dnd_motion (GtkWidget         *widget,
 				spread_table->priv->press_start_y,
 				event->x, event->y))
     {
-      spread_table->priv->drag_child = 
-	get_child_at_position (spread_table, 
+      spread_table->priv->drag_child =
+	get_child_at_position (spread_table,
 			       spread_table->priv->press_start_x,
 			       spread_table->priv->press_start_y);
 
@@ -326,7 +326,7 @@ egg_spread_table_dnd_motion (GtkWidget         *widget,
 
 static gboolean
 egg_spread_table_dnd_leave (GtkWidget        *widget,
-			    GdkEventCrossing *event)
+			    G_GNUC_UNUSED GdkEventCrossing *event)
 {
   EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
 
@@ -345,7 +345,7 @@ egg_spread_table_dnd_button_press (GtkWidget         *widget,
   if (event->button == 1 && event->type == GDK_BUTTON_PRESS)
     {
       /* Save press to possibly begin a drag */
-      if (get_child_at_position (spread_table, event->x, event->y) && 
+      if (get_child_at_position (spread_table, event->x, event->y) &&
 	  spread_table->priv->pressed_button < 0)
 	{
 	  spread_table->priv->pressed_button = event->button;
@@ -364,8 +364,8 @@ egg_spread_table_dnd_button_release (GtkWidget      *widget,
 				     GdkEventButton *event)
 {
   EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
-  
-  if (spread_table->priv->pressed_button == event->button)
+
+  if (spread_table->priv->pressed_button == (gint)event->button)
     spread_table->priv->pressed_button = -1;
 
   return TRUE;
@@ -519,7 +519,7 @@ egg_spread_table_dnd_size_allocate (GtkWidget         *widget,
 
 	  get_widget_size (child, orientation, line_thickness, NULL, &child_size);
 
-	  /* Stop allocating children on this line after 2 placeholders 
+	  /* Stop allocating children on this line after 2 placeholders
 	   * this avoids annoying flicker when moving a widget inside a single column */
 	  if (placeholder_cnt >= 2)
 	    continue;
@@ -544,10 +544,10 @@ egg_spread_table_dnd_size_allocate (GtkWidget         *widget,
 
 static void
 egg_spread_table_dnd_drag_data_get (GtkWidget         *widget,
-				    GdkDragContext    *context,
+				    G_GNUC_UNUSED GdkDragContext    *context,
 				    GtkSelectionData  *selection,
-				    guint              info,
-				    guint              time_)
+				    G_GNUC_UNUSED guint              info,
+				    G_GNUC_UNUSED guint              time_)
 {
   EggSpreadTableDnd        *spread_table = EGG_SPREAD_TABLE_DND (widget);
   EggSpreadTableDndDragData drag_data    = { spread_table, NULL };
@@ -555,7 +555,7 @@ egg_spread_table_dnd_drag_data_get (GtkWidget         *widget,
 
   target = gtk_selection_data_get_target (selection);
 
-  if (spread_table->priv->drag_child && 
+  if (spread_table->priv->drag_child &&
       target == dnd_target_atom_child)
     {
       drag_data.child = spread_table->priv->drag_child;
@@ -599,7 +599,7 @@ placeholder_animated_out (GtkWidget         *placeholder,
     line = get_child_line (spread_table, placeholder);
 
   gtk_container_remove (GTK_CONTAINER (spread_table), placeholder);
-  
+
   /* Adjust line segment here manually since table may be locked */
   if (spread_table->priv->dragging)
     adjust_line_segment (spread_table, line, -1);
@@ -623,7 +623,7 @@ egg_spread_table_dnd_drag_leave (GtkWidget         *widget,
   animate_out_drop_target (spread_table, TRUE);
 
   /* Animate-out drop target for drag-source spread table
-   * (sometimes when drag'n'drop happens very fast no drag-leave gets 
+   * (sometimes when drag'n'drop happens very fast no drag-leave gets
    * emitted on the source spread table so we take care of it here)
    */
   if (spread_table->priv->drag_data.table != spread_table)
@@ -645,10 +645,10 @@ get_placeholder_size (EggSpreadTableDnd *spread_table,
     {
       gint min_width;
 
-      gtk_widget_get_preferred_width (spread_table->priv->drag_data.child, &min_width, NULL);  
+      gtk_widget_get_preferred_width (spread_table->priv->drag_data.child, &min_width, NULL);
 
       *width = MAX (line_width, min_width);
-      
+
       gtk_widget_get_preferred_height_for_width (spread_table->priv->drag_data.child,
 						 *width, height, NULL);
     }
@@ -656,10 +656,10 @@ get_placeholder_size (EggSpreadTableDnd *spread_table,
     {
       gint min_height;
 
-      gtk_widget_get_preferred_width (spread_table->priv->drag_data.child, &min_height, NULL);  
+      gtk_widget_get_preferred_width (spread_table->priv->drag_data.child, &min_height, NULL);
 
       *height = MAX (line_width, min_height);
-      
+
       gtk_widget_get_preferred_width_for_height (spread_table->priv->drag_data.child,
 						 *height, width, NULL);
     }
@@ -688,14 +688,14 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 
   /* Dont do anything until the currently drop target placeholder finishes animating in */
   if ((spread_table->priv->drop_target &&
-       egg_placeholder_get_animating 
+       egg_placeholder_get_animating
        (EGG_PLACEHOLDER (spread_table->priv->drop_target)) != EGG_PLACEHOLDER_ANIM_NONE) ||
       spread_table->priv->disappearing)
     return TRUE;
 
   if (spread_table->priv->drop_target)
-    gtk_container_child_get (GTK_CONTAINER (spread_table), 
-			     spread_table->priv->drop_target, 
+    gtk_container_child_get (GTK_CONTAINER (spread_table),
+			     spread_table->priv->drop_target,
 			     "position", &drop_index,
 			     NULL);
   else
@@ -716,7 +716,7 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 	  get_placeholder_size (spread_table, &width, &height);
 
 	  spread_table->priv->drop_target = egg_placeholder_new (width, height);
-	  egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), 
+	  egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table),
 					 spread_table->priv->drop_target, index);
 	  adjust_line_segment (spread_table, line, 1);
 
@@ -731,8 +731,8 @@ egg_spread_table_dnd_drag_motion (GtkWidget         *widget,
 static gboolean
 egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
 				GdkDragContext    *context,
-				gint               x,
-				gint               y,
+				G_GNUC_UNUSED gint               x,
+				G_GNUC_UNUSED gint               y,
 				guint              time_)
 {
   EggSpreadTableDnd *spread_table = EGG_SPREAD_TABLE_DND (widget);
@@ -746,26 +746,26 @@ egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
 
       /* Carry the widget over */
       g_object_ref (spread_table->priv->drag_data.child);
-      
+
       gtk_container_remove (GTK_CONTAINER (spread_table->priv->drag_data.table),
 			    spread_table->priv->drag_data.child);
 
       /* Get the appropriate target index */
-      gtk_container_child_get (GTK_CONTAINER (spread_table), 
+      gtk_container_child_get (GTK_CONTAINER (spread_table),
 			       spread_table->priv->drop_target,
 			       "position", &drop_index,
 			       NULL);
 
       /* Insert drag child at the index */
-      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), 
-				     spread_table->priv->drag_data.child, 
+      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table),
+				     spread_table->priv->drag_data.child,
 				     drop_index);
       g_object_unref (spread_table->priv->drag_data.child);
 
       /* Ensure visibility */
       gtk_widget_show (spread_table->priv->drag_data.child);
 
-      /* Hide the drop target placeholder in the target spread table, 
+      /* Hide the drop target placeholder in the target spread table,
        * it will be removed and the spread table unlocked after animating out
        * (the placeholder started animating out at "drag-leave" time).
        */
@@ -785,10 +785,10 @@ egg_spread_table_dnd_drag_drop (GtkWidget         *widget,
 static void
 egg_spread_table_dnd_drag_data_received (GtkWidget        *widget,
 					 GdkDragContext   *context,
-					 gint              x,
-					 gint              y,
+					 G_GNUC_UNUSED gint              x,
+					 G_GNUC_UNUSED gint              y,
 					 GtkSelectionData *data,
-					 guint             info,
+					 G_GNUC_UNUSED guint             info,
 					 guint             time_)
 {
   EggSpreadTableDnd         *spread_table = EGG_SPREAD_TABLE_DND (widget);
@@ -841,16 +841,16 @@ egg_spread_table_dnd_insert_child (EggSpreadTable *spread_table,
   if (!EGG_IS_PLACEHOLDER (child))
     {
       gtk_drag_source_set (child, GDK_BUTTON1_MASK | GDK_BUTTON3_MASK,
-			   dnd_targets, G_N_ELEMENTS (dnd_targets), 
+			   dnd_targets, G_N_ELEMENTS (dnd_targets),
 			   GDK_ACTION_MOVE);
 
-      g_signal_connect (child, "drag-data-get", 
+      g_signal_connect (child, "drag-data-get",
 			G_CALLBACK (drag_data_get), spread_table);
-      g_signal_connect (child, "drag-failed", 
+      g_signal_connect (child, "drag-failed",
 			G_CALLBACK (drag_failed), spread_table);
-      g_signal_connect (child, "drag-begin", 
+      g_signal_connect (child, "drag-begin",
 			G_CALLBACK (drag_begin), spread_table);
-      g_signal_connect (child, "drag-end", 
+      g_signal_connect (child, "drag-end",
 			G_CALLBACK (drag_end), spread_table);
     }
 }
@@ -917,7 +917,7 @@ egg_spread_table_dnd_build_segments (EggSpreadTable *table,
  *              EggSpreadTableDndClass               *
  *****************************************************/
 static gboolean
-egg_spread_table_dnd_drop_possible (EggSpreadTableDnd *table, 
+egg_spread_table_dnd_drop_possible (EggSpreadTableDnd *table,
 				    GtkWidget         *widget)
 {
   return (GTK_WIDGET (table) == gtk_widget_get_parent (widget));
@@ -929,7 +929,7 @@ egg_spread_table_dnd_drop_possible (EggSpreadTableDnd *table,
 
 static void
 drag_begin (GtkWidget         *widget,
-	    GdkDragContext    *context, 
+	    G_GNUC_UNUSED GdkDragContext    *context,
 	    EggSpreadTableDnd *spread_table)
 {
   GtkAllocation   allocation;
@@ -943,10 +943,10 @@ drag_begin (GtkWidget         *widget,
    * child widgets that dont have a GdkWindow though really */
   spread_table->priv->drag_child = widget;
 
-  /* Save the drag origin in case of failed drags and insert a placeholder as the first 
+  /* Save the drag origin in case of failed drags and insert a placeholder as the first
    * default drop target */
-  gtk_container_child_get (GTK_CONTAINER (spread_table), 
-			   spread_table->priv->drag_child, 
+  gtk_container_child_get (GTK_CONTAINER (spread_table),
+			   spread_table->priv->drag_child,
 			   "position", &drop_index,
 			   NULL);
 
@@ -954,12 +954,12 @@ drag_begin (GtkWidget         *widget,
   gtk_widget_get_allocation (widget, &allocation);
   spread_table->priv->drop_target = egg_placeholder_new (allocation.width, allocation.height);
 
-  egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), 
+  egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table),
 				 spread_table->priv->drop_target,
 				 drop_index);
 
   /* Add one index for the new placeholder */
-  adjust_line_segment (spread_table, 
+  adjust_line_segment (spread_table,
 		       get_child_line (spread_table, spread_table->priv->drop_target), 1);
 
   /* Hide the drag child (we cant remove it because it needs a GdkWindow in the mean time) */
@@ -967,22 +967,22 @@ drag_begin (GtkWidget         *widget,
 }
 
 static void
-drag_end (GtkWidget         *widget,
-	  GdkDragContext    *context, 
+drag_end (G_GNUC_UNUSED GtkWidget         *widget,
+	  G_GNUC_UNUSED GdkDragContext    *context,
 	  EggSpreadTableDnd *spread_table)
 {
   /* Sometimes when drag'n'drop happens very fast, drag-leave,
-   * drag-failed and drag-drop dont happen, so we cancel it out here 
+   * drag-failed and drag-drop dont happen, so we cancel it out here
    */
   animate_out_drop_target (spread_table, TRUE);
 }
 
 static void
 drag_data_get (GtkWidget         *widget,
-	       GdkDragContext    *context,
+	       G_GNUC_UNUSED GdkDragContext    *context,
 	       GtkSelectionData  *selection,
-	       guint              info,
-	       guint              time,
+	       G_GNUC_UNUSED guint              info,
+	       G_GNUC_UNUSED guint              time,
 	       EggSpreadTableDnd *spread_table)
 {
   EggSpreadTableDndDragData drag_data = { spread_table, NULL };
@@ -1001,9 +1001,9 @@ drag_data_get (GtkWidget         *widget,
 
 static gboolean
 drag_failed (GtkWidget         *widget,
-	     GdkDragContext    *drag_context,
-	     GtkDragResult      result,
-	     EggSpreadTableDnd *spread_table)
+	     G_GNUC_UNUSED GdkDragContext    *drag_context,
+	     G_GNUC_UNUSED GtkDragResult      result,
+	     G_GNUC_UNUSED EggSpreadTableDnd *spread_table)
 {
   gtk_widget_show (widget);
 
@@ -1063,8 +1063,8 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
 
   children = gtk_container_get_children (GTK_CONTAINER (spread_table));
 
-  for (l = g_list_nth (children, first_child), i = 0; 
-       l != NULL && index < 0 && i < segments[line]; 
+  for (l = g_list_nth (children, first_child), i = 0;
+       l != NULL && index < 0 && i < segments[line];
        l = l->next, i++)
     {
       child = l->data;
@@ -1088,7 +1088,7 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
 	    }
 
 	  placeholder_cnt++;
-	} 
+	}
       else
 	{
 	  if (orientation == GTK_ORIENTATION_VERTICAL)
@@ -1164,10 +1164,10 @@ drop_possible (EggSpreadTableDnd *spread_table,
 
 /* Copy of _gtk_boolean_handled_accumulator */
 static gboolean
-boolean_handled_accumulator (GSignalInvocationHint *ihint,
+boolean_handled_accumulator (G_GNUC_UNUSED GSignalInvocationHint *ihint,
 			     GValue                *return_accu,
 			     const GValue          *handler_return,
-			     gpointer               dummy)
+			     G_GNUC_UNUSED gpointer               dummy)
 {
   gboolean continue_emission;
   gboolean signal_handled;
@@ -1193,7 +1193,7 @@ animate_out_drop_target (EggSpreadTableDnd *table,
 			 gboolean           end)
 {
   if (table->priv->drop_target &&
-      egg_placeholder_get_animating 
+      egg_placeholder_get_animating
       (EGG_PLACEHOLDER (table->priv->drop_target)) != EGG_PLACEHOLDER_ANIM_OUT)
     {
       egg_placeholder_animate_out (EGG_PLACEHOLDER (table->priv->drop_target),
