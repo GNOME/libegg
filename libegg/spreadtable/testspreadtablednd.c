@@ -53,7 +53,7 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
   children = gtk_container_get_children (GTK_CONTAINER (paper));
   for (l = children; l; l = l->next)
     {
-      GtkWidget *child = l->data;
+      GtkWidget *child = GTK_WIDGET (l->data);
 
       gtk_container_remove (GTK_CONTAINER (paper), child);
     }
@@ -85,7 +85,7 @@ static void
 orientation_changed (GtkComboBox   *box,
                      EggSpreadTable  *paper)
 {
-  GtkOrientation orientation = gtk_combo_box_get_active (box);
+  GtkOrientation orientation = (GtkOrientation)gtk_combo_box_get_active (box);
 
   gtk_orientable_set_orientation (GTK_ORIENTABLE (paper), orientation);
 }
@@ -103,7 +103,7 @@ static void
 spacing_changed (GtkSpinButton *button,
                  gpointer       data)
 {
-  GtkOrientation orientation = GPOINTER_TO_INT (data);
+  GtkOrientation orientation = (GtkOrientation)GPOINTER_TO_INT (data);
   gint           state = gtk_spin_button_get_value_as_int (button);
 
   if (orientation == GTK_ORIENTATION_HORIZONTAL)
@@ -118,16 +118,16 @@ static void
 halign_changed (GtkComboBox   *box,
                      EggSpreadTable  *paper)
 {
-  child_halign = gtk_combo_box_get_active (box);
+  child_halign = (GtkAlign)gtk_combo_box_get_active (box);
 
   populate_spread_table_wrappy (EGG_SPREAD_TABLE (paper));
 }
 
 
 static gboolean
-parent_drop_possible (EggSpreadTableDnd *table,
-		      GtkWidget         *child,
-		      gpointer           unused)
+parent_drop_possible (G_GNUC_UNUSED EggSpreadTableDnd *table,
+		      G_GNUC_UNUSED GtkWidget         *child,
+		      G_GNUC_UNUSED gpointer           user_data)
 {
   if (parent_accepts_drops)
     return TRUE;
@@ -136,9 +136,9 @@ parent_drop_possible (EggSpreadTableDnd *table,
 }
 
 static gboolean
-child_drop_possible (EggSpreadTableDnd *table,
-		     GtkWidget         *child,
-		     gpointer           unused)
+child_drop_possible (G_GNUC_UNUSED EggSpreadTableDnd *table,
+		     G_GNUC_UNUSED GtkWidget         *child,
+		     G_GNUC_UNUSED gpointer           user_data)
 {
   if (child_accepts_drops)
     return TRUE;
