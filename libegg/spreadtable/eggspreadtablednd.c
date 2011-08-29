@@ -926,10 +926,38 @@ egg_spread_table_dnd_drop_possible (EggSpreadTableDnd *table,
 /*****************************************************
  *       Drag'n'Drop signals & other functions       *
  *****************************************************/
+static void
+set_drag_icon (GtkWidget      *widget,
+	       GdkDragContext *context)
+{
+  GtkWidget       *toplevel;
+  cairo_surface_t *surface;
+  cairo_t         *cr;
+  gint             x, y;
+
+  toplevel = gtk_widget_get_toplevel (widget);
+
+  surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+					gtk_widget_get_allocated_width (widget),
+					gtk_widget_get_allocated_height (widget));
+  cr      = cairo_create (surface);
+
+  gtk_widget_translate_coordinates (widget, toplevel, 0, 0, &x, &y);
+
+  cairo_translate (cr, -x, -y);
+
+  gtk_widget_draw (toplevel, cr);
+
+  gtk_drag_set_icon_surface (context, surface);
+
+  cairo_destroy (cr);
+  cairo_surface_destroy (surface);
+}
+
 
 static void
 drag_begin (GtkWidget         *widget,
-	    G_GNUC_UNUSED GdkDragContext    *context,
+	    GdkDragContext    *context,
 	    EggSpreadTableDnd *spread_table)
 {
   GtkAllocation   allocation;
@@ -961,6 +989,9 @@ drag_begin (GtkWidget         *widget,
   /* Add one index for the new placeholder */
   adjust_line_segment (spread_table,
 		       get_child_line (spread_table, spread_table->priv->drop_target), 1);
+
+  /* Set the icon for the drag */
+  set_drag_icon (spread_table->priv->drag_child, context);
 
   /* Hide the drag child (we cant remove it because it needs a GdkWindow in the mean time) */
   gtk_widget_hide (spread_table->priv->drag_child);
