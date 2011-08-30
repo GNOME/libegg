@@ -37,14 +37,14 @@ static void
 populate_spread_table_wrappy (EggSpreadTable *spread_table)
 {
   GList *children, *l;
-  GtkWidget *widget, *frame, *eventbox;
+  GtkWidget *widget, *frame;
   gsize i;
 
   const gchar *strings[] = {
     "These are", "some wrappy label", "texts", "of various", "lengths.",
     "They should always be", "shown", "consecutively. Except it's",
     "hard to say", "where exactly the", "label", "will wrap", "and where exactly",
-    "the actual", "container", "will wrap.", "This label is really really really long !", 
+    "the actual", "container", "will wrap.", "This label is really really really long !",
     "Let's add some more", "labels to the",
     "mix. Just to", "make sure we", "got something to work", "with here."
   };
@@ -53,7 +53,7 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
   children = gtk_container_get_children (GTK_CONTAINER (paper));
   for (l = children; l; l = l->next)
     {
-      GtkWidget *child = GTK_WIDGET (l->data);
+      GtkWidget *child = l->data;
 
       gtk_container_remove (GTK_CONTAINER (paper), child);
     }
@@ -63,13 +63,10 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
     {
       widget = gtk_label_new (strings[i]);
       frame  = gtk_frame_new (NULL);
-      eventbox = gtk_event_box_new ();
       gtk_widget_show (widget);
       gtk_widget_show (frame);
-      gtk_widget_show (eventbox);
 
       gtk_container_add (GTK_CONTAINER (frame), widget);
-      gtk_container_add (GTK_CONTAINER (eventbox), frame);
 
       gtk_label_set_line_wrap (GTK_LABEL (widget), TRUE);
       gtk_label_set_line_wrap_mode (GTK_LABEL (widget), PANGO_WRAP_WORD);
@@ -77,15 +74,51 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
 
       gtk_widget_set_halign (frame, child_halign);
 
-      egg_spread_table_insert_child (EGG_SPREAD_TABLE (spread_table), eventbox, -1);
+      egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), frame, -1);
     }
+
+  widget = gtk_label_new("labeltest");
+  gtk_widget_show (widget);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
+
+  widget = gtk_label_new("selectable");
+  gtk_label_set_selectable (GTK_LABEL (widget), TRUE);
+  gtk_widget_show (widget);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
+
+  widget = gtk_button_new_with_label("buttontest");
+  gtk_widget_show (widget);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
+
+  widget = gtk_font_button_new();
+  gtk_widget_show (widget);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
+
+  widget = gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL, 0.0, 100.0, 1.0);
+  gtk_widget_show (widget);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
+
+#ifdef WE_WANT_A_HUGE_APPCHOOSER_IN_THE_TEST
+  widget = gtk_app_chooser_widget_new ("image/*");
+  gtk_widget_show (widget);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
+#endif
+
+  /* Weird behaviour */
+  widget = gtk_scrolled_window_new (NULL, NULL);
+  frame = gtk_frame_new (NULL);
+  gtk_widget_set_size_request (frame, 200, 200);
+  gtk_widget_show (widget);
+  gtk_widget_show (frame);
+  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (widget), frame);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
 }
 
 static void
 orientation_changed (GtkComboBox   *box,
                      EggSpreadTable  *paper)
 {
-  GtkOrientation orientation = (GtkOrientation)gtk_combo_box_get_active (box);
+  GtkOrientation orientation = gtk_combo_box_get_active (box);
 
   gtk_orientable_set_orientation (GTK_ORIENTABLE (paper), orientation);
 }
@@ -103,7 +136,7 @@ static void
 spacing_changed (GtkSpinButton *button,
                  gpointer       data)
 {
-  GtkOrientation orientation = (GtkOrientation)GPOINTER_TO_INT (data);
+  GtkOrientation orientation = GPOINTER_TO_INT (data);
   gint           state = gtk_spin_button_get_value_as_int (button);
 
   if (orientation == GTK_ORIENTATION_HORIZONTAL)
@@ -118,16 +151,16 @@ static void
 halign_changed (GtkComboBox   *box,
                      EggSpreadTable  *paper)
 {
-  child_halign = (GtkAlign)gtk_combo_box_get_active (box);
+  child_halign = gtk_combo_box_get_active (box);
 
   populate_spread_table_wrappy (EGG_SPREAD_TABLE (paper));
 }
 
 
 static gboolean
-parent_drop_possible (G_GNUC_UNUSED EggSpreadTableDnd *table,
-		      G_GNUC_UNUSED GtkWidget         *child,
-		      G_GNUC_UNUSED gpointer           user_data)
+parent_drop_possible (EggSpreadTableDnd *table,
+		      GtkWidget         *child,
+		      gpointer           unused)
 {
   if (parent_accepts_drops)
     return TRUE;
@@ -136,14 +169,21 @@ parent_drop_possible (G_GNUC_UNUSED EggSpreadTableDnd *table,
 }
 
 static gboolean
-child_drop_possible (G_GNUC_UNUSED EggSpreadTableDnd *table,
-		     G_GNUC_UNUSED GtkWidget         *child,
-		     G_GNUC_UNUSED gpointer           user_data)
+child_drop_possible (EggSpreadTableDnd *table,
+		     GtkWidget         *child,
+		     gpointer           unused)
 {
   if (child_accepts_drops)
     return TRUE;
 
   return FALSE;
+}
+
+static void
+steal_events_toggled (GtkToggleButton   *button,
+		      EggSpreadTableDnd *table)
+{
+  egg_spread_table_dnd_set_steal_events (table, gtk_toggle_button_get_active (button));
 }
 
 static void
@@ -162,8 +202,8 @@ create_window (void)
   GtkWidget *paper_cntl, *items_cntl;
 
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  hbox   = gtk_hbox_new (FALSE, 2);
-  vbox   = gtk_vbox_new (FALSE, 6);
+  hbox   = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+  vbox   = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
 
   gtk_container_set_border_width (GTK_CONTAINER (window), 8);
 
@@ -179,7 +219,7 @@ create_window (void)
   swindow = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (swindow),
                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-  
+
   gtk_widget_show (swindow);
   gtk_container_add (GTK_CONTAINER (frame), swindow);
 
@@ -193,7 +233,7 @@ create_window (void)
   /* Add SpreadTable test control frame */
   expander = gtk_expander_new ("SpreadTable controls");
   gtk_expander_set_expanded (GTK_EXPANDER (expander), TRUE);
-  paper_cntl = gtk_vbox_new (FALSE, 2);
+  paper_cntl = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
   gtk_widget_show (paper_cntl);
   gtk_widget_show (expander);
   gtk_container_add (GTK_CONTAINER (expander), paper_cntl);
@@ -214,7 +254,7 @@ create_window (void)
 
 
   /* Add horizontal/vertical spacing controls */
-  hbox = gtk_hbox_new (FALSE, 2);
+  hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
   gtk_widget_show (hbox);
 
   widget = gtk_label_new ("H Spacing");
@@ -235,7 +275,7 @@ create_window (void)
 
   gtk_box_pack_start (GTK_BOX (paper_cntl), hbox, FALSE, FALSE, 0);
 
-  hbox = gtk_hbox_new (FALSE, 2);
+  hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
   gtk_widget_show (hbox);
 
   widget = gtk_label_new ("V Spacing");
@@ -256,6 +296,14 @@ create_window (void)
 
   gtk_box_pack_start (GTK_BOX (paper_cntl), hbox, FALSE, FALSE, 0);
 
+
+  /* Add widget-drop-possible controls */
+  widget = gtk_toggle_button_new_with_label ("Steal Events");
+  gtk_widget_show (widget);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), FALSE);
+  gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
+  g_signal_connect (widget, "toggled", G_CALLBACK (steal_events_toggled), paper);
+
   /* Add widget-drop-possible controls */
   widget = gtk_toggle_button_new_with_label ("parent accept drop");
   gtk_widget_show (widget);
@@ -270,7 +318,7 @@ create_window (void)
   g_signal_connect (widget, "toggled", G_CALLBACK (set_boolean), &child_accepts_drops);
 
   /* Add lines controls */
-  hbox = gtk_hbox_new (FALSE, 2);
+  hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
   gtk_widget_show (hbox);
 
   widget = gtk_label_new ("Lines");
@@ -295,7 +343,7 @@ create_window (void)
   /* Add test items control frame */
   expander = gtk_expander_new ("Test item controls");
   gtk_expander_set_expanded (GTK_EXPANDER (expander), TRUE);
-  items_cntl = gtk_vbox_new (FALSE, 2);
+  items_cntl = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
   gtk_widget_show (items_cntl);
   gtk_widget_show (expander);
   gtk_container_add (GTK_CONTAINER (expander), items_cntl);
@@ -329,7 +377,7 @@ create_window (void)
   gtk_widget_set_size_request (widget, 40, 40);
   gtk_container_add (GTK_CONTAINER (frame), widget);
 
-  egg_spread_table_insert_child (EGG_SPREAD_TABLE (paper), frame, 5);
+  egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (paper), frame, 5);
 
   gtk_window_set_default_size (GTK_WINDOW (window), 500, 400);
 
