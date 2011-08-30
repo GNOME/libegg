@@ -57,9 +57,17 @@ struct _EggSpreadTableDndClass
 };
 
 GType                 egg_spread_table_dnd_get_type              (void) G_GNUC_CONST;
-GtkWidget            *egg_spread_table_dnd_new                   (GtkOrientation  orientation,
-								  guint           lines);
+GtkWidget            *egg_spread_table_dnd_new                   (GtkOrientation     orientation,
+								  guint              lines);
 
+void                  egg_spread_table_dnd_insert_child          (EggSpreadTableDnd *table,
+								  GtkWidget         *child,
+								  gint               index);
+void                  egg_spread_table_dnd_remove_child          (EggSpreadTableDnd *table,
+								  GtkWidget         *child);
+void                  egg_spread_table_dnd_set_steal_events      (EggSpreadTableDnd *table,
+								  gboolean           steal_events);
+gboolean              egg_spread_table_dnd_get_steal_events      (EggSpreadTableDnd *table);
 
 G_END_DECLS
 
