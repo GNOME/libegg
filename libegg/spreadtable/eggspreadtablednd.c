@@ -402,7 +402,7 @@ allocate_child (EggSpreadTableDnd *table,
 }
 
 static void
-get_spread_table_dimentions (EggSpreadTableDnd *spread_table,
+get_spread_table_dimensions (EggSpreadTableDnd *spread_table,
 			     gint               for_size,
 			     gint              *line_spacing,
 			     gint              *item_spacing,
@@ -463,7 +463,7 @@ egg_spread_table_dnd_size_allocate (GtkWidget         *widget,
   parent_parent_class = g_type_class_peek_parent (egg_spread_table_dnd_parent_class);
   parent_parent_class->size_allocate (widget, allocation);
 
-  get_spread_table_dimentions (table, -1, &line_spacing, &item_spacing, &full_thickness, &line_thickness);
+  get_spread_table_dimensions (table, -1, &line_spacing, &item_spacing, &full_thickness, &line_thickness);
   lines       = egg_spread_table_get_lines (EGG_SPREAD_TABLE (table));
   orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (table));
 
@@ -578,8 +578,8 @@ get_placeholder_size (EggSpreadTableDnd *spread_table,
   GtkOrientation orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (spread_table));
   gint           line_width;
 
-  /* Calculate the size of the required placeholder based on the dimentions of the drag widget */
-  get_spread_table_dimentions (spread_table, -1, NULL, NULL, NULL, &line_width);
+  /* Calculate the size of the required placeholder based on the dimensions of the drag widget */
+  get_spread_table_dimensions (spread_table, -1, NULL, NULL, NULL, &line_width);
 
   if (orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -832,7 +832,7 @@ egg_spread_table_dnd_build_segments (EggSpreadTable *table,
     return EGG_SPREAD_TABLE_CLASS
       (egg_spread_table_dnd_parent_class)->build_segments_for_size (table, for_size, segments);
 
-  get_spread_table_dimentions (dnd_table, for_size, NULL, &spacing, NULL, &line_thickness);
+  get_spread_table_dimensions (dnd_table, for_size, NULL, &spacing, NULL, &line_thickness);
 
   children    = gtk_container_get_children (GTK_CONTAINER (table));
   orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (table));
@@ -949,7 +949,7 @@ drag_begin (GtkWidget         *widget,
 			   "position", &drop_index,
 			   NULL);
 
-  /* Create a placeholder of the correct dimentions and insert it at the drag origin */
+  /* Create a placeholder of the correct dimensions and insert it at the drag origin */
   gtk_widget_get_allocation (widget, &allocation);
   spread_table->priv->drop_target = egg_placeholder_new (allocation.width, allocation.height);
   g_object_set_qdata (G_OBJECT (spread_table->priv->drop_target),
@@ -1034,7 +1034,7 @@ get_index_at_position (EggSpreadTableDnd *spread_table,
   lines    = egg_spread_table_get_lines (table);
   segments = egg_spread_table_get_segments (table);
 
-  get_spread_table_dimentions (spread_table, -1, &spacing, NULL, &full_size, &line_width);
+  get_spread_table_dimensions (spread_table, -1, &spacing, NULL, &full_size, &line_width);
 
   if (orientation == GTK_ORIENTATION_VERTICAL)
     position = x;
