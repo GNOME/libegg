@@ -1270,10 +1270,15 @@ egg_spread_table_dnd_remove_child (EggSpreadTableDnd *table,
   g_return_if_fail (GTK_IS_WIDGET (child));
 
   event_box = gtk_widget_get_parent (child);
+  if (!event_box)
+    {
+      g_message ("Bad hierarchy encountered in %s. The child had no parent.", G_STRFUNC);
+      return;
+    }
 
   if (GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (event_box), dnd_table_child_quark)) == FALSE)
     {
-      g_message ("Bad hierarchy encountered in egg_spread_table_dnd_remove_child().");
+      g_message ("Bad hierarchy encountered in %s.", G_STRFUNC);
       return;
     }
 
