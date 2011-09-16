@@ -1,18 +1,25 @@
-AC_INIT(libegg/util/eggmarshalers.list)
+AC_INIT([libegg],
+        [0.1],
+        [http://bugzilla.gnome.org/enter_bug.cgi?product=libegg],
+        [libegg])
 
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR(m4)
 
-AM_CONFIG_HEADER(config.h)
-
-AM_INIT_AUTOMAKE(libegg, 0.0.1)
+AM_INIT_AUTOMAKE([1.10])
 
 AM_MAINTAINER_MODE
 
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
+
+# Check for programs
 AC_PROG_CC
-AC_ISC_POSIX
 AC_HEADER_STDC
-AC_LIBTOOL_WIN32_DLL
-AM_PROG_LIBTOOL
+
+# Initialize libtool
+LT_PREREQ([2.2])
+LT_INIT([win32-dll])
 
 AC_MSG_CHECKING([platform])
 case "$host" in
@@ -59,9 +66,6 @@ AC_MSG_RESULT([must have egg first])
 
 AC_PATH_XTRA
 
-# Check return type of signal
-AC_TYPE_SIGNAL
-
 AC_CHECK_FUNCS(memmove strerror timegm)
 
 ## here we get the flags we'll actually use
@@ -106,7 +110,7 @@ AM_CONDITIONAL(ENABLE_GTK_DOC, true)
 GNOME_COMPILE_WARNINGS
 GNOME_MAINTAINER_MODE_DEFINES
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 Makefile
 libegg/Makefile
 libegg/util/Makefile
@@ -123,6 +127,7 @@ libegg/wrapbox/Makefile
 libegg/fileformatchooser/Makefile
 doc/Makefile
 ])
+AC_OUTPUT
 
 echo "
 
