@@ -40,20 +40,47 @@ typedef struct _EggSpreadTableDnd            EggSpreadTableDnd;
 typedef struct _EggSpreadTableDndPrivate     EggSpreadTableDndPrivate;
 typedef struct _EggSpreadTableDndClass       EggSpreadTableDndClass;
 
+/**
+ * EggDragEnableMode:
+ * @EGG_DRAG_DISABLED: Children cannot be dragged.
+ * @EGG_DRAG_ENABLED:  Children can be dragged if the needed mouse events 
+ *                     are not handled by those said children.
+ * @EGG_DRAG_FULL:     All mouse events on children are consumed for the
+ *                     purpose of starting drag and drop operations on children.
+ *
+ * Constants that control whether child widgets can be dragged from
+ * an #EggSpreadTableDnd.
+ *
+ */
+typedef enum {
+  EGG_DRAG_DISABLED = 0,
+  EGG_DRAG_ENABLED,
+  EGG_DRAG_FULL
+} EggDragEnableMode;
 
+/**
+ * EggSpreadTableDnd:
+ */
 struct _EggSpreadTableDnd
 {
-  EggSpreadTable parent_instance;
-
   /*< private >*/
+  EggSpreadTable parent_instance;
   EggSpreadTableDndPrivate *priv;
 };
 
+/**
+ * EggSpreadTableDndClass:
+ * @widget_drop_possible: A signal to determine whether @widget can be dropped into @table
+ */
 struct _EggSpreadTableDndClass
 {
+  /*< private >*/
   EggSpreadTableClass parent_class;
 
-  gboolean  (* widget_drop_possible) (EggSpreadTableDnd *table, GtkWidget *widget);
+  /*< public >*/
+  gboolean  (* widget_drop_possible) (EggSpreadTableDnd *table,
+				      GtkWidget         *widget,
+				      gboolean          *drop_possible);
 };
 
 GType                 egg_spread_table_dnd_get_type              (void) G_GNUC_CONST;
@@ -65,9 +92,13 @@ void                  egg_spread_table_dnd_insert_child          (EggSpreadTable
 								  gint               index);
 void                  egg_spread_table_dnd_remove_child          (EggSpreadTableDnd *table,
 								  GtkWidget         *child);
-void                  egg_spread_table_dnd_set_steal_events      (EggSpreadTableDnd *table,
-								  gboolean           steal_events);
-gboolean              egg_spread_table_dnd_get_steal_events      (EggSpreadTableDnd *table);
+
+void                  egg_spread_table_dnd_set_drag_enabled      (EggSpreadTableDnd *table,
+								  EggDragEnableMode  drag_enabled);
+EggDragEnableMode     egg_spread_table_dnd_get_drag_enabled      (EggSpreadTableDnd *table);
+void                  egg_spread_table_dnd_set_drop_enabled      (EggSpreadTableDnd *table,
+								  gboolean           drop_enabled);
+gboolean              egg_spread_table_dnd_get_drop_enabled      (EggSpreadTableDnd *table);
 
 G_END_DECLS
 

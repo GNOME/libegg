@@ -160,30 +160,37 @@ halign_changed (GtkComboBox   *box,
 static gboolean
 parent_drop_possible (EggSpreadTableDnd *table,
 		      GtkWidget         *child,
+		      gboolean          *drop_possible,
 		      gpointer           unused)
 {
-  if (parent_accepts_drops)
-    return TRUE;
+  *drop_possible = parent_accepts_drops;
 
-  return FALSE;
+  return TRUE;
 }
 
 static gboolean
 child_drop_possible (EggSpreadTableDnd *table,
 		     GtkWidget         *child,
+		     gboolean          *drop_possible,
 		     gpointer           unused)
 {
-  if (child_accepts_drops)
-    return TRUE;
+  *drop_possible = child_accepts_drops;
 
-  return FALSE;
+  return TRUE;
 }
 
 static void
-steal_events_toggled (GtkToggleButton   *button,
+drag_enabled_changed (GtkComboBox       *box,
 		      EggSpreadTableDnd *table)
 {
-  egg_spread_table_dnd_set_steal_events (table, gtk_toggle_button_get_active (button));
+  egg_spread_table_dnd_set_drag_enabled (table, gtk_combo_box_get_active (box));
+}
+
+static void
+drop_disable_toggled (GtkToggleButton *button,
+		      EggSpreadTableDnd *table)
+{
+  egg_spread_table_dnd_set_drop_enabled (table, !gtk_toggle_button_get_active (button));
 }
 
 static void
@@ -298,11 +305,26 @@ create_window (void)
 
 
   /* Add widget-drop-possible controls */
-  widget = gtk_toggle_button_new_with_label ("Steal Events");
+  widget = gtk_combo_box_text_new ();
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Disable Drag");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Enable Drag");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (widget), "Full Drag");
+  gtk_combo_box_set_active (GTK_COMBO_BOX (widget), 1);
+  gtk_widget_show (widget);
+
+  gtk_widget_set_tooltip_text (widget, "Set whether you can drag widgets from the table");
+  gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
+
+  g_signal_connect (G_OBJECT (widget), "changed",
+                    G_CALLBACK (drag_enabled_changed), paper);
+
+  /* Add widget-drop-possible controls */
+  widget = gtk_toggle_button_new_with_label ("Disable Drop");
   gtk_widget_show (widget);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), FALSE);
   gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
-  g_signal_connect (widget, "toggled", G_CALLBACK (steal_events_toggled), paper);
+  g_signal_connect (widget, "toggled", G_CALLBACK (drop_disable_toggled), paper);
+  gtk_widget_set_tooltip_text (widget, "Set whether you can drop widgets on the table");
 
   /* Add widget-drop-possible controls */
   widget = gtk_toggle_button_new_with_label ("parent accept drop");
@@ -310,12 +332,16 @@ create_window (void)
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
   gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
   g_signal_connect (widget, "toggled", G_CALLBACK (set_boolean), &parent_accepts_drops);
+  gtk_widget_set_tooltip_text (widget, "Set whether the parent will return TRUE from "
+			       "the \"widget-drop-possible\" signal");
 
   widget = gtk_toggle_button_new_with_label ("child accept drop");
   gtk_widget_show (widget);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
   gtk_box_pack_start (GTK_BOX (paper_cntl), widget, FALSE, FALSE, 0);
   g_signal_connect (widget, "toggled", G_CALLBACK (set_boolean), &child_accepts_drops);
+  gtk_widget_set_tooltip_text (widget, "Set whether the child will return TRUE from "
+			       "the \"widget-drop-possible\" signal");
 
   /* Add lines controls */
   hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);

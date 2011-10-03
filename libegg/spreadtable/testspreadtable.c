@@ -41,6 +41,14 @@ static GtkAlign   child_halign     = INITIAL_HALIGN;
 static int        test_image       = INITIAL_IMAGE;
 static int        test_image_index = INITIAL_IMAGE_INDEX;
 
+
+/* Lazy */
+#define gtk_hbox_new(homogeneous, spacing) \
+  gtk_box_new (GTK_ORIENTATION_HORIZONTAL, spacing)
+
+#define gtk_vbox_new(homogeneous, spacing) \
+  gtk_box_new (GTK_ORIENTATION_VERTICAL, spacing)
+
 static void
 populate_spread_table_wrappy (EggSpreadTable *spread_table)
 {

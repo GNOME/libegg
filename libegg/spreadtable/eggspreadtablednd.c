@@ -30,13 +30,6 @@
 #define DEFAULT_LINES 2
 #define P_(msgid) (msgid)
 
-
-enum {
-  PROP_0,
-  PROP_STEAL_EVENTS
-};
-
-
 /* GObjectClass */
 static void          egg_spread_table_dnd_get_property      (GObject            *object,
 							     guint               prop_id,
@@ -88,7 +81,8 @@ static gint          egg_spread_table_dnd_build_segments     (EggSpreadTable    
 
 /* EggSpreadTableDndClass */
 static gboolean      egg_spread_table_dnd_drop_possible(EggSpreadTableDnd *table,
-							GtkWidget         *widget);
+							GtkWidget         *widget,
+							gboolean          *possible);
 
 /* Drag and Drop callbacks & other utilities */
 static void          drag_begin                        (GtkWidget         *widget,
@@ -143,9 +137,11 @@ struct _EggSpreadTableDndPrivate {
   GtkWidget *drag_child;       /* If the drag started on a widget with no window, then the spread table
 				* keeps a hold on which child is being dragged */
 
-  guint      dragging : 1;     /* Whether the drag'n'drop operation is currently active over this table */
-  guint      steal_events : 1; /* Whether to steal all child events (causes the event-boxes to
-				* place thier event window above all children) */
+  guint      dragging     : 1; /* Whether a drag'n'drop operation is currently active over this table */
+
+  guint      drop_enabled : 1; /* Whether dropping is allowed on this table */
+  guint      drag_enabled : 2; /* The EggDragEnableMode (can cause the event-boxes to
+				* place thier event window above of below all children) */
 
   gint       disappearing;     /* Count of placeholders that are currently disappearing */
   gint      *locked_config;    /* Caching and locking the child configuration */
@@ -153,17 +149,23 @@ struct _EggSpreadTableDndPrivate {
 
 
 enum {
+  PROP_0,
+  PROP_DRAG_ENABLED,
+  PROP_DROP_ENABLED
+};
+
+enum {
   SIGNAL_DROP_POSSIBLE,
   LAST_SIGNAL
 };
 
-static GQuark		    dnd_table_child_quark = 0;
 static guint                dnd_table_signals [LAST_SIGNAL] = { 0 };
+static GQuark		    dnd_table_child_quark     = 0;
+static GQuark		    dnd_table_connected_quark = 0;
 static GdkAtom              dnd_target_atom_child = GDK_NONE;
 static const GtkTargetEntry dnd_targets[] = {
   { "application/x-egg-spread-table-dnd-child", GTK_TARGET_SAME_APP, 0 }
 };
-
 
 
 G_DEFINE_TYPE (EggSpreadTableDnd, egg_spread_table_dnd, EGG_TYPE_SPREAD_TABLE)
@@ -194,34 +196,75 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
   class->widget_drop_possible           = egg_spread_table_dnd_drop_possible;
 
   /**
-   * EggSpreadTableDnd:steal-events:
+   * EggSpreadTableDnd:drag-enabled:
    *
-   * Whether the table should steal all pointer events from added children
-   * for the purpose of Drag'n'Drop.
+   * Specifies the #EggDragEnableMode controlling whether child
+   * widgets can be dragged from this table.
    *
+   * 
    */
   g_object_class_install_property (gobject_class,
-                                   PROP_STEAL_EVENTS,
-                                   g_param_spec_boolean ("steal-events",
-							 P_("Steal Events"),
-							 P_("Whether the table should steal all pointer "
-							    "events from children"),
-							 FALSE,
+                                   PROP_DRAG_ENABLED,
+                                   g_param_spec_int ("drag-enabled",
+						     P_("Drag Enabled"),
+						     P_("The #EggDragEnableMode controlling whether "
+							"children can be dragged"),
+						     EGG_DRAG_DISABLED,
+						     EGG_DRAG_FULL,
+						     EGG_DRAG_ENABLED,
+						     G_PARAM_READABLE | G_PARAM_WRITABLE));
+
+  /**
+   * EggSpreadTableDnd:drop-enabled:
+   *
+   * Whether this spread table accepts drops.
+   *
+   * If this is set to %FALSE then the EggSpreadTableDnd::widget-drop-possible
+   * signal will never be emitted.
+   */
+  g_object_class_install_property (gobject_class,
+                                   PROP_DROP_ENABLED,
+                                   g_param_spec_boolean ("drop-enabled",
+							 P_("Drop Enabled"),
+							 P_("Whether this spread table accepts drops"),
+							 TRUE,
 							 G_PARAM_READABLE | G_PARAM_WRITABLE));
 
 
   /**
-   * EggSpreadTableDnd::widget-drop-possible
+   * EggSpreadTableDnd::widget-drop-possible:
+   * @eggspreadtablednd: An #EggSpreadTableDnd
+   * @widget: The currently dragging widget to check
+   * @drop_possible: (out): Location to store whether the @eggspreadtablednd should accept @widget
    *
-   * Emitted to check if a widget can be dropped into this spread table.
+   * Emitted to check if @widget can be dropped into @eggspreadtablednd.
    *
-   * The first connected signal to return TRUE decides that the widget
-   * can be dropped.
+   * The first connected signal to return TRUE decides whether @widget
+   * can be dropped into @eggspreadtablednd.
    *
-   * By default EggSpreadTableDnd accepts drops from the same table
-   * (the only way to dissallow drops from the same spread table is
-   * to implement a subclass which overrides the
-   * EggSpreadTableDndClass.widget_drop_possible() virtual method).
+   * When handling this signal and returning %TRUE, you must set the value of @drop_possible:
+   * <programlisting><![CDATA[
+   * static gboolean
+   * my_spread_table_accepts_your_widget_cb (EggSpreadTableDnd *table,
+   *                                         GtkWidget         *child,
+   *                                         gboolean          *drop_possible,
+   *                                         gpointer           user_data)
+   * {
+   *   if (i_would_rather_the_default_behaviour_for (child))
+   *     return FALSE;
+   *
+   *   if (child_widget_asked_kindly (child))
+   *     *drop_possible = TRUE;
+   *   else
+   *     *drop_possible = FALSE;
+   *
+   *   return TRUE;
+   * }
+   * ]]></programlisting>
+   *
+   * By default EggSpreadTableDnd accepts drops from only the same table
+   *
+   * To disable dropping completely in a spread table, use egg_spread_table_set_drop_enabled().
    */
   dnd_table_signals[SIGNAL_DROP_POSSIBLE] =
         g_signal_new ("widget-drop-possible",
@@ -229,12 +272,13 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
 		      G_SIGNAL_RUN_LAST,
 		      G_STRUCT_OFFSET (EggSpreadTableDndClass, widget_drop_possible),
 		      boolean_handled_accumulator, NULL,
-		      _egg_marshal_BOOLEAN__OBJECT,
-		      G_TYPE_BOOLEAN, 1, GTK_TYPE_WIDGET);
+		      _egg_marshal_BOOLEAN__OBJECT_POINTER,
+		      G_TYPE_BOOLEAN, 2, GTK_TYPE_WIDGET, G_TYPE_POINTER);
 
 
-  dnd_target_atom_child = gdk_atom_intern_static_string (dnd_targets[0].target);
-  dnd_table_child_quark = g_quark_from_static_string ("egg-spread-table-dnd-child");
+  dnd_target_atom_child     = gdk_atom_intern_static_string (dnd_targets[0].target);
+  dnd_table_child_quark     = g_quark_from_static_string ("egg-spread-table-dnd-child");
+  dnd_table_connected_quark = g_quark_from_static_string ("egg-spread-table-dnd-connected");
 
   g_type_class_add_private (class, sizeof (EggSpreadTableDndPrivate));
 }
@@ -259,6 +303,9 @@ egg_spread_table_dnd_init (EggSpreadTableDnd *spread_table)
 		       0, dnd_targets, G_N_ELEMENTS (dnd_targets),
 		       GDK_ACTION_MOVE);
 
+  priv->drag_enabled = EGG_DRAG_ENABLED;
+  priv->drop_enabled = TRUE;
+
   gtk_widget_set_has_window (GTK_WIDGET (spread_table), TRUE);
 }
 
@@ -275,8 +322,11 @@ egg_spread_table_dnd_get_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_STEAL_EVENTS:
-      g_value_set_boolean (value, table->priv->steal_events);
+    case PROP_DRAG_ENABLED:
+      g_value_set_int (value, table->priv->drag_enabled);
+      break;
+    case PROP_DROP_ENABLED:
+      g_value_set_boolean (value, table->priv->drop_enabled);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -294,8 +344,11 @@ egg_spread_table_dnd_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_STEAL_EVENTS:
-      egg_spread_table_dnd_set_steal_events (table, g_value_get_boolean (value));
+    case PROP_DRAG_ENABLED:
+      egg_spread_table_dnd_set_drag_enabled (table, g_value_get_int (value));
+      break;
+    case PROP_DROP_ENABLED:
+      egg_spread_table_dnd_set_drop_enabled (table, g_value_get_int (value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -753,50 +806,11 @@ egg_spread_table_dnd_drag_data_received (GtkWidget        *widget,
  *                GtkContainerClass                  *
  *****************************************************/
 static void
-egg_spread_table_dnd_remove (GtkContainer *container,
-			     GtkWidget    *child)
+egg_spread_table_connect_child (gpointer spread_table,
+				gpointer child)
 {
-  if (GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (child), dnd_table_child_quark)) == FALSE)
-    {
-      g_message ("Refusing to remove child widget from EggSpreadTableDnd directly, "
-		 "use egg_spread_table_dnd_remove_child() instead.");
-      return;
-    }
-
-
-  /* Disconnect dnd */
-  if (!EGG_IS_PLACEHOLDER (child))
-    {
-      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_data_get), container);
-      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_failed), container);
-      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_begin), container);
-      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_end), container);
-      gtk_drag_source_unset (child);
-    }
-
-  GTK_CONTAINER_CLASS (egg_spread_table_dnd_parent_class)->remove (container, child);
-}
-
-
-/*****************************************************
- *               EggSpreadTableClass                 *
- *****************************************************/
-static void
-egg_spread_table_dnd_insert_child_impl (EggSpreadTable *spread_table,
-					GtkWidget      *child,
-					gint            index)
-{
-  if (GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (child), dnd_table_child_quark)) == FALSE)
-    {
-      g_message ("Refusing to add child widget to an EggSpreadTableDnd directly, "
-		 "use egg_spread_table_dnd_insert_child() instead.");
-      return;
-    }
-
-  EGG_SPREAD_TABLE_CLASS (egg_spread_table_dnd_parent_class)->insert_child (spread_table, child, index);
-
-  /* Connect dnd */
-  if (!EGG_IS_PLACEHOLDER (child))
+  if (!EGG_IS_PLACEHOLDER (child) &&
+      GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (child), dnd_table_connected_quark)) == FALSE)
     {
       gtk_drag_source_set (child, GDK_BUTTON1_MASK | GDK_BUTTON3_MASK,
 			   dnd_targets, G_N_ELEMENTS (dnd_targets),
@@ -810,7 +824,71 @@ egg_spread_table_dnd_insert_child_impl (EggSpreadTable *spread_table,
 			G_CALLBACK (drag_begin), spread_table);
       g_signal_connect (child, "drag-end",
 			G_CALLBACK (drag_end), spread_table);
+
+      g_object_set_qdata (G_OBJECT (child),
+			  dnd_table_connected_quark, GINT_TO_POINTER (TRUE));
     }
+}
+
+static void
+egg_spread_table_disconnect_child (gpointer spread_table,
+				   gpointer child)
+{
+  /* Disconnect dnd */
+  if (!EGG_IS_PLACEHOLDER (child) &&
+      GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (child), dnd_table_connected_quark)))
+    {
+      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_data_get), spread_table);
+      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_failed), spread_table);
+      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_begin), spread_table);
+      g_signal_handlers_disconnect_by_func (child, G_CALLBACK (drag_end), spread_table);
+      gtk_drag_source_unset (child);
+
+      g_object_set_qdata (G_OBJECT (child),
+			  dnd_table_connected_quark, GINT_TO_POINTER (FALSE));
+    }
+}
+
+static void
+egg_spread_table_dnd_remove (GtkContainer *container,
+			     GtkWidget    *child)
+{
+  if (GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (child), dnd_table_child_quark)) == FALSE)
+    {
+      g_message ("Refusing to remove child widget from EggSpreadTableDnd directly, "
+		 "use egg_spread_table_dnd_remove_child() instead.");
+      return;
+    }
+
+  /* Disconnect dnd */
+  egg_spread_table_disconnect_child (container, child);
+
+  GTK_CONTAINER_CLASS (egg_spread_table_dnd_parent_class)->remove (container, child);
+}
+
+
+/*****************************************************
+ *               EggSpreadTableClass                 *
+ *****************************************************/
+static void
+egg_spread_table_dnd_insert_child_impl (EggSpreadTable *spread_table,
+					GtkWidget      *child,
+					gint            index)
+{
+  EggSpreadTableDnd *table = EGG_SPREAD_TABLE_DND (spread_table);
+
+  if (GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (child), dnd_table_child_quark)) == FALSE)
+    {
+      g_message ("Refusing to add child widget to an EggSpreadTableDnd directly, "
+		 "use egg_spread_table_dnd_insert_child() instead.");
+      return;
+    }
+
+  EGG_SPREAD_TABLE_CLASS (egg_spread_table_dnd_parent_class)->insert_child (spread_table, child, index);
+
+  /* Connect dnd after really parenting the child */
+  if (table->priv->drag_enabled != EGG_DRAG_DISABLED)
+    egg_spread_table_connect_child (spread_table, child);
 }
 
 static gint
@@ -876,9 +954,12 @@ egg_spread_table_dnd_build_segments (EggSpreadTable *table,
  *****************************************************/
 static gboolean
 egg_spread_table_dnd_drop_possible (EggSpreadTableDnd *table,
-				    GtkWidget         *widget)
+				    GtkWidget         *widget,
+				    gboolean          *possible)
 {
-  return (GTK_WIDGET (table) == gtk_widget_get_parent (widget));
+  *possible = (GTK_WIDGET (table) == gtk_widget_get_parent (widget));
+
+  return TRUE;
 }
 
 /*****************************************************
@@ -1125,8 +1206,10 @@ drop_possible (EggSpreadTableDnd *spread_table,
 	       GtkWidget         *widget)
 {
   gboolean possible = FALSE;
+  gboolean handled = FALSE;
 
-  g_signal_emit (spread_table, dnd_table_signals[SIGNAL_DROP_POSSIBLE], 0, widget, &possible);
+  if (spread_table->priv->drop_enabled)
+    g_signal_emit (spread_table, dnd_table_signals[SIGNAL_DROP_POSSIBLE], 0, widget, &possible, &handled);
 
   return possible;
 }
@@ -1241,7 +1324,7 @@ egg_spread_table_dnd_insert_child (EggSpreadTableDnd *table,
   g_return_if_fail (GTK_IS_WIDGET (child));
 
   event_box = gtk_event_box_new ();
-  gtk_event_box_set_above_child (GTK_EVENT_BOX (event_box), table->priv->steal_events);
+  gtk_event_box_set_above_child (GTK_EVENT_BOX (event_box), table->priv->drag_enabled == EGG_DRAG_FULL);
   g_object_set_qdata (G_OBJECT (event_box), dnd_table_child_quark, GINT_TO_POINTER (TRUE));
   gtk_widget_show (event_box);
 
@@ -1288,35 +1371,98 @@ egg_spread_table_dnd_remove_child (EggSpreadTableDnd *table,
 }
 
 static void
-flip_event_windows (GtkEventBox       *child,
-		    EggSpreadTableDnd *table)
+reconfigure_children (GtkEventBox       *child,
+		      EggSpreadTableDnd *table)
 {
   /* Besides the internally owned event boxes, only EggPlaceholders can exist 
    * as direct children of the EggSpreadTableDnd */
   if (GTK_IS_EVENT_BOX (child))
-    gtk_event_box_set_above_child (child, table->priv->steal_events);
-}
-
-void
-egg_spread_table_dnd_set_steal_events (EggSpreadTableDnd *table,
-				       gboolean           steal_events)
-{
-  g_return_if_fail (EGG_IS_SPREAD_TABLE_DND (table));
-
-  if (table->priv->steal_events != steal_events)
     {
-      table->priv->steal_events = steal_events;
+      gtk_event_box_set_above_child (child, table->priv->drag_enabled == EGG_DRAG_FULL);
 
-      gtk_container_forall (GTK_CONTAINER (table), (GtkCallback)flip_event_windows, table);
-
-      g_object_notify (G_OBJECT (table), "steal-events");
+      if (table->priv->drag_enabled == EGG_DRAG_DISABLED)
+	egg_spread_table_disconnect_child (table, child);
+      else
+	egg_spread_table_connect_child (table, child);
     }
 }
 
+/**
+ * egg_spread_table_dnd_set_drag_enabled:
+ * @table: An #EggSpreadTableDnd
+ * @drag_enabled: The #EggDragEnableMode to set
+ *
+ * Sets the #EggDragEnableMode determining whther
+ * dragging of children is enabled.
+ */
+void
+egg_spread_table_dnd_set_drag_enabled (EggSpreadTableDnd *table,
+				       EggDragEnableMode  drag_enabled)
+{
+  g_return_if_fail (EGG_IS_SPREAD_TABLE_DND (table));
+
+  if (table->priv->drag_enabled != drag_enabled)
+    {
+      table->priv->drag_enabled = drag_enabled;
+
+      gtk_container_foreach (GTK_CONTAINER (table),
+			     (GtkCallback)reconfigure_children, table);
+
+      g_object_notify (G_OBJECT (table), "drag-enabled");
+    }
+}
+
+/**
+ * egg_spread_table_dnd_get_drag_enabled:
+ * @table: An #EggSpreadTableDnd
+ *
+ * Gets the #EggDragEnableMode determining whther
+ * dragging of children is enabled.
+ *
+ * Returns: The #EggDragEnableMode for @table
+ */
+EggDragEnableMode
+egg_spread_table_dnd_get_drag_enabled (EggSpreadTableDnd *table)
+{
+  g_return_val_if_fail (EGG_IS_SPREAD_TABLE_DND (table), 0);
+
+  return table->priv->drag_enabled;
+}
+
+/**
+ * egg_spread_table_dnd_set_drop_enabled:
+ * @table: An #EggSpreadTableDnd
+ * @drop_enabled: Whether to enable or disable dropping in @table
+ *
+ * Enables/disables dropping of children into @table.
+ */
+void
+egg_spread_table_dnd_set_drop_enabled (EggSpreadTableDnd *table,
+				       gboolean           drop_enabled)
+{
+  g_return_if_fail (EGG_IS_SPREAD_TABLE_DND (table));
+
+  if (table->priv->drop_enabled != drop_enabled)
+    {
+      table->priv->drop_enabled = drop_enabled;
+
+      g_object_notify (G_OBJECT (table), "drop-enabled");
+    }
+}
+
+/**
+ * egg_spread_table_dnd_get_drop_enabled:
+ * @table: An #EggSpreadTableDnd
+ *
+ * Gets whether dropping of children into @table is enabled.
+ *
+ * Returns: Whether dropping of children into @table is enabled.
+ */
 gboolean
-egg_spread_table_dnd_get_steal_events (EggSpreadTableDnd *table)
+egg_spread_table_dnd_get_drop_enabled (EggSpreadTableDnd *table)
 {
   g_return_val_if_fail (EGG_IS_SPREAD_TABLE_DND (table), FALSE);
 
-  return table->priv->steal_events;
+  return table->priv->drop_enabled;
 }
+
