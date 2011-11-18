@@ -975,12 +975,17 @@ set_drag_icon (GtkWidget      *widget,
   GtkStyleContext *style;
   GdkPixbuf       *pixbuf;
   gint             hot_x, hot_y;
+  GdkModifierType  modifier_mask;
 
   /* XXX Force allocate here ? need to absolutely have an allocated widget
    * for this to work (gtk_widget_draw() needs that). */
 
   gtk_widget_get_allocation (widget, &allocation);
-  gtk_widget_get_pointer (widget, &hot_x, &hot_y);
+
+  gdk_window_get_device_position(
+    gtk_widget_get_window (widget),
+    gtk_get_current_event_device (),
+    &hot_x, &hot_y, &modifier_mask);
 
   surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, allocation.width, allocation.height);
   cr      = cairo_create (surface);
