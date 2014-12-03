@@ -490,7 +490,12 @@ get_spread_table_dimensions (EggSpreadTableDnd *spread_table,
     *item_spacing = local_item_spacing;
 
   if (line_width)
-    *line_width = (local_full_size - (local_spacing * (lines -1))) / lines;
+    {
+      if (lines == 0)
+        *line_width = 0;
+      else 
+        *line_width = (local_full_size - (local_spacing * (lines -1))) / lines;
+    }
 }
 
 static void
