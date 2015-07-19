@@ -42,6 +42,8 @@ static void          egg_spread_table_dnd_set_property      (GObject            
 
 /* GtkWidgetClass */
 static void          egg_spread_table_dnd_realize            (GtkWidget         *widget);
+static gboolean      egg_spread_table_dnd_draw               (GtkWidget *widget,
+                    cairo_t *cr);
 static void          egg_spread_table_dnd_size_allocate      (GtkWidget         *widget,
 							      GtkAllocation     *allocation);
 
@@ -183,6 +185,7 @@ egg_spread_table_dnd_class_init (EggSpreadTableDndClass *class)
 
   widget_class->realize                 = egg_spread_table_dnd_realize;
   widget_class->size_allocate           = egg_spread_table_dnd_size_allocate;
+  widget_class->draw                    = egg_spread_table_dnd_draw;
   widget_class->drag_leave              = egg_spread_table_dnd_drag_leave;
   widget_class->drag_motion             = egg_spread_table_dnd_drag_motion;
   widget_class->drag_drop               = egg_spread_table_dnd_drag_drop;
@@ -387,9 +390,23 @@ egg_spread_table_dnd_realize (GtkWidget *widget)
   window = gdk_window_new (gtk_widget_get_parent_window (widget),
                            &attributes, attributes_mask);
   gtk_widget_set_window (widget, window);
-  gdk_window_set_user_data (window, widget);
+  gdk_window_set_user_data (window, widget); 
+}
 
-  gtk_style_context_set_background (gtk_widget_get_style_context (widget), window);
+static gboolean
+egg_spread_table_dnd_draw (GtkWidget *widget,
+  cairo_t *cr)
+{
+  GtkStyleContext *context;
+  GtkAllocation allocation;
+
+  context = gtk_widget_get_style_context (widget);
+  gtk_widget_get_allocation (widget, &allocation);
+
+  gtk_render_background (context, cr, 0, 0, allocation.width, allocation.height);
+  gtk_render_frame (context, cr, 0, 0, allocation.width, allocation.height);
+
+  return GTK_WIDGET_CLASS (egg_spread_table_dnd_parent_class)->draw (widget, cr);
 }
 
 static void
