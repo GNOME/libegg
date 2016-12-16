@@ -31,6 +31,7 @@
 #include <unistd.h>
 
 #include <gdk/gdk.h>
+#include <gdk/gdkx.h>
 #include <dbus/dbus-glib.h>
 
 #define GSM_DBUS_NAME      "org.gnome.SessionManager"
