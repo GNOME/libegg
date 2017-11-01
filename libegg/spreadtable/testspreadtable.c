@@ -220,7 +220,7 @@ create_window (void)
   egg_spread_table_set_horizontal_spacing (EGG_SPREAD_TABLE (paper), INITIAL_HSPACING);
   gtk_widget_show (paper);
 
-  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (swindow), paper);
+  gtk_container_add (GTK_CONTAINER (swindow), paper);
 
   /* Add SpreadTable test control frame */
   expander = gtk_expander_new ("SpreadTable controls");

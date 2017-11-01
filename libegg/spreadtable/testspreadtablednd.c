@@ -110,7 +110,7 @@ populate_spread_table_wrappy (EggSpreadTable *spread_table)
   gtk_widget_set_size_request (frame, 200, 200);
   gtk_widget_show (widget);
   gtk_widget_show (frame);
-  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (widget), frame);
+  gtk_container_add (GTK_CONTAINER (widget), frame);
   egg_spread_table_dnd_insert_child (EGG_SPREAD_TABLE_DND (spread_table), widget, -1);
 }
 
@@ -235,7 +235,7 @@ create_window (void)
   egg_spread_table_set_horizontal_spacing (EGG_SPREAD_TABLE (paper), INITIAL_HSPACING);
   gtk_widget_show (paper);
 
-  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (swindow), paper);
+  gtk_container_add (GTK_CONTAINER (swindow), paper);
 
   /* Add SpreadTable test control frame */
   expander = gtk_expander_new ("SpreadTable controls");
