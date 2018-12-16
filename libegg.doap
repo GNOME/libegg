@@ -9,7 +9,7 @@
 
   <mailing-list rdf:resource="http://mail.gnome.org/mailman/listinfo/gtk-devel-list" />
   <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=libegg"/>
-  <category rdf:resource="http://api.gnome.org/doap-extensions#development" />
+  <!-- <category rdf:resource="http://api.gnome.org/doap-extensions#development" /> -->
 
   <!-- toolbar-editor -->
 
